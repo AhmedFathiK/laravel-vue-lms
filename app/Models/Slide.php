@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Translatable\HasTranslations;
+
+class Slide extends Model
+{
+    use HasFactory, HasTranslations;
+
+    const TYPE_MCQ = 'mcq';
+    const TYPE_MATCHING = 'matching_pairs';
+    const TYPE_REORDERING = 'reordering';
+    const TYPE_FILL_BLANK = 'fill_blank';
+    const TYPE_FILL_BLANK_CHOICES = 'fill_blank_choices';
+    const TYPE_TERM = 'term';
+    const TYPE_EXPLANATION = 'explanation';
+
+    protected $fillable = [
+        'lesson_id',
+        'type',
+        'content',
+        'options',
+        'correct_answer',
+        'feedback',
+        'sort_order',
+    ];
+
+    public array $translatable = [
+        'content',
+        'feedback',
+    ];
+
+    protected $casts = [
+        'sort_order' => 'integer',
+        'options' => 'array',
+        'correct_answer' => 'array',
+    ];
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(Lesson::class);
+    }
+}

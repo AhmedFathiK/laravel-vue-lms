@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Requests\Level;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()->can('edit.level');
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $rules = [
+            'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
+            'title' => ['sometimes', 'array'],
+            'title.*' => ['string', 'max:255'],
+            'description' => ['nullable', 'array'],
+            'description.*' => ['nullable', 'string'],
+            'sort_order' => ['nullable', 'integer'],
+            'status' => ['sometimes', 'string', 'in:draft,published,archived'],
+            'is_unlocked' => ['nullable', 'boolean'],
+        ];
+
+        return $rules;
+    }
+}

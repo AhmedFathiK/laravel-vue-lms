@@ -68,6 +68,21 @@ class RolePermissionSeeder extends Seeder
             'link.term',
             'configure_revision.term',
 
+            // Assessment System
+            'view questions',
+            'create questions',
+            'edit questions',
+            'delete questions',
+            'view exams',
+            'create exams',
+            'edit exams',
+            'delete exams',
+            'view exam sections',
+            'create exam sections',
+            'edit exam sections',
+            'delete exam sections',
+            'grade exams',
+
             // Placement Tests
             'view.placement_test',
             'create.placement_test',
@@ -158,6 +173,21 @@ class RolePermissionSeeder extends Seeder
             'link.term',
             'configure_revision.term',
 
+            // Assessment System
+            'view questions',
+            'create questions',
+            'edit questions',
+            'delete questions',
+            'view exams',
+            'create exams',
+            'edit exams',
+            'delete exams',
+            'view exam sections',
+            'create exam sections',
+            'edit exam sections',
+            'delete exam sections',
+            'grade exams',
+
             // Placement Tests
             'view.placement_test',
             'create.placement_test',
@@ -222,6 +252,18 @@ class RolePermissionSeeder extends Seeder
             'link.term',
             'configure_revision.term',
 
+            // Assessment System
+            'view questions',
+            'create questions',
+            'edit questions',
+            'view exams',
+            'create exams',
+            'edit exams',
+            'view exam sections',
+            'create exam sections',
+            'edit exam sections',
+            'grade exams',
+
             // Placement Tests
             'view.placement_test',
             'create.placement_test',
@@ -266,6 +308,18 @@ class RolePermissionSeeder extends Seeder
             'edit.term',
             'translate.term',
             'link.term',
+
+            // Assessment System
+            'view questions',
+            'create questions',
+            'edit questions',
+            'view exams',
+            'create exams',
+            'edit exams',
+            'view exam sections',
+            'create exam sections',
+            'edit exam sections',
+            'grade exams',
 
             // Placement Tests
             'view.placement_test',
