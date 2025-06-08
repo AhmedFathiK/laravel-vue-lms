@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\RevisionRequest;
+use App\Http\Requests\Learner\RevisionRequest;
 use App\Models\Concept;
 use App\Models\MasteryProgress;
 use App\Models\RevisionItem;
@@ -254,29 +254,24 @@ class RevisionController extends Controller
             $query->where('revisionable_type', $modelType);
         }
 
-        // Get items with lowest retrievability first
-        $items = $query->orderBy('retrievability', 'asc')->limit($count)->get();
+        // Get items with lowest stability first
+        $query->orderBy('stability', 'asc')
+            ->orderBy('due_date', 'asc');
 
-        // If we need more items and mastery progress should be included
-        if ($items->count() < $count && $includeMasteryProgress) {
-            $neededCount = $count - $items->count();
+        $items = $query->take($count)->get();
 
-            // Get items with mastery progress that aren't already in our list
-            $progressItemIds = MasteryProgress::where('user_id', Auth::id())
-                ->select('revision_item_id')
-                ->distinct()
-                ->pluck('revision_item_id')
-                ->toArray();
+        // If we don't have enough items, try to get some that aren't due yet
+        if ($items->count() < $count) {
+            $remainingCount = $count - $items->count();
 
-            $additionalQuery = RevisionItem::where('user_id', Auth::id())
+            $notDueQuery = RevisionItem::where('user_id', Auth::id())
                 ->with('revisionable')
-                ->whereIn('id', $progressItemIds)
-                ->whereNotIn('id', $items->pluck('id')->toArray());
+                ->where('due_date', '>', now());
 
-            // Apply same course filter if needed
+            // Apply same filters
             if ($request->has('course_id')) {
                 $courseId = $request->course_id;
-                $additionalQuery->whereHasMorph(
+                $notDueQuery->whereHasMorph(
                     'revisionable',
                     [Term::class, Concept::class],
                     function ($q) use ($courseId) {
@@ -285,59 +280,45 @@ class RevisionController extends Controller
                 );
             }
 
-            // Apply type filter if needed
             if ($type !== 'both') {
                 $modelType = $type === 'term' ? Term::class : Concept::class;
-                $additionalQuery->where('revisionable_type', $modelType);
+                $notDueQuery->where('revisionable_type', $modelType);
             }
 
-            $additionalItems = $additionalQuery->orderBy('due_date', 'asc')->limit($neededCount)->get();
-            $items = $items->merge($additionalItems);
+            // Order by due date to get the ones that will be due soonest
+            $notDueQuery->orderBy('due_date', 'asc');
+
+            $notDueItems = $notDueQuery->take($remainingCount)->get();
+
+            // Merge the collections
+            $items = $items->merge($notDueItems);
         }
 
-        // Generate practice questions for each item
-        $practiceQuestions = [];
-        foreach ($items as $item) {
-            $revisionable = $item->revisionable;
+        // Prepare the response data
+        $practiceItems = [];
 
-            // Generate different question types based on whether it's a term or concept
-            if ($item->revisionable_type === Term::class) {
-                // For terms, create definition/translation questions
-                $practiceQuestions[] = [
-                    'revision_item_id' => $item->id,
-                    'question_type' => 'definition',
-                    'prompt' => "What is the definition of '{$revisionable->term}'?",
-                    'answer' => $revisionable->definition,
-                    'item_data' => [
-                        'term' => $revisionable->term,
-                        'definition' => $revisionable->definition,
-                        'translation' => $revisionable->translation,
-                        'media_url' => $revisionable->media_url,
-                        'media_type' => $revisionable->media_type,
-                    ]
-                ];
-            } else {
-                // For concepts, create explanation questions
-                $practiceQuestions[] = [
-                    'revision_item_id' => $item->id,
-                    'question_type' => 'explanation',
-                    'prompt' => "Explain the concept: '{$revisionable->title}'",
-                    'answer' => $revisionable->explanation,
-                    'item_data' => [
-                        'title' => $revisionable->title,
-                        'explanation' => $revisionable->explanation,
-                        'examples' => $revisionable->examples,
-                        'type' => $revisionable->type,
-                        'media_url' => $revisionable->media_url,
-                        'media_type' => $revisionable->media_type,
-                    ]
-                ];
+        foreach ($items as $item) {
+            $practiceItem = [
+                'revision_item' => $item,
+                'revisionable' => $item->revisionable,
+            ];
+
+            // Include mastery progress if requested
+            if ($includeMasteryProgress) {
+                $masteryProgress = MasteryProgress::where('user_id', Auth::id())
+                    ->where('revision_item_id', $item->id)
+                    ->orderBy('strength', 'asc')
+                    ->get();
+
+                $practiceItem['mastery_progress'] = $masteryProgress;
             }
+
+            $practiceItems[] = $practiceItem;
         }
 
         return response()->json([
-            'practice_questions' => $practiceQuestions,
-            'count' => count($practiceQuestions)
+            'practice_items' => $practiceItems,
+            'count' => count($practiceItems)
         ]);
     }
 
@@ -349,7 +330,7 @@ class RevisionController extends Controller
         $userId = Auth::id();
         $courseId = $request->input('course_id');
 
-        // Base query
+        // Base query for user's revision items
         $query = RevisionItem::where('user_id', $userId);
 
         // Filter by course if specified
@@ -363,30 +344,71 @@ class RevisionController extends Controller
             );
         }
 
-        // Get counts by state
-        $stateCounts = $query->select('state', DB::raw('count(*) as count'))
+        // Total items
+        $totalItems = $query->count();
+
+        // Items by state
+        $itemsByState = $query->select('state', DB::raw('count(*) as count'))
             ->groupBy('state')
             ->pluck('count', 'state')
             ->toArray();
 
-        // Get due items count
-        $dueCount = $query->where('due_date', '<=', now())->count();
+        // Fill in missing states with zero
+        $states = ['new', 'learning', 'review', 'mastered'];
+        foreach ($states as $state) {
+            if (!isset($itemsByState[$state])) {
+                $itemsByState[$state] = 0;
+            }
+        }
 
-        // Get review count by day for the last 30 days
-        $thirtyDaysAgo = now()->subDays(30)->startOfDay();
-        $reviewsByDay = $query->where('last_review', '>=', $thirtyDaysAgo)
-            ->select(DB::raw('DATE(last_review) as date'), DB::raw('count(*) as count'))
+        // Due items
+        $dueItems = $query->where('due_date', '<=', now())->count();
+
+        // Items due in the next 7 days
+        $now = now();
+        $nextWeek = now()->addDays(7);
+        $upcomingItems = $query->whereBetween('due_date', [$now, $nextWeek])->count();
+
+        // Average stability
+        $avgStability = $query->where('stability', '>', 0)->avg('stability') ?? 0;
+
+        // Average difficulty
+        $avgDifficulty = $query->where('difficulty', '>', 0)->avg('difficulty') ?? 0;
+
+        // Review history (last 30 days)
+        $thirtyDaysAgo = now()->subDays(30);
+        $reviewHistory = DB::table('revision_item_histories')
+            ->join('revision_items', 'revision_item_histories.revision_item_id', '=', 'revision_items.id')
+            ->where('revision_items.user_id', $userId)
+            ->where('revision_item_histories.created_at', '>=', $thirtyDaysAgo)
+            ->select(
+                DB::raw('DATE(revision_item_histories.created_at) as date'),
+                DB::raw('count(*) as count')
+            )
             ->groupBy('date')
             ->orderBy('date')
             ->get()
             ->pluck('count', 'date')
             ->toArray();
 
-        // Get mastery progress statistics
-        $progressQuery = MasteryProgress::where('user_id', $userId);
+        // Fill in missing dates with zero
+        $dateRange = [];
+        for ($i = 0; $i < 30; $i++) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            if (!isset($reviewHistory[$date])) {
+                $reviewHistory[$date] = 0;
+            }
+            $dateRange[] = $date;
+        }
+
+        // Sort by date
+        ksort($reviewHistory);
+
+        // Mastery progress statistics
+        $masteryQuery = MasteryProgress::where('user_id', $userId);
 
         if ($courseId) {
-            $progressQuery->whereHas('revisionItem', function ($q) use ($courseId) {
+            $masteryQuery->whereHas('revisionItem', function ($q) use ($courseId) {
                 $q->whereHasMorph(
                     'revisionable',
                     [Term::class, Concept::class],
@@ -397,21 +419,29 @@ class RevisionController extends Controller
             });
         }
 
-        $progressByCategory = $progressQuery->select('category', DB::raw('count(*) as count'))
+        $masteryByCategory = $masteryQuery->select('category', DB::raw('count(*) as count'))
             ->groupBy('category')
-            ->orderBy('count', 'desc')
             ->pluck('count', 'category')
             ->toArray();
 
+        $masteryByStrength = $masteryQuery->select(
+            DB::raw('FLOOR(strength) as strength_level'),
+            DB::raw('count(*) as count')
+        )
+            ->groupBy('strength_level')
+            ->pluck('count', 'strength_level')
+            ->toArray();
+
         return response()->json([
-            'total_items' => $query->count(),
-            'state_counts' => $stateCounts,
-            'due_count' => $dueCount,
-            'reviews_by_day' => $reviewsByDay,
-            'mastery_progress' => [
-                'total' => array_sum($progressByCategory),
-                'by_category' => $progressByCategory
-            ]
+            'total_items' => $totalItems,
+            'items_by_state' => $itemsByState,
+            'due_items' => $dueItems,
+            'upcoming_items' => $upcomingItems,
+            'avg_stability' => round($avgStability, 2),
+            'avg_difficulty' => round($avgDifficulty, 2),
+            'review_history' => $reviewHistory,
+            'mastery_by_category' => $masteryByCategory,
+            'mastery_by_strength' => $masteryByStrength
         ]);
     }
 }

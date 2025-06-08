@@ -2,9 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\RevisionController;
-use App\Http\Controllers\Api\TokenController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\TokenController;
+use App\Http\Controllers\Learner\RevisionController;
 use App\Http\Controllers\Admin\ConceptController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\LessonController;
