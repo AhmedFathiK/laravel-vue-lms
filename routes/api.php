@@ -11,10 +11,13 @@ use App\Http\Controllers\Admin\LessonController;
 use App\Http\Controllers\Admin\LevelController;
 use App\Http\Controllers\Admin\SlideController;
 use App\Http\Controllers\Admin\TermController;
+use App\Http\Controllers\Admin\TrophyController;
+use App\Http\Controllers\Admin\LeaderboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Learner\ConceptController as LearnerConceptController;
 use App\Http\Controllers\Learner\CourseController as LearnerCourseController;
 use App\Http\Controllers\Learner\EnrollmentController;
+use App\Http\Controllers\Learner\GamificationController;
 use App\Http\Controllers\Learner\LessonController as LearnerLessonController;
 use App\Http\Controllers\Learner\LevelController as LearnerLevelController;
 use App\Http\Controllers\Learner\ProgressController;
@@ -118,6 +121,18 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin|content_manager|instr
     Route::apiResource('concepts', ConceptController::class)->except(['index']);
     Route::get('concepts/types', [ConceptController::class, 'getTypes']);
     Route::post('concepts/{concept}/translate', [ConceptController::class, 'translate']);
+
+    // Gamification - Trophy Management
+    Route::apiResource('trophies', TrophyController::class);
+    Route::get('trophy-trigger-types', [TrophyController::class, 'getTriggerTypes']);
+    Route::get('trophy-rarity-levels', [TrophyController::class, 'getRarityLevels']);
+
+    // Gamification - Leaderboard Management
+    Route::apiResource('leaderboards', LeaderboardController::class);
+    Route::get('leaderboard-reset-frequencies', [LeaderboardController::class, 'getResetFrequencies']);
+    Route::get('leaderboards/{leaderboard}/entries', [LeaderboardController::class, 'viewEntries']);
+    Route::post('leaderboards/{leaderboard}/recalculate', [LeaderboardController::class, 'recalculateRanks']);
+    Route::post('leaderboards/{leaderboard}/reset', [LeaderboardController::class, 'resetLeaderboard']);
 });
 
 // Admin Assessment System routes
@@ -215,4 +230,23 @@ Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
 
     // Statistics
     Route::get('statistics', [RevisionController::class, 'getStatistics']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Gamification System Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->prefix('gamification')->group(function () {
+    // Trophy routes
+    Route::get('trophies', [GamificationController::class, 'getUserTrophies']);
+    Route::get('available-trophies', [GamificationController::class, 'getAvailableTrophies']);
+    Route::get('trophy-statistics', [GamificationController::class, 'getTrophyStatistics']);
+
+    // Points routes
+    Route::get('points', [GamificationController::class, 'getUserPoints']);
+
+    // Leaderboard routes
+    Route::get('leaderboards/{leaderboard}', [GamificationController::class, 'viewLeaderboard']);
+    Route::get('rankings', [GamificationController::class, 'getUserLeaderboardRankings']);
 });

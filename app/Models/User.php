@@ -65,4 +65,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(MasteryProgress::class);
     }
+
+    /**
+     * Get all trophies earned by this user.
+     */
+    public function trophies(): HasMany
+    {
+        return $this->hasMany(UserTrophy::class);
+    }
+
+    /**
+     * Get all points earned by this user.
+     */
+    public function points(): HasMany
+    {
+        return $this->hasMany(UserPoint::class);
+    }
+
+    /**
+     * Get all leaderboard entries for this user.
+     */
+    public function leaderboardEntries(): HasMany
+    {
+        return $this->hasMany(LeaderboardEntry::class);
+    }
 }
