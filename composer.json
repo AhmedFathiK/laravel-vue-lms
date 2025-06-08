@@ -7,9 +7,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.31",
+        "laravel/framework": "11.45",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "league/commonmark": "2.7",
+        "nesbot/carbon": "3.9",
         "spatie/laravel-permission": "^6.19",
         "spatie/laravel-translatable": "^6.11"
     },
@@ -67,6 +69,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "abandoned": "report"
         }
     },
     "minimum-stability": "stable",
