@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Translatable\HasTranslations;
 
 class Concept extends Model
@@ -34,5 +35,13 @@ class Concept extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Get all revision items for this concept.
+     */
+    public function revisionItems(): MorphMany
+    {
+        return $this->morphMany(RevisionItem::class, 'revisionable');
     }
 }

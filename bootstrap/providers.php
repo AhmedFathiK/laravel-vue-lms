@@ -2,5 +2,6 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    Spatie\Permission\PermissionServiceProvider::class
+    App\Providers\FSRSServiceProvider::class,
+    Spatie\Permission\PermissionServiceProvider::class,
 ];

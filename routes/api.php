@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\RevisionController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Admin\ConceptController;
 use App\Http\Controllers\Admin\CourseController;
@@ -192,4 +193,26 @@ Route::middleware(['auth:sanctum'])->prefix('learner')->group(function () {
 
     // Placement test routes
     Route::get('placement-test', [\App\Http\Controllers\Learner\ExamController::class, 'getPlacementTest']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Revision System Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
+    // Revision item management
+    Route::get('items', [RevisionController::class, 'index']);
+    Route::get('due-items', [RevisionController::class, 'getDueItems']);
+    Route::post('add-item', [RevisionController::class, 'addItem']);
+    Route::post('items/{revisionItem}/response', [RevisionController::class, 'recordResponse']);
+
+    // Mastery progress tracking
+    Route::get('mastery-progress', [RevisionController::class, 'getMasteryProgress']);
+
+    // Practice generation
+    Route::get('practice', [RevisionController::class, 'generatePractice']);
+
+    // Statistics
+    Route::get('statistics', [RevisionController::class, 'getStatistics']);
 });

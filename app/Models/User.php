@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -47,5 +48,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get all revision items for this user.
+     */
+    public function revisionItems(): HasMany
+    {
+        return $this->hasMany(RevisionItem::class);
+    }
+
+    /**
+     * Get all mastery progress records for this user.
+     */
+    public function masteryProgress(): HasMany
+    {
+        return $this->hasMany(MasteryProgress::class);
     }
 }
