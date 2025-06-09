@@ -34,7 +34,6 @@ return new class extends Migration
 
             // Indexes for efficient querying
             $table->index(['user_id', 'due_date']);
-            $table->index(['revisionable_type', 'revisionable_id']);
         });
     }
 
