@@ -89,4 +89,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(LeaderboardEntry::class);
     }
+
+    /**
+     * Get all payments made by this user.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get all receipts for this user.
+     */
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(Receipt::class);
+    }
+
+    /**
+     * Get all subscriptions for this user.
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(UserSubscription::class);
+    }
 }

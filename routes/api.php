@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\SlideController;
 use App\Http\Controllers\Admin\TermController;
 use App\Http\Controllers\Admin\TrophyController;
 use App\Http\Controllers\Admin\LeaderboardController;
+use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\Admin\SubscriptionPlanController;
+use App\Http\Controllers\Admin\UserSubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Learner\ConceptController as LearnerConceptController;
 use App\Http\Controllers\Learner\CourseController as LearnerCourseController;
@@ -21,6 +25,7 @@ use App\Http\Controllers\Learner\GamificationController;
 use App\Http\Controllers\Learner\LessonController as LearnerLessonController;
 use App\Http\Controllers\Learner\LevelController as LearnerLevelController;
 use App\Http\Controllers\Learner\ProgressController;
+use App\Http\Controllers\Learner\ReceiptController as LearnerReceiptController;
 use App\Http\Controllers\Learner\TermController as LearnerTermController;
 
 /*
@@ -155,6 +160,23 @@ Route::middleware(['auth:sanctum', 'role:admin|supervisor'])->prefix('admin')->g
     Route::post('exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
 });
 
+// Admin Payment & Subscription routes
+Route::middleware(['auth:sanctum', 'permission:view.payment'])->prefix('admin')->group(function () {
+    // Payment routes
+    Route::apiResource('payments', PaymentController::class);
+
+    // Receipt routes
+    Route::apiResource('receipts', ReceiptController::class)->only(['index', 'show']);
+    Route::get('receipts/{receipt}/download', [ReceiptController::class, 'download']);
+
+    // Subscription plan routes
+    Route::apiResource('subscription-plans', SubscriptionPlanController::class);
+
+    // User subscription routes
+    Route::apiResource('user-subscriptions', UserSubscriptionController::class);
+    Route::post('user-subscriptions/{userSubscription}/cancel', [UserSubscriptionController::class, 'cancel']);
+});
+
 // Learner API Routes
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Routes
@@ -191,6 +213,11 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::post('lessons/{lesson}/reset-progress', [ProgressController::class, 'resetLessonProgress']);
     Route::post('courses/{course}/reset-progress', [ProgressController::class, 'resetCourseProgress']);
     Route::get('statistics', [ProgressController::class, 'userStatistics']);
+
+    // Receipt Routes (Billing History)
+    Route::get('receipts', [LearnerReceiptController::class, 'index']);
+    Route::get('receipts/{receipt}', [LearnerReceiptController::class, 'show']);
+    Route::get('receipts/{receipt}/download', [LearnerReceiptController::class, 'download']);
 });
 
 // Learner Assessment System routes

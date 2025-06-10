@@ -103,6 +103,8 @@ class RolePermissionSeeder extends Seeder
             'view.payment',
             'manage.subscription',
             'configure.pricing',
+            'manage.receipt',
+            'download.receipt',
 
             // Settings & Localization
             'access.setting',
@@ -206,6 +208,7 @@ class RolePermissionSeeder extends Seeder
 
             // Payments (view only)
             'view.payment',
+            'download.receipt',
 
             // Settings
             'access.setting',
@@ -350,6 +353,7 @@ class RolePermissionSeeder extends Seeder
 
             // Payment viewing for financial analysis
             'view.payment',
+            'download.receipt',
 
             // Admin Panel Access
             'access.admin_panel',
@@ -374,6 +378,8 @@ class RolePermissionSeeder extends Seeder
 
             // Subscription management
             'manage.subscription',
+            'view.payment',
+            'download.receipt',
 
             // User stats for support
             'view.user_stat',
@@ -392,6 +398,8 @@ class RolePermissionSeeder extends Seeder
             'view.payment',
             'manage.subscription',
             'configure.pricing',
+            'manage.receipt',
+            'download.receipt',
 
             // User stats for financial analysis
             'view.user_stat',
@@ -410,6 +418,7 @@ class RolePermissionSeeder extends Seeder
             'view.slide',
             'view.term',
             'view.trophy',
+            'download.receipt',
         ]);
 
         // Create a default super admin user if it doesn't exist
