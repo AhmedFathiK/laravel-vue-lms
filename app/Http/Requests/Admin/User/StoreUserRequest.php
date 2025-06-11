@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Http\Requests\Admin\User;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+use Spatie\Permission\Models\Role;
+
+class StoreUserRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()->can('create.user');
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8'],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name', 'not_in:super_admin'],
+            'verified' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $roles = $this->input('roles', []);
+
+            // Get protected role names
+            $protectedRoleNames = Role::where('is_protected', true)->pluck('name')->toArray();
+
+            // Check if we're trying to assign protected roles
+            $protectedRolesInRequest = array_intersect($protectedRoleNames, $roles);
+
+            if (!empty($protectedRolesInRequest)) {
+                foreach ($protectedRolesInRequest as $roleName) {
+                    $validator->errors()->add('roles', "The {$roleName} role cannot be assigned through the API.");
+                }
+            }
+        });
+    }
+
+    /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'roles.*.not_in' => 'The super_admin role cannot be assigned through the API.',
+        ];
+    }
+}

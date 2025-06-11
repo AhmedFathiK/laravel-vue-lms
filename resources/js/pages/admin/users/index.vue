@@ -1,25 +1,36 @@
 <script setup>
 import UserInfoEditDialog from '@/components/dialogs/UserInfoEditDialog.vue'
+import axios from 'axios'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 // 👉 Store
 const searchQuery = ref('')
-const selectedRole = ref()
-const selectedPlan = ref()
-const selectedStatus = ref()
+const selectedRole = ref('')
+const selectedStatus = ref('')
+const isLoading = ref(false)
+const editUser = ref(null)
 
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref()
-const orderBy = ref()
+const sortBy = ref('created_at')
+const orderBy = ref('desc')
 const selectedRows = ref([])
+const availableRoles = ref([])
 
-const updateOptions = options => {
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
-}
+// Fetch users
+const usersData = ref({
+  users: [],
+  totalUsers: 0,
+  currentPage: 1,
+  perPage: 10,
+  lastPage: 1,
+})
 
-// Headers
+// Headers for data table
 const headers = [
   {
     title: 'User',
@@ -30,12 +41,8 @@ const headers = [
     key: 'role',
   },
   {
-    title: 'Plan',
-    key: 'plan',
-  },
-  {
-    title: 'Billing',
-    key: 'billing',
+    title: 'Email',
+    key: 'email',
   },
   {
     title: 'Status',
@@ -48,109 +55,130 @@ const headers = [
   },
 ]
 
-const {
-  data: usersData,
-  execute: fetchUsers,
-} = await useApi(createUrl('/apps/users', {
-  query: {
-    q: searchQuery,
-    status: selectedStatus,
-    plan: selectedPlan,
-    role: selectedRole,
-    itemsPerPage,
-    page,
-    sortBy,
-    orderBy,
-  },
-}))
+const updateOptions = options => {
+  if (options.sortBy?.length) {
+    sortBy.value = options.sortBy[0]?.key
+    orderBy.value = options.sortBy[0]?.order
+  }
+  fetchUsers()
+}
 
-const users = computed(() => usersData.value.users)
-const totalUsers = computed(() => usersData.value.totalUsers)
+// Fetch users from API
+const fetchUsers = async () => {
+  isLoading.value = true
+  try {
+    const params = {
+      page: page.value,
+      perPage: itemsPerPage.value,
+      search: searchQuery.value || undefined,
+      role: selectedRole.value || undefined,
+      status: selectedStatus.value || undefined,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value,
+    }
+    
+    const response = await axios.get('/api/admin/users', { params })
 
-// 👉 search filters
-const roles = [
-  {
-    title: 'Admin',
-    value: 'admin',
-  },
-  {
-    title: 'Author',
-    value: 'author',
-  },
-  {
-    title: 'Editor',
-    value: 'editor',
-  },
-  {
-    title: 'Maintainer',
-    value: 'maintainer',
-  },
-  {
-    title: 'Subscriber',
-    value: 'subscriber',
-  },
-]
+    usersData.value = response.data
+    
+    // Update widget data with counts
+    updateWidgetCounts()
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    toast.error('Failed to load users')
+  } finally {
+    isLoading.value = false
+  }
+}
 
-const plans = [
-  {
-    title: 'Basic',
-    value: 'basic',
-  },
-  {
-    title: 'Company',
-    value: 'company',
-  },
-  {
-    title: 'Enterprise',
-    value: 'enterprise',
-  },
-  {
-    title: 'Team',
-    value: 'team',
-  },
-]
+// Update widget data with user counts
+const updateWidgetCounts = () => {
+  // Set total users
+  widgetData.value[0].value = usersData.value.totalUsers.toString()
+  
+  // Count verified, unverified, and admin users
+  let verifiedCount = 0
+  let adminCount = 0
+  
+  usersData.value.users.forEach(user => {
+    if (user.email_verified_at) {
+      verifiedCount++
+    }
+    
+    if (user.role_names?.some(role => role.toLowerCase().includes('admin'))) {
+      adminCount++
+    }
+  })
+  
+  // Set verified users (approximate based on current page)
+  widgetData.value[1].value = verifiedCount.toString()
+  
+  // Set unverified users (approximate based on current page)
+  widgetData.value[2].value = (usersData.value.users.length - verifiedCount).toString()
+  
+  // Set admin users (approximate based on current page)
+  widgetData.value[3].value = adminCount.toString()
+}
 
+// Fetch available roles
+const fetchRoles = async () => {
+  try {
+    const response = await axios.get('/api/admin/roles')
+
+    availableRoles.value = response.data.roles
+  } catch (error) {
+    console.error('Error fetching roles:', error)
+    toast.error('Failed to load roles')
+  }
+}
+
+// Watch for changes to trigger refetch
+watch([searchQuery, selectedRole, selectedStatus, page, itemsPerPage], () => {
+  fetchUsers()
+})
+
+// Computed properties
+const users = computed(() => usersData.value.users || [])
+const totalUsers = computed(() => usersData.value.totalUsers || 0)
+
+// Roles for dropdown
+const roles = computed(() => availableRoles.value)
+
+// Status options for dropdown
 const status = [
   {
-    title: 'Pending',
-    value: 'pending',
+    title: 'Verified',
+    value: 'verified',
   },
   {
-    title: 'Active',
-    value: 'active',
-  },
-  {
-    title: 'Inactive',
-    value: 'inactive',
+    title: 'Unverified',
+    value: 'unverified',
   },
 ]
 
+// Helper functions for UI
 const resolveUserRoleVariant = role => {
-  const roleLowerCase = role.toLowerCase()
-  if (roleLowerCase === 'subscriber')
+  role = role?.toLowerCase() || ''
+  
+  if (role.includes('admin'))
+    return {
+      color: 'error',
+      icon: 'tabler-crown',
+    }
+  if (role.includes('instructor'))
+    return {
+      color: 'warning',
+      icon: 'tabler-device-laptop',
+    }
+  if (role.includes('content_manager'))
+    return {
+      color: 'info',
+      icon: 'tabler-edit',
+    }
+  if (role.includes('student'))
     return {
       color: 'success',
       icon: 'tabler-user',
-    }
-  if (roleLowerCase === 'author')
-    return {
-      color: 'error',
-      icon: 'tabler-device-desktop',
-    }
-  if (roleLowerCase === 'maintainer')
-    return {
-      color: 'info',
-      icon: 'tabler-chart-pie',
-    }
-  if (roleLowerCase === 'editor')
-    return {
-      color: 'warning',
-      icon: 'tabler-edit',
-    }
-  if (roleLowerCase === 'admin')
-    return {
-      color: 'primary',
-      icon: 'tabler-crown',
     }
   
   return {
@@ -160,75 +188,124 @@ const resolveUserRoleVariant = role => {
 }
 
 const resolveUserStatusVariant = stat => {
-  const statLowerCase = stat.toLowerCase()
-  if (statLowerCase === 'pending')
-    return 'warning'
-  if (statLowerCase === 'active')
+  if (stat)
     return 'success'
-  if (statLowerCase === 'inactive')
-    return 'secondary'
   
-  return 'primary'
+  return 'warning'
 }
 
 const isAddNewUserDrawerVisible = ref(false)
 
+// Add new user
 const addNewUser = async userData => {
-  await $api('/apps/users', {
-    method: 'POST',
-    body: userData,
-  })
+  try {
+    const response = await axios.post('/api/admin/users', userData)
 
-  // Refetch User
-  fetchUsers()
+    toast.success('User created successfully')
+    fetchUsers()
+  } catch (error) {
+    console.error('Error creating user:', error)
+    toast.error(error.response?.data?.message || 'Failed to create user')
+  }
 }
 
+// Edit user
+const editUserData = async userData => {
+  try {
+    const response = await axios.put(`/api/admin/users/${editUser.value.id}`, userData)
+
+    toast.success('User updated successfully')
+    fetchUsers()
+    editUser.value = null
+  } catch (error) {
+    console.error('Error updating user:', error)
+    toast.error(error.response?.data?.message || 'Failed to update user')
+  }
+}
+
+// Delete user
 const deleteUser = async id => {
-  await $api(`/apps/users/${ id }`, { method: 'DELETE' })
+  if (!confirm('Are you sure you want to delete this user?')) return
 
-  // Delete from selectedRows
-  const index = selectedRows.value.findIndex(row => row === id)
-  if (index !== -1)
-    selectedRows.value.splice(index, 1)
+  try {
+    const response = await axios.delete(`/api/admin/users/${id}`)
 
-  // Refetch User
-  fetchUsers()
+    toast.success('User deleted successfully')
+    
+    // Delete from selectedRows
+    const index = selectedRows.value.findIndex(row => row === id)
+    if (index !== -1)
+      selectedRows.value.splice(index, 1)
+    
+    // Refetch users
+    fetchUsers()
+  } catch (error) {
+    console.error('Error deleting user:', error)
+    toast.error(error.response?.data?.message || 'Failed to delete user')
+  }
 }
 
+// Toggle user status
+const toggleUserStatus = async user => {
+  try {
+    const response = await axios.post(`/api/admin/users/${user.id}/toggle-status`)
+
+    toast.success(`User status ${user.email_verified_at ? 'unverified' : 'verified'} successfully`)
+    fetchUsers()
+  } catch (error) {
+    console.error('Error toggling user status:', error)
+    toast.error(error.response?.data?.message || 'Failed to update user status')
+  }
+}
+
+// Combine user count stats
 const widgetData = ref([
   {
-    title: 'Session',
-    value: '21,459',
-    change: 29,
-    desc: 'Total Users',
+    title: 'Total Users',
+    value: '0',
     icon: 'tabler-users',
     iconColor: 'primary',
   },
   {
-    title: 'Paid Users',
-    value: '4,567',
-    change: 18,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-plus',
-    iconColor: 'error',
-  },
-  {
-    title: 'Active Users',
-    value: '19,860',
-    change: -14,
-    desc: 'Last Week Analytics',
+    title: 'Verified Users',
+    value: '0',
     icon: 'tabler-user-check',
     iconColor: 'success',
   },
   {
-    title: 'Pending Users',
-    value: '237',
-    change: 42,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-search',
+    title: 'Unverified Users',
+    value: '0',
+    icon: 'tabler-user-exclamation',
     iconColor: 'warning',
   },
+  {
+    title: 'Admin Users',
+    value: '0',
+    icon: 'tabler-user-shield',
+    iconColor: 'error',
+  },
 ])
+
+// Handle user form submission
+const handleUserFormSubmit = userData => {
+  if (editUser.value) {
+    editUserData(userData)
+  } else {
+    addNewUser(userData)
+  }
+}
+
+// Show edit user drawer
+const showEditUserDrawer = user => {
+  editUser.value = user
+  isAddNewUserDrawerVisible.value = true
+}
+
+// Fetch data on component mount
+onMounted(() => {
+  fetchUsers()
+  fetchRoles()
+})
 </script>
 
 <template>
@@ -256,15 +333,6 @@ const widgetData = ref([
                       <h4 class="text-h4">
                         {{ data.value }}
                       </h4>
-                      <div
-                        class="text-base"
-                        :class="data.change > 0 ? 'text-success' : 'text-error'"
-                      >
-                        ({{ prefixWithPlus(data.change) }}%)
-                      </div>
-                    </div>
-                    <div class="text-sm">
-                      {{ data.desc }}
                     </div>
                   </div>
                   <VAvatar
@@ -296,33 +364,23 @@ const widgetData = ref([
           <!-- 👉 Select Role -->
           <VCol
             cols="12"
-            sm="4"
+            sm="6"
           >
             <AppSelect
               v-model="selectedRole"
               placeholder="Select Role"
               :items="roles"
+              item-title="name"
+              item-value="name"
               clearable
               clear-icon="tabler-x"
             />
           </VCol>
-          <!-- 👉 Select Plan -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedPlan"
-              placeholder="Select Plan"
-              :items="plans"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
+          
           <!-- 👉 Select Status -->
           <VCol
             cols="12"
-            sm="4"
+            sm="6"
           >
             <AppSelect
               v-model="selectedStatus"
@@ -346,7 +404,6 @@ const widgetData = ref([
               { value: 25, title: '25' },
               { value: 50, title: '50' },
               { value: 100, title: '100' },
-              { value: -1, title: 'All' },
             ]"
             style="inline-size: 6.25rem;"
             @update:model-value="itemsPerPage = parseInt($event, 10)"
@@ -363,19 +420,10 @@ const widgetData = ref([
             />
           </div>
 
-          <!-- 👉 Export button -->
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            prepend-icon="tabler-upload"
-          >
-            Export
-          </VBtn>
-
           <!-- 👉 Add user button -->
           <VBtn
             prepend-icon="tabler-plus"
-            @click="isAddNewUserDrawerVisible = true"
+            @click="isAddNewUserDrawerVisible = true; editUser = null"
           >
             Add New User
           </VBtn>
@@ -387,38 +435,27 @@ const widgetData = ref([
       <!-- SECTION datatable -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
-        v-model:model-value="selectedRows"
         v-model:page="page"
         :items="users"
-        item-value="id"
-        :items-length="totalUsers"
         :headers="headers"
+        :items-length="totalUsers"
+        :loading="isLoading"
         class="text-no-wrap"
-        show-select
         @update:options="updateOptions"
       >
         <!-- User -->
-        <template #item.user="{ item }">
+        <template #[`item.user`]="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
               size="34"
-              :variant="!item.avatar ? 'tonal' : undefined"
-              :color="!item.avatar ? resolveUserRoleVariant(item.role).color : undefined"
+              :color="resolveUserRoleVariant(item.role_names?.[0]).color"
+              variant="tonal"
             >
-              <VImg
-                v-if="item.avatar"
-                :src="item.avatar"
-              />
-              <span v-else>{{ avatarText(item.fullName) }}</span>
+              <span>{{ item.name.charAt(0).toUpperCase() }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
               <h6 class="text-base">
-                <RouterLink
-                  :to="{ name: 'apps-user-view-id', params: { id: item.id } }"
-                  class="font-weight-medium text-link"
-                >
-                  {{ item.fullName }}
-                </RouterLink>
+                {{ item.name }}
               </h6>
               <div class="text-sm">
                 {{ item.email }}
@@ -428,81 +465,52 @@ const widgetData = ref([
         </template>
 
         <!-- 👉 Role -->
-        <template #item.role="{ item }">
+        <template #[`item.role`]="{ item }">
           <div class="d-flex align-center gap-x-2">
             <VIcon
               :size="22"
-              :icon="resolveUserRoleVariant(item.role).icon"
-              :color="resolveUserRoleVariant(item.role).color"
+              :icon="resolveUserRoleVariant(item.role_names?.[0]).icon"
+              :color="resolveUserRoleVariant(item.role_names?.[0]).color"
             />
 
             <div class="text-capitalize text-high-emphasis text-body-1">
-              {{ item.role }}
+              {{ item.role_names?.join(', ') || 'No Role' }}
             </div>
           </div>
         </template>
 
-        <!-- Plan -->
-        <template #item.plan="{ item }">
-          <div class="text-body-1 text-high-emphasis text-capitalize">
-            {{ item.currentPlan }}
+        <!-- Email -->
+        <template #[`item.email`]="{ item }">
+          <div class="text-body-1 text-high-emphasis">
+            {{ item.email }}
           </div>
         </template>
 
         <!-- Status -->
-        <template #item.status="{ item }">
+        <template #[`item.status`]="{ item }">
           <VChip
-            :color="resolveUserStatusVariant(item.status)"
+            :color="resolveUserStatusVariant(item.email_verified_at)"
             size="small"
             label
             class="text-capitalize"
           >
-            {{ item.status }}
+            {{ item.email_verified_at ? 'Verified' : 'Unverified' }}
           </VChip>
         </template>
 
         <!-- Actions -->
-        <template #item.actions="{ item }">
+        <template #[`item.actions`]="{ item }">
           <IconBtn @click="deleteUser(item.id)">
             <VIcon icon="tabler-trash" />
           </IconBtn>
 
-          <IconBtn>
-            <VIcon icon="tabler-eye" />
+          <IconBtn @click="showEditUserDrawer(item)">
+            <VIcon icon="tabler-edit" />
           </IconBtn>
 
-          <VBtn
-            icon
-            variant="text"
-            color="medium-emphasis"
-          >
-            <VIcon icon="tabler-dots-vertical" />
-            <VMenu activator="parent">
-              <VList>
-                <VListItem :to="{ name: 'apps-user-view-id', params: { id: item.id } }">
-                  <template #prepend>
-                    <VIcon icon="tabler-eye" />
-                  </template>
-
-                  <VListItemTitle>View</VListItemTitle>
-                </VListItem>
-
-                <VListItem link>
-                  <template #prepend>
-                    <VIcon icon="tabler-pencil" />
-                  </template>
-                  <VListItemTitle>Edit</VListItemTitle>
-                </VListItem>
-
-                <VListItem @click="deleteUser(item.id)">
-                  <template #prepend>
-                    <VIcon icon="tabler-trash" />
-                  </template>
-                  <VListItemTitle>Delete</VListItemTitle>
-                </VListItem>
-              </VList>
-            </VMenu>
-          </VBtn>
+          <IconBtn @click="toggleUserStatus(item)">
+            <VIcon :icon="item.email_verified_at ? 'tabler-shield-x' : 'tabler-shield-check'" />
+          </IconBtn>
         </template>
 
         <!-- pagination -->
@@ -516,10 +524,13 @@ const widgetData = ref([
       </VDataTableServer>
       <!-- SECTION -->
     </VCard>
-    <!-- 👉 Add New User -->
+    
+    <!-- 👉 User Form Dialog -->
     <UserInfoEditDialog
-      v-model:is-drawer-open="isAddNewUserDrawerVisible"
-      @user-data="addNewUser"
+      v-model:is-dialog-visible="isAddNewUserDrawerVisible"
+      :user-data="editUser"
+      :roles="roles"
+      @submit="handleUserFormSubmit"
     />
   </section>
 </template>

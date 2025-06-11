@@ -15,8 +15,10 @@ use App\Http\Controllers\Admin\TrophyController;
 use App\Http\Controllers\Admin\LeaderboardController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Learner\ConceptController as LearnerConceptController;
 use App\Http\Controllers\Learner\CourseController as LearnerCourseController;
@@ -83,15 +85,25 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Example resource routes
-    Route::apiResource('posts', 'PostController');
-    Route::apiResource('categories', 'CategoryController');
+    // Route::apiResource('posts', 'PostController');
+    // Route::apiResource('categories', 'CategoryController');
 
     // User routes
     Route::post('/user/locale', [UserController::class, 'updateLocale']);
 });
 
 // Admin API Routes
-Route::middleware(['auth:sanctum', 'role:super_admin|admin|content_manager|instructor'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    // User Management
+    Route::apiResource('users', AdminUserController::class);
+    Route::post('users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus']);
+    Route::post('users/{user}/assign-role', [AdminUserController::class, 'assignRole']);
+    Route::get('roles', [AdminUserController::class, 'getRoles']);
+
+    // Role Management
+    Route::apiResource('roles', RoleController::class);
+    Route::get('permissions', [RoleController::class, 'getPermissions']);
+
     // Course Management
     Route::apiResource('courses', CourseController::class);
 
@@ -141,7 +153,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin|content_manager|instr
 });
 
 // Admin Assessment System routes
-Route::middleware(['auth:sanctum', 'role:admin|supervisor'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Question bank routes
     Route::apiResource('questions', \App\Http\Controllers\Admin\QuestionController::class);
 
@@ -161,7 +173,7 @@ Route::middleware(['auth:sanctum', 'role:admin|supervisor'])->prefix('admin')->g
 });
 
 // Admin Payment & Subscription routes
-Route::middleware(['auth:sanctum', 'permission:view.payment'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Payment routes
     Route::apiResource('payments', PaymentController::class);
 

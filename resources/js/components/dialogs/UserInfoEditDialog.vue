@@ -1,29 +1,20 @@
 <script setup>
+import { computed, ref, watch } from 'vue'
+
 const props = defineProps({
   userData: {
     type: Object,
     required: false,
-    default: () => ({
-      id: 0,
-      fullName: '',
-      company: '',
-      role: '',
-      username: '',
-      country: '',
-      contact: '',
-      email: '',
-      currentPlan: '',
-      status: '',
-      avatar: '',
-      taskDone: null,
-      projectDone: null,
-      taxId: '',
-      language: '',
-    }),
+    default: () => null,
   },
   isDialogVisible: {
     type: Boolean,
     required: true,
+  },
+  roles: {
+    type: Array,
+    required: false,
+    default: () => [],
   },
 })
 
@@ -32,20 +23,57 @@ const emit = defineEmits([
   'update:isDialogVisible',
 ])
 
-const userData = ref(structuredClone(toRaw(props.userData)))
-const isUseAsBillingAddress = ref(false)
+// Default empty form
+const defaultForm = {
+  id: 0,
+  name: '',
+  email: '',
+  password: '',
+  passwordConfirmation: '',
+  roles: [],
+  verified: true,
+  errors: {},
+}
 
-watch(() => props, () => {
-  userData.value = structuredClone(toRaw(props.userData))
-})
+const form = ref({ ...defaultForm })
+
+// Set form data if user is provided
+watch(() => props.userData, newUser => {
+  if (newUser) {
+    form.value = {
+      id: newUser.id || 0,
+      name: newUser.name || '',
+      email: newUser.email || '',
+      password: '',
+      passwordConfirmation: '',
+      roles: newUser.role_names || [],
+      verified: newUser.email_verified_at ? true : false,
+      errors: {},
+    }
+  } else {
+    form.value = { ...defaultForm }
+  }
+}, { immediate: true })
+
+const isEditMode = computed(() => !!props.userData)
 
 const onFormSubmit = () => {
   emit('update:isDialogVisible', false)
-  emit('submit', userData.value)
+  emit('submit', form.value)
 }
 
 const onFormReset = () => {
-  userData.value = structuredClone(toRaw(props.userData))
+  form.value = props.userData ? {
+    id: props.userData.id || 0,
+    name: props.userData.name || '',
+    email: props.userData.email || '',
+    password: '',
+    passwordConfirmation: '',
+    roles: props.userData.role_names || [],
+    verified: props.userData.email_verified_at ? true : false,
+    errors: {},
+  } : { ...defaultForm }
+  
   emit('update:isDialogVisible', false)
 }
 
@@ -67,10 +95,10 @@ const dialogModelValueUpdate = val => {
       <VCardText>
         <!-- 👉 Title -->
         <h4 class="text-h4 text-center mb-2">
-          Edit User Information
+          {{ isEditMode ? 'Edit User' : 'Add New User' }}
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Updating user details will receive a privacy audit.
+          {{ isEditMode ? 'Update user details' : 'Create a new user account' }}
         </p>
 
         <!-- 👉 Form -->
@@ -79,48 +107,29 @@ const dialogModelValueUpdate = val => {
           @submit.prevent="onFormSubmit"
         >
           <VRow>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.fullName.split(' ')[0]"
-                label="First Name"
-                placeholder="John"
-              />
-            </VCol>
-
-            <!-- 👉 Last Name -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.fullName.split(' ')[1]"
-                label="Last Name"
-                placeholder="Doe"
-              />
-            </VCol>
-
-            <!-- 👉 Username -->
+            <!-- 👉 Full Name -->
             <VCol cols="12">
               <AppTextField
-                v-model="userData.username"
-                label="Username"
-                placeholder="john.doe.007"
+                v-model="form.name"
+                label="Full Name"
+                placeholder="John Doe"
+                :error-messages="form.errors.name"
+                required
               />
             </VCol>
 
-            <!-- 👉 Billing Email -->
+            <!-- 👉 Email -->
             <VCol
               cols="12"
               md="6"
             >
               <AppTextField
-                v-model="userData.email"
+                v-model="form.email"
                 label="Email"
-                placeholder="johndoe@email.com"
+                placeholder="johndoe@example.com"
+                :error-messages="form.errors.email"
+                type="email"
+                required
               />
             </VCol>
 
@@ -129,73 +138,58 @@ const dialogModelValueUpdate = val => {
               cols="12"
               md="6"
             >
-              <AppSelect
-                v-model="userData.status"
-                label="Status"
-                placeholder="Active"
-                :items="['Active', 'Inactive', 'Pending']"
-              />
-            </VCol>
-
-            <!-- 👉 Tax Id -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.taxId"
-                label="Tax ID"
-                placeholder="123456789"
-              />
-            </VCol>
-
-            <!-- 👉 Contact -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.contact"
-                label="Phone Number"
-                placeholder="+1 9876543210"
-              />
-            </VCol>
-
-            <!-- 👉 Language -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="userData.language"
-                closable-chips
-                chips
-                multiple
-                label="Language"
-                placeholder="English"
-                :items="['English', 'Spanish', 'French']"
-              />
-            </VCol>
-
-            <!-- 👉 Country -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="userData.country"
-                label="Country"
-                placeholder="United States"
-                :items="['United States', 'United Kingdom', 'France']"
-              />
-            </VCol>
-
-            <!-- 👉 Switch -->
-            <VCol cols="12">
               <VSwitch
-                v-model="isUseAsBillingAddress"
-                density="compact"
-                label="Use as a billing address?"
+                v-model="form.verified"
+                color="success"
+                label="Email Verified"
+                :error-messages="form.errors.verified"
+                hide-details
+              />
+            </VCol>
+
+            <!-- 👉 Password -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="form.password"
+                label="Password"
+                placeholder="************"
+                :error-messages="form.errors.password"
+                type="password"
+                :required="!isEditMode"
+              />
+            </VCol>
+
+            <!-- 👉 Password Confirmation -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="form.passwordConfirmation"
+                label="Confirm Password"
+                placeholder="************"
+                :error-messages="form.errors.passwordConfirmation"
+                type="password"
+                :required="!isEditMode"
+              />
+            </VCol>
+
+            <!-- 👉 Roles -->
+            <VCol cols="12">
+              <AppSelect
+                v-model="form.roles"
+                label="Roles"
+                placeholder="Select roles"
+                :items="roles"
+                item-title="name"
+                item-value="name"
+                :error-messages="form.errors.roles"
+                multiple
+                chips
+                closable-chips
               />
             </VCol>
 
@@ -205,7 +199,7 @@ const dialogModelValueUpdate = val => {
               class="d-flex flex-wrap justify-center gap-4"
             >
               <VBtn type="submit">
-                Submit
+                {{ isEditMode ? 'Update' : 'Submit' }}
               </VBtn>
 
               <VBtn
