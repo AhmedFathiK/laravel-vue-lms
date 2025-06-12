@@ -11,6 +11,9 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest', // Important for Laravel to detect AJAX requests
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
   withCredentials: true, // Important for cookies/session handling with Sanctum
 })

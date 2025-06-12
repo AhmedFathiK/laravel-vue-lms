@@ -56,7 +56,7 @@ const fetchUsers = async () => {
       search: searchQuery.value,
       role: selectedRole.value || '',
       status: selectedStatus.value || '',
-      per_page: itemsPerPage.value,
+      "per_page": itemsPerPage.value,
       page: page.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,

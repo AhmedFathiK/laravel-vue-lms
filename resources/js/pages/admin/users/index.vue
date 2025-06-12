@@ -200,12 +200,28 @@ const isAddNewUserDrawerVisible = ref(false)
 const addNewUser = async userData => {
   try {
     const response = await axios.post('/api/admin/users', userData)
-
+    
     toast.success('User created successfully')
     fetchUsers()
+    
+    return response
   } catch (error) {
     console.error('Error creating user:', error)
-    toast.error(error.response?.data?.message || 'Failed to create user')
+    
+    // Show all error messages if there are multiple
+    if (error.response?.data?.errors) {
+      // Get all error messages as an array of strings
+      const errorMessages = Object.values(error.response.data.errors).flat()
+      
+      // Show each error as a separate toast
+      errorMessages.forEach(message => {
+        toast.error(message)
+      })
+    } else {
+      toast.error(error.response?.data?.message || 'Failed to create user')
+    }
+    
+    throw error // Re-throw to handle in the form component
   }
 }
 
@@ -213,13 +229,29 @@ const addNewUser = async userData => {
 const editUserData = async userData => {
   try {
     const response = await axios.put(`/api/admin/users/${editUser.value.id}`, userData)
-
+    
     toast.success('User updated successfully')
     fetchUsers()
     editUser.value = null
+    
+    return response
   } catch (error) {
     console.error('Error updating user:', error)
-    toast.error(error.response?.data?.message || 'Failed to update user')
+    
+    // Show all error messages if there are multiple
+    if (error.response?.data?.errors) {
+      // Get all error messages as an array of strings
+      const errorMessages = Object.values(error.response.data.errors).flat()
+      
+      // Show each error as a separate toast
+      errorMessages.forEach(message => {
+        toast.error(message)
+      })
+    } else {
+      toast.error(error.response?.data?.message || 'Failed to update user')
+    }
+    
+    throw error // Re-throw to handle in the form component
   }
 }
 

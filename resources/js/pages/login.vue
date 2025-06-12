@@ -1,6 +1,8 @@
 <!-- Login Page with Enhanced Auth Store Integration -->
 <script setup>
-import { VForm } from 'vuetify/components/VForm'
+import { authState } from '@/plugins/3.auth'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
@@ -11,9 +13,7 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import { useAuthStore } from '@/stores/auth'
-import { authState } from '@/plugins/3.auth'
-import api from '@/utils/api'
+import { VForm } from 'vuetify/components/VForm'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
@@ -66,7 +66,7 @@ const login = async () => {
   loginInProgress.value = true
   
   try {
-    logDebug('Login attempt', credentials.value)
+    logDebug('Login attempt', { ...credentials.value, "remember_me": rememberMe.value })
     
     // First, get CSRF cookie for Sanctum
     await api.get('/sanctum/csrf-cookie')
@@ -75,6 +75,7 @@ const login = async () => {
     const result = await authStore.login({
       email: credentials.value.email,
       password: credentials.value.password,
+      "remember_me": rememberMe.value,
     })
 
     logDebug('Login result', result)

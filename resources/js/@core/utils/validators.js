@@ -93,3 +93,19 @@ export const alphaDashValidator = value => {
   
   return /^[\w-]*$/.test(valueAsString) || 'All Character are not valid'
 }
+
+// 👉 Max Length Validator
+export const maxLengthValidator = (value, maxLength) => {
+  if (isEmpty(value))
+    return true
+  
+  return String(value).length <= maxLength || `This field must be less than ${maxLength} characters`
+}
+
+// 👉 Min Length Validator
+export const minLengthValidator = (value, minLength) => {
+  if (isEmpty(value))
+    return true
+  
+  return String(value).length >= minLength || `This field must be at least ${minLength} characters`
+}

@@ -31,7 +31,8 @@ class UserController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -85,7 +86,8 @@ class UserController extends Controller
 
         // Create user
         $user = User::create([
-            'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'email_verified_at' => $request->has('verified') && $request->verified ? now() : null,
@@ -96,7 +98,7 @@ class UserController extends Controller
             $user->assignRole($validated['roles']);
         } else {
             // Assign default role
-            $user->assignRole('student');
+            $user->assignRole('Student');
         }
 
         return response()->json([
@@ -126,7 +128,8 @@ class UserController extends Controller
         $validated = $request->validated();
 
         // Update user
-        $user->name = $validated['name'];
+        $user->first_name = $validated['first_name'];
+        $user->last_name = $validated['last_name'];
         $user->email = $validated['email'];
 
         if (isset($validated['password'])) {

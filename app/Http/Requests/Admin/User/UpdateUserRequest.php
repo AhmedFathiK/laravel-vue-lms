@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 
 class UpdateUserRequest extends FormRequest
@@ -24,7 +25,8 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'email' => [
                 'required',
                 'string',
@@ -32,7 +34,7 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users')->ignore($this->route('user')->id)
             ],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed', Password::defaults()],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
             'verified' => ['nullable', 'boolean'],
@@ -52,16 +54,28 @@ class UpdateUserRequest extends FormRequest
                 $user = $this->route('user');
                 $roles = $this->roles;
 
-                // Check if trying to assign super_admin role
-                if (in_array('super_admin', $roles) && !$user->hasRole('super_admin')) {
-                    $validator->errors()->add('roles', "The super_admin role cannot be assigned through the API.");
+                // Check if trying to assign Super Admin role
+                if (in_array('Super Admin', $roles) && !$user->hasRole('Super Admin')) {
+                    $validator->errors()->add('roles', "The Super Admin role cannot be assigned through the API.");
                 }
 
-                // Prevent removing super_admin role
-                if ($user->hasRole('super_admin') && !in_array('super_admin', $roles)) {
-                    $validator->errors()->add('roles', "The super_admin role cannot be removed from this user.");
+                // Prevent removing Super Admin role
+                if ($user->hasRole('Super Admin') && !in_array('Super Admin', $roles)) {
+                    $validator->errors()->add('roles', "The Super Admin role cannot be removed from this user.");
                 }
             }
         });
+    }
+
+    /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'password.confirmed' => 'The password confirmation does not match.',
+        ];
     }
 }

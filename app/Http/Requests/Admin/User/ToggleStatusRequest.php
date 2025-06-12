@@ -36,9 +36,9 @@ class ToggleStatusRequest extends FormRequest
         $validator->after(function ($validator) {
             $user = $this->route('user');
 
-            // Protect only super_admin users from status changes
-            if ($user->hasRole('super_admin')) {
-                $validator->errors()->add('user', "Users with the super_admin role cannot be banned or have their status changed.");
+            // Protect only Super Admin users from status changes
+            if ($user->hasRole('Super Admin')) {
+                $validator->errors()->add('user', "Users with the Super Admin role cannot be banned or have their status changed.");
             }
         });
     }

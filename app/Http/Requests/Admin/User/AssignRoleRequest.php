@@ -24,7 +24,7 @@ class AssignRoleRequest extends FormRequest
     {
         return [
             'roles' => ['required', 'array'],
-            'roles.*' => ['string', 'exists:roles,name', 'not_in:super_admin'],
+            'roles.*' => ['string', 'exists:roles,name', 'not_in:Super Admin'],
         ];
     }
 
@@ -40,9 +40,9 @@ class AssignRoleRequest extends FormRequest
             $user = $this->route('user');
             $roles = $this->input('roles', []);
 
-            // If user has super_admin role, make sure it's not being removed
-            if ($user->hasRole('super_admin') && !in_array('super_admin', $roles)) {
-                $validator->errors()->add('roles', "The super_admin role cannot be removed from this user.");
+            // If user has Super Admin role, make sure it's not being removed
+            if ($user->hasRole('Super Admin') && !in_array('Super Admin', $roles)) {
+                $validator->errors()->add('roles', "The Super Admin role cannot be removed from this user.");
             }
         });
     }
@@ -55,7 +55,7 @@ class AssignRoleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'roles.*.not_in' => 'The super_admin role cannot be assigned through the API.',
+            'roles.*.not_in' => 'The Super Admin role cannot be assigned through the API.',
         ];
     }
 }

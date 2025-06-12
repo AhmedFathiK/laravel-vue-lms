@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class StoreUserRequest extends FormRequest
@@ -24,11 +25,12 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:8', 'confirmed', Password::defaults()],
             'roles' => ['nullable', 'array'],
-            'roles.*' => ['string', 'exists:roles,name', 'not_in:super_admin'],
+            'roles.*' => ['string', 'exists:roles,name', 'not_in:Super Admin'],
             'verified' => ['nullable', 'boolean'],
         ];
     }
@@ -66,7 +68,8 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'roles.*.not_in' => 'The super_admin role cannot be assigned through the API.',
+            'roles.*.not_in' => 'The Super Admin role cannot be assigned through the API.',
+            'password.confirmed' => 'The password confirmation does not match.',
         ];
     }
 }

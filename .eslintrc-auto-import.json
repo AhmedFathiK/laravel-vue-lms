@@ -361,6 +361,8 @@
     "watchWithFilter": true,
     "whenever": true,
     "api": true,
-    "useAbility": true
+    "useAbility": true,
+    "maxLengthValidator": true,
+    "minLengthValidator": true
   }
 }

@@ -1,4 +1,5 @@
 <script setup>
+import api from '@/utils/api'
 import avatar1 from '@images/avatars/avatar-1.png'
 import avatar10 from '@images/avatars/avatar-10.png'
 import avatar2 from '@images/avatars/avatar-2.png'
@@ -26,8 +27,7 @@ const avatarImages = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avat
 const fetchRoles = async () => {
   isLoading.value = true
   try {
-    const response = await fetch('/api/admin/roles')
-    const data = await response.json()
+    const data = await api.get('/admin/roles')
     
     console.log('Fetched roles data:', data)
     
@@ -78,28 +78,16 @@ const handleRoleUpdate = async updatedRole => {
     // Debug the updated role data
     console.log('Updated role from dialog:', updatedRole)
     
-    const response = await fetch(`/api/admin/roles/${updatedRole.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: updatedRole.name,
-        permissions: updatedRole.permissions, // Use the new permissions format
-      }),
+    await api.put(`/admin/roles/${updatedRole.id}`, {
+      name: updatedRole.name,
+      permissions: updatedRole.permissions, // Use the new permissions format
     })
     
-    if (response.ok) {
-      toast.success('Role updated successfully')
-      await fetchRoles()
-    } else {
-      const error = await response.json()
-
-      toast.error(error.message || 'Failed to update role')
-    }
+    toast.success('Role updated successfully')
+    await fetchRoles()
   } catch (error) {
     console.error('Error updating role:', error)
-    toast.error('Failed to update role')
+    toast.error(error.response?.data?.message || 'Failed to update role')
   }
 }
 
@@ -109,28 +97,16 @@ const handleRoleCreate = async newRole => {
     // Debug the new role data
     console.log('New role from dialog:', newRole)
     
-    const response = await fetch('/api/admin/roles', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: newRole.name,
-        permissions: newRole.permissions || [], // Use the permissions from the dialog
-      }),
+    await api.post('/admin/roles', {
+      name: newRole.name,
+      permissions: newRole.permissions || [], // Use the permissions from the dialog
     })
     
-    if (response.ok) {
-      toast.success('Role created successfully')
-      await fetchRoles()
-    } else {
-      const error = await response.json()
-
-      toast.error(error.message || 'Failed to create role')
-    }
+    toast.success('Role created successfully')
+    await fetchRoles()
   } catch (error) {
     console.error('Error creating role:', error)
-    toast.error('Failed to create role')
+    toast.error(error.response?.data?.message || 'Failed to create role')
   }
 }
 
@@ -139,24 +115,13 @@ const deleteRole = async roleId => {
   if (!confirm('Are you sure you want to delete this role?')) return
   
   try {
-    const response = await fetch(`/api/admin/roles/${roleId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    await api.delete(`/admin/roles/${roleId}`)
     
-    if (response.ok) {
-      toast.success('Role deleted successfully')
-      await fetchRoles()
-    } else {
-      const error = await response.json()
-
-      toast.error(error.message || 'Failed to delete role')
-    }
+    toast.success('Role deleted successfully')
+    await fetchRoles()
   } catch (error) {
     console.error('Error deleting role:', error)
-    toast.error('Failed to delete role')
+    toast.error(error.response?.data?.message || 'Failed to delete role')
   }
 }
 

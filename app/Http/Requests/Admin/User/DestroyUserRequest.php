@@ -36,9 +36,9 @@ class DestroyUserRequest extends FormRequest
         $validator->after(function ($validator) {
             $user = $this->route('user');
 
-            // Protect only super_admin users
-            if ($user->hasRole('super_admin')) {
-                $validator->errors()->add('user', "Users with the super_admin role cannot be deleted.");
+            // Protect only Super Admin users
+            if ($user->hasRole('Super Admin')) {
+                $validator->errors()->add('user', "Users with the Super Admin role cannot be deleted.");
             }
         });
     }
