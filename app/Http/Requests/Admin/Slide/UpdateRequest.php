@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Slide;
+namespace App\Http\Requests\Admin\Slide;
 
 use App\Models\Slide;
 use Illuminate\Foundation\Http\FormRequest;

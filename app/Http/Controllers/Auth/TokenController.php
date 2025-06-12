@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
-use App\Http\Requests\TokenRequest;
-use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\Auth\TokenRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 
 class TokenController extends Controller
 {
@@ -47,7 +47,8 @@ class TokenController extends Controller
     public function register(RegisterRequest $request)
     {
         $user = User::create([
-            'name' => $request->name,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);

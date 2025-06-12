@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Requests\Lesson;
+namespace App\Http\Requests\Admin\Lesson;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreRequest extends FormRequest
+class UpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.lesson');
+        return $this->user()->can('edit.lesson');
     }
 
     /**
@@ -22,13 +22,13 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'level_id' => ['required', 'integer', 'exists:levels,id'],
-            'title' => ['required', 'array'],
-            'title.en' => ['required', 'string', 'max:255'],
+            'level_id' => ['sometimes', 'integer', 'exists:levels,id'],
+            'title' => ['sometimes', 'array'],
+            'title.*' => ['string', 'max:255'],
             'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string'],
+            'description.*' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
-            'status' => ['required', 'string', 'in:draft,published,archived'],
+            'status' => ['sometimes', 'string', 'in:draft,published,archived'],
             'video_url' => ['nullable', 'string', 'max:255'],
             'reshow_incorrect_slides' => ['nullable', 'boolean'],
             'reshow_count' => ['nullable', 'integer', 'min:1', 'max:10'],

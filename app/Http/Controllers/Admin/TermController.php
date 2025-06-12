@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Term\StoreRequest;
-use App\Http\Requests\Term\UpdateRequest;
+use App\Http\Requests\Admin\Term\StoreRequest;
+use App\Http\Requests\Admin\Term\UpdateRequest;
 use App\Models\Course;
 use App\Models\Term;
 use Carbon\Carbon;

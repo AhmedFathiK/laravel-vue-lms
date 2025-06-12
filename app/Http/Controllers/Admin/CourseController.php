@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Course\StoreRequest;
-use App\Http\Requests\Course\UpdateRequest;
+use App\Http\Requests\Admin\Course\StoreRequest;
+use App\Http\Requests\Admin\Course\UpdateRequest;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
