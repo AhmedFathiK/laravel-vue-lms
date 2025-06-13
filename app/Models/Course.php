@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
@@ -18,6 +19,10 @@ class Course extends Model
         'thumbnail',
         'is_featured',
         'sort_order',
+        'course_category_id',
+        'price',
+        'subscription_type',
+        'leaderboard_reset_frequency',
     ];
 
     public array $translatable = [
@@ -28,7 +33,16 @@ class Course extends Model
     protected $casts = [
         'is_featured' => 'boolean',
         'sort_order' => 'integer',
+        'price' => 'float',
     ];
+
+    /**
+     * Get the category that owns the course.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(CourseCategory::class, 'course_category_id');
+    }
 
     public function levels(): HasMany
     {

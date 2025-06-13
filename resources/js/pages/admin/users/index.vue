@@ -1,6 +1,6 @@
 <script setup>
 import UserInfoEditDialog from '@/components/dialogs/UserInfoEditDialog.vue'
-import axios from 'axios'
+import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -77,9 +77,9 @@ const fetchUsers = async () => {
       orderBy: orderBy.value,
     }
     
-    const response = await axios.get('/api/admin/users', { params })
+    const response = await api.get('/admin/users', { params })
 
-    usersData.value = response.data
+    usersData.value = response
     
     // Update widget data with counts
     updateWidgetCounts()
@@ -123,9 +123,9 @@ const updateWidgetCounts = () => {
 // Fetch available roles
 const fetchRoles = async () => {
   try {
-    const response = await axios.get('/api/admin/roles')
+    const response = await api.get('/admin/roles')
 
-    availableRoles.value = response.data.roles
+    availableRoles.value = response.roles
   } catch (error) {
     console.error('Error fetching roles:', error)
     toast.error('Failed to load roles')
@@ -199,7 +199,7 @@ const isAddNewUserDrawerVisible = ref(false)
 // Add new user
 const addNewUser = async userData => {
   try {
-    const response = await axios.post('/api/admin/users', userData)
+    const response = await api.post('/admin/users', userData)
     
     toast.success('User created successfully')
     fetchUsers()
@@ -228,7 +228,7 @@ const addNewUser = async userData => {
 // Edit user
 const editUserData = async userData => {
   try {
-    const response = await axios.put(`/api/admin/users/${editUser.value.id}`, userData)
+    const response = await api.put(`/admin/users/${editUser.value.id}`, userData)
     
     toast.success('User updated successfully')
     fetchUsers()
@@ -260,7 +260,7 @@ const deleteUser = async id => {
   if (!confirm('Are you sure you want to delete this user?')) return
 
   try {
-    const response = await axios.delete(`/api/admin/users/${id}`)
+    const response = await api.delete(`/admin/users/${id}`)
 
     toast.success('User deleted successfully')
     
@@ -280,7 +280,7 @@ const deleteUser = async id => {
 // Toggle user status
 const toggleUserStatus = async user => {
   try {
-    const response = await axios.post(`/api/admin/users/${user.id}/toggle-status`)
+    const response = await api.post(`/admin/users/${user.id}/toggle-status`)
 
     toast.success(`User status ${user.email_verified_at ? 'unverified' : 'verified'} successfully`)
     fetchUsers()

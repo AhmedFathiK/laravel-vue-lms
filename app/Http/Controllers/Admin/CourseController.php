@@ -32,16 +32,40 @@ class CourseController extends Controller
             $query->where('is_featured', $request->boolean('featured'));
         }
 
+        if ($request->has('category')) {
+            $query->where('course_category_id', $request->category);
+        }
+
+        // Apply search
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                // For JSON fields, we need to use whereRaw
+                $q->whereRaw("JSON_EXTRACT(title, '$.*') LIKE ?", ['%' . $search . '%'])
+                    ->orWhereRaw("JSON_EXTRACT(description, '$.*') LIKE ?", ['%' . $search . '%']);
+            });
+        }
+
         // Apply sorting
-        $sortField = $request->get('sort_field', 'sort_order');
-        $sortDirection = $request->get('sort_direction', 'asc');
-        $query->orderBy($sortField, $sortDirection);
+        $sortBy = $request->get('sortBy', 'sort_order');
+        $orderBy = $request->get('orderBy', 'asc');
+
+        $query->orderBy($sortBy, $orderBy);
+
+        // Include category relationship
+        $query->with('category');
 
         // Apply pagination
-        $perPage = $request->get('per_page', 15);
+        $perPage = $request->get('perPage', 15);
         $courses = $query->paginate($perPage);
 
-        return response()->json($courses);
+        return response()->json([
+            'courses' => $courses->items(),
+            'totalCourses' => $courses->total(),
+            'currentPage' => $courses->currentPage(),
+            'perPage' => $courses->perPage(),
+            'lastPage' => $courses->lastPage(),
+        ]);
     }
 
     /**
@@ -63,7 +87,7 @@ class CourseController extends Controller
             abort(403);
         }
 
-        $course->load('levels');
+        $course->load(['levels', 'category']);
 
         return response()->json($course);
     }

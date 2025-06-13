@@ -106,6 +106,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
 
     // Course Management
     Route::apiResource('courses', CourseController::class);
+    Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);
 
     // Level Management
     Route::get('courses/{course}/levels', [LevelController::class, 'index']);

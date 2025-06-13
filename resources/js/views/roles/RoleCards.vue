@@ -134,8 +134,14 @@ onMounted(fetchRoles)
     <VCol
       v-if="isLoading"
       cols="12"
+      class="d-flex justify-center align-center"
     >
-      <VProgressLinear indeterminate />
+      <VProgressCircular
+        :size="40"
+        width="3"
+        indeterminate
+        color="primary"
+      />
     </VCol>
     
     <!-- 👉 Roles -->
