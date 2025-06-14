@@ -23,13 +23,12 @@ class UpdateRequest extends FormRequest
     {
         $rules = [
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
-            'title' => ['sometimes', 'array'],
-            'title.*' => ['string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.*' => ['nullable', 'string'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
             'status' => ['sometimes', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
+            'is_free' => ['nullable', 'boolean'],
         ];
 
         return $rules;

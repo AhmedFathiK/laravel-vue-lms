@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CourseCategoryResource;
 use App\Models\CourseCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,7 @@ class CourseCategoryController extends Controller
         $categories = $query->withCount('courses')->paginate($perPage);
 
         return response()->json([
-            'categories' => $categories->items(),
+            'categories' => CourseCategoryResource::collection($categories->items()),
             'total' => $categories->total(),
             'currentPage' => $categories->currentPage(),
             'perPage' => $categories->perPage(),
@@ -73,10 +74,8 @@ class CourseCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|array',
-            'name.*' => 'required|string|max:255',
-            'description' => 'nullable|array',
-            'description.*' => 'nullable|string',
+            'name' => 'required',
+            'description' => 'nullable',
             'slug' => 'nullable|string|unique:course_categories,slug',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
@@ -84,13 +83,12 @@ class CourseCategoryController extends Controller
 
         // Generate slug if not provided
         if (empty($validated['slug'])) {
-            $name = $validated['name'][app()->getLocale()] ?? array_values($validated['name'])[0];
-            $validated['slug'] = Str::slug($name);
+            $validated['slug'] = Str::slug($validated['name']);
         }
 
         $category = CourseCategory::create($validated);
 
-        return response()->json($category, 201);
+        return response()->json(new CourseCategoryResource($category), 201);
     }
 
     /**
@@ -106,7 +104,7 @@ class CourseCategoryController extends Controller
         // Load relationship counts
         $courseCategory = CourseCategory::withCount('courses')->find($courseCategory->id);
 
-        return response()->json($courseCategory);
+        return response()->json(new CourseCategoryResource($courseCategory));
     }
 
     /**
@@ -120,10 +118,8 @@ class CourseCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'sometimes|required|array',
-            'name.*' => 'required|string|max:255',
-            'description' => 'nullable|array',
-            'description.*' => 'nullable|string',
+            'name' => 'sometimes|required',
+            'description' => 'nullable',
             'slug' => 'nullable|string|unique:course_categories,slug,' . $courseCategory->id,
             'is_active' => 'boolean',
             'sort_order' => 'integer',
@@ -131,13 +127,12 @@ class CourseCategoryController extends Controller
 
         // Generate slug if not provided but name is changed
         if (isset($validated['name']) && empty($validated['slug'])) {
-            $name = $validated['name'][app()->getLocale()] ?? array_values($validated['name'])[0];
-            $validated['slug'] = Str::slug($name);
+            $validated['slug'] = Str::slug($validated['name']);
         }
 
         $courseCategory->update($validated);
 
-        return response()->json($courseCategory);
+        return response()->json(new CourseCategoryResource($courseCategory));
     }
 
     /**

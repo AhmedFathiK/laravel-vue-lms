@@ -22,16 +22,26 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title' => ['required', 'array'],
-            'title.en' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string'],
+            'title' => ['required'],
+            'description' => ['nullable'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
-            'thumbnail' => ['nullable', 'string', 'max:255'],
+            'thumbnail' => ['nullable', 'sometimes', 'file', 'image', 'max:2048'], // 2MB max
             'is_featured' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer'],
+            'course_category_id' => ['nullable', 'exists:course_categories,id'],
+            'is_free' => ['nullable', 'boolean'],
+            'leaderboard_reset_frequency' => ['nullable', 'string', 'in:never,weekly,monthly'],
         ];
 
         return $rules;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('status')) {
+            $this->merge(['status' => 'draft']);
+        }
     }
 }

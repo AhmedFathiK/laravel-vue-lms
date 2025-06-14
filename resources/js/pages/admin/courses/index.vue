@@ -1,10 +1,15 @@
 <script setup>
 import CourseEditDialog from '@/components/dialogs/CourseEditDialog.vue'
 import api from '@/utils/api'
+import { avatarText } from "@core/utils/formatters"
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
+const { locale } = useI18n()
+const router = useRouter()
 
 // 👉 Store
 const searchQuery = ref('')
@@ -63,11 +68,6 @@ const headers = [
   {
     title: 'Course',
     key: 'course',
-  },
-  {
-    title: 'Price',
-    key: 'price',
-    sortable: true,
   },
   {
     title: 'Levels',
@@ -132,40 +132,7 @@ const fetchCourses = async () => {
 
     // Handle different response structures
     if (response && typeof response === 'object') {
-      // Process courses to handle translatable fields and category relationship
-      if (response.courses) {
-        // Process courses to handle translatable fields
-        const processedCourses = response.courses.map(course => {
-          // Process translatable fields if needed
-          if (typeof course.title === 'object') {
-            const locale = document.documentElement.lang || 'en'
-
-            course.title = course.title[locale] || Object.values(course.title)[0]
-          }
-          
-          if (typeof course.description === 'object') {
-            const locale = document.documentElement.lang || 'en'
-
-            course.description = course.description[locale] || Object.values(course.description)[0]
-          }
-          
-          // Process category relationship
-          if (course.category && typeof course.category.name === 'object') {
-            const locale = document.documentElement.lang || 'en'
-
-            course.category.name = course.category.name[locale] || Object.values(course.category.name)[0]
-          }
-          
-          return course
-        })
-        
-        coursesData.value = {
-          ...response,
-          courses: processedCourses,
-        }
-      } else {
-        coursesData.value = response
-      }
+      coursesData.value = response
     } else {
       console.warn('Unexpected API response format:', response)
       coursesData.value = { courses: [], totalCourses: 0 }
@@ -210,7 +177,7 @@ const updateWidgetCounts = () => {
       activeCount++
     }
     
-    if (course.subscription_type === 'monthly') {
+    if (course.subscriptionPlans && course.subscriptionPlans.some(plan => plan.plan_type === 'recurring')) {
       subscriptionCount++
     }
   })
@@ -242,17 +209,7 @@ const fetchCategories = async () => {
     // Handle response structure
     if (response && typeof response === 'object') {
       if (response.categories) {
-        // Process categories to handle translatable fields
-        availableCategories.value = response.categories.map(category => {
-          // If name is a JSON object with language keys, use the current locale or fallback to first available
-          if (typeof category.name === 'object') {
-            const locale = document.documentElement.lang || 'en'
-
-            category.name = category.name[locale] || Object.values(category.name)[0]
-          }
-          
-          return category
-        })
+        availableCategories.value = response.categories
       } else if (Array.isArray(response)) {
         availableCategories.value = response
       } else {
@@ -272,6 +229,12 @@ const fetchCategories = async () => {
 // Watch for changes to trigger refetch
 watch([searchQuery, selectedCategory, selectedStatus, page, itemsPerPage], () => {
   fetchCourses()
+})
+
+// Watch for locale changes and refresh data
+watch(() => locale.value, () => {
+  fetchCourses()
+  fetchCategories()
 })
 
 // Computed properties
@@ -310,13 +273,6 @@ const resolveCourseStatusVariant = status => {
   return 'warning'
 }
 
-const formatPrice = price => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(price)
-}
-
 // Helper function to get category name
 const getCategoryName = course => {
   if (!course) return 'No Category'
@@ -337,65 +293,6 @@ const getCategoryName = course => {
 }
 
 const isAddNewCourseDialogVisible = ref(false)
-
-// Add new course
-const addNewCourse = async courseData => {
-  try {
-    const response = await api.post('/admin/courses', courseData)
-    
-    toast.success('Course created successfully')
-    fetchCourses()
-    
-    return response
-  } catch (error) {
-    console.error('Error creating course:', error)
-    
-    // Show all error messages if there are multiple
-    if (error.response?.data?.errors) {
-      // Get all error messages as an array of strings
-      const errorMessages = Object.values(error.response.data.errors).flat()
-      
-      // Show each error as a separate toast
-      errorMessages.forEach(message => {
-        toast.error(message)
-      })
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to create course')
-    }
-    
-    throw error // Re-throw to handle in the form component
-  }
-}
-
-// Edit course
-const editCourseData = async (courseData, id) => {
-  try {
-    const response = await api.post(`/admin/courses/${id}`, courseData)
-    
-    toast.success('Course updated successfully')
-    fetchCourses()
-    editCourse.value = null
-    
-    return response
-  } catch (error) {
-    console.error('Error updating course:', error)
-    
-    // Show all error messages if there are multiple
-    if (error.response?.data?.errors) {
-      // Get all error messages as an array of strings
-      const errorMessages = Object.values(error.response.data.errors).flat()
-      
-      // Show each error as a separate toast
-      errorMessages.forEach(message => {
-        toast.error(message)
-      })
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to update course')
-    }
-    
-    throw error // Re-throw to handle in the form component
-  }
-}
 
 // Delete course
 const deleteCourse = async id => {
@@ -419,26 +316,13 @@ const deleteCourse = async id => {
   }
 }
 
-// Toggle course status
-const toggleCourseStatus = async course => {
-  try {
-    const response = await api.post(`/admin/courses/${course.id}/toggle-status`)
-
-    toast.success(`Course status ${course.status === 'active' ? 'set to draft' : 'activated'} successfully`)
-    fetchCourses()
-  } catch (error) {
-    console.error('Error toggling course status:', error)
-    toast.error(error.response?.data?.message || 'Failed to update course status')
-  }
+// Navigation functions for subscription plans and levels
+const navigateToSubscriptionPlans = courseId => {
+  router.push(`/admin/courses/${courseId}/subscription-plans`)
 }
 
-// Handle course form submission
-const handleCourseFormSubmit = formData => {
-  if (editCourse.value) {
-    editCourseData(formData, editCourse.value.id)
-  } else {
-    addNewCourse(formData)
-  }
+const navigateToLevels = courseId => {
+  router.push(`/admin/courses/${courseId}/levels`)
 }
 
 // Show edit course dialog
@@ -593,16 +477,17 @@ onMounted(() => {
         <template #[`item.course`]="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
-              size="48"
-              rounded
-              :image="item.cover_image || item.thumbnail || ''"
-              class="bg-light-primary"
+              size="32"
+              :color="item.thumbnail ? '' : 'primary'"
+              :class="item.thumbnail ? '' : 'v-avatar-light-bg primary--text'
+              "
+              :variant="!item.avatar ? 'tonal' : undefined"
             >
-              <VIcon
-                v-if="!item.cover_image && !item.thumbnail"
-                icon="tabler-book"
-                size="24"
+              <VImg
+                v-if="item.thumbnail"
+                :src="item.thumbnail"
               />
+              <span v-else>{{ avatarText(item.title) }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
               <h6 class="text-base">
@@ -614,16 +499,6 @@ onMounted(() => {
                   'No Category' }}
               </div>
             </div>
-          </div>
-        </template>
-
-        <!-- 👉 Price -->
-        <template #[`item.price`]="{ item }">
-          <div class="text-body-1 text-high-emphasis">
-            {{ formatPrice(item.price) }}
-          </div>
-          <div class="text-sm text-medium-emphasis">
-            {{ item.subscription_type === 'monthly' ? 'Monthly' : 'One-time' }}
           </div>
         </template>
 
@@ -653,6 +528,17 @@ onMounted(() => {
           </VChip>
         </template>
 
+        <!-- Subscription Type -->
+        <template #[`item.subscription_type`]="{ item }">
+          <VChip
+            :color="item.is_free ? 'success' : (item.subscriptionPlans && item.subscriptionPlans.some(plan => plan.plan_type === 'recurring') ? 'primary' : 'info')"
+            size="small"
+            class="text-white"
+          >
+            {{ item.is_free ? 'Free' : (item.subscriptionPlans && item.subscriptionPlans.some(plan => plan.plan_type === 'recurring') ? 'Subscription' : 'One-time') }}
+          </VChip>
+        </template>
+
         <!-- Actions -->
         <template #[`item.actions`]="{ item }">
           <IconBtn @click="deleteCourse(item.id)">
@@ -662,9 +548,25 @@ onMounted(() => {
           <IconBtn @click="showEditCourseDialog(item)">
             <VIcon icon="tabler-edit" />
           </IconBtn>
-
-          <IconBtn @click="toggleCourseStatus(item)">
-            <VIcon :icon="item.status === 'active' ? 'tabler-eye-off' : 'tabler-eye'" />
+          
+          <IconBtn
+            color="primary"
+            @click="navigateToSubscriptionPlans(item.id)"
+          >
+            <VIcon icon="tabler-cash" />
+            <VTooltip activator="parent">
+              Subscription Plans
+            </VTooltip>
+          </IconBtn>
+          
+          <IconBtn
+            color="info"
+            @click="navigateToLevels(item.id)"
+          >
+            <VIcon icon="tabler-stairs" />
+            <VTooltip activator="parent">
+              Levels
+            </VTooltip>
           </IconBtn>
         </template>
 
@@ -685,7 +587,7 @@ onMounted(() => {
       v-model:is-dialog-visible="isAddNewCourseDialogVisible"
       :course-data="editCourse"
       :categories="categories"
-      @submit="handleCourseFormSubmit"
+      @refresh="fetchCourses"
     />
   </section>
 </template>

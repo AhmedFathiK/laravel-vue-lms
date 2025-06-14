@@ -59,4 +59,42 @@ class UserSubscription extends Model
         return $this->status === 'active' &&
             ($this->ends_at === null || $this->ends_at->isFuture());
     }
+
+    /**
+     * Check if the subscription is a one-time purchase.
+     */
+    public function isOneTimePurchase(): bool
+    {
+        return $this->plan->plan_type === 'one-time';
+    }
+
+    /**
+     * Check if the subscription is recurring.
+     */
+    public function isRecurring(): bool
+    {
+        return $this->plan->plan_type === 'recurring';
+    }
+
+    /**
+     * Check if the subscription is for a free plan.
+     */
+    public function isFree(): bool
+    {
+        return $this->plan->is_free;
+    }
+
+    /**
+     * Check if the subscription grants access to a specific level.
+     */
+    public function hasAccessToLevel(int $levelId): bool
+    {
+        // If the plan is free, it grants access to all levels
+        if ($this->plan->is_free) {
+            return true;
+        }
+
+        // Check if the plan has specific level access restrictions
+        return $this->plan->hasAccessToLevel($levelId);
+    }
 }

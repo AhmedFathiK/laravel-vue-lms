@@ -18,10 +18,8 @@ class Course extends Model
         'status',
         'thumbnail',
         'is_featured',
-        'sort_order',
         'course_category_id',
-        'price',
-        'subscription_type',
+        'is_free',
         'leaderboard_reset_frequency',
     ];
 
@@ -32,8 +30,7 @@ class Course extends Model
 
     protected $casts = [
         'is_featured' => 'boolean',
-        'sort_order' => 'integer',
-        'price' => 'float',
+        'is_free' => 'boolean',
     ];
 
     /**
@@ -42,6 +39,14 @@ class Course extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(CourseCategory::class, 'course_category_id');
+    }
+
+    /**
+     * Get the subscription plans for this course.
+     */
+    public function subscriptionPlans(): HasMany
+    {
+        return $this->hasMany(SubscriptionPlan::class);
     }
 
     public function levels(): HasMany
@@ -57,5 +62,28 @@ class Course extends Model
     public function concepts(): HasMany
     {
         return $this->hasMany(Concept::class);
+    }
+
+    /**
+     * Get all free levels in this course.
+     */
+    public function freeLevels(): HasMany
+    {
+        return $this->hasMany(Level::class)->where('is_free', true)->orderBy('sort_order');
+    }
+
+    /**
+     * Check if the course has any free content.
+     */
+    public function hasFreeContent(): bool
+    {
+        if ($this->is_free) {
+            return true;
+        }
+
+        return $this->levels()->where('is_free', true)->exists() ||
+            $this->levels()->whereHas('lessons', function ($query) {
+                $query->where('is_free', true);
+            })->exists();
     }
 }

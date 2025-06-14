@@ -1,5 +1,6 @@
 // composables/useApi.js
 import { useAuthStore } from '@/stores/auth'
+import { themeConfig } from '@themeConfig'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -21,7 +22,25 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   config => {
-    // Add any request modifications here if needed
+    // Get locale from cookie directly instead of using useI18n
+    // Use the app title from themeConfig for the cookie name
+    const cookieName = `${themeConfig.app.title}-language`
+
+    const cookieLocale = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`${cookieName}=`))
+      ?.split('=')[1]
+      
+    if (cookieLocale) {
+      config.headers['X-Locale'] = cookieLocale
+    }
+    
+    // If the request data is FormData, remove the Content-Type header
+    // to let the browser set it automatically with the correct boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+    
     return config
   },
   error => {

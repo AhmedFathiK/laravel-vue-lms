@@ -15,6 +15,30 @@ export default [
     subject: 'users',
   },
   {
+    title: 'Courses',
+    icon: { icon: 'tabler-book' },
+    children: [
+      {
+        title: 'All Courses',
+        to: '/admin/courses',
+      },
+      {
+        title: 'Categories',
+        to: '/admin/courses/categories',
+      },
+      {
+        title: 'Course Levels',
+        to: '/admin/courses/levels',
+      },
+      {
+        title: 'Subscription Plans',
+        to: '/admin/courses/subscription-plans',
+      },
+    ],
+    action: 'view',
+    subject: 'users',
+  },
+  {
     title: 'Second page',
     to: { name: 'second-page' },
     icon: { icon: 'tabler-file' },

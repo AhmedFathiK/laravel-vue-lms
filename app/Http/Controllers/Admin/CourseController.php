@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Course\StoreRequest;
 use App\Http\Requests\Admin\Course\UpdateRequest;
+use App\Http\Resources\CourseResource;
 use App\Models\Course;
+use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
@@ -36,6 +39,10 @@ class CourseController extends Controller
             $query->where('course_category_id', $request->category);
         }
 
+        if ($request->has('is_free')) {
+            $query->where('is_free', $request->boolean('is_free'));
+        }
+
         // Apply search
         if ($request->has('search')) {
             $search = $request->get('search');
@@ -47,8 +54,8 @@ class CourseController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sortBy', 'sort_order');
-        $orderBy = $request->get('orderBy', 'asc');
+        $sortBy = $request->get('sortBy', 'created_at');
+        $orderBy = $request->get('orderBy', 'desc');
 
         $query->orderBy($sortBy, $orderBy);
 
@@ -60,7 +67,7 @@ class CourseController extends Controller
         $courses = $query->paginate($perPage);
 
         return response()->json([
-            'courses' => $courses->items(),
+            'courses' => CourseResource::collection($courses->items()),
             'totalCourses' => $courses->total(),
             'currentPage' => $courses->currentPage(),
             'perPage' => $courses->perPage(),
@@ -73,9 +80,33 @@ class CourseController extends Controller
      */
     public function store(StoreRequest $request): JsonResponse
     {
-        $course = Course::create($request->validated());
+        $data = $request->validated();
 
-        return response()->json($course, 201);
+        // Handle thumbnail upload
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            $path = $file->store('course-thumbnails', 'public');
+            $data['thumbnail'] = Storage::url($path);
+        }
+
+        $course = Course::create($data);
+
+        // If the course is marked as free, create a free subscription plan
+        if ($request->has('is_free') && $request->boolean('is_free')) {
+            SubscriptionPlan::create([
+                'course_id' => $course->id,
+                'name' => 'Free Access',
+                'description' => 'Free access to all content in this course',
+                'price' => 0,
+                'currency' => 'USD',
+                'billing_cycle' => 'one-time',
+                'plan_type' => 'free',
+                'is_free' => true,
+                'is_active' => true,
+            ]);
+        }
+
+        return response()->json(new CourseResource($course), 201);
     }
 
     /**
@@ -89,7 +120,12 @@ class CourseController extends Controller
 
         $course->load(['levels', 'category']);
 
-        return response()->json($course);
+        // Also load subscription plans for this course
+        $course->load(['subscriptionPlans' => function ($query) {
+            $query->where('is_active', true);
+        }]);
+
+        return response()->json(new CourseResource($course));
     }
 
     /**
@@ -97,9 +133,59 @@ class CourseController extends Controller
      */
     public function update(UpdateRequest $request, Course $course): JsonResponse
     {
-        $course->update($request->validated());
+        $data = $request->validated();
 
-        return response()->json($course);
+        // Handle thumbnail deletion
+        if ($request->has('delete_thumbnail') && $request->boolean('delete_thumbnail')) {
+            // Delete the existing thumbnail file
+            if ($course->thumbnail && Storage::disk('public')->exists(str_replace('/storage/', '', $course->thumbnail))) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $course->thumbnail));
+            }
+
+            // Set thumbnail to null
+            $data['thumbnail'] = null;
+        }
+        // Handle thumbnail upload
+        else if ($request->hasFile('thumbnail')) {
+            // Delete old thumbnail if exists
+            if ($course->thumbnail && Storage::disk('public')->exists(str_replace('/storage/', '', $course->thumbnail))) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $course->thumbnail));
+            }
+
+            $file = $request->file('thumbnail');
+            $path = $file->store('course-thumbnails', 'public');
+            $data['thumbnail'] = Storage::url($path);
+        } else {
+            // If no new thumbnail is provided, remove it from the data array
+            // to prevent overwriting the existing thumbnail with null
+            unset($data['thumbnail']);
+        }
+
+        $course->update($data);
+
+        // If the course is marked as free and there's no free subscription plan yet, create one
+        if ($request->has('is_free') && $request->boolean('is_free')) {
+            $existingFreePlan = $course->subscriptionPlans()
+                ->where('is_free', true)
+                ->where('plan_type', 'free')
+                ->first();
+
+            if (!$existingFreePlan) {
+                SubscriptionPlan::create([
+                    'course_id' => $course->id,
+                    'name' => 'Free Access',
+                    'description' => 'Free access to all content in this course',
+                    'price' => 0,
+                    'currency' => 'USD',
+                    'billing_cycle' => 'one-time',
+                    'plan_type' => 'free',
+                    'is_free' => true,
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        return response()->json(new CourseResource($course));
     }
 
     /**
@@ -114,5 +200,22 @@ class CourseController extends Controller
         $course->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Get subscription plans for a course.
+     */
+    public function getSubscriptionPlans(Course $course): JsonResponse
+    {
+        if (!Gate::allows('view.course')) {
+            abort(403);
+        }
+
+        $plans = $course->subscriptionPlans()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->get();
+
+        return response()->json($plans);
     }
 }

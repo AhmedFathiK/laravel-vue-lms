@@ -23,15 +23,24 @@ class StoreRequest extends FormRequest
     {
         $rules = [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
-            'title' => ['required', 'array'],
-            'title.en' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
+            'is_free' => ['nullable', 'boolean'],
         ];
 
         return $rules;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('status')) {
+            $this->merge(['status' => 'draft']);
+        }
     }
 }

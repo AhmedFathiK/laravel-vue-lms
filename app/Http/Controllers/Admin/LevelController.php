@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Level\StoreRequest;
 use App\Http\Requests\Admin\Level\UpdateRequest;
+use App\Http\Resources\LevelResource;
 use App\Models\Course;
 use App\Models\Level;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +35,23 @@ class LevelController extends Controller
         $sortDirection = $request->get('sort_direction', 'asc');
         $query->orderBy($sortField, $sortDirection);
 
-        $levels = $query->get();
+        // Apply pagination if requested
+        if ($request->has('perPage')) {
+            $perPage = (int) $request->get('perPage', 10);
+            $levels = $query->paginate($perPage);
 
-        return response()->json($levels);
+            return response()->json([
+                'data' => LevelResource::collection($levels->items()),
+                'total' => $levels->total(),
+                'current_page' => $levels->currentPage(),
+                'per_page' => $levels->perPage(),
+                'last_page' => $levels->lastPage(),
+            ]);
+        }
+
+        // Otherwise return all levels
+        $levels = $query->get();
+        return response()->json(LevelResource::collection($levels));
     }
 
     /**
@@ -44,9 +59,25 @@ class LevelController extends Controller
      */
     public function store(StoreRequest $request): JsonResponse
     {
-        $level = Level::create($request->validated());
+        $data = $request->validated();
 
-        return response()->json($level, 201);
+        // Set default status if not provided
+        if (!isset($data['status'])) {
+            $data['status'] = 'draft';
+        }
+
+        // Create level with current locale data
+        $level = Level::create([
+            'course_id' => $data['course_id'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? '',
+            'sort_order' => $data['sort_order'] ?? 0,
+            'status' => $data['status'],
+            'is_unlocked' => $data['is_unlocked'] ?? false,
+            'is_free' => $data['is_free'] ?? false,
+        ]);
+
+        return response()->json(new LevelResource($level), 201);
     }
 
     /**
@@ -60,7 +91,7 @@ class LevelController extends Controller
 
         $level->load('lessons');
 
-        return response()->json($level);
+        return response()->json(new LevelResource($level));
     }
 
     /**
@@ -68,9 +99,12 @@ class LevelController extends Controller
      */
     public function update(UpdateRequest $request, Level $level): JsonResponse
     {
-        $level->update($request->validated());
+        $data = $request->validated();
 
-        return response()->json($level);
+        // Update the level with the validated data
+        $level->update($data);
+
+        return response()->json(new LevelResource($level));
     }
 
     /**
@@ -123,6 +157,6 @@ class LevelController extends Controller
         $level->is_unlocked = !$level->is_unlocked;
         $level->save();
 
-        return response()->json($level);
+        return response()->json(new LevelResource($level));
     }
 }

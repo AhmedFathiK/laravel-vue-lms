@@ -19,6 +19,7 @@ class Level extends Model
         'sort_order',
         'status',
         'is_unlocked',
+        'is_free',
     ];
 
     public array $translatable = [
@@ -28,6 +29,7 @@ class Level extends Model
 
     protected $casts = [
         'is_unlocked' => 'boolean',
+        'is_free' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -39,5 +41,63 @@ class Level extends Model
     public function lessons(): HasMany
     {
         return $this->hasMany(Lesson::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Get all free lessons in this level.
+     */
+    public function freeLessons(): HasMany
+    {
+        return $this->hasMany(Lesson::class)->where('is_free', true)->orderBy('sort_order');
+    }
+
+    /**
+     * Check if this level is accessible to a user based on their subscription.
+     */
+    public function isAccessibleToUser(User $user): bool
+    {
+        // If the level or course is free, it's accessible to everyone
+        if ($this->is_free || $this->course->is_free) {
+            return true;
+        }
+
+        // Check if user has any active subscription for this course
+        $hasActiveSubscription = $user->subscriptions()
+            ->whereHas('plan', function ($query) {
+                $query->where('course_id', $this->course_id)
+                    ->where('is_active', true);
+            })
+            ->where(function ($query) {
+                $query->where('status', 'active')
+                    ->where(function ($q) {
+                        $q->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    });
+            })
+            ->exists();
+
+        if (!$hasActiveSubscription) {
+            return false;
+        }
+
+        // Check if the user's subscription plan grants access to this level
+        $subscription = $user->subscriptions()
+            ->whereHas('plan', function ($query) {
+                $query->where('course_id', $this->course_id)
+                    ->where('is_active', true);
+            })
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            })
+            ->with('plan')
+            ->first();
+
+        if (!$subscription) {
+            return false;
+        }
+
+        return $subscription->plan->hasAccessToLevel($this->id);
     }
 }

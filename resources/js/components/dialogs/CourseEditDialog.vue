@@ -1,4 +1,6 @@
 <script setup>
+import api from '@/utils/api'
+import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -17,32 +19,40 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:isDialogVisible', 'submit'])
+const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
 const toast = useToast()
+const refVForm = ref(null)
+const isSubmitting = ref(false)
+const isFormValid = ref(true)
 
 // Form data
 const title = ref('')
 const description = ref('')
-const price = ref(0)
 const categoryId = ref(null)
-const coverImage = ref(null)
-const subscriptionType = ref('one-time') // one-time or monthly
+const thumbnail = ref(null)
+const thumbnailPreview = ref(null) // For image preview
+const isFree = ref(props.courseData?.is_free || false)
 const leaderboardResetFrequency = ref('monthly') // never, weekly, monthly
 const prerequisites = ref([])
 const prerequisiteInput = ref('')
+const status = ref('draft') // Default status is draft
+const deleteThumbnail = ref(false) // Flag to delete thumbnail
 
 // Reset form values
 const resetFormValues = () => {
   title.value = ''
   description.value = ''
-  price.value = 0
   categoryId.value = null
-  coverImage.value = null
-  subscriptionType.value = 'one-time'
+  thumbnail.value = null
+  thumbnailPreview.value = null
+  isFree.value = false
   leaderboardResetFrequency.value = 'monthly'
   prerequisites.value = []
   prerequisiteInput.value = ''
+  status.value = 'draft'
+  isFormValid.value = true
+  deleteThumbnail.value = false
 }
 
 // Watch for changes in courseData prop
@@ -50,11 +60,11 @@ watch(() => props.courseData, () => {
   if (props.courseData) {
     title.value = props.courseData.title || ''
     description.value = props.courseData.description || ''
-    price.value = props.courseData.price || 0
     categoryId.value = props.courseData.course_category_id || props.courseData.category_id || null
-    subscriptionType.value = props.courseData.subscription_type || 'one-time'
+    isFree.value = props.courseData.is_free || false
     leaderboardResetFrequency.value = props.courseData.leaderboard_reset_frequency || 'monthly'
     prerequisites.value = props.courseData.prerequisites || []
+    status.value = props.courseData.status || 'draft'
   } else {
     resetFormValues()
   }
@@ -63,19 +73,26 @@ watch(() => props.courseData, () => {
 // Handle dialog visibility
 const onDialogVisibleUpdate = val => {
   emit('update:isDialogVisible', val)
-  if (!val)
+  if (!val) {
     resetFormValues()
+  }
 }
 
 // Handle image upload
-const handleImageUpload = event => {
-  const file = event.target.files[0]
-  if (!file) return
+const handleImageUpload = file => {
+  if (!file) {
+    thumbnail.value = null
+    thumbnailPreview.value = null
+    
+    return
+  }
 
   // Validate file type
   const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
   if (!validTypes.includes(file.type)) {
     toast.error('Please upload a valid image file (JPEG, PNG, GIF)')
+    thumbnail.value = null
+    thumbnailPreview.value = null
     
     return
   }
@@ -83,11 +100,17 @@ const handleImageUpload = event => {
   // Validate file size (max 2MB)
   if (file.size > 2 * 1024 * 1024) {
     toast.error('Image size should be less than 2MB')
+    thumbnail.value = null
+    thumbnailPreview.value = null
     
     return
   }
 
-  coverImage.value = file
+  // Create a preview URL for the selected image
+  thumbnailPreview.value = URL.createObjectURL(file)
+  
+  // Reset delete flag if a new image is selected
+  deleteThumbnail.value = false
 }
 
 // Add prerequisite
@@ -104,23 +127,10 @@ const removePrerequisite = index => {
 }
 
 // Submit form
-const onSubmit = () => {
-  // Validate form
-  if (!title.value.trim()) {
-    toast.error('Title is required')
-    
-    return
-  }
-
-  if (!description.value.trim()) {
-    toast.error('Description is required')
-    
-    return
-  }
-
-  if (!categoryId.value) {
-    toast.error('Category is required')
-    
+const onSubmit = async () => {
+  isFormValid.value = (await refVForm.value.validate()).valid
+  
+  if (!isFormValid.value) {
     return
   }
 
@@ -129,30 +139,69 @@ const onSubmit = () => {
 
   formData.append('title', title.value)
   formData.append('description', description.value)
-  formData.append('price', price.value)
   formData.append('course_category_id', categoryId.value)
-  formData.append('subscription_type', subscriptionType.value)
+  formData.append('is_free', isFree.value ? '1' : '0')
   formData.append('leaderboard_reset_frequency', leaderboardResetFrequency.value)
+  formData.append('status', status.value)
   
   // Add prerequisites as JSON
   formData.append('prerequisites', JSON.stringify(prerequisites.value))
   
-  // Add cover image if available
-  if (coverImage.value instanceof File) {
-    formData.append('cover_image', coverImage.value)
+  // Add thumbnail only if a new file is selected
+  if (thumbnail.value instanceof File) {
+    formData.append('thumbnail', thumbnail.value)
+  }
+  
+  // Handle thumbnail deletion
+  if (deleteThumbnail.value) {
+    formData.append('delete_thumbnail', '1')
   }
 
-  // If editing, add course ID
-  if (props.courseData?.id) {
-    formData.append('_method', 'PUT')
+  try {
+    isSubmitting.value = true
+    
+    // If editing, add course ID and update, otherwise create
+    if (props.courseData?.id) {
+      formData.append('_method', 'PUT')
+      
+      // Use custom axios config for FormData with file uploads
+      await api.post(`/admin/courses/${props.courseData.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      toast.success('Course updated successfully')
+    } else {
+      // Use custom axios config for FormData with file uploads
+      await api.post('/admin/courses', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      toast.success('Course created successfully')
+    }
+    
+    // Close dialog and emit refresh event
+    onDialogVisibleUpdate(false)
+    emit('refresh')
+  } catch (error) {
+    console.error('Error saving course:', error)
+    
+    // Show all error messages if there are multiple
+    if (error.response?.data?.errors) {
+      // Get all error messages as an array of strings
+      const errorMessages = Object.values(error.response.data.errors).flat()
+      
+      // Show each error as a separate toast
+      errorMessages.forEach(message => {
+        toast.error(message)
+      })
+    } else {
+      toast.error(error.response?.data?.message || 'Failed to save course')
+    }
+  } finally {
+    isSubmitting.value = false
   }
-
-  emit('submit', formData)
-}
-
-// Reset form
-const resetForm = () => {
-  resetFormValues()
 }
 
 // Subscription options
@@ -167,6 +216,13 @@ const resetFrequencyOptions = [
   { title: 'Weekly Reset', value: 'weekly' },
   { title: 'Monthly Reset', value: 'monthly' },
 ]
+
+// Status options
+const statusOptions = [
+  { title: 'Draft', value: 'draft' },
+  { title: 'Published', value: 'published' },
+  { title: 'Archived', value: 'archived' },
+]
 </script>
 
 <template>
@@ -176,13 +232,16 @@ const resetFrequencyOptions = [
     persistent
     @update:model-value="onDialogVisibleUpdate"
   >
-    <VCard>
-      <VCardTitle class="text-h5">
-        {{ courseData ? 'Edit Course' : 'Add New Course' }}
-      </VCardTitle>
+    <!-- Dialog close btn -->
+    <DialogCloseBtn @click="onDialogVisibleUpdate(false)" />
 
+    <!-- Dialog Content -->
+    <VCard :title="courseData ? 'Edit Course' : 'Add New Course'">
       <VCardText>
-        <VForm @submit.prevent="onSubmit">
+        <VForm
+          ref="refVForm"
+          @submit.prevent="onSubmit"
+        >
           <VRow>
             <!-- Course Title -->
             <VCol cols="12">
@@ -224,20 +283,18 @@ const resetFrequencyOptions = [
               />
             </VCol>
 
-            <!-- Course Price -->
+            <!-- Course Status -->
             <VCol
               cols="12"
               md="6"
             >
-              <VTextField
-                v-model="price"
-                label="Price"
-                placeholder="Enter course price"
+              <VSelect
+                v-model="status"
+                :items="statusOptions"
+                item-title="title"
+                item-value="value"
+                label="Status"
                 variant="outlined"
-                type="number"
-                min="0"
-                step="0.01"
-                :rules="[v => v >= 0 || 'Price cannot be negative']"
               />
             </VCol>
 
@@ -246,13 +303,11 @@ const resetFrequencyOptions = [
               cols="12"
               md="6"
             >
-              <VSelect
-                v-model="subscriptionType"
-                :items="subscriptionOptions"
-                item-title="title"
-                item-value="value"
-                label="Subscription Type"
-                variant="outlined"
+              <VSwitch
+                v-model="isFree"
+                label="Free Course"
+                color="primary"
+                hide-details
               />
             </VCol>
 
@@ -268,21 +323,83 @@ const resetFrequencyOptions = [
               />
             </VCol>
 
-            <!-- Cover Image -->
+            <!-- Thumbnail -->
             <VCol cols="12">
-              <VLabel>Cover Image</VLabel>
+              <VLabel>Thumbnail</VLabel>
               <VFileInput
+                v-model="thumbnail"
                 accept="image/*"
                 label="Select Image"
                 variant="outlined"
                 prepend-icon="tabler-upload"
-                @change="handleImageUpload"
+                @update:model-value="handleImageUpload"
               />
+              
+              <!-- Preview of selected image -->
               <div
-                v-if="props.courseData?.cover_image"
+                v-if="thumbnailPreview"
                 class="mt-2"
               >
-                <small>Current image: {{ props.courseData.cover_image }}</small>
+                <VImg
+                  :src="thumbnailPreview"
+                  height="100"
+                  contain
+                  class="bg-grey-lighten-2 rounded mt-2"
+                />
+                <div class="mt-2">
+                  <VChip
+                    color="primary"
+                    size="small"
+                    class="me-2"
+                  >
+                    New image selected
+                  </VChip>
+                </div>
+              </div>
+              
+              <!-- Current image from server -->
+              <div
+                v-else-if="props.courseData?.thumbnail && !deleteThumbnail"
+                class="mt-2"
+              >
+                <VImg
+                  :src="props.courseData.thumbnail"
+                  height="100"
+                  contain
+                  class="bg-grey-lighten-2 rounded mt-2"
+                />
+                <div class="mt-2">
+                  <VBtn
+                    color="error"
+                    size="small"
+                    variant="outlined"
+                    prepend-icon="tabler-trash"
+                    @click="deleteThumbnail = true"
+                  >
+                    Remove Thumbnail
+                  </VBtn>
+                </div>
+              </div>
+              
+              <!-- Message when thumbnail is marked for deletion -->
+              <div
+                v-else-if="deleteThumbnail"
+                class="mt-2"
+              >
+                <VAlert
+                  color="warning"
+                  variant="tonal"
+                  density="compact"
+                >
+                  Thumbnail will be removed when you save the course.
+                  <VBtn
+                    size="x-small"
+                    class="ms-2"
+                    @click="deleteThumbnail = false"
+                  >
+                    Undo
+                  </VBtn>
+                </VAlert>
               </div>
             </VCol>
 
@@ -321,29 +438,23 @@ const resetFrequencyOptions = [
         </VForm>
       </VCardText>
 
-      <VCardActions>
-        <VSpacer />
+      <VCardText class="d-flex justify-end flex-wrap gap-3">
         <VBtn
-          color="error"
-          variant="text"
+          variant="tonal"
+          color="secondary"
+          :disabled="isSubmitting"
           @click="onDialogVisibleUpdate(false)"
         >
           Cancel
         </VBtn>
         <VBtn
-          color="secondary"
-          variant="text"
-          @click="resetForm"
-        >
-          Reset
-        </VBtn>
-        <VBtn
           color="primary"
+          :loading="isSubmitting"
           @click="onSubmit"
         >
           {{ courseData ? 'Update' : 'Create' }}
         </VBtn>
-      </VCardActions>
+      </VCardText>
     </VCard>
   </VDialog>
 </template>

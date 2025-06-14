@@ -22,14 +22,14 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title' => ['sometimes', 'array'],
-            'title.*' => ['string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.*' => ['nullable', 'string'],
-            'status' => ['sometimes', 'string', 'in:draft,published,archived'],
-            'thumbnail' => ['nullable', 'string', 'max:255'],
+            'title' => ['required'],
+            'description' => ['nullable'],
+            'status' => ['required', 'string', 'in:draft,published,archived'],
+            'thumbnail' => ['nullable', 'sometimes', 'file', 'image', 'max:2048'], // 2MB max
             'is_featured' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer'],
+            'course_category_id' => ['nullable', 'exists:course_categories,id'],
+            'is_free' => ['nullable', 'boolean'],
+            'leaderboard_reset_frequency' => ['nullable', 'string', 'in:never,weekly,monthly'],
         ];
 
         return $rules;
