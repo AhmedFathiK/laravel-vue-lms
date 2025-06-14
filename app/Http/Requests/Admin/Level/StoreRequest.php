@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Level;
 
+use App\Models\Level;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRequest extends FormRequest
@@ -25,7 +26,6 @@ class StoreRequest extends FormRequest
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
             'is_free' => ['nullable', 'boolean'],
@@ -41,6 +41,13 @@ class StoreRequest extends FormRequest
     {
         if (!$this->has('status')) {
             $this->merge(['status' => 'draft']);
+        }
+
+        // Automatically calculate the sort_order based on the highest existing order
+        if ($this->has('course_id')) {
+            $courseId = $this->input('course_id');
+            $maxOrder = Level::where('course_id', $courseId)->max('sort_order') ?? 0;
+            $this->merge(['sort_order' => $maxOrder + 1]);
         }
     }
 }

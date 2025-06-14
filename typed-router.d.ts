@@ -26,6 +26,7 @@ declare module 'vue-router/auto-routes' {
     'admin-courses-courseid-subscription-plans': RouteRecordInfo<'admin-courses-courseid-subscription-plans', '/admin/courses/:courseid/subscription-plans', { courseid: ParamValue<true> }, { courseid: ParamValue<false> }>,
     'admin-courses-categories': RouteRecordInfo<'admin-courses-categories', '/admin/courses/categories', Record<never, never>, Record<never, never>>,
     'admin-roles': RouteRecordInfo<'admin-roles', '/admin/roles', Record<never, never>, Record<never, never>>,
+    'admin-trash': RouteRecordInfo<'admin-trash', '/admin/trash', Record<never, never>, Record<never, never>>,
     'admin-users': RouteRecordInfo<'admin-users', '/admin/users', Record<never, never>, Record<never, never>>,
     'admin-users-id': RouteRecordInfo<'admin-users-id', '/admin/users/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'checkout': RouteRecordInfo<'checkout', '/checkout', Record<never, never>, Record<never, never>>,

@@ -112,6 +112,11 @@ class PermissionSeeder extends Seeder
             'manage.translation',
             'manage.localization',
 
+            // Trash Management
+            'view.trash',
+            'restore.trash',
+            'delete.trash',
+
             // Admin Panel
             'access.admin_panel',
         ];

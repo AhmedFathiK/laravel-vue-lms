@@ -106,6 +106,13 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::get('permissions', [RoleController::class, 'getPermissions']);
 
+    // Trash Management
+    Route::get('trash', [\App\Http\Controllers\Admin\TrashController::class, 'index']);
+    Route::post('trash/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore']);
+    Route::delete('trash/{id}', [\App\Http\Controllers\Admin\TrashController::class, 'destroy']);
+    Route::post('trash/empty', [\App\Http\Controllers\Admin\TrashController::class, 'emptyTrash']);
+    Route::get('trash/model-types', [\App\Http\Controllers\Admin\TrashController::class, 'getModelTypes']);
+
     // Course Management
     Route::apiResource('courses', CourseController::class);
     Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);

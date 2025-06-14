@@ -25,7 +25,6 @@ class UpdateRequest extends FormRequest
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer'],
             'status' => ['sometimes', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
             'is_free' => ['nullable', 'boolean'],

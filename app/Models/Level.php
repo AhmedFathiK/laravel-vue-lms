@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 
 class Level extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations, SoftDeletes;
 
     protected $fillable = [
         'course_id',
@@ -99,5 +100,22 @@ class Level extends Model
         }
 
         return $subscription->plan->hasAccessToLevel($this->id);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When a level is soft deleted, also soft delete all related lessons
+        static::deleting(function ($level) {
+            if (!$level->isForceDeleting()) {
+                $level->lessons()->each(function ($lesson) {
+                    $lesson->delete();
+                });
+            }
+        });
     }
 }

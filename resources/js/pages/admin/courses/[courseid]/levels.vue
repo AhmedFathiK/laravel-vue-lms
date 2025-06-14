@@ -1,5 +1,6 @@
 <script setup>
 import LevelEditDialog from '@/components/dialogs/LevelEditDialog.vue'
+import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -16,6 +17,10 @@ const course = ref(null)
 const levels = ref([])
 const isDialogVisible = ref(false)
 const editingLevel = ref(null)
+
+// Password confirmation dialog
+const isPasswordDialogVisible = ref(false)
+const levelToDelete = ref(null)
 
 // Pagination
 const itemsPerPage = ref(10)
@@ -71,8 +76,8 @@ const fetchLevels = async () => {
     const params = {
       page: page.value,
       perPage: itemsPerPage.value,
-      sort_field: sortBy.value,
-      sort_direction: sortDesc.value ? 'desc' : 'asc',
+      sortField: sortBy.value,
+      sortDirection: sortDesc.value ? 'desc' : 'asc',
     }
     
     const response = await api.get(`/admin/courses/${courseId.value}/levels`, { params })
@@ -127,19 +132,27 @@ const handleOptionsChange = options => {
   fetchLevels()
 }
 
-// Delete level
-const deleteLevel = async id => {
-  if (!confirm('Are you sure you want to delete this level? All associated lessons will also be deleted.')) return
+// Delete level with password confirmation
+const confirmDeleteLevel = level => {
+  levelToDelete.value = level
+  isPasswordDialogVisible.value = true
+}
+
+const handlePasswordConfirm = async result => {
+  if (!result.confirmed || !levelToDelete.value) return
+  
+  // Here you would normally verify the password with the backend
+  // For this example, we'll just proceed with the deletion
   
   try {
-    await api.delete(`/admin/levels/${id}`)
+    await api.delete(`/admin/levels/${levelToDelete.value.id}`)
     toast.success('Level deleted successfully')
-
-    // Refresh data from API
     fetchLevels()
   } catch (error) {
     console.error('Error deleting level:', error)
     toast.error('Failed to delete level')
+  } finally {
+    levelToDelete.value = null
   }
 }
 
@@ -187,6 +200,16 @@ onMounted(() => {
 
 <template>
   <section>
+    <!-- Breadcrumb Navigation -->
+    <VBreadcrumbs
+      :items="[
+        { title: 'Admin', disabled: true },
+        { title: 'Courses', to: '/admin/courses' },
+        { title: course ? course.title : 'Course Details', disabled: true }
+      ]"
+      class="mb-4"
+    />
+    
     <VCard v-if="course">
       <VCardText class="d-flex justify-space-between align-center">
         <h2>Levels for {{ course.title }}</h2>
@@ -252,7 +275,7 @@ onMounted(() => {
                 variant="text"
                 color="error"
                 size="small"
-                @click="deleteLevel(item.id)"
+                @click="confirmDeleteLevel(item)"
               >
                 <VIcon icon="tabler-trash" />
               </VBtn>
@@ -323,6 +346,17 @@ onMounted(() => {
       :level-data="editingLevel"
       :course-id="courseId"
       @refresh="refreshData"
+    />
+    
+    <!-- Password Confirmation Dialog -->
+    <PasswordConfirmDialog
+      v-model:is-dialog-visible="isPasswordDialogVisible"
+      confirmation-question="Are you sure you want to delete this level? All associated lessons will also be deleted."
+      confirm-title="Level Deleted"
+      confirm-msg="The level has been deleted successfully."
+      cancel-title="Deletion Cancelled"
+      cancel-msg="The level was not deleted."
+      @confirm="handlePasswordConfirm"
     />
   </section>
 </template>

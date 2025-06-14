@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 
 class Course extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -85,5 +86,22 @@ class Course extends Model
             $this->levels()->whereHas('lessons', function ($query) {
                 $query->where('is_free', true);
             })->exists();
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When a course is soft deleted, also soft delete all related levels
+        static::deleting(function ($course) {
+            if (!$course->isForceDeleting()) {
+                $course->levels()->each(function ($level) {
+                    $level->delete();
+                });
+            }
+        });
     }
 }

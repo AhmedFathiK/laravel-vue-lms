@@ -51,6 +51,7 @@ declare module 'vue' {
     LevelEditDialog: typeof import('./resources/js/components/dialogs/LevelEditDialog.vue')['default']
     MoreBtn: typeof import('./resources/js/@core/components/MoreBtn.vue')['default']
     Notifications: typeof import('./resources/js/@core/components/Notifications.vue')['default']
+    PasswordConfirmDialog: typeof import('./resources/js/components/dialogs/PasswordConfirmDialog.vue')['default']
     PaymentProvidersDialog: typeof import('./resources/js/components/dialogs/PaymentProvidersDialog.vue')['default']
     PricingPlanDialog: typeof import('./resources/js/components/dialogs/PricingPlanDialog.vue')['default']
     ProductDescriptionEditor: typeof import('./resources/js/@core/components/ProductDescriptionEditor.vue')['default']
