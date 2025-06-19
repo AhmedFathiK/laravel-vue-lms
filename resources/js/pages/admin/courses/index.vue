@@ -365,6 +365,10 @@ const navigateToTerms = courseId => {
   router.push(`/admin/courses/${courseId}/terms`)
 }
 
+const navigateToQuestions = courseId => {
+  router.push(`/admin/courses/${courseId}/questions`)
+}
+
 // Show edit course dialog
 const showEditCourseDialog = course => {
   editCourse.value = course
@@ -625,6 +629,16 @@ onMounted(() => {
             <VIcon icon="tabler-vocabulary" />
             <VTooltip activator="parent">
               Terms
+            </VTooltip>
+          </IconBtn>
+          
+          <IconBtn
+            color="warning"
+            @click="navigateToQuestions(item.id)"
+          >
+            <VIcon icon="tabler-help-circle" />
+            <VTooltip activator="parent">
+              Questions
             </VTooltip>
           </IconBtn>
         </template>

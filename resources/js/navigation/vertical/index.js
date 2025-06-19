@@ -39,6 +39,7 @@ export default [
     to: 'admin-courses',
     subject: 'courses',
     action: 'view',
+    icon: { icon: 'tabler-book' },
   },
   {
     title: 'Categories',
@@ -46,13 +47,6 @@ export default [
     subject: 'course_category',
     action: 'view',
     icon: { icon: 'tabler-category' },
-  },
-  {
-    title: 'Questions',
-    to: { name: 'admin-questions' },
-    icon: { icon: 'tabler-help-circle' },
-    action: 'view',
-    subject: 'questions',
   },
   { 
     heading: "General",
