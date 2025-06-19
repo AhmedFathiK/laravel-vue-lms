@@ -5,18 +5,21 @@ import AddressContent from '@/views/wizard-examples/checkout/Address.vue'
 import CartContent from '@/views/wizard-examples/checkout/Cart.vue'
 import ConfirmationContent from '@/views/wizard-examples/checkout/Confirmation.vue'
 import PaymentContent from '@/views/wizard-examples/checkout/Payment.vue'
+import { useConfigStore } from '@core/stores/config'
 import googleHome from '@images/pages/google-home.png'
 import iphone11 from '@images/pages/iphone-11.png'
 import customAddress from '@images/svg/address.svg'
 import customCart from '@images/svg/cart.svg'
 import customPayment from '@images/svg/payment.svg'
 import customTrending from '@images/svg/trending.svg'
-import { useConfigStore } from '@core/stores/config'
+import { ref } from 'vue'
 
 definePage({
   meta: {
     layout: 'blank',
     public: true,
+    action: 'view',
+    subject: 'payments',
   },
 })
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('courses', function (Blueprint $table) {
             $table->foreignId('course_category_id')->nullable()->after('id')->constrained('course_categories')->nullOnDelete();
-            $table->decimal('price', 10, 2)->default(0)->after('sort_order');
+            $table->decimal('price', 10, 2)->default(0)->after('is_free');
             $table->string('subscription_type')->default('one-time')->after('price'); // one-time, monthly
             $table->string('leaderboard_reset_frequency')->default('monthly')->after('subscription_type'); // never, weekly, monthly
         });

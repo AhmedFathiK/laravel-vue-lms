@@ -1,4 +1,5 @@
 <script setup>
+import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { VForm } from 'vuetify/components/VForm'
@@ -26,167 +27,159 @@ const emit = defineEmits([
 
 const toast = useToast()
 
-
 // Define permission subjects with their available actions
 const permissionGroups = ref([
   {
     subject: 'User Management',
     actions: [
-      { name: 'view.user', selected: false, label: 'View' },
-      { name: 'create.user', selected: false, label: 'Create' },
-      { name: 'edit.user', selected: false, label: 'Edit' },
-      { name: 'delete.user', selected: false, label: 'Delete' },
-      { name: 'ban.user', selected: false, label: 'Ban' },
-      { name: 'assign_role.user', selected: false, label: 'Assign Role' },
+      { name: 'view.users', selected: false, label: 'View' },
+      { name: 'create.users', selected: false, label: 'Create' },
+      { name: 'edit.users', selected: false, label: 'Edit' },
+      { name: 'delete.users', selected: false, label: 'Delete' },
+      { name: 'ban.users', selected: false, label: 'Ban' },
+      { name: 'assign_role.users', selected: false, label: 'Assign Role' },
     ],
   },
-  {
-    subject: 'Role Management',
-    actions: [
-      { name: 'view.role', selected: false, label: 'View' },
-      { name: 'create.role', selected: false, label: 'Create' },
-      { name: 'edit.role', selected: false, label: 'Edit' },
-      { name: 'delete.role', selected: false, label: 'Delete' },
-      { name: 'assign_permission.role', selected: false, label: 'Assign Permission' },
-    ],
-  },
-  {
-    subject: 'Course Management',
-    actions: [
-      { name: 'view.course', selected: false, label: 'View' },
-      { name: 'create.course', selected: false, label: 'Create' },
-      { name: 'edit.course', selected: false, label: 'Edit' },
-      { name: 'delete.course', selected: false, label: 'Delete' },
-    ],
-  },
-  {
-    subject: 'Level Management',
-    actions: [
-      { name: 'view.level', selected: false, label: 'View' },
-      { name: 'create.level', selected: false, label: 'Create' },
-      { name: 'edit.level', selected: false, label: 'Edit' },
-      { name: 'delete.level', selected: false, label: 'Delete' },
-      { name: 'unlock.level', selected: false, label: 'Unlock' },
-    ],
-  },
-  {
-    subject: 'Lesson Management',
-    actions: [
-      { name: 'view.lesson', selected: false, label: 'View' },
-      { name: 'create.lesson', selected: false, label: 'Create' },
-      { name: 'edit.lesson', selected: false, label: 'Edit' },
-      { name: 'delete.lesson', selected: false, label: 'Delete' },
-      { name: 'configure.lesson', selected: false, label: 'Configure' },
-      { name: 'add_video.lesson', selected: false, label: 'Add Video' },
-    ],
-  },
-  {
-    subject: 'Slide Management',
-    actions: [
-      { name: 'view.slide', selected: false, label: 'View' },
-      { name: 'create.slide', selected: false, label: 'Create' },
-      { name: 'edit.slide', selected: false, label: 'Edit' },
-      { name: 'delete.slide', selected: false, label: 'Delete' },
-      { name: 'reorder.slide', selected: false, label: 'Reorder' },
-    ],
-  },
-  {
-    subject: 'Term Management',
-    actions: [
-      { name: 'view.term', selected: false, label: 'View' },
-      { name: 'create.term', selected: false, label: 'Create' },
-      { name: 'edit.term', selected: false, label: 'Edit' },
-      { name: 'delete.term', selected: false, label: 'Delete' },
-      { name: 'translate.term', selected: false, label: 'Translate' },
-      { name: 'link.term', selected: false, label: 'Link' },
-      { name: 'configure_revision.term', selected: false, label: 'Configure Revision' },
-    ],
-  },
-  {
-    subject: 'Assessment System',
-    actions: [
-      { name: 'view questions', selected: false, label: 'View Questions' },
-      { name: 'create questions', selected: false, label: 'Create Questions' },
-      { name: 'edit questions', selected: false, label: 'Edit Questions' },
-      { name: 'delete questions', selected: false, label: 'Delete Questions' },
-      { name: 'view exams', selected: false, label: 'View Exams' },
-      { name: 'create exams', selected: false, label: 'Create Exams' },
-      { name: 'edit exams', selected: false, label: 'Edit Exams' },
-      { name: 'delete exams', selected: false, label: 'Delete Exams' },
-      { name: 'view exam sections', selected: false, label: 'View Exam Sections' },
-      { name: 'create exam sections', selected: false, label: 'Create Exam Sections' },
-      { name: 'edit exam sections', selected: false, label: 'Edit Exam Sections' },
-      { name: 'delete exam sections', selected: false, label: 'Delete Exam Sections' },
-      { name: 'grade exams', selected: false, label: 'Grade Exams' },
-    ],
-  },
-  {
-    subject: 'Placement Tests',
-    actions: [
-      { name: 'view.placement_test', selected: false, label: 'View' },
-      { name: 'create.placement_test', selected: false, label: 'Create' },
-      { name: 'edit.placement_test', selected: false, label: 'Edit' },
-      { name: 'assign.placement_test', selected: false, label: 'Assign' },
-    ],
-  },
-  {
-    subject: 'Gamification',
-    actions: [
-      { name: 'view.trophy', selected: false, label: 'View Trophies' },
-      { name: 'manage.trophy', selected: false, label: 'Manage Trophies' },
-      { name: 'assign.trophy', selected: false, label: 'Assign Trophies' },
-    ],
-  },
-  {
-    subject: 'Analytics',
-    actions: [
-      { name: 'view.user_stat', selected: false, label: 'View User Stats' },
-      { name: 'view.course_stat', selected: false, label: 'View Course Stats' },
-      { name: 'analyze_weakness.user_stat', selected: false, label: 'Analyze Weaknesses' },
-    ],
-  },
-  {
-    subject: 'Payments & Subscriptions',
-    actions: [
-      { name: 'view.payment', selected: false, label: 'View Payments' },
-      { name: 'manage.subscription', selected: false, label: 'Manage Subscriptions' },
-      { name: 'configure.pricing', selected: false, label: 'Configure Pricing' },
-      { name: 'manage.receipt', selected: false, label: 'Manage Receipts' },
-      { name: 'download.receipt', selected: false, label: 'Download Receipts' },
-    ],
-  },
-  {
-    subject: 'Settings',
-    actions: [
-      { name: 'access.setting', selected: false, label: 'Access Settings' },
-      { name: 'manage.translation', selected: false, label: 'Manage Translations' },
-      { name: 'manage.localization', selected: false, label: 'Manage Localization' },
-    ],
-  },
-  {
-    subject: 'Admin Panel',
-    actions: [
-      { name: 'access.admin_panel', selected: false, label: 'Access Admin Panel' },
-    ],
-  },
+
+  // Other groups will be populated from API
 ])
 
 const isSelectAll = ref(false)
 const role = ref('')
 const refPermissionForm = ref()
 const availablePermissions = ref([])
+const isLoading = ref(false)
 
 // Fetch available permissions from the API
 const fetchPermissions = async () => {
+  isLoading.value = true
   try {
-    const response = await fetch('/api/admin/permissions')
-    const data = await response.json()
+    const response = await api.get('/admin/permissions')
 
-    availablePermissions.value = data.permissions
+    console.log('API Response:', response)
+    
+    // Check if we have a valid response with permissions
+    if (response && response.permissions) {
+      // The API now returns a flat list of permissions
+      const permissionsList = response.permissions
+      
+      // Group permissions by subject (second part after the dot)
+      const groupedPermissions = {}
+      
+      permissionsList.forEach(permission => {
+        // Get the permission name
+        const permName = permission.name
+        
+        // Determine the subject and action
+        let subject = 'Other'
+        let action = permName
+        
+        if (permName.includes('.')) {
+          // Handle dot notation (e.g., "view.users")
+          const parts = permName.split('.')
+
+          action = parts[0] // First part is the action
+          subject = parts[1] // Second part is the subject
+          
+          // Replace underscores with spaces and capitalize subject for display
+          subject = subject.replace(/_/g, ' ')
+          subject = subject.charAt(0).toUpperCase() + subject.slice(1)
+          
+          // Add "Management" suffix for consistency
+          if (!subject.includes('Management') && 
+              subject !== 'Other' && 
+              !['trash', 'admin panel', 'settings', 'translations', 'localization', 'pricing'].includes(subject.toLowerCase())) {
+            subject = subject + ' Management'
+          }
+        }
+        
+        // Format action label
+        let actionLabel
+        
+        // Clean up and capitalize the action
+        switch(action.toLowerCase()) {
+        case 'view':
+        case 'create':
+        case 'edit':
+        case 'delete':
+        case 'restore':
+        case 'ban':
+        case 'unlock':
+        case 'grade':
+        case 'assign':
+        case 'download':
+        case 'access':
+          actionLabel = action.charAt(0).toUpperCase() + action.slice(1)
+          break
+        case 'assign_role':
+          actionLabel = 'Assign Role'
+          break
+        case 'assign_permission':
+          actionLabel = 'Assign Permission'
+          break
+        case 'configure_revision':
+          actionLabel = 'Configure Revision'
+          break
+        case 'add_video':
+          actionLabel = 'Add Video'
+          break
+        case 'analyze_weakness':
+          actionLabel = 'Analyze Weakness'
+          break
+        default:
+          // Convert snake_case to Title Case
+          actionLabel = action.split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+        }
+        
+        // Create the subject group if it doesn't exist
+        if (!groupedPermissions[subject]) {
+          groupedPermissions[subject] = []
+        }
+        
+        // Add permission to the appropriate subject group
+        groupedPermissions[subject].push({
+          name: permName,
+          selected: false,
+          label: actionLabel,
+        })
+      })
+      
+      // Convert to array format for the UI
+      const newPermissionGroups = Object.keys(groupedPermissions).map(subject => ({
+        subject,
+        actions: groupedPermissions[subject],
+      }))
+      
+      // Sort groups alphabetically
+      newPermissionGroups.sort((a, b) => a.subject.localeCompare(b.subject))
+      
+      // Update the permission groups
+      permissionGroups.value = newPermissionGroups
+      
+      // Apply any existing selected permissions
+      if (props.rolePermissions && props.rolePermissions.permissions) {
+        applySelectedPermissions(props.rolePermissions.permissions)
+      }
+    }
   } catch (error) {
     console.error('Error fetching permissions:', error)
     toast.error('Failed to fetch permissions')
+  } finally {
+    isLoading.value = false
   }
+}
+
+// Apply selected permissions to the UI
+const applySelectedPermissions = permissions => {
+  if (!permissions || !Array.isArray(permissions)) return
+  
+  permissionGroups.value.forEach(group => {
+    group.actions.forEach(action => {
+      action.selected = permissions.includes(action.name)
+    })
+  })
 }
 
 // Calculate total number of selected actions
@@ -243,33 +236,19 @@ watch(() => props.rolePermissions, newVal => {
   if (newVal && newVal.name) {
     role.value = newVal.name
     
-    // Reset all permissions first
-    permissionGroups.value.forEach(group => {
-      group.actions.forEach(action => {
-        action.selected = false
+    // Apply selected permissions if permissions are already loaded
+    if (permissionGroups.value.length > 0) {
+      // Reset all permissions first
+      permissionGroups.value.forEach(group => {
+        group.actions.forEach(action => {
+          action.selected = false
+        })
       })
-    })
-    
-    // Map backend permissions to UI format if they exist
-    if (newVal.permissions && Array.isArray(newVal.permissions)) {
-      console.log('Mapping permissions:', newVal.permissions)
       
-      // Loop through each permission string
-      newVal.permissions.forEach(permission => {
-        console.log('Processing permission:', permission, typeof permission)
-        
-        // Ensure permission is a string before processing
-        if (typeof permission === 'string') {
-          // Find the action that matches this permission exactly
-          permissionGroups.value.forEach(group => {
-            const matchingAction = group.actions.find(action => action.name === permission)
-            if (matchingAction) {
-              matchingAction.selected = true
-              console.log(`Selected: ${group.subject} - ${matchingAction.label}`)
-            }
-          })
-        }
-      })
+      // Apply selected permissions
+      if (newVal.permissions && Array.isArray(newVal.permissions)) {
+        applySelectedPermissions(newVal.permissions)
+      }
     }
   }
 }, { deep: true, immediate: true })
@@ -378,8 +357,18 @@ onMounted(fetchPermissions)
             Role Permissions
           </h5>
 
+          <div
+            v-if="isLoading"
+            class="d-flex justify-center my-4"
+          >
+            <VProgressCircular indeterminate />
+          </div>
+
           <!-- 👉 Role Permissions -->
-          <VTable class="permission-table text-no-wrap mb-6">
+          <VTable
+            v-else
+            class="permission-table text-no-wrap mb-6"
+          >
             <!-- 👉 Select All -->
             <tr>
               <td>
@@ -461,11 +450,11 @@ onMounted(fetchPermissions)
     border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     padding-block: 0.8rem;
     vertical-align: middle;
-
+    
     &:first-child {
       width: 40%;
     }
-
+    
     &:last-child {
       width: 60%;
     }

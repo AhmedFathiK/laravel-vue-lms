@@ -14,7 +14,7 @@ class ReceiptController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('permission:view.payment', ['only' => ['index', 'show']]);
+        $this->middleware('permission:view.payments', ['only' => ['index', 'show']]);
     }
 
     /**

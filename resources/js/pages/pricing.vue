@@ -11,6 +11,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    action: 'configure',
+    subject: 'pricing',
   },
 })
 

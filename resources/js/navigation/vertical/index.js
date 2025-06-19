@@ -1,12 +1,4 @@
 export default [
-  { 
-    heading: "Users",
-    abilities: [
-      { subject: 'Branches', action: ['view', 'delete'] },
-      { subject: 'General', action: ['view_dashboard'] },
-      { subject: 'users', action: ['view', 'edit1'] },
-    ],
-  },
   {
     title: 'Home',
     to: { name: 'root' },
@@ -14,35 +6,66 @@ export default [
     action: 'view',
     subject: 'users',
   },
-  {
-    title: 'Courses',
-    icon: { icon: 'tabler-book' },
-    children: [
-      {
-        title: 'All Courses',
-        to: '/admin/courses',
-      },
-      {
-        title: 'Categories',
-        to: '/admin/courses/categories',
-      },
-      {
-        title: 'Course Levels',
-        to: '/admin/courses/levels',
-      },
-      {
-        title: 'Subscription Plans',
-        to: '/admin/courses/subscription-plans',
-      },
+  { 
+    heading: "Users",
+    abilities: [
+      { subject: 'users', action: ['view'] },
+      { subject: 'admin_panel', action: ['access'] },
     ],
+  },
+  {
+    title: 'Users',
+    to: { name: 'admin-users' },
+    icon: { icon: 'tabler-users' },
     action: 'view',
     subject: 'users',
   },
   {
-    title: 'Second page',
-    to: { name: 'second-page' },
-    icon: { icon: 'tabler-file' },
+    title: 'Roles & Permissions',
+    to: { name: 'admin-roles' },
+    icon: { icon: 'tabler-lock' },
     action: 'view',
     subject: 'users',
   },
+  { 
+    heading: "Education",
+    abilities: [
+      { subject: 'courses', action: ['view'] },
+      { subject: 'course_categories', action: ['view'] },
+    ],
+  },
+  {
+    title: 'All Courses',
+    to: 'admin-courses',
+    subject: 'courses',
+    action: 'view',
+  },
+  {
+    title: 'Categories',
+    to: 'admin-courses-categories',
+    subject: 'course_category',
+    action: 'view',
+    icon: { icon: 'tabler-category' },
+  },
+  {
+    title: 'Questions',
+    to: { name: 'admin-questions' },
+    icon: { icon: 'tabler-help-circle' },
+    action: 'view',
+    subject: 'questions',
+  },
+  { 
+    heading: "General",
+    abilities: [
+      { subject: 'trash', action: ['view'] },
+    ],
+  },
+  {
+    title: 'Trash',
+    to: { name: 'admin-trash' },
+    icon: { icon: 'tabler-trash' },
+    action: 'view',
+    subject: 'trash',
+  },
+  
 ]

@@ -1,11 +1,12 @@
 <script setup>
 import Footer from '@/views/front-pages/front-page-footer.vue'
 import Navbar from '@/views/front-pages/front-page-navbar.vue'
+import { useConfigStore } from '@core/stores/config'
 import paypalDark from '@images/icons/payments/img/paypal-dark.png'
 import paypalLight from '@images/icons/payments/img/paypal-light.png'
 import visaDark from '@images/icons/payments/img/visa-dark.png'
 import visaLight from '@images/icons/payments/img/visa-light.png'
-import { useConfigStore } from '@core/stores/config'
+import { ref } from 'vue'
 
 const visa = useGenerateImageVariant(visaLight, visaDark)
 const paypal = useGenerateImageVariant(paypalLight, paypalDark)
@@ -16,6 +17,8 @@ definePage({
   meta: {
     layout: 'blank',
     public: true,
+    action: 'view',
+    subject: 'payments',
   },
 })
 

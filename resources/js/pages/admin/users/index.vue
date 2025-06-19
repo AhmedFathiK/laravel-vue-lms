@@ -4,6 +4,13 @@ import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'users',
+  },
+})
+
 const toast = useToast()
 
 // 👉 Store
@@ -483,11 +490,11 @@ onMounted(() => {
               :color="resolveUserRoleVariant(item.role_names?.[0]).color"
               variant="tonal"
             >
-              <span>{{ item.name.charAt(0).toUpperCase() }}</span>
+              <span>{{ (item.full_name || '').charAt(0).toUpperCase() }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
               <h6 class="text-base">
-                {{ item.name }}
+                {{ item.full_name }}
               </h6>
               <div class="text-sm">
                 {{ item.email }}

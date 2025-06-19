@@ -5,6 +5,15 @@ import UserTabBillingsPlans from '@/views/apps/user/view/UserTabBillingsPlans.vu
 import UserTabConnections from '@/views/apps/user/view/UserTabConnections.vue'
 import UserTabNotifications from '@/views/apps/user/view/UserTabNotifications.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
+import { ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'users',
+  },
+})
 
 const route = useRoute('apps-user-view-id')
 const userTab = ref(null)

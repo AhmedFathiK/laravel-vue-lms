@@ -3,25 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CourseCategory\DeleteCategoryRequest;
+use App\Http\Requests\Admin\CourseCategory\IndexCategoryRequest;
+use App\Http\Requests\Admin\CourseCategory\ShowCategoryRequest;
+use App\Http\Requests\Admin\CourseCategory\StoreCategoryRequest;
+use App\Http\Requests\Admin\CourseCategory\UpdateCategoryRequest;
 use App\Http\Resources\CourseCategoryResource;
 use App\Models\CourseCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 
 class CourseCategoryController extends Controller
 {
     /**
      * Display a listing of the categories.
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexCategoryRequest $request): JsonResponse
     {
-        // Check if user has permission to view categories
-        if (Gate::has('view.course_category') && !Gate::allows('view.course_category')) {
-            abort(403);
-        }
-
         $query = CourseCategory::query();
 
         // Apply filters
@@ -40,7 +38,7 @@ class CourseCategoryController extends Controller
         }
 
         // Apply sorting
-        $sortField = $request->get('sortBy', 'sort_order');
+        $sortField = $request->get('sortBy', 'id');
         $sortDirection = $request->get('orderBy', 'asc');
 
         if ($sortField === 'name') {
@@ -66,26 +64,9 @@ class CourseCategoryController extends Controller
     /**
      * Store a newly created category in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreCategoryRequest $request): JsonResponse
     {
-        // Check if user has permission to create categories
-        if (Gate::has('create.course_category') && !Gate::allows('create.course_category')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'name' => 'required',
-            'description' => 'nullable',
-            'slug' => 'nullable|string|unique:course_categories,slug',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ]);
-
-        // Generate slug if not provided
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
-
+        $validated = $request->validated();
         $category = CourseCategory::create($validated);
 
         return response()->json(new CourseCategoryResource($category), 201);
@@ -94,13 +75,8 @@ class CourseCategoryController extends Controller
     /**
      * Display the specified category.
      */
-    public function show(CourseCategory $courseCategory): JsonResponse
+    public function show(CourseCategory $courseCategory, ShowCategoryRequest $request): JsonResponse
     {
-        // Check if user has permission to view categories
-        if (Gate::has('view.course_category') && !Gate::allows('view.course_category')) {
-            abort(403);
-        }
-
         // Load relationship counts
         $courseCategory = CourseCategory::withCount('courses')->find($courseCategory->id);
 
@@ -110,26 +86,9 @@ class CourseCategoryController extends Controller
     /**
      * Update the specified category in storage.
      */
-    public function update(Request $request, CourseCategory $courseCategory): JsonResponse
+    public function update(UpdateCategoryRequest $request, CourseCategory $courseCategory): JsonResponse
     {
-        // Check if user has permission to update categories
-        if (Gate::has('update.course_category') && !Gate::allows('update.course_category')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required',
-            'description' => 'nullable',
-            'slug' => 'nullable|string|unique:course_categories,slug,' . $courseCategory->id,
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ]);
-
-        // Generate slug if not provided but name is changed
-        if (isset($validated['name']) && empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
-
+        $validated = $request->validated();
         $courseCategory->update($validated);
 
         return response()->json(new CourseCategoryResource($courseCategory));
@@ -138,13 +97,8 @@ class CourseCategoryController extends Controller
     /**
      * Remove the specified category from storage.
      */
-    public function destroy(CourseCategory $courseCategory): JsonResponse
+    public function destroy(CourseCategory $courseCategory, DeleteCategoryRequest $request): JsonResponse
     {
-        // Check if user has permission to delete categories
-        if (Gate::has('delete.course_category') && !Gate::allows('delete.course_category')) {
-            abort(403);
-        }
-
         // Check if category has courses
         if ($courseCategory->courses()->count() > 0) {
             return response()->json([

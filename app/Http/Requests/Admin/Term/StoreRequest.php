@@ -11,7 +11,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.term');
+        return $this->user()->can('create.terms');
     }
 
     /**
@@ -24,15 +24,13 @@ class StoreRequest extends FormRequest
         $rules = [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'term' => ['required', 'string', 'max:255'],
-            'definition' => ['required', 'array'],
-            'definition.en' => ['required', 'string'],
-            'translation' => ['nullable', 'array'],
-            'translation.en' => ['nullable', 'string'],
+            'definition' => ['required', 'string'],
+            'translation' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
-            'media_type' => ['nullable', 'string', 'in:image,video'],
-            'last_revision_date' => ['nullable', 'date'],
-            'next_revision_date' => ['nullable', 'date'],
-            'revision_counter' => ['nullable', 'integer'],
+            'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
+            'audio_url' => ['nullable', 'string', 'max:255'],
+            'example' => ['nullable', 'string'],
+            'example_audio_url' => ['nullable', 'string', 'max:255'],
         ];
 
         return $rules;

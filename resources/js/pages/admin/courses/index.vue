@@ -1,12 +1,19 @@
 <script setup>
 import CourseEditDialog from '@/components/dialogs/CourseEditDialog.vue'
-import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog.vue'
+import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import api from '@/utils/api'
 import { avatarText } from "@core/utils/formatters"
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'courses',
+  },
+})
 
 const toast = useToast()
 const { locale } = useI18n()
@@ -354,6 +361,10 @@ const navigateToLevels = courseId => {
   router.push(`/admin/courses/${courseId}/levels`)
 }
 
+const navigateToTerms = courseId => {
+  router.push(`/admin/courses/${courseId}/terms`)
+}
+
 // Show edit course dialog
 const showEditCourseDialog = course => {
   editCourse.value = course
@@ -606,6 +617,16 @@ onMounted(() => {
               Levels
             </VTooltip>
           </IconBtn>
+          
+          <IconBtn
+            color="success"
+            @click="navigateToTerms(item.id)"
+          >
+            <VIcon icon="tabler-vocabulary" />
+            <VTooltip activator="parent">
+              Terms
+            </VTooltip>
+          </IconBtn>
         </template>
 
         <!-- pagination -->
@@ -629,7 +650,7 @@ onMounted(() => {
     />
 
     <!-- 👉 Password Confirmation Dialog -->
-    <PasswordConfirmDialog
+    <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
       @confirm="handlePasswordConfirm"
     />

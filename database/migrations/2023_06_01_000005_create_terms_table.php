@@ -18,10 +18,10 @@ return new class extends Migration
             $table->json('definition');
             $table->json('translation')->nullable();
             $table->string('media_url')->nullable();
-            $table->string('media_type')->nullable(); // image, video
-            $table->timestamp('last_revision_date')->nullable();
-            $table->timestamp('next_revision_date')->nullable();
-            $table->integer('revision_counter')->default(0);
+            $table->string('media_type')->nullable(); // image, image_audio, video
+            $table->string('audio_url')->nullable(); // For image_audio type, stores the audio file URL
+            $table->json('example')->nullable(); // Example text with translations
+            $table->string('example_audio_url')->nullable(); // Audio pronunciation of the example
             $table->timestamps();
         });
     }

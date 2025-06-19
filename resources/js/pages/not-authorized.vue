@@ -1,8 +1,8 @@
 <script setup>
+import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import pages401 from '@images/pages/401.png'
 import miscMaskDark from '@images/pages/misc-mask-dark.png'
 import miscMaskLight from '@images/pages/misc-mask-light.png'
-import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 
 definePage({
   alias: '/pages/misc/not-authorized',
@@ -20,7 +20,7 @@ const authThemeMask = useGenerateImageVariant(miscMaskLight, miscMaskDark)
     <ErrorHeader
       status-code="401"
       title="You are not authorized! 🔐"
-      description="You don’t have permission to access this page. Go Home!."
+      description="You don't have permission to access this page. Go Home!."
     />
 
     <VBtn

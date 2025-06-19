@@ -16,7 +16,7 @@ class DestroyRoleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('delete.role');
+        return $this->user()->can('delete.roles');
     }
 
     /**

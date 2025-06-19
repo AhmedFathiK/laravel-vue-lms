@@ -1,6 +1,13 @@
 <script setup>
 import RoleCards from '@/views/roles/RoleCards.vue'
 import UserList from '@/views/roles/UserList.vue'
+
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'roles',
+  },
+})
 </script>
 
 <template>
@@ -24,7 +31,7 @@ import UserList from '@/views/roles/UserList.vue'
         Total users with their roles
       </h4>
       <p class="text-body-1 mb-0">
-        Find all of your company’s administrator accounts and their associate roles.
+        Find all of your company's administrator accounts and their associate roles.
       </p>
     </VCol>
 

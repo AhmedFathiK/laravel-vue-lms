@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('courses', function (Blueprint $table) {
-            $table->dropColumn(['price', 'sort_order']);
+            $table->dropColumn('sort_order');
         });
     }
 
@@ -22,7 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('courses', function (Blueprint $table) {
-            $table->decimal('price', 10, 2)->default(0)->after('thumbnail');
             $table->integer('sort_order')->default(0)->after('is_featured');
         });
     }

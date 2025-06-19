@@ -21,7 +21,7 @@ return new class extends Migration
 
         // Add is_free to courses table as well
         Schema::table('courses', function (Blueprint $table) {
-            $table->boolean('is_free')->default(false)->after('subscription_type');
+            $table->boolean('is_free')->default(false)->after('status');
         });
     }
 

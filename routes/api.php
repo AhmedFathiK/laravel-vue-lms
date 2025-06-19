@@ -132,15 +132,12 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Slide Management
     Route::get('lessons/{lesson}/slides', [SlideController::class, 'index']);
     Route::post('lessons/{lesson}/slides/order', [SlideController::class, 'updateOrder']);
-    Route::apiResource('slides', SlideController::class)->except(['index']);
     Route::get('slides/types', [SlideController::class, 'getTypes']);
+    Route::apiResource('slides', SlideController::class)->except(['index']);
 
     // Term Management
     Route::get('courses/{course}/terms', [TermController::class, 'index']);
     Route::apiResource('terms', TermController::class)->except(['index']);
-    Route::patch('terms/{term}/revision', [TermController::class, 'setRevisionSchedule']);
-    Route::post('terms/{term}/mark-revised', [TermController::class, 'markRevised']);
-    Route::get('terms/due-revisions', [TermController::class, 'getDueRevisions']);
     Route::post('terms/{term}/translate', [TermController::class, 'translate']);
 
     // Concept Management
@@ -234,7 +231,6 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Term Routes
     Route::get('courses/{course}/terms', [LearnerTermController::class, 'index']);
     Route::get('terms/{term}', [LearnerTermController::class, 'show']);
-    Route::get('terms/due-revisions', [LearnerTermController::class, 'dueForRevision']);
 
     // Concept Routes
     Route::get('courses/{course}/concepts', [LearnerConceptController::class, 'index']);

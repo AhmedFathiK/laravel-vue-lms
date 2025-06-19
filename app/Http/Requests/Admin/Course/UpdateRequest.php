@@ -11,7 +11,7 @@ class UpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('edit.course');
+        return $this->user()->can('edit.courses');
     }
 
     /**
@@ -22,14 +22,19 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title' => ['required'],
-            'description' => ['nullable'],
-            'status' => ['required', 'string', 'in:draft,published,archived'],
-            'thumbnail' => ['nullable', 'sometimes', 'file', 'image', 'max:2048'], // 2MB max
-            'is_featured' => ['nullable', 'boolean'],
-            'course_category_id' => ['nullable', 'exists:course_categories,id'],
-            'is_free' => ['nullable', 'boolean'],
-            'leaderboard_reset_frequency' => ['nullable', 'string', 'in:never,weekly,monthly'],
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'course_category_id' => 'sometimes|required|exists:course_categories,id',
+            'main_locale' => 'sometimes|required|string|size:2',
+            'level_id' => 'nullable|exists:levels,id',
+            'status' => 'sometimes|required|in:draft,published,archived',
+            'is_featured' => 'boolean',
+            'image' => 'nullable|image|max:2048',
+            'video_url' => 'nullable|url',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'price' => 'nullable|numeric|min:0',
+            'subscription_only' => 'boolean',
         ];
 
         return $rules;

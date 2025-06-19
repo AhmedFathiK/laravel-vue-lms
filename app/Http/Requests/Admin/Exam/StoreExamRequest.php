@@ -13,7 +13,7 @@ class StoreExamRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create exams');
+        return $this->user()->can('create.exams');
     }
 
     /**

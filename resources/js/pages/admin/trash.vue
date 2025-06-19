@@ -1,8 +1,16 @@
 <script setup>
-import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog.vue'
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
+import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import api from '@/utils/api'
 import { onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
+
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'trash',
+  },
+})
 
 const toast = useToast()
 const isLoading = ref(false)
@@ -16,8 +24,10 @@ const modelTypes = ref([])
 const sortBy = ref('deleted_at')
 const sortDesc = ref(true)
 
-// Password confirmation dialog
-const isPasswordDialogVisible = ref(false)
+// Dialog visibility
+const isDeletionDialogVisible = ref(false)
+const isRestoreDialogVisible = ref(false)
+const isEmptyTrashDialogVisible = ref(false)
 const currentAction = ref(null)
 const currentItemId = ref(null)
 
@@ -120,27 +130,40 @@ const handleTypeFilter = () => {
   fetchTrashItems()
 }
 
-// Open password confirmation dialog for restore or delete
+// Open confirmation dialog for restore or delete
 const confirmAction = (action, id) => {
   currentAction.value = action
   currentItemId.value = id
-  isPasswordDialogVisible.value = true
+  
+  if (action === 'restore') {
+    isRestoreDialogVisible.value = true
+  } else if (action === 'delete') {
+    isDeletionDialogVisible.value = true
+  } else if (action === 'empty') {
+    isEmptyTrashDialogVisible.value = true
+  }
 }
 
-// Handle password confirmation dialog result
-const handlePasswordConfirm = async result => {
+// Handle deletion confirmation dialog result
+const handleDeletionConfirm = async result => {
   if (!result.confirmed) return
   
-  // Here you would normally verify the password with the backend
-  // For this example, we'll just proceed with the action
-  
-  if (currentAction.value === 'restore') {
-    await restoreItem(currentItemId.value)
-  } else if (currentAction.value === 'delete') {
+  if (currentAction.value === 'delete') {
     await deleteItem(currentItemId.value)
   } else if (currentAction.value === 'empty') {
     await emptyTrash()
   }
+  
+  // Reset values
+  currentAction.value = null
+  currentItemId.value = null
+}
+
+// Handle restore confirmation dialog result
+const handleRestoreConfirm = async confirmed => {
+  if (!confirmed) return
+  
+  await restoreItem(currentItemId.value)
   
   // Reset values
   currentAction.value = null
@@ -286,33 +309,50 @@ onMounted(() => {
       </VCardText>
     </VCard>
 
-    <!-- Password Confirmation Dialog -->
-    <PasswordConfirmDialog
-      v-model:is-dialog-visible="isPasswordDialogVisible"
+    <!-- Restore Confirmation Dialog -->
+    <ConfirmDialog
+      v-model:is-dialog-visible="isRestoreDialogVisible"
+      confirmation-question="Are you sure you want to restore this item?"
+      confirm-title="Item Restored"
+      confirm-msg="The item has been restored successfully."
+      cancel-title="Action Cancelled"
+      cancel-msg="No changes were made."
+      @confirm="handleRestoreConfirm"
+    />
+
+    <!-- Deletion Confirmation Dialog -->
+    <DeletionConfirmDialog
+      v-model:is-dialog-visible="isDeletionDialogVisible"
       :confirmation-question="
-        currentAction === 'restore' 
-          ? 'Are you sure you want to restore this item?' 
-          : currentAction === 'delete' 
-            ? 'Are you sure you want to permanently delete this item?' 
-            : 'Are you sure you want to empty the trash?'
+        currentAction === 'delete' 
+          ? 'Are you sure you want to permanently delete this item?' 
+          : 'Are you sure you want to empty the trash?'
       "
       :confirm-title="
-        currentAction === 'restore' 
-          ? 'Item Restored' 
-          : currentAction === 'delete' 
-            ? 'Item Deleted' 
-            : 'Trash Emptied'
+        currentAction === 'delete' 
+          ? 'Item Deleted' 
+          : 'Trash Emptied'
       "
       :confirm-msg="
-        currentAction === 'restore' 
-          ? 'The item has been restored successfully.' 
-          : currentAction === 'delete' 
-            ? 'The item has been permanently deleted.' 
-            : 'The trash has been emptied successfully.'
+        currentAction === 'delete' 
+          ? 'The item has been permanently deleted.' 
+          : 'The trash has been emptied successfully.'
       "
       cancel-title="Action Cancelled"
       cancel-msg="No changes were made."
-      @confirm="handlePasswordConfirm"
+      @confirm="handleDeletionConfirm"
+    />
+
+    <!-- Empty Trash Confirmation Dialog -->
+    <DeletionConfirmDialog
+      v-model:is-dialog-visible="isEmptyTrashDialogVisible"
+      confirmation-question="Are you sure you want to empty the trash? This will permanently delete all items."
+      confirm-title="Trash Emptied"
+      confirm-msg="The trash has been emptied successfully."
+      cancel-title="Action Cancelled"
+      cancel-msg="No changes were made."
+      @confirm="handleDeletionConfirm"
     />
   </section>
 </template> 
+ 

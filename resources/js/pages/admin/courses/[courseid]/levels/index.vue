@@ -1,6 +1,6 @@
 <script setup>
+import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import LevelEditDialog from '@/components/dialogs/LevelEditDialog.vue'
-import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -34,13 +34,13 @@ const courseId = computed(() => route.params.courseid)
 
 // Headers for data table
 const headers = [
-  { title: 'ID', key: 'id' },
+  { title: 'ID', key: 'id', width: '80px' },
   { title: 'Title', key: 'title' },
   { title: 'Description', key: 'description', sortable: false },
-  { title: 'Order', key: 'sort_order' },
-  { title: 'Free Access', key: 'is_free' },
-  { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: 'Order', key: 'sort_order', width: '80px' },
+  { title: 'Free Access', key: 'is_free', width: '120px' },
+  { title: 'Status', key: 'status', width: '120px' },
+  { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
 ]
 
 // Fetch course details
@@ -269,6 +269,9 @@ onMounted(() => {
                 @click="openEditDialog(item)"
               >
                 <VIcon icon="tabler-edit" />
+                <VTooltip activator="parent">
+                  Edit
+                </VTooltip>
               </VBtn>
               <VBtn
                 icon
@@ -278,6 +281,21 @@ onMounted(() => {
                 @click="confirmDeleteLevel(item)"
               >
                 <VIcon icon="tabler-trash" />
+                <VTooltip activator="parent">
+                  Delete
+                </VTooltip>
+              </VBtn>
+              <VBtn
+                icon
+                variant="text"
+                color="info"
+                size="small"
+                @click="router.push(`/admin/courses/${courseId}/levels/${item.id}/lessons`)"
+              >
+                <VIcon icon="tabler-book" />
+                <VTooltip activator="parent">
+                  Manage Lessons
+                </VTooltip>
               </VBtn>
             </div>
           </template>
@@ -349,7 +367,7 @@ onMounted(() => {
     />
     
     <!-- Password Confirmation Dialog -->
-    <PasswordConfirmDialog
+    <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
       confirmation-question="Are you sure you want to delete this level? All associated lessons will also be deleted."
       confirm-title="Level Deleted"

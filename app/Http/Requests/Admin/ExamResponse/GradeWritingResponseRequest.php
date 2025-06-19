@@ -11,7 +11,7 @@ class GradeWritingResponseRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('grade exams');
+        return $this->user()->can('grade.exams');
     }
 
     /**
@@ -22,8 +22,8 @@ class GradeWritingResponseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'score' => ['required', 'numeric', 'min:0'],
-            'feedback' => ['nullable', 'string'],
+            'score' => 'required|numeric|min:0',
+            'feedback' => 'nullable|string',
         ];
     }
 }

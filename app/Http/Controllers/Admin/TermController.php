@@ -7,9 +7,9 @@ use App\Http\Requests\Admin\Term\StoreRequest;
 use App\Http\Requests\Admin\Term\UpdateRequest;
 use App\Models\Course;
 use App\Models\Term;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class TermController extends Controller
@@ -19,7 +19,7 @@ class TermController extends Controller
      */
     public function index(Request $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('view.term')) {
+        if (!Gate::allows('view.terms')) {
             abort(403);
         }
 
@@ -47,9 +47,18 @@ class TermController extends Controller
      */
     public function store(StoreRequest $request): JsonResponse
     {
-        $term = Term::create($request->validated());
+        try {
+            DB::beginTransaction();
 
-        return response()->json($term, 201);
+            $term = Term::create($request->validated());
+
+            DB::commit();
+
+            return response()->json($term, 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to create term: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -57,7 +66,7 @@ class TermController extends Controller
      */
     public function show(Term $term): JsonResponse
     {
-        if (!Gate::allows('view.term')) {
+        if (!Gate::allows('view.terms')) {
             abort(403);
         }
 
@@ -69,9 +78,18 @@ class TermController extends Controller
      */
     public function update(UpdateRequest $request, Term $term): JsonResponse
     {
-        $term->update($request->validated());
+        try {
+            DB::beginTransaction();
 
-        return response()->json($term);
+            $term->update($request->validated());
+
+            DB::commit();
+
+            return response()->json($term);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to update term: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -79,7 +97,7 @@ class TermController extends Controller
      */
     public function destroy(Term $term): JsonResponse
     {
-        if (!Gate::allows('delete.term')) {
+        if (!Gate::allows('delete.terms')) {
             abort(403);
         }
 
@@ -89,85 +107,11 @@ class TermController extends Controller
     }
 
     /**
-     * Set revision schedule for a term.
-     */
-    public function setRevisionSchedule(Request $request, Term $term): JsonResponse
-    {
-        if (!Gate::allows('configure_revision.term')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'next_revision_date' => ['required', 'date'],
-            'revision_counter' => ['required', 'integer', 'min:0'],
-        ]);
-
-        $term->update($validated);
-
-        return response()->json($term);
-    }
-
-    /**
-     * Mark a term as revised and calculate the next revision date.
-     */
-    public function markRevised(Term $term): JsonResponse
-    {
-        if (!Gate::allows('configure_revision.term')) {
-            abort(403);
-        }
-
-        // Implement SuperMemo 2 algorithm
-        $counter = $term->revision_counter + 1;
-
-        // Calculate interval (in days)
-        $interval = 1;
-        if ($counter == 1) {
-            $interval = 1;
-        } elseif ($counter == 2) {
-            $interval = 6;
-        } else {
-            // Calculate using the formula: interval = last_interval * 2.5
-            $lastInterval = Carbon::now()->diffInDays(Carbon::parse($term->last_revision_date));
-            $interval = round($lastInterval * 2.5);
-        }
-
-        $term->last_revision_date = Carbon::now();
-        $term->next_revision_date = Carbon::now()->addDays($interval);
-        $term->revision_counter = $counter;
-        $term->save();
-
-        return response()->json($term);
-    }
-
-    /**
-     * Get terms due for revision.
-     */
-    public function getDueRevisions(Request $request): JsonResponse
-    {
-        if (!Gate::allows('view.term')) {
-            abort(403);
-        }
-
-        $query = Term::query()
-            ->whereNotNull('next_revision_date')
-            ->where('next_revision_date', '<=', Carbon::now());
-
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-        }
-
-        $perPage = $request->get('per_page', 15);
-        $terms = $query->paginate($perPage);
-
-        return response()->json($terms);
-    }
-
-    /**
      * Translate a term to a specific locale.
      */
     public function translate(Request $request, Term $term): JsonResponse
     {
-        if (!Gate::allows('translate.term')) {
+        if (!Gate::allows('translate.terms')) {
             abort(403);
         }
 
@@ -175,16 +119,18 @@ class TermController extends Controller
             'locale' => ['required', 'string', 'max:10'],
             'translation' => ['required', 'string'],
             'definition' => ['required', 'string'],
+            'example' => ['nullable', 'string'],
         ]);
 
-        $translations = $term->getTranslations('translation');
-        $translations[$validated['locale']] = $validated['translation'];
-        $term->setTranslations('translation', $translations);
+        // For definition, use setTranslation directly
+        $term->setTranslation('definition', $validated['locale'], $validated['definition']);
 
-        $definitions = $term->getTranslations('definition');
-        $definitions[$validated['locale']] = $validated['definition'];
-        $term->setTranslations('definition', $definitions);
+        // For example, check if it exists first
+        if (isset($validated['example'])) {
+            $term->setTranslation('example', $validated['locale'], $validated['example']);
+        }
 
+        // Save the term
         $term->save();
 
         return response()->json($term);

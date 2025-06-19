@@ -20,7 +20,7 @@ class CourseController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (!Gate::allows('view.course')) {
+        if (!Gate::allows('view.courses')) {
             abort(403);
         }
 
@@ -114,7 +114,7 @@ class CourseController extends Controller
      */
     public function show(Course $course): JsonResponse
     {
-        if (!Gate::allows('view.course')) {
+        if (!Gate::allows('view.courses')) {
             abort(403);
         }
 
@@ -193,7 +193,7 @@ class CourseController extends Controller
      */
     public function destroy(Course $course): JsonResponse
     {
-        if (!Gate::allows('delete.course')) {
+        if (!Gate::allows('delete.courses')) {
             abort(403);
         }
 
@@ -207,7 +207,7 @@ class CourseController extends Controller
      */
     public function getSubscriptionPlans(Course $course): JsonResponse
     {
-        if (!Gate::allows('view.course')) {
+        if (!Gate::allows('view.courses')) {
             abort(403);
         }
 

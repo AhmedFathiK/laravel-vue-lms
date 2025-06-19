@@ -13,7 +13,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.slide');
+        return $this->user()->can('create.slides');
     }
 
     /**

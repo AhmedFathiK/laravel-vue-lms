@@ -11,7 +11,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.term');
+        return $this->user()->can('create.terms');
     }
 
     /**

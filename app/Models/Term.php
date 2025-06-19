@@ -19,20 +19,14 @@ class Term extends Model
         'translation',
         'media_url',
         'media_type',
-        'last_revision_date',
-        'next_revision_date',
-        'revision_counter',
+        'audio_url',
+        'example',
+        'example_audio_url',
     ];
 
     public array $translatable = [
         'definition',
-        'translation',
-    ];
-
-    protected $casts = [
-        'revision_counter' => 'integer',
-        'last_revision_date' => 'datetime',
-        'next_revision_date' => 'datetime',
+        'example',
     ];
 
     public function course(): BelongsTo

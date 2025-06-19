@@ -11,7 +11,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.course');
+        return $this->user()->can('create.courses');
     }
 
     /**
@@ -22,14 +22,19 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'title' => ['required'],
-            'description' => ['nullable'],
-            'status' => ['required', 'string', 'in:draft,published,archived'],
-            'thumbnail' => ['nullable', 'sometimes', 'file', 'image', 'max:2048'], // 2MB max
-            'is_featured' => ['nullable', 'boolean'],
-            'course_category_id' => ['nullable', 'exists:course_categories,id'],
-            'is_free' => ['nullable', 'boolean'],
-            'leaderboard_reset_frequency' => ['nullable', 'string', 'in:never,weekly,monthly'],
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'course_category_id' => 'required|exists:course_categories,id',
+            'main_locale' => 'required|string|size:2',
+            'level_id' => 'nullable|exists:levels,id',
+            'status' => 'required|in:draft,published,archived',
+            'is_featured' => 'boolean',
+            'image' => 'nullable|image|max:2048',
+            'video_url' => 'nullable|url',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'price' => 'nullable|numeric|min:0',
+            'subscription_only' => 'boolean',
         ];
 
         return $rules;
@@ -42,6 +47,10 @@ class StoreRequest extends FormRequest
     {
         if (!$this->has('status')) {
             $this->merge(['status' => 'draft']);
+        }
+
+        if (!$this->has('main_locale')) {
+            $this->merge(['main_locale' => config('app.locale', 'en')]);
         }
     }
 }

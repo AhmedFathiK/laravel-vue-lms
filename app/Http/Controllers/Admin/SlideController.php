@@ -18,7 +18,7 @@ class SlideController extends Controller
      */
     public function index(Request $request, Lesson $lesson): JsonResponse
     {
-        if (!Gate::allows('view.slide')) {
+        if (!Gate::allows('view.slides')) {
             abort(403);
         }
 
@@ -36,7 +36,23 @@ class SlideController extends Controller
 
         $slides = $query->get();
 
-        return response()->json($slides);
+        // Transform slides to ensure translations are properly handled
+        $transformedSlides = $slides->map(function ($slide) {
+            return [
+                'id' => $slide->id,
+                'lesson_id' => $slide->lesson_id,
+                'type' => $slide->type,
+                'content' => $slide->content,
+                'options' => $slide->options,
+                'correct_answer' => $slide->correct_answer,
+                'feedback' => $slide->feedback,
+                'sort_order' => $slide->sort_order,
+                'created_at' => $slide->created_at,
+                'updated_at' => $slide->updated_at,
+            ];
+        });
+
+        return response()->json($transformedSlides);
     }
 
     /**
@@ -46,7 +62,18 @@ class SlideController extends Controller
     {
         $slide = Slide::create($request->validated());
 
-        return response()->json($slide, 201);
+        return response()->json([
+            'id' => $slide->id,
+            'lesson_id' => $slide->lesson_id,
+            'type' => $slide->type,
+            'content' => $slide->content,
+            'options' => $slide->options,
+            'correct_answer' => $slide->correct_answer,
+            'feedback' => $slide->feedback,
+            'sort_order' => $slide->sort_order,
+            'created_at' => $slide->created_at,
+            'updated_at' => $slide->updated_at,
+        ], 201);
     }
 
     /**
@@ -54,11 +81,22 @@ class SlideController extends Controller
      */
     public function show(Slide $slide): JsonResponse
     {
-        if (!Gate::allows('view.slide')) {
+        if (!Gate::allows('view.slides')) {
             abort(403);
         }
 
-        return response()->json($slide);
+        return response()->json([
+            'id' => $slide->id,
+            'lesson_id' => $slide->lesson_id,
+            'type' => $slide->type,
+            'content' => $slide->content,
+            'options' => $slide->options,
+            'correct_answer' => $slide->correct_answer,
+            'feedback' => $slide->feedback,
+            'sort_order' => $slide->sort_order,
+            'created_at' => $slide->created_at,
+            'updated_at' => $slide->updated_at,
+        ]);
     }
 
     /**
@@ -68,7 +106,18 @@ class SlideController extends Controller
     {
         $slide->update($request->validated());
 
-        return response()->json($slide);
+        return response()->json([
+            'id' => $slide->id,
+            'lesson_id' => $slide->lesson_id,
+            'type' => $slide->type,
+            'content' => $slide->content,
+            'options' => $slide->options,
+            'correct_answer' => $slide->correct_answer,
+            'feedback' => $slide->feedback,
+            'sort_order' => $slide->sort_order,
+            'created_at' => $slide->created_at,
+            'updated_at' => $slide->updated_at,
+        ]);
     }
 
     /**
@@ -76,7 +125,7 @@ class SlideController extends Controller
      */
     public function destroy(Slide $slide): JsonResponse
     {
-        if (!Gate::allows('delete.slide')) {
+        if (!Gate::allows('delete.slides')) {
             abort(403);
         }
 
@@ -90,7 +139,7 @@ class SlideController extends Controller
      */
     public function updateOrder(Request $request, Lesson $lesson): JsonResponse
     {
-        if (!Gate::allows('reorder.slide')) {
+        if (!Gate::allows('reorder.slides')) {
             abort(403);
         }
 
@@ -114,7 +163,7 @@ class SlideController extends Controller
      */
     public function getTypes(): JsonResponse
     {
-        if (!Gate::allows('view.slide')) {
+        if (!Gate::allows('view.slides')) {
             abort(403);
         }
 

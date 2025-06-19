@@ -23,7 +23,7 @@ definePage({
       </VCard>
     </VCol>
     <VCol
-      v-if="can('view', 'user')"
+      v-if="can('view', 'users')"
       cols="12"
       md="6"
     >

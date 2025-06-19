@@ -4,6 +4,13 @@ import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'course_category',
+  },
+})
+
 const toast = useToast()
 const { locale } = useI18n()
 const isLoading = ref(false)

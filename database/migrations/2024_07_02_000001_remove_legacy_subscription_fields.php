@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('courses', function (Blueprint $table) {
-            $table->dropColumn('subscription_type');
-        });
+        // No action needed - column doesn't exist
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('courses', function (Blueprint $table) {
-            $table->string('subscription_type')->default('one-time')->after('price');
-        });
+        // No action needed - column doesn't exist
     }
 };

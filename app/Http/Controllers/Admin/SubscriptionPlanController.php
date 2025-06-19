@@ -18,7 +18,7 @@ class SubscriptionPlanController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('permission:view.payment', ['only' => ['index', 'show']]);
+        $this->middleware('permission:view.subscriptions', ['only' => ['index', 'show']]);
         $this->middleware('permission:configure.pricing', ['only' => ['store', 'update', 'destroy']]);
     }
 
@@ -27,7 +27,7 @@ class SubscriptionPlanController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (!Gate::allows('view.subscription')) {
+        if (!Gate::allows('view.subscriptions')) {
             abort(403);
         }
 
@@ -86,7 +86,7 @@ class SubscriptionPlanController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        if (!Gate::allows('create.subscription')) {
+        if (!Gate::allows('create.subscriptions')) {
             abort(403);
         }
 
@@ -138,7 +138,7 @@ class SubscriptionPlanController extends Controller
      */
     public function show(SubscriptionPlan $subscriptionPlan): JsonResponse
     {
-        if (!Gate::allows('view.subscription')) {
+        if (!Gate::allows('view.subscriptions')) {
             abort(403);
         }
 
@@ -152,7 +152,7 @@ class SubscriptionPlanController extends Controller
      */
     public function update(Request $request, SubscriptionPlan $subscriptionPlan): JsonResponse
     {
-        if (!Gate::allows('edit.subscription')) {
+        if (!Gate::allows('edit.subscriptions')) {
             abort(403);
         }
 
@@ -205,7 +205,7 @@ class SubscriptionPlanController extends Controller
      */
     public function destroy(SubscriptionPlan $subscriptionPlan): JsonResponse
     {
-        if (!Gate::allows('delete.subscription')) {
+        if (!Gate::allows('delete.subscriptions')) {
             abort(403);
         }
 
@@ -226,7 +226,7 @@ class SubscriptionPlanController extends Controller
      */
     public function getLevelsForCourse(Course $course): JsonResponse
     {
-        if (!Gate::allows('view.subscription')) {
+        if (!Gate::allows('view.subscriptions')) {
             abort(403);
         }
 

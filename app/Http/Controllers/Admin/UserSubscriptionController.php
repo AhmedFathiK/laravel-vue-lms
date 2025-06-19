@@ -15,8 +15,8 @@ class UserSubscriptionController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('permission:view.payment', ['only' => ['index', 'show']]);
-        $this->middleware('permission:manage.subscription', ['only' => ['store', 'update', 'destroy', 'cancel']]);
+        $this->middleware('permission:view.payments', ['only' => ['index', 'show']]);
+        $this->middleware('permission:manage.subscriptions', ['only' => ['store', 'update', 'destroy', 'cancel']]);
     }
 
     /**

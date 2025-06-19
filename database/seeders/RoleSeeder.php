@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
         $superAdminRole = Role::create([
             'name' => 'Super Admin',
             'is_protected' => true,
+            'guard_name' => 'web',
         ]);
         $superAdminRole->givePermissionTo(Permission::all());
 
@@ -24,16 +25,17 @@ class RoleSeeder extends Seeder
         $studentRole = Role::create([
             'name' => 'Student',
             'is_protected' => true,
+            'guard_name' => 'web',
         ]);
         $studentRole->givePermissionTo([
             // Basic viewing permissions
-            'view.course',
-            'view.level',
-            'view.lesson',
-            'view.slide',
-            'view.term',
-            'view.trophy',
-            'download.receipt',
+            'view.courses',
+            'view.levels',
+            'view.lessons',
+            'view.slides',
+            'view.terms',
+            'view.trophies',
+            'download.receipts',
         ]);
 
         $this->command->info('Roles seeded successfully!');

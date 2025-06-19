@@ -50,7 +50,10 @@ class RoleController extends Controller
 
         DB::beginTransaction();
         try {
-            $role = Role::create(['name' => $validated['name']]);
+            $role = Role::create([
+                'name' => $validated['name'],
+                'guard_name' => 'web'
+            ]);
 
             if (!empty($validated['permissions'])) {
                 $permissions = Permission::whereIn('name', $validated['permissions'])->get();
@@ -164,24 +167,8 @@ class RoleController extends Controller
     {
         $permissions = Permission::all(['id', 'name']);
 
-        // Group permissions by module
-        $groupedPermissions = [];
-        foreach ($permissions as $permission) {
-            $parts = explode('.', $permission->name);
-            $module = $parts[0] ?? 'Other';
-
-            if (!isset($groupedPermissions[$module])) {
-                $groupedPermissions[$module] = [];
-            }
-
-            $groupedPermissions[$module][] = [
-                'id' => $permission->id,
-                'name' => $permission->name,
-            ];
-        }
-
         return response()->json([
-            'permissions' => $groupedPermissions,
+            'permissions' => $permissions,
         ]);
     }
 }

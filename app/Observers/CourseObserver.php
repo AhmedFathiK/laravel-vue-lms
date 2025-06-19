@@ -28,7 +28,7 @@ class CourseObserver
      */
     public function deleted(Course $course): void
     {
-        // Create a trash item record
+        // Create a trash item record only for the course
         TrashItem::create([
             'model_type' => Course::class,
             'model_id' => $course->id,

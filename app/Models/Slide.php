@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 
 class Slide extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations, SoftDeletes;
 
     const TYPE_MCQ = 'mcq';
     const TYPE_MATCHING = 'matching_pairs';
@@ -18,6 +19,11 @@ class Slide extends Model
     const TYPE_FILL_BLANK_CHOICES = 'fill_blank_choices';
     const TYPE_TERM = 'term';
     const TYPE_EXPLANATION = 'explanation';
+
+    /**
+     * Flag to indicate cascading deletion from parent model
+     */
+    public static $cascadingDelete = false;
 
     protected $fillable = [
         'lesson_id',

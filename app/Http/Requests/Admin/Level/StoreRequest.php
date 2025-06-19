@@ -12,7 +12,7 @@ class StoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create.level');
+        return $this->user()->can('create.levels');
     }
 
     /**
@@ -41,13 +41,6 @@ class StoreRequest extends FormRequest
     {
         if (!$this->has('status')) {
             $this->merge(['status' => 'draft']);
-        }
-
-        // Automatically calculate the sort_order based on the highest existing order
-        if ($this->has('course_id')) {
-            $courseId = $this->input('course_id');
-            $maxOrder = Level::where('course_id', $courseId)->max('sort_order') ?? 0;
-            $this->merge(['sort_order' => $maxOrder + 1]);
         }
     }
 }

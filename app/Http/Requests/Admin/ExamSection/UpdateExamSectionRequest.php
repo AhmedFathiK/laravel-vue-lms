@@ -12,7 +12,7 @@ class UpdateExamSectionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('edit exam sections');
+        return $this->user()->can('edit.exam_sections');
     }
 
     /**

@@ -11,7 +11,7 @@ class UpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('edit.term');
+        return $this->user()->can('edit.terms');
     }
 
     /**
@@ -24,15 +24,13 @@ class UpdateRequest extends FormRequest
         $rules = [
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'term' => ['sometimes', 'string', 'max:255'],
-            'definition' => ['sometimes', 'array'],
-            'definition.*' => ['string'],
-            'translation' => ['nullable', 'array'],
-            'translation.*' => ['nullable', 'string'],
+            'definition' => ['sometimes', 'string'],
+            'translation' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
-            'media_type' => ['nullable', 'string', 'in:image,video'],
-            'last_revision_date' => ['nullable', 'date'],
-            'next_revision_date' => ['nullable', 'date'],
-            'revision_counter' => ['nullable', 'integer'],
+            'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
+            'audio_url' => ['nullable', 'string', 'max:255'],
+            'example' => ['nullable', 'string'],
+            'example_audio_url' => ['nullable', 'string', 'max:255'],
         ];
 
         return $rules;

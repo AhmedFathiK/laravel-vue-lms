@@ -18,7 +18,7 @@ class LessonController extends Controller
      */
     public function index(Request $request, Level $level): JsonResponse
     {
-        if (!Gate::allows('view.lesson')) {
+        if (!Gate::allows('view.lessons')) {
             abort(403);
         }
 
@@ -36,7 +36,26 @@ class LessonController extends Controller
 
         $lessons = $query->get();
 
-        return response()->json($lessons);
+        // Transform lessons to ensure translations are properly handled
+        $transformedLessons = $lessons->map(function ($lesson) {
+            return [
+                'id' => $lesson->id,
+                'level_id' => $lesson->level_id,
+                'title' => $lesson->title,
+                'description' => $lesson->description,
+                'sort_order' => $lesson->sort_order,
+                'status' => $lesson->status,
+                'is_free' => $lesson->is_free,
+                'video_url' => $lesson->video_url,
+                'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
+                'reshow_count' => $lesson->reshow_count,
+                'require_correct_answers' => $lesson->require_correct_answers,
+                'created_at' => $lesson->created_at,
+                'updated_at' => $lesson->updated_at,
+            ];
+        });
+
+        return response()->json($transformedLessons);
     }
 
     /**
@@ -46,7 +65,21 @@ class LessonController extends Controller
     {
         $lesson = Lesson::create($request->validated());
 
-        return response()->json($lesson, 201);
+        return response()->json([
+            'id' => $lesson->id,
+            'level_id' => $lesson->level_id,
+            'title' => $lesson->title,
+            'description' => $lesson->description,
+            'sort_order' => $lesson->sort_order,
+            'status' => $lesson->status,
+            'is_free' => $lesson->is_free,
+            'video_url' => $lesson->video_url,
+            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
+            'reshow_count' => $lesson->reshow_count,
+            'require_correct_answers' => $lesson->require_correct_answers,
+            'created_at' => $lesson->created_at,
+            'updated_at' => $lesson->updated_at,
+        ], 201);
     }
 
     /**
@@ -54,13 +87,45 @@ class LessonController extends Controller
      */
     public function show(Lesson $lesson): JsonResponse
     {
-        if (!Gate::allows('view.lesson')) {
+        if (!Gate::allows('view.lessons')) {
             abort(403);
         }
 
         $lesson->load('slides');
 
-        return response()->json($lesson);
+        // Transform lesson to ensure translations are properly handled
+        $transformedLesson = [
+            'id' => $lesson->id,
+            'level_id' => $lesson->level_id,
+            'title' => $lesson->title,
+            'description' => $lesson->description,
+            'sort_order' => $lesson->sort_order,
+            'status' => $lesson->status,
+            'is_free' => $lesson->is_free,
+            'video_url' => $lesson->video_url,
+            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
+            'reshow_count' => $lesson->reshow_count,
+            'require_correct_answers' => $lesson->require_correct_answers,
+            'created_at' => $lesson->created_at,
+            'updated_at' => $lesson->updated_at,
+            'slides' => $lesson->slides->map(function ($slide) {
+                return [
+                    'id' => $slide->id,
+                    'lesson_id' => $slide->lesson_id,
+                    'title' => $slide->title ?? null,
+                    'content' => $slide->content,
+                    'options' => $slide->options,
+                    'correct_answer' => $slide->correct_answer,
+                    'feedback' => $slide->feedback,
+                    'sort_order' => $slide->sort_order,
+                    'type' => $slide->type,
+                    'created_at' => $slide->created_at,
+                    'updated_at' => $slide->updated_at,
+                ];
+            }),
+        ];
+
+        return response()->json($transformedLesson);
     }
 
     /**
@@ -70,7 +135,21 @@ class LessonController extends Controller
     {
         $lesson->update($request->validated());
 
-        return response()->json($lesson);
+        return response()->json([
+            'id' => $lesson->id,
+            'level_id' => $lesson->level_id,
+            'title' => $lesson->title,
+            'description' => $lesson->description,
+            'sort_order' => $lesson->sort_order,
+            'status' => $lesson->status,
+            'is_free' => $lesson->is_free,
+            'video_url' => $lesson->video_url,
+            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
+            'reshow_count' => $lesson->reshow_count,
+            'require_correct_answers' => $lesson->require_correct_answers,
+            'created_at' => $lesson->created_at,
+            'updated_at' => $lesson->updated_at,
+        ]);
     }
 
     /**
@@ -78,7 +157,7 @@ class LessonController extends Controller
      */
     public function destroy(Lesson $lesson): JsonResponse
     {
-        if (!Gate::allows('delete.lesson')) {
+        if (!Gate::allows('delete.lessons')) {
             abort(403);
         }
 
@@ -92,7 +171,7 @@ class LessonController extends Controller
      */
     public function updateOrder(Request $request, Level $level): JsonResponse
     {
-        if (!Gate::allows('reorder.slide')) {
+        if (!Gate::allows('reorder.slides')) {
             abort(403);
         }
 
@@ -116,7 +195,7 @@ class LessonController extends Controller
      */
     public function configure(Request $request, Lesson $lesson): JsonResponse
     {
-        if (!Gate::allows('configure.lesson')) {
+        if (!Gate::allows('configure.lessons')) {
             abort(403);
         }
 
@@ -128,6 +207,20 @@ class LessonController extends Controller
 
         $lesson->update($validated);
 
-        return response()->json($lesson);
+        return response()->json([
+            'id' => $lesson->id,
+            'level_id' => $lesson->level_id,
+            'title' => $lesson->title,
+            'description' => $lesson->description,
+            'sort_order' => $lesson->sort_order,
+            'status' => $lesson->status,
+            'is_free' => $lesson->is_free,
+            'video_url' => $lesson->video_url,
+            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
+            'reshow_count' => $lesson->reshow_count,
+            'require_correct_answers' => $lesson->require_correct_answers,
+            'created_at' => $lesson->created_at,
+            'updated_at' => $lesson->updated_at,
+        ]);
     }
 }

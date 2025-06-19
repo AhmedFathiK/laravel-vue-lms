@@ -3,24 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Exam\DestroyExamRequest;
+use App\Http\Requests\Admin\Exam\IndexExamRequest;
+use App\Http\Requests\Admin\Exam\ShowExamRequest;
 use App\Http\Requests\Admin\Exam\StoreExamRequest;
 use App\Http\Requests\Admin\Exam\UpdateExamRequest;
 use App\Models\Exam;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class ExamController extends Controller
 {
     /**
      * Display a listing of the exams.
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexExamRequest $request): JsonResponse
     {
-        if (!Gate::allows('view exams')) {
-            abort(403);
-        }
-
         $query = Exam::query();
 
         // Apply filters
@@ -74,12 +71,8 @@ class ExamController extends Controller
     /**
      * Display the specified exam.
      */
-    public function show(Exam $exam): JsonResponse
+    public function show(Exam $exam, ShowExamRequest $request): JsonResponse
     {
-        if (!Gate::allows('view exams')) {
-            abort(403);
-        }
-
         $exam->load('sections.questions');
 
         return response()->json($exam);
@@ -101,12 +94,8 @@ class ExamController extends Controller
     /**
      * Remove the specified exam from storage.
      */
-    public function destroy(Exam $exam): JsonResponse
+    public function destroy(Exam $exam, DestroyExamRequest $request): JsonResponse
     {
-        if (!Gate::allows('delete exams')) {
-            abort(403);
-        }
-
         // Check if there are any attempts for this exam
         if ($exam->attempts()->exists()) {
             return response()->json([

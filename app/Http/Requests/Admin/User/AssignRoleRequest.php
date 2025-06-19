@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\User;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -12,7 +13,7 @@ class AssignRoleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('assign_role.user');
+        return $this->user()->can('assign_role.users');
     }
 
     /**
@@ -23,8 +24,8 @@ class AssignRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'roles' => ['required', 'array'],
-            'roles.*' => ['string', 'exists:roles,name', 'not_in:Super Admin'],
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,name',
         ];
     }
 

@@ -34,6 +34,11 @@ class Level extends Model
         'sort_order' => 'integer',
     ];
 
+    /**
+     * Flag to indicate cascading deletion from parent model
+     */
+    public static $cascadingDelete = false;
+
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
@@ -112,9 +117,17 @@ class Level extends Model
         // When a level is soft deleted, also soft delete all related lessons
         static::deleting(function ($level) {
             if (!$level->isForceDeleting()) {
+                // Propagate cascading flag to lessons
+                Lesson::$cascadingDelete = self::$cascadingDelete;
+
                 $level->lessons()->each(function ($lesson) {
                     $lesson->delete();
                 });
+
+                // Reset the lesson flag if we're not in a cascading delete
+                if (!self::$cascadingDelete) {
+                    Lesson::$cascadingDelete = false;
+                }
             }
         });
     }

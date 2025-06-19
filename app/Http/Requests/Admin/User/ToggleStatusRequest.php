@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\User;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -12,7 +13,7 @@ class ToggleStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('ban.user');
+        return $this->user()->can('ban.users');
     }
 
     /**
@@ -22,7 +23,9 @@ class ToggleStatusRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'is_active' => 'required|boolean',
+        ];
     }
 
     /**

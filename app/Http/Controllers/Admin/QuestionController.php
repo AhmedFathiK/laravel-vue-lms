@@ -3,24 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Question\DestroyQuestionRequest;
+use App\Http\Requests\Admin\Question\IndexQuestionRequest;
+use App\Http\Requests\Admin\Question\ShowQuestionRequest;
 use App\Http\Requests\Admin\Question\StoreQuestionRequest;
 use App\Http\Requests\Admin\Question\UpdateQuestionRequest;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class QuestionController extends Controller
 {
     /**
      * Display a listing of the questions.
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexQuestionRequest $request): JsonResponse
     {
-        if (!Gate::allows('view questions')) {
-            abort(403);
-        }
-
         $query = Question::query();
 
         // Apply filters
@@ -79,12 +76,8 @@ class QuestionController extends Controller
     /**
      * Display the specified question.
      */
-    public function show(Question $question): JsonResponse
+    public function show(Question $question, ShowQuestionRequest $request): JsonResponse
     {
-        if (!Gate::allows('view questions')) {
-            abort(403);
-        }
-
         return response()->json($question);
     }
 
@@ -104,12 +97,8 @@ class QuestionController extends Controller
     /**
      * Remove the specified question from storage.
      */
-    public function destroy(Question $question): JsonResponse
+    public function destroy(Question $question, DestroyQuestionRequest $request): JsonResponse
     {
-        if (!Gate::allows('delete questions')) {
-            abort(403);
-        }
-
         // Check if the question is used in any exams
         if ($question->examSections()->exists()) {
             return response()->json([

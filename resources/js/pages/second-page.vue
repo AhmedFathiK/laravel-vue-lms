@@ -11,3 +11,12 @@
     </VCard>
   </div>
 </template>
+
+<script setup>
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'users',
+  },
+})
+</script>

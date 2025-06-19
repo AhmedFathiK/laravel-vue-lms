@@ -13,7 +13,7 @@ class UpdateQuestionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('edit questions');
+        return $this->user()->can('edit.questions');
     }
 
     /**
@@ -24,12 +24,9 @@ class UpdateQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'course_id' => ['nullable', 'exists:courses,id'],
-            'level_id' => ['nullable', 'exists:levels,id'],
-            'lesson_id' => ['nullable', 'exists:lessons,id'],
-            'question_text' => ['required', 'array'],
+            'question_text' => ['sometimes', 'required', 'array'],
             'question_text.*' => ['required', 'string'],
-            'type' => ['required', Rule::in([
+            'type' => ['sometimes', 'required', Rule::in([
                 Question::TYPE_MCQ,
                 Question::TYPE_MATCHING,
                 Question::TYPE_FILL_BLANK,
@@ -39,8 +36,11 @@ class UpdateQuestionRequest extends FormRequest
             ])],
             'options' => ['nullable', 'array'],
             'correct_answer' => ['nullable', 'array'],
-            'points' => ['required', 'integer', 'min:1'],
-            'difficulty' => ['required', Rule::in(['easy', 'medium', 'hard'])],
+            'points' => ['sometimes', 'required', 'integer', 'min:1'],
+            'difficulty' => ['sometimes', 'required', Rule::in(['easy', 'medium', 'hard'])],
+            'course_id' => ['nullable', 'exists:courses,id'],
+            'level_id' => ['nullable', 'exists:levels,id'],
+            'lesson_id' => ['nullable', 'exists:lessons,id'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
             'explanation' => ['nullable', 'array'],

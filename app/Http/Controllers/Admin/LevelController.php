@@ -19,7 +19,7 @@ class LevelController extends Controller
      */
     public function index(Request $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('view.level')) {
+        if (!Gate::allows('view.levels')) {
             abort(403);
         }
 
@@ -66,12 +66,13 @@ class LevelController extends Controller
             $data['status'] = 'draft';
         }
 
+        $lastLevel = Level::select("course_id", "sort_order")->where("course_id", $data['course_id'])->orderBy('sort_order', 'desc')->get("sort_order")->first();
         // Create level with current locale data
         $level = Level::create([
             'course_id' => $data['course_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? '',
-            'sort_order' => $data['sort_order'] ?? 0,
+            'sort_order' => $lastLevel ? $lastLevel->sort_order + 1 : 1,
             'status' => $data['status'],
             'is_unlocked' => $data['is_unlocked'] ?? false,
             'is_free' => $data['is_free'] ?? false,
@@ -85,7 +86,7 @@ class LevelController extends Controller
      */
     public function show(Level $level): JsonResponse
     {
-        if (!Gate::allows('view.level')) {
+        if (!Gate::allows('view.levels')) {
             abort(403);
         }
 
@@ -112,7 +113,7 @@ class LevelController extends Controller
      */
     public function destroy(Level $level): JsonResponse
     {
-        if (!Gate::allows('delete.level')) {
+        if (!Gate::allows('delete.levels')) {
             abort(403);
         }
 
@@ -126,7 +127,7 @@ class LevelController extends Controller
      */
     public function updateOrder(Request $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('reorder.slide')) {
+        if (!Gate::allows('reorder.slides')) {
             abort(403);
         }
 
@@ -150,7 +151,7 @@ class LevelController extends Controller
      */
     public function toggleUnlock(Level $level): JsonResponse
     {
-        if (!Gate::allows('unlock.level')) {
+        if (!Gate::allows('unlock.levels')) {
             abort(403);
         }
 

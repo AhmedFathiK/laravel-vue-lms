@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 
 class Lesson extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations, SoftDeletes;
 
     protected $fillable = [
         'level_id',
@@ -37,6 +38,11 @@ class Lesson extends Model
         'reshow_count' => 'integer',
         'require_correct_answers' => 'boolean',
     ];
+
+    /**
+     * Flag to indicate cascading deletion from parent model
+     */
+    public static $cascadingDelete = false;
 
     public function level(): BelongsTo
     {
@@ -65,5 +71,30 @@ class Lesson extends Model
 
         // Otherwise, check level access which handles subscription checks
         return $this->level->isAccessibleToUser($user);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When a lesson is soft deleted, also soft delete all related slides
+        static::deleting(function ($lesson) {
+            if (!$lesson->isForceDeleting()) {
+                // Propagate cascading flag to slides
+                Slide::$cascadingDelete = self::$cascadingDelete;
+
+                $lesson->slides()->each(function ($slide) {
+                    $slide->delete();
+                });
+
+                // Reset the slide flag if we're not in a cascading delete
+                if (!self::$cascadingDelete) {
+                    Slide::$cascadingDelete = false;
+                }
+            }
+        });
     }
 }

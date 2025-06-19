@@ -104,7 +104,7 @@ class CourseAccessController extends Controller
      */
     public function getFreeCourseContent(Course $course): JsonResponse
     {
-        if (!Gate::allows('view.course')) {
+        if (!Gate::allows('view.courses')) {
             abort(403);
         }
 

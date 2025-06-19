@@ -34,8 +34,8 @@ const emit = defineEmits([
   'confirm',
 ])
 
-const password = ref('')
-const passwordError = ref('')
+const deleteText = ref('')
+const deleteTextError = ref('')
 const isSubmitting = ref(false)
 const unsubscribed = ref(false)
 const cancelled = ref(false)
@@ -43,26 +43,32 @@ const cancelled = ref(false)
 const updateModelValue = val => {
   emit('update:isDialogVisible', val)
   if (!val) {
-    password.value = ''
-    passwordError.value = ''
+    deleteText.value = ''
+    deleteTextError.value = ''
   }
 }
 
 const onConfirmation = () => {
-  if (!password.value) {
-    passwordError.value = 'Password is required'
-    
+  if (!deleteText.value) {
+    deleteTextError.value = 'Confirmation text is required'
+
+    return
+  }
+  
+  if (deleteText.value !== 'Delete') {
+    deleteTextError.value = 'Please type "Delete" exactly as shown'
+
     return
   }
   
   isSubmitting.value = true
   
-  // Emit the password for verification
-  emit('confirm', { confirmed: true, password: password.value })
+  // Emit the confirmation
+  emit('confirm', { confirmed: true })
   
   // Reset and close
-  password.value = ''
-  passwordError.value = ''
+  deleteText.value = ''
+  deleteTextError.value = ''
   isSubmitting.value = false
   updateModelValue(false)
   unsubscribed.value = true
@@ -70,15 +76,15 @@ const onConfirmation = () => {
 
 const onCancel = () => {
   emit('confirm', { confirmed: false })
-  password.value = ''
-  passwordError.value = ''
+  deleteText.value = ''
+  deleteTextError.value = ''
   emit('update:isDialogVisible', false)
   cancelled.value = true
 }
 </script>
 
 <template>
-  <!-- 👉 Password Confirm Dialog -->
+  <!-- 👉 Deletion Confirm Dialog -->
   <VDialog
     max-width="500"
     :model-value="props.isDialogVisible"
@@ -89,14 +95,14 @@ const onCancel = () => {
       <DialogCloseBtn @click="onCancel" />
       
       <VCardTitle class="text-h5 pa-6">
-        Confirm Action
+        Confirm Deletion
       </VCardTitle>
       
       <VCardText class="text-center px-10 pt-2 pb-4">
         <VBtn
           icon
           variant="outlined"
-          color="warning"
+          color="error"
           class="my-4"
           style="block-size: 88px;inline-size: 88px; pointer-events: none;"
         >
@@ -108,11 +114,10 @@ const onCancel = () => {
         </h6>
         
         <AppTextField
-          v-model="password"
-          label="Password"
-          placeholder="Enter your password to confirm"
-          type="password"
-          :error-messages="passwordError"
+          v-model="deleteText"
+          label="Confirmation"
+          placeholder="Type 'Delete' to confirm"
+          :error-messages="deleteTextError"
           @keyup.enter="onConfirmation"
         />
       </VCardText>
@@ -120,11 +125,11 @@ const onCancel = () => {
       <VCardText class="d-flex align-center justify-center gap-2 pb-6">
         <VBtn
           variant="elevated"
-          color="primary"
+          color="error"
           :loading="isSubmitting"
           @click="onConfirmation"
         >
-          Confirm
+          Delete
         </VBtn>
 
         <VBtn

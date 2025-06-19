@@ -12,7 +12,7 @@ class DestroyUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('delete.user');
+        return $this->user()->can('delete.users');
     }
 
     /**

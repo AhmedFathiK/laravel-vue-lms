@@ -18,7 +18,7 @@ class ConceptController extends Controller
      */
     public function index(Request $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('view.term')) {
+        if (!Gate::allows('view.terms')) {
             abort(403);
         }
 
@@ -60,7 +60,7 @@ class ConceptController extends Controller
      */
     public function show(Concept $concept): JsonResponse
     {
-        if (!Gate::allows('view.term')) {
+        if (!Gate::allows('view.terms')) {
             abort(403);
         }
 
@@ -82,7 +82,7 @@ class ConceptController extends Controller
      */
     public function destroy(Concept $concept): JsonResponse
     {
-        if (!Gate::allows('delete.term')) {
+        if (!Gate::allows('delete.terms')) {
             abort(403);
         }
 
@@ -96,7 +96,7 @@ class ConceptController extends Controller
      */
     public function getTypes(): JsonResponse
     {
-        if (!Gate::allows('view.term')) {
+        if (!Gate::allows('view.terms')) {
             abort(403);
         }
 
@@ -117,7 +117,7 @@ class ConceptController extends Controller
      */
     public function translate(Request $request, Concept $concept): JsonResponse
     {
-        if (!Gate::allows('translate.term')) {
+        if (!Gate::allows('translate.terms')) {
             abort(403);
         }
 

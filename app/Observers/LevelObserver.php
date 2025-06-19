@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Level;
 use App\Models\TrashItem;
+use App\Models\Lesson;
 
 class LevelObserver
 {
@@ -28,30 +29,29 @@ class LevelObserver
      */
     public function deleted(Level $level): void
     {
-        // Only create a trash item if this is a direct deletion, not a cascaded one from course deletion
-        $isDirectDeletion = !TrashItem::where('model_type', get_class($level->course))
-            ->where('model_id', $level->course_id)
-            ->where('deleted_at', '>=', now()->subMinutes(1))
-            ->exists();
-
-        if ($isDirectDeletion) {
-            // Create a trash item record
-            TrashItem::create([
-                'model_type' => Level::class,
-                'model_id' => $level->id,
-                'name' => $level->title,
-                'deleted_at' => now(),
-                'additional_data' => [
-                    'course_id' => $level->course_id,
-                    'sort_order' => $level->sort_order,
-                    'status' => $level->status,
-                    'is_free' => $level->is_free,
-                ],
-            ]);
-
-            // Reorder remaining levels to fill the gap
+        // If this is a cascading delete from course, don't create a trash item
+        if (Level::$cascadingDelete) {
+            // Just reorder remaining levels to fill the gap
             $this->reorderLevelsAfterDeletion($level);
+            return;
         }
+
+        // This is a direct deletion, create a trash item record
+        TrashItem::create([
+            'model_type' => Level::class,
+            'model_id' => $level->id,
+            'name' => $level->title,
+            'deleted_at' => now(),
+            'additional_data' => [
+                'course_id' => $level->course_id,
+                'sort_order' => $level->sort_order,
+                'status' => $level->status,
+                'is_free' => $level->is_free,
+            ],
+        ]);
+
+        // Reorder remaining levels to fill the gap
+        $this->reorderLevelsAfterDeletion($level);
     }
 
     /**
@@ -68,17 +68,20 @@ class LevelObserver
         $this->recalculateLevelOrderAfterRestore($level);
 
         // Restore all related lessons that were soft-deleted with this level
-        $level->lessons()->onlyTrashed()->each(function ($lesson) {
-            // Check if the lesson was deleted separately (has its own trash item)
-            $hasOwnTrashItem = TrashItem::where('model_type', get_class($lesson))
-                ->where('model_id', $lesson->id)
-                ->exists();
+        Lesson::onlyTrashed()
+            ->where('level_id', $level->id)
+            ->get()
+            ->each(function ($lesson) {
+                // Check if the lesson was deleted separately (has its own trash item)
+                $hasOwnTrashItem = TrashItem::where('model_type', get_class($lesson))
+                    ->where('model_id', $lesson->id)
+                    ->exists();
 
-            // Only restore lessons that don't have their own trash item
-            if (!$hasOwnTrashItem) {
-                $lesson->restore();
-            }
-        });
+                // Only restore lessons that don't have their own trash item
+                if (!$hasOwnTrashItem) {
+                    $lesson->restore();
+                }
+            });
     }
 
     /**

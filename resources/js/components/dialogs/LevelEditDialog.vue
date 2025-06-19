@@ -29,7 +29,7 @@ const isFormValid = ref(true)
 // Form data
 const title = ref('')
 const description = ref('')
-const sortOrder = ref(0)
+
 const isFree = ref(false)
 const status = ref('draft')
 
@@ -44,7 +44,7 @@ const statusOptions = [
 const resetFormValues = () => {
   title.value = ''
   description.value = ''
-  sortOrder.value = 0
+
   isFree.value = false
   status.value = 'draft'
   isFormValid.value = true
@@ -55,7 +55,6 @@ watch(() => props.levelData, () => {
   if (props.levelData) {
     title.value = props.levelData.title || ''
     description.value = props.levelData.description || ''
-    sortOrder.value = props.levelData.sort_order || 0
     isFree.value = props.levelData.is_free || false
     status.value = props.levelData.status || 'draft'
   } else {
@@ -83,10 +82,9 @@ const onSubmit = async () => {
   const formData = {
     title: title.value,
     description: description.value,
-    sort_order: sortOrder.value,
-    is_free: isFree.value,
+    "is_free": isFree.value,
     status: status.value,
-    course_id: props.courseId,
+    "course_id": props.courseId,
   }
 
   try {
@@ -161,19 +159,6 @@ const onSubmit = async () => {
                 label="Description"
                 placeholder="Enter level description"
                 rows="4"
-              />
-            </VCol>
-
-            <!-- Sort Order -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model.number="sortOrder"
-                label="Sort Order"
-                type="number"
-                min="0"
               />
             </VCol>
 
