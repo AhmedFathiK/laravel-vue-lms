@@ -45,42 +45,49 @@ class StoreQuestionRequest extends FormRequest
             'points' => ['required', 'integer', 'min:0'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_type' => ['nullable', Rule::in(['image', 'audio', 'video'])],
+            'options' => ['nullable', 'array'],
+            'correct_answer' => ['nullable', 'array'],
         ];
 
-        // Add validation rules based on question type
-        switch ($this->input('type')) {
+        // Add specific rules for different question types
+        $type = $this->input('type');
+
+        switch ($type) {
             case Question::TYPE_MCQ:
                 $rules['options'] = ['required', 'array', 'min:2'];
-                $rules['options.*.text'] = ['required', 'array'];
-                $rules['options.*.text.*'] = ['required', 'string'];
-                $rules['options.*.is_correct'] = ['required', 'boolean'];
+                $rules['options.*'] = ['required', 'string'];
+                $rules['correct_answer'] = ['required', 'array', 'min:1'];
+                $rules['correct_answer.*'] = ['required', 'string'];
                 break;
 
             case Question::TYPE_FILL_BLANK:
-                $rules['answers'] = ['required', 'array', 'min:1'];
-                $rules['answers.*'] = ['required', 'string'];
-                $rules['case_sensitive'] = ['boolean'];
+                $rules['correct_answer'] = ['required', 'array', 'min:1'];
+                $rules['correct_answer.*'] = ['required', 'string'];
+                break;
+
+            case Question::TYPE_FILL_BLANK_CHOICES:
+                $rules['blanks'] = ['required', 'array', 'min:1'];
+                $rules['blanks.*.placeholder'] = ['nullable', 'string'];
+                $rules['blanks.*.options'] = ['required', 'array', 'min:2'];
+                $rules['blanks.*.options.*'] = ['required', 'string'];
+                $rules['blanks.*.correct_answer'] = ['required', 'string'];
                 break;
 
             case Question::TYPE_MATCHING:
-                $rules['pairs'] = ['required', 'array', 'min:2'];
-                $rules['pairs.*.left'] = ['required', 'array'];
-                $rules['pairs.*.left.*'] = ['required', 'string'];
-                $rules['pairs.*.right'] = ['required', 'array'];
-                $rules['pairs.*.right.*'] = ['required', 'string'];
+                $rules['matching_pairs'] = ['required', 'array', 'min:2'];
+                $rules['matching_pairs.*.left'] = ['required', 'string'];
+                $rules['matching_pairs.*.right'] = ['required', 'string'];
                 break;
 
             case Question::TYPE_REORDERING:
-                $rules['items'] = ['required', 'array', 'min:2'];
-                $rules['items.*.text'] = ['required', 'array'];
-                $rules['items.*.text.*'] = ['required', 'string'];
-                $rules['items.*.position'] = ['required', 'integer', 'min:0'];
+                $rules['reordering_items'] = ['required', 'array', 'min:2'];
+                $rules['reordering_items.*'] = ['required', 'string'];
                 break;
 
             case Question::TYPE_WRITING:
-                $rules['word_limit'] = ['nullable', 'integer', 'min:1'];
-                $rules['rubric'] = ['nullable', 'array'];
-                $rules['rubric.*'] = ['nullable', 'string'];
+                $rules['grading_guidelines'] = ['nullable', 'string'];
+                $rules['min_words'] = ['nullable', 'integer', 'min:0'];
+                $rules['max_words'] = ['nullable', 'integer', 'min:0'];
                 break;
         }
 

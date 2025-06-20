@@ -118,6 +118,9 @@ dependencies:
   vue-router:
     specifier: 4.5.0
     version: 4.5.0(vue@3.5.13)
+  vue-slicksort:
+    specifier: ^2.0.5
+    version: 2.0.5(vue@3.5.13)
   vue-toastification:
     specifier: 2.0.0-rc.5
     version: 2.0.0-rc.5(vue@3.5.13)
@@ -1459,8 +1462,8 @@ packages:
     resolution: {integrity: sha512-ukFn0I01HsSgr3VYhYcvkTCLS7rGa0gw4A4AMpcy/A9xx/zRJy7PS2BElMXLwUazVFMAr5zuiTk3MQeoeGXaJg==}
     engines: {node: '>= 16'}
 
-  /@intlify/shared@11.1.5:
-    resolution: {integrity: sha512-+I4vRzHm38VjLr/CAciEPJhGYFzWWW4HMTm+6H3WqknXLh0ozNX9oC8ogMUwTSXYR/wGUb1/lTpNziiCH5MybQ==}
+  /@intlify/shared@11.1.6:
+    resolution: {integrity: sha512-G1Pe4UILhiGOItuehRW+Pk9/NlnRaMFsdnhZ1fwBjiHvrzitmPNZdLx7Eo3GPfRrsk1mdkilZSfgH8SnM419vA==}
     engines: {node: '>= 16'}
     dev: true
 
@@ -1484,8 +1487,8 @@ packages:
     dependencies:
       '@eslint-community/eslint-utils': 4.4.1(eslint@8.57.1)
       '@intlify/bundle-utils': 9.0.0(vue-i18n@10.0.4)
-      '@intlify/shared': 11.1.5
-      '@intlify/vue-i18n-extensions': 7.0.0(@intlify/shared@11.1.5)(vue-i18n@10.0.4)(vue@3.5.13)
+      '@intlify/shared': 11.1.6
+      '@intlify/vue-i18n-extensions': 7.0.0(@intlify/shared@11.1.6)(vue-i18n@10.0.4)(vue@3.5.13)
       '@rollup/pluginutils': 5.1.4
       '@typescript-eslint/scope-manager': 8.18.1
       '@typescript-eslint/typescript-estree': 8.18.1(typescript@5.7.2)
@@ -1507,7 +1510,7 @@ packages:
       - typescript
     dev: true
 
-  /@intlify/vue-i18n-extensions@7.0.0(@intlify/shared@11.1.5)(vue-i18n@10.0.4)(vue@3.5.13):
+  /@intlify/vue-i18n-extensions@7.0.0(@intlify/shared@11.1.6)(vue-i18n@10.0.4)(vue@3.5.13):
     resolution: {integrity: sha512-MtvfJnb4aklpCU5Q/dkWkBT/vGsp3qERiPIwtTq5lX4PCLHtUprAJZp8wQj5ZcwDaFCU7+yVMjYbeXpIf927cA==}
     engines: {node: '>= 18'}
     peerDependencies:
@@ -1526,7 +1529,7 @@ packages:
         optional: true
     dependencies:
       '@babel/parser': 7.26.3
-      '@intlify/shared': 11.1.5
+      '@intlify/shared': 11.1.6
       vue: 3.5.13(typescript@5.7.2)
       vue-i18n: 10.0.4(vue@3.5.13)
     dev: true
@@ -8121,6 +8124,14 @@ packages:
       shepherd.js: 11.2.0
       vue: 3.5.13(typescript@5.7.2)
     dev: true
+
+  /vue-slicksort@2.0.5(vue@3.5.13):
+    resolution: {integrity: sha512-fXz1YrNjhUbJK7o0tMk27mIr4pMAZYLSYvtmLazCtfpvz+zafPCn34ILDL8B7hT7WLVZKreYs6JVe5VWymqmzA==}
+    peerDependencies:
+      vue: '>=3.0.0'
+    dependencies:
+      vue: 3.5.13(typescript@5.7.2)
+    dev: false
 
   /vue-toastification@2.0.0-rc.5(vue@3.5.13):
     resolution: {integrity: sha512-q73e5jy6gucEO/U+P48hqX+/qyXDozAGmaGgLFm5tXX4wJBcVsnGp4e/iJqlm9xzHETYOilUuwOUje2Qg1JdwA==}

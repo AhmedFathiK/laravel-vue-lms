@@ -203,6 +203,16 @@ class SlideController extends Controller
                 'label' => 'Explanation',
                 'description' => 'Text-based explanation with formatting support',
             ],
+            [
+                'value' => 'question',
+                'label' => 'Question',
+                'description' => 'Use an existing question from the question bank',
+            ],
+            [
+                'value' => 'term',
+                'label' => 'Term Reference',
+                'description' => 'Reference an existing term from the terminology database',
+            ],
         ];
 
         return response()->json($types);

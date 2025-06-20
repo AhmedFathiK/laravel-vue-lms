@@ -19,6 +19,8 @@ class Slide extends Model
     const TYPE_FILL_BLANK_CHOICES = 'fill_blank_choices';
     const TYPE_TERM = 'term';
     const TYPE_EXPLANATION = 'explanation';
+    const TYPE_QUESTION = 'question';
+    const TYPE_TERM_REFERENCE = 'term';
 
     /**
      * Flag to indicate cascading deletion from parent model
@@ -33,6 +35,8 @@ class Slide extends Model
         'correct_answer',
         'feedback',
         'sort_order',
+        'question_id',
+        'term_id',
     ];
 
     public array $translatable = [
@@ -49,5 +53,15 @@ class Slide extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    public function question(): BelongsTo
+    {
+        return $this->belongsTo(Question::class);
+    }
+
+    public function term(): BelongsTo
+    {
+        return $this->belongsTo(Term::class);
     }
 }

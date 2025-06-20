@@ -27,6 +27,8 @@ const editedItem = ref({
   correct_answer: [],
   feedback: { en: '' },
   sort_order: 0,
+  question_id: null,
+  term_id: null,
 })
 
 const defaultItem = {
@@ -38,9 +40,13 @@ const defaultItem = {
   correct_answer: [],
   feedback: { en: '' },
   sort_order: 0,
+  question_id: null,
+  term_id: null,
 }
 
 const selectedSlide = ref(null)
+const selectedQuestion = ref(null)
+const selectedTerm = ref(null)
 const formTitle = computed(() => editedItem.value.id ? 'Edit Slide' : 'New Slide')
 const reordering = ref(false)
 
@@ -206,13 +212,28 @@ const save = async () => {
   isSubmitting.value = true
   
   try {
+    // Prepare data for submission
+    const submitData = { ...editedItem.value }
+    
+    // If type is question, add the question_id
+    if (editedItem.value.type === 'question' && selectedQuestion.value) {
+      submitData.question_id = selectedQuestion.value.id
+      submitData.content = { en: selectedQuestion.value.question_text.en || selectedQuestion.value.question_text }
+    }
+    
+    // If type is term, add the term_id
+    if (editedItem.value.type === 'term' && selectedTerm.value) {
+      submitData.term_id = selectedTerm.value.id
+      submitData.content = { en: selectedTerm.value.term }
+    }
+    
     if (editedItem.value.id) {
       // Update existing slide
-      await api.put(`/admin/slides/${editedItem.value.id}`, editedItem.value)
+      await api.put(`/admin/slides/${editedItem.value.id}`, submitData)
       toast.success('Slide updated successfully')
     } else {
       // Create new slide
-      await api.post('/admin/slides', editedItem.value)
+      await api.post('/admin/slides', submitData)
       toast.success('Slide created successfully')
     }
     
@@ -225,6 +246,36 @@ const save = async () => {
     isSubmitting.value = false
   }
 }
+
+// Handle question selection
+const onQuestionSelected = question => {
+  if (question) {
+    selectedQuestion.value = question
+
+    // Update content with question text
+    editedItem.value.content = { en: question.question_text.en || question.question_text }
+  }
+}
+
+// Handle term selection
+const onTermSelected = term => {
+  if (term) {
+    selectedTerm.value = term
+
+    // Update content with term text
+    editedItem.value.content = { en: term.term }
+  }
+}
+
+// Check if slide type is question
+const isQuestionType = computed(() => {
+  return editedItem.value.type === 'question'
+})
+
+// Check if slide type is term
+const isTermType = computed(() => {
+  return editedItem.value.type === 'term'
+})
 
 // Toggle reorder mode
 const toggleReorderMode = () => {
@@ -467,7 +518,106 @@ onMounted(refreshData)
               </VSelect>
             </VCol>
             
-            <VCol cols="12">
+            <!-- Question Selector (for question type) -->
+            <VCol
+              v-if="isQuestionType"
+              cols="12"
+            >
+              <AppServerSideAutocomplete
+                api-link="/admin/questions"
+                api-method="get"
+                :api-request-data="{ course_id: null }"
+                api-search-key="search"
+                :minimum-search-chars="3"
+                label="Select Question"
+                item-title="question_text.en"
+                item-value="id"
+                return-object
+                @item-selected="onQuestionSelected"
+              >
+                <template #item="{ item, props }">
+                  <VListItem v-bind="props">
+                    <VListItemTitle>{{ item.question_text.en || item.question_text }}</VListItemTitle>
+                    <VListItemSubtitle>{{ item.type }} - {{ item.difficulty }}</VListItemSubtitle>
+                  </VListItem>
+                </template>
+              </AppServerSideAutocomplete>
+              
+              <div
+                v-if="selectedQuestion"
+                class="mt-2 pa-2 border rounded"
+              >
+                <div class="d-flex align-center justify-space-between">
+                  <div>
+                    <strong>Selected Question:</strong> {{ selectedQuestion.question_text.en || selectedQuestion.question_text }}
+                  </div>
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="selectedQuestion = null"
+                  >
+                    <VIcon icon="tabler-x" />
+                  </VBtn>
+                </div>
+                <div class="mt-1">
+                  <small>Type: {{ selectedQuestion.type }} | Difficulty: {{ selectedQuestion.difficulty }}</small>
+                </div>
+              </div>
+            </VCol>
+            
+            <!-- Term Selector (for term type) -->
+            <VCol
+              v-if="isTermType"
+              cols="12"
+            >
+              <AppServerSideAutocomplete
+                api-link="/admin/terms"
+                api-method="get"
+                :api-request-data="{ course_id: null }"
+                api-search-key="search"
+                :minimum-search-chars="3"
+                label="Select Term"
+                item-title="term"
+                item-value="id"
+                return-object
+                @item-selected="onTermSelected"
+              >
+                <template #item="{ item, props }">
+                  <VListItem v-bind="props">
+                    <VListItemTitle>{{ item.term }}</VListItemTitle>
+                    <VListItemSubtitle>{{ item.definition?.en || item.definition }}</VListItemSubtitle>
+                  </VListItem>
+                </template>
+              </AppServerSideAutocomplete>
+              
+              <div
+                v-if="selectedTerm"
+                class="mt-2 pa-2 border rounded"
+              >
+                <div class="d-flex align-center justify-space-between">
+                  <div>
+                    <strong>Selected Term:</strong> {{ selectedTerm.term }}
+                  </div>
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="selectedTerm = null"
+                  >
+                    <VIcon icon="tabler-x" />
+                  </VBtn>
+                </div>
+                <div class="mt-1">
+                  <small>Definition: {{ selectedTerm.definition?.en || selectedTerm.definition }}</small>
+                </div>
+              </div>
+            </VCol>
+            
+            <VCol
+              v-if="!isQuestionType && !isTermType"
+              cols="12"
+            >
               <VTextarea
                 v-model="editedItem.content.en"
                 label="Content (English)"

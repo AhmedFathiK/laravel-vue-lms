@@ -33,6 +33,8 @@ class StoreRequest extends FormRequest
                 Slide::TYPE_FILL_BLANK_CHOICES,
                 Slide::TYPE_TERM,
                 Slide::TYPE_EXPLANATION,
+                Slide::TYPE_QUESTION,
+                Slide::TYPE_TERM_REFERENCE,
             ])],
             'content' => ['required', 'array'],
             'content.en' => ['required', 'string'],
@@ -41,6 +43,8 @@ class StoreRequest extends FormRequest
             'feedback' => ['nullable', 'array'],
             'feedback.en' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
+            'question_id' => ['nullable', 'integer', 'exists:questions,id'],
+            'term_id' => ['nullable', 'integer', 'exists:terms,id'],
         ];
 
         return $rules;
