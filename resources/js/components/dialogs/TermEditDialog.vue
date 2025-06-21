@@ -2,7 +2,6 @@
 import api from '@/utils/api'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
@@ -23,7 +22,6 @@ const props = defineProps({
 const emit = defineEmits(['update:isDialogVisible', 'term-saved'])
 
 const toast = useToast()
-const { locale, t } = useI18n()
 const isSubmitting = ref(false)
 const formRef = ref(null)
 const isFormValid = ref(true)
@@ -38,7 +36,6 @@ const formData = ref({
   course_id: props.courseId,
   term: '',
   definition: '',
-  translation: '',
   media_url: '',
   media_type: '',
   audio_url: '',
@@ -61,33 +58,20 @@ const isEditMode = computed(() => !!props.term)
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
     resetForm()
-
-    // If we have a term to edit, populate the form
     if (props.term) {
       formData.value = {
         course_id: props.courseId,
-        term: props.term.term,
+        term: props.term.term || '',
         definition: props.term.definition || '',
-        translation: props.term.translation || '',
         media_url: props.term.media_url || '',
         media_type: props.term.media_type || '',
         audio_url: props.term.audio_url || '',
         example: props.term.example || '',
         example_audio_url: props.term.example_audio_url || '',
       }
-      
-      // Update previews
-      if (props.term.media_url) {
-        mediaPreview.value = props.term.media_url
-      }
-      
-      if (props.term.audio_url) {
-        audioPreview.value = props.term.audio_url
-      }
-      
-      if (props.term.example_audio_url) {
-        exampleAudioPreview.value = props.term.example_audio_url
-      }
+      if (props.term.media_url) mediaPreview.value = props.term.media_url
+      if (props.term.audio_url) audioPreview.value = props.term.audio_url
+      if (props.term.example_audio_url) exampleAudioPreview.value = props.term.example_audio_url
     }
   }
 }, { immediate: true })
@@ -98,7 +82,6 @@ const resetForm = () => {
     course_id: props.courseId,
     term: '',
     definition: '',
-    translation: '',
     media_url: '',
     media_type: '',
     audio_url: '',
@@ -227,16 +210,6 @@ const showAudioField = computed(() => {
                 required
                 auto-grow
                 rows="3"
-              />
-            </VCol>
-            
-            <!-- Translation -->
-            <VCol cols="12">
-              <VTextarea
-                v-model="formData.translation"
-                label="Translation"
-                auto-grow
-                rows="2"
               />
             </VCol>
             
@@ -391,4 +364,4 @@ const showAudioField = computed(() => {
   justify-content: center;
   align-items: center;
 }
-</style> 
+</style>

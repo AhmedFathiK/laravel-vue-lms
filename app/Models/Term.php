@@ -16,7 +16,6 @@ class Term extends Model
         'course_id',
         'term',
         'definition',
-        'translation',
         'media_url',
         'media_type',
         'audio_url',
@@ -25,6 +24,7 @@ class Term extends Model
     ];
 
     public array $translatable = [
+        'term',
         'definition',
         'example',
     ];

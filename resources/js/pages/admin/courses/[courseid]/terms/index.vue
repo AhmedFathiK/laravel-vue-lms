@@ -3,14 +3,16 @@ import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vu
 import TermEditDialog from '@/components/dialogs/TermEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+
+// Removed useI18n import
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
 const router = useRouter()
 const toast = useToast()
 const route = useRoute()
-const { locale } = useI18n()
+
+// Removed locale reference
 const isLoading = ref(false)
 const course = ref(null)
 const terms = ref([])
@@ -34,6 +36,7 @@ const searchQuery = ref('')
 // Get course ID from route parameter
 const courseId = computed(() => route.params.courseid)
 
+
 // Headers for data table
 const headers = [
   { title: 'ID', key: 'id', width: '80px' },
@@ -48,15 +51,20 @@ const headers = [
 const fetchCourse = async () => {
   if (!courseId.value) return
   
+  isLoading.value = true
   try {
-    isLoading.value = true
-
     const response = await api.get(`/admin/courses/${courseId.value}`)
-
-    course.value = response.course || response
+    
+    // The API returns the course directly, not wrapped in a data property
+    if (response && typeof response === 'object') {
+      course.value = response.course || response
+    } else {
+      toast.error('Course not found')
+      course.value = null
+    }
   } catch (error) {
     console.error('Error fetching course:', error)
-    toast.error('Failed to load course details')
+    course.value = null
   } finally {
     isLoading.value = false
   }
@@ -87,7 +95,6 @@ const fetchTerms = async () => {
     totalItems.value = response.total || 0
   } catch (error) {
     console.error('Error fetching terms:', error)
-    toast.error('Failed to load terms')
   } finally {
     isLoading.value = false
   }
@@ -144,20 +151,7 @@ const confirmDelete = async () => {
   }
 }
 
-// Get definition in current locale or fallback to English
-const getLocalizedDefinition = definition => {
-  if (!definition) return ''
-  
-  try {
-    const parsedDefinition = typeof definition === 'string' 
-      ? JSON.parse(definition) 
-      : definition
-    
-    return parsedDefinition[locale.value] || parsedDefinition.en || ''
-  } catch (e) {
-    return typeof definition === 'string' ? definition : ''
-  }
-}
+// Removed getLocalizedTerm function
 
 // Format media type for display
 const formatMediaType = type => {
@@ -174,7 +168,7 @@ const formatMediaType = type => {
 
 // Check if term has an example
 const hasExample = term => {
-  return term.example && term.example.en && term.example.en.trim() !== ''
+  return term.example && term.example.trim() !== ''
 }
 
 // Count examples
@@ -193,10 +187,7 @@ watch(searchQuery, () => {
   fetchTerms()
 })
 
-// Watch for locale changes
-watch(() => locale.value, () => {
-  fetchTerms()
-})
+// Removed locale watch
 
 onMounted(() => {
   fetchCourse()
@@ -211,16 +202,16 @@ onMounted(() => {
       :items="[
         { title: 'Admin', disabled: true },
         { title: 'Courses', to: '/admin/courses' },
-        { title: course ? course.title : 'Course', to: `/admin/courses/${courseId}` },
+        { title: course ? course.title : 'Course', disabled: true },
         { title: 'Terms', disabled: true }
       ]"
       class="mb-4"
     />
     
-    <VCard>
+    <VCard v-if="course">
       <VCardText class="d-flex justify-space-between align-center flex-wrap">
         <h2 class="text-h5 mb-3 mb-sm-0">
-          Terms for {{ course ? course.title : 'Course' }}
+          Terms for {{ course.title }}
         </h2>
         <VBtn 
           color="primary" 
@@ -270,7 +261,7 @@ onMounted(() => {
               class="text-truncate d-inline-block"
               style="max-width: 300px;"
             >
-              {{ getLocalizedDefinition(item.definition) }}
+              {{ item.definition }}
             </span>
           </template>
           
@@ -322,6 +313,49 @@ onMounted(() => {
       </VCardText>
     </VCard>
 
+    <VCard
+      v-else-if="isLoading"
+      class="text-center py-8"
+    >
+      <VCardText>
+        <VProgressCircular
+          indeterminate
+          color="primary"
+        />
+        <div class="mt-4">
+          Loading course details...
+        </div>
+      </VCardText>
+    </VCard>
+    
+    <VCard
+      v-else
+      class="text-center py-8"
+    >
+      <VCardText>
+        <VIcon
+          icon="tabler-alert-circle"
+          color="error"
+          size="large"
+        />
+        <div class="text-h6 mt-4">
+          Course Not Found
+        </div>
+        <div class="mt-2">
+          The requested course could not be found or you don't have permission to view it.
+        </div>
+        <div class="mt-2">
+          <VBtn 
+            color="primary"
+            variant="text"
+            @click="router.push('/admin/courses')"
+          >
+            ← Back to Course List
+          </VBtn>
+        </div>
+      </VCardText>
+    </VCard>
+
     <!-- Term Edit Dialog -->
     <TermEditDialog
       v-model:is-dialog-visible="isDialogVisible"
@@ -338,4 +372,4 @@ onMounted(() => {
       @confirmed="confirmDelete"
     />
   </section>
-</template> 
+</template>

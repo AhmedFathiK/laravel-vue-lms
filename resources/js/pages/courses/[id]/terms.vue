@@ -116,20 +116,7 @@ const getLocalizedDefinition = definition => {
   }
 }
 
-// Get translation in current locale or fallback to English
-const getLocalizedTranslation = translation => {
-  if (!translation) return ''
-  
-  try {
-    const parsedTranslation = typeof translation === 'string' 
-      ? JSON.parse(translation) 
-      : translation
-    
-    return parsedTranslation[locale.value] || parsedTranslation.en || ''
-  } catch (e) {
-    return typeof translation === 'string' ? translation : ''
-  }
-}
+// Removed getLocalizedTerm function
 
 // Get example in current locale or fallback to English
 const getLocalizedExample = example => {
@@ -295,22 +282,7 @@ onMounted(() => {
             </VBtn>
           </div>
 
-          <!-- Translation if available -->
-          <div
-            v-if="getLocalizedTranslation(selectedTerm.translation)"
-            class="mb-3"
-          >
-            <VChip
-              color="primary"
-              size="small"
-              class="mb-1"
-            >
-              Translation
-            </VChip>
-            <p class="text-body-1">
-              {{ getLocalizedTranslation(selectedTerm.translation) }}
-            </p>
-          </div>
+          <!-- Translation section removed -->
           
           <!-- Definition -->
           <div class="mb-5">
@@ -448,4 +420,4 @@ onMounted(() => {
   background-color: rgba(0, 0, 0, 0.02);
   border-radius: 8px;
 }
-</style> 
+</style>

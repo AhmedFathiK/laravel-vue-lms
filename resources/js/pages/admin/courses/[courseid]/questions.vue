@@ -1,6 +1,5 @@
 <script setup>
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import QuestionEditDialog from '@/components/dialogs/QuestionEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -18,6 +17,8 @@ const toast = useToast()
 const { locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
+
+// Get course ID from route parameter
 const courseId = computed(() => route.params.courseid)
 
 // Data refs
@@ -26,6 +27,7 @@ const selectedType = ref(null)
 const selectedDifficulty = ref(null)
 const selectedTag = ref(null)
 const isLoading = ref(false)
+const course = ref(null)
 const page = ref(1)
 const itemsPerPage = ref(10)
 const sortBy = ref([{ key: 'created_at', order: 'desc' }])
@@ -100,6 +102,24 @@ const widgetData = ref([
     iconColor: 'info',
   },
 ])
+
+// Fetch course details
+const fetchCourse = async () => {
+  if (!courseId.value) return
+  
+  try {
+    isLoading.value = true
+
+    const response = await api.get(`/admin/courses/${courseId.value}`)
+
+    course.value = response.course || response
+  } catch (error) {
+    console.error('Error fetching course:', error)
+    toast.error('Failed to load course details')
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // Fetch questions
 const fetchQuestions = async () => {
@@ -256,6 +276,7 @@ const getQuestionTypeLabel = type => {
 
 // Initialize
 onMounted(() => {
+  fetchCourse()
   fetchQuestions()
 })
 
@@ -272,6 +293,17 @@ watch(() => locale.value, () => {
 
 <template>
   <section>
+    <!-- Breadcrumb Navigation -->
+    <VBreadcrumbs
+      :items="[
+        { title: 'Admin', disabled: true },
+        { title: 'Courses', to: '/admin/courses' },
+        { title: course ? course.title : 'Course', disabled: true },
+        { title: 'Questions', disabled: true }
+      ]"
+      class="mb-4"
+    />
+
     <VRow>
       <!-- Stats Widgets -->
       <VCol
@@ -478,11 +510,13 @@ watch(() => locale.value, () => {
     </VCard>
 
     <!-- Question Edit Dialog -->
+    
     <QuestionEditDialog
       v-model:is-dialog-visible="isEditDialogVisible"
       :question="editQuestion"
       @submit="saveQuestion"
-    />
+    /> 
+   
 
     <!-- Delete Confirmation Dialog -->
     <DeletionConfirmDialog

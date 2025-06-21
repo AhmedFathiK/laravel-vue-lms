@@ -25,7 +25,6 @@ class StoreRequest extends FormRequest
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'term' => ['required', 'string', 'max:255'],
             'definition' => ['required', 'string'],
-            'translation' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],

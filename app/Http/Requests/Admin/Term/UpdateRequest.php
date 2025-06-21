@@ -25,7 +25,6 @@ class UpdateRequest extends FormRequest
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'term' => ['sometimes', 'string', 'max:255'],
             'definition' => ['sometimes', 'string'],
-            'translation' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],

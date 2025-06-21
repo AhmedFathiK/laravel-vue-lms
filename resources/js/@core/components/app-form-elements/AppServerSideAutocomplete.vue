@@ -71,7 +71,8 @@ const searchApi = async () => {
       emit('search', response.data)
     }
   } catch (error) {
-    handleResponseError(error)
+    console.log(error)
+    toast.error("Error fetching results.")
     searchNoDataText.value = t(`Please enter ${props.minimumSearchChars} or more characters`)
   } finally {
     loading.value = false
