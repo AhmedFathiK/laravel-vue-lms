@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\User;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ToggleStatusRequest extends FormRequest
 {
@@ -44,5 +46,10 @@ class ToggleStatusRequest extends FormRequest
                 $validator->errors()->add('user', "Users with the Super Admin role cannot be banned or have their status changed.");
             }
         });
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

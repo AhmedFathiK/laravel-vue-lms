@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\CourseCategory;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class DeleteCategoryRequest extends FormRequest
 {
@@ -22,5 +24,10 @@ class DeleteCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

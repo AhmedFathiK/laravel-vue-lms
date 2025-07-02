@@ -51,24 +51,26 @@ const searchApi = async () => {
   searchResults.value = []
 
   try {
-    let response
+    let responseData
     if (props.apiMethod.toLowerCase() === "get") {
-      response = await api.get(props.apiLink, { 
+      responseData = await api.get(props.apiLink, { 
         params: { ...props.apiRequestData, [props.apiSearchKey]: search.value }, 
       })
     } else {
-      response = await axios.post(props.apiLink, { 
+      responseData = await axios.post(props.apiLink, { 
         ...props.apiRequestData, 
         "_method": props.apiMethod, 
         [props.apiSearchKey]: search.value, 
       })
     }
     
-    if (response.data.length === 0) {
+    if (responseData.length === 0) {
       searchNoDataText.value = t("No results found")
     } else {
-      searchResults.value = response.data
-      emit('search', response.data)
+      searchResults.value = responseData
+      emit('search', responseData)
+      console.log(responseData)
+      
     }
   } catch (error) {
     console.log(error)

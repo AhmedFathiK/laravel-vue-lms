@@ -4,6 +4,8 @@ namespace App\Http\Requests\Learner;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class RevisionRequest extends FormRequest
 {
@@ -57,5 +59,10 @@ class RevisionRequest extends FormRequest
             ],
             default => [],
         };
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

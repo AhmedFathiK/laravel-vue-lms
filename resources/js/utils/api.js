@@ -113,6 +113,23 @@ api.interceptors.response.use(
       
       return Promise.reject(error)
     }
+
+    // Handle 401 Unauthorized errors
+    if (error.response && error.response.status === 401 && error.config.url !== '/auth/logout' && authStore.isAuthenticated) {
+      console.error('Unauthorized access (401). Logging out.')
+      toast.error('Your session has expired. Please log in again.')
+      
+      try {
+        // Attempt to log the user out properly
+        await authStore.logout()
+      } catch (logoutError) {
+        console.error('Logout failed after 401:', logoutError)
+      } finally {
+
+        // Redirect to login page, avoiding navigation errors if already there
+        window.location.href = '/login'
+      }
+    }
     
     // Pass through other errors for handling in components
     return Promise.reject(error)

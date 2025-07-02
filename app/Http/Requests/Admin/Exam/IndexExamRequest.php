@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\Exam;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class IndexExamRequest extends FormRequest
 {
@@ -32,5 +34,10 @@ class IndexExamRequest extends FormRequest
             'sort_direction' => 'nullable|in:asc,desc',
             'per_page' => 'nullable|integer|min:1|max:100',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

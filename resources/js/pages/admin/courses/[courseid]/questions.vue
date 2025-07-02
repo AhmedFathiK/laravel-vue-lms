@@ -1,5 +1,6 @@
 <script setup>
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
+import QuestionEditDialog from '@/components/dialogs/QuestionEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -46,7 +47,7 @@ const availableTags = ref([])
 // Edit and delete dialogs
 const isEditDialogVisible = ref(false)
 const isDeleteDialogVisible = ref(false)
-const editQuestion = ref(null)
+const editQuestion = ref({})
 const questionToDelete = ref(null)
 
 // Question types mapping
@@ -126,18 +127,18 @@ const fetchQuestions = async () => {
   isLoading.value = true
   try {
     const params = {
-      course_id: courseId.value,
+      "course_id": courseId.value,
       search: searchQuery.value || undefined,
       type: selectedType.value || undefined,
       difficulty: selectedDifficulty.value || undefined,
       tags: selectedTag.value || undefined,
-      sort_by: sortBy.value[0]?.key || 'created_at',
-      sort_direction: sortBy.value[0]?.order || 'desc',
+      "sort_by": sortBy.value[0]?.key || 'created_at',
+      "sort_direction": sortBy.value[0]?.order || 'desc',
       page: page.value,
-      per_page: itemsPerPage.value,
+      "per_page": itemsPerPage.value,
     }
     
-    const response = await api.get('/admin/questions', { params })
+    const response = await api.get(`/admin/courses/${courseId.value}/questions`, { params })
     
     if (response && typeof response === 'object') {
       questionsData.value = response
@@ -201,15 +202,15 @@ const updateOptions = options => {
 // Add new question
 const addNewQuestion = () => {
   editQuestion.value = {
-    course_id: courseId.value,
+    "course_id": courseId.value,
     type: 'mcq',
     difficulty: 'medium',
     points: 1,
-    question_text: { en: '' },
+    "question_text": '',
     options: [],
-    correct_answer: [],
+    "correct_answer": [],
     tags: [],
-    explanation: { en: '' },
+
   }
   isEditDialogVisible.value = true
 }
@@ -218,24 +219,6 @@ const addNewQuestion = () => {
 const onEditQuestion = question => {
   editQuestion.value = { ...question }
   isEditDialogVisible.value = true
-}
-
-// Save question (create or update)
-const saveQuestion = async question => {
-  try {
-    if (question.id) {
-      await api.put(`/admin/questions/${question.id}`, question)
-      toast.success('Question updated successfully')
-    } else {
-      await api.post('/admin/questions', question)
-      toast.success('Question created successfully')
-    }
-    
-    fetchQuestions()
-  } catch (error) {
-    console.error('Error saving question:', error)
-    toast.error('Failed to save question')
-  }
 }
 
 // Delete question
@@ -248,7 +231,7 @@ const deleteQuestion = async () => {
   if (!questionToDelete.value) return
   
   try {
-    await api.delete(`/admin/questions/${questionToDelete.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/questions/${questionToDelete.value.id}`)
     toast.success('Question deleted successfully')
     fetchQuestions()
   } catch (error) {
@@ -431,11 +414,13 @@ watch(() => locale.value, () => {
         @update:options="updateOptions"
       >
         <!-- Question text column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.question_text="{ item }">
           <div>{{ formatQuestionText(item) }}</div>
         </template>
 
         <!-- Type column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.type="{ item }">
           <VChip
             :color="item.type === 'mcq' ? 'success' : item.type === 'writing' ? 'info' : 'warning'"
@@ -447,6 +432,7 @@ watch(() => locale.value, () => {
         </template>
 
         <!-- Difficulty column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.difficulty="{ item }">
           <VChip
             :color="item.difficulty === 'easy' ? 'success' : item.difficulty === 'medium' ? 'warning' : 'error'"
@@ -458,6 +444,7 @@ watch(() => locale.value, () => {
         </template>
 
         <!-- Actions column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <VBtn
@@ -514,7 +501,8 @@ watch(() => locale.value, () => {
     <QuestionEditDialog
       v-model:is-dialog-visible="isEditDialogVisible"
       :question="editQuestion"
-      @submit="saveQuestion"
+      :course-id="courseId"
+      @refresh="fetchQuestions"
     /> 
    
 

@@ -61,5 +61,18 @@ export default [
     action: 'view',
     subject: 'trash',
   },
+  { 
+    heading: "Gamification",
+    abilities: [
+      { subject: 'trophies', action: ['view'] },
+    ],
+  },
+  {
+    title: 'Trophies',
+    to: { name: 'admin-trophies' },
+    icon: { icon: 'tabler-trophy' },
+    action: 'view',
+    subject: 'trophies',
+  },
   
 ]

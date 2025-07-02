@@ -5,7 +5,8 @@ namespace App\Http\Requests\Admin\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateRoleRequest extends FormRequest
 {
@@ -87,5 +88,10 @@ class UpdateRoleRequest extends FormRequest
                 }
             }
         });
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

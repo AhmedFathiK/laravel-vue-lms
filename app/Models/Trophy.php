@@ -15,9 +15,10 @@ class Trophy extends Model
     protected $fillable = [
         'name',
         'description',
-        'icon',
+        'icon_url',
         'course_id',
         'trigger_type',
+        'trigger_repeat_count',
         'requirements',
         'points',
         'points_threshold',
@@ -35,6 +36,7 @@ class Trophy extends Model
         'requirements' => 'json',
         'points' => 'integer',
         'points_threshold' => 'integer',
+        'trigger_repeat_count' => 'integer',
         'is_hidden' => 'boolean',
         'is_active' => 'boolean',
     ];

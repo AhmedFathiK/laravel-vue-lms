@@ -67,6 +67,11 @@ class Course extends Model
         return $this->hasMany(Concept::class);
     }
 
+    public function questions(): HasMany
+    {
+        return $this->hasMany(Question::class);
+    }
+
     /**
      * Get all free levels in this course.
      */
@@ -88,24 +93,6 @@ class Course extends Model
             $this->levels()->whereHas('lessons', function ($query) {
                 $query->where('is_free', true);
             })->exists();
-    }
-
-    /**
-     * Get a translatable attribute in the course's main locale with fallback to user's locale
-     * 
-     * @param string $attribute The translatable attribute name
-     * @param string|null $userLocale The user's preferred locale (defaults to current app locale)
-     * @return array Returns both main locale and user locale versions
-     */
-    public function getTranslatedContent(string $attribute, ?string $userLocale = null): array
-    {
-        $userLocale = $userLocale ?? App::getLocale();
-        $mainLocale = $this->main_locale ?? config('app.locale', 'en');
-
-        return [
-            'main' => $this->getTranslation($attribute, $mainLocale, false) ?? $this->getTranslation($attribute, config('app.fallback_locale')),
-            'user' => $userLocale !== $mainLocale ? $this->getTranslation($attribute, $userLocale, false) : null
-        ];
     }
 
     /**

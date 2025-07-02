@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Spatie\Permission\Models\Role;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -40,5 +42,10 @@ class StoreRoleRequest extends FormRequest
         return [
             'name.not_in' => 'The super_admin role name is reserved and cannot be used for new roles.',
         ];
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

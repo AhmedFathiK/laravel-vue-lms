@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreUserRequest extends FormRequest
 {
@@ -71,5 +73,10 @@ class StoreUserRequest extends FormRequest
             'roles.*.not_in' => 'The Super Admin role cannot be assigned through the API.',
             'password.confirmed' => 'The password confirmation does not match.',
         ];
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

@@ -51,7 +51,7 @@ class AuthController extends Controller
         ]);
 
         // Assign default user role
-        $user->assignRole('user');
+        $user->assignRole('student');
 
         Auth::login($user);
 

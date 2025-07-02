@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\Question;
 use App\Models\Question;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreQuestionRequest extends FormRequest
 {
@@ -24,8 +26,7 @@ class StoreQuestionRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'question_text' => ['required', 'array'],
-            'question_text.*' => ['required', 'string'],
+            'question_text' => ['required', 'string'],
             'type' => ['required', Rule::in([
                 Question::TYPE_MCQ,
                 Question::TYPE_MATCHING,
@@ -36,15 +37,17 @@ class StoreQuestionRequest extends FormRequest
             ])],
             'difficulty' => ['required', Rule::in(['easy', 'medium', 'hard'])],
             'course_id' => ['nullable', 'exists:courses,id'],
-            'level_id' => ['nullable', 'exists:levels,id'],
-            'lesson_id' => ['nullable', 'exists:lessons,id'],
+            'title' => ['nullable', 'string'],
+            'correct_feedback' => ['nullable', 'string'],
+            'incorrect_feedback' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
-            'explanation' => ['nullable', 'array'],
-            'explanation.*' => ['nullable', 'string'],
+
             'points' => ['required', 'integer', 'min:0'],
+            'media_type' => ['nullable', Rule::in(['none', 'image', 'image_with_audio', 'video'])],
             'media_url' => ['nullable', 'string', 'max:255'],
-            'media_type' => ['nullable', Rule::in(['image', 'audio', 'video'])],
+            'audio_url' => ['nullable', 'string', 'max:255'],
+            'media' => ['nullable', 'file', 'max:10240'], // 10MB max file size
             'options' => ['nullable', 'array'],
             'correct_answer' => ['nullable', 'array'],
         ];
@@ -62,7 +65,8 @@ class StoreQuestionRequest extends FormRequest
 
             case Question::TYPE_FILL_BLANK:
                 $rules['correct_answer'] = ['required', 'array', 'min:1'];
-                $rules['correct_answer.*'] = ['required', 'string'];
+                $rules['correct_answer.*'] = ['required', 'array', 'min:1'];
+                $rules['correct_answer.*.*'] = ['required', 'string'];
                 break;
 
             case Question::TYPE_FILL_BLANK_CHOICES:
@@ -93,4 +97,68 @@ class StoreQuestionRequest extends FormRequest
 
         return $rules;
     }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Validate fill in the blank questions
+            if ($this->input('type') === Question::TYPE_FILL_BLANK) {
+                $questionText = $this->input('question_text', '');
+                $answers = $this->input('correct_answer', []);
+
+                // Count the number of [blankX] occurrences
+                preg_match_all('/\[blank\d+\]/', $questionText, $matches);
+                $blankCount = count(array_unique($matches[0]));
+
+                if ($blankCount !== count($answers)) {
+                    $validator->errors()->add('correct_answer', 'The number of answers must match the number of blanks in the question text.');
+                }
+            }
+            
+            // Validate media requirements based on media_type
+            $mediaType = $this->input('media_type');
+            
+            if ($mediaType && $mediaType !== 'none') {
+                // For image and image_with_audio, check if media file is provided for new uploads
+                if (($mediaType === 'image' || $mediaType === 'image_with_audio') && !$this->hasFile('media') && !$this->input('media_url')) {
+                    $validator->errors()->add('media', 'An image file is required when image media type is selected.');
+                }
+                
+                // For video, check if URL is provided
+                if ($mediaType === 'video' && !$this->input('media_url')) {
+                    $validator->errors()->add('media_url', 'A video URL is required when video media type is selected.');
+                }
+                
+                // For image_with_audio, check if audio URL is provided
+                if ($mediaType === 'image_with_audio' && !$this->input('audio_url')) {
+                    $validator->errors()->add('audio_url', 'An audio URL is required when image with audio media type is selected.');
+                }
+                
+                // Validate image media types
+                if (($mediaType === 'image' || $mediaType === 'image_with_audio') && $this->hasFile('media')) {
+                    $file = $this->file('media');
+                    $allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                    
+                    if (!in_array($file->getMimeType(), $allowedImageTypes)) {
+                        $validator->errors()->add('media', 'The media file must be an image (jpeg, png, webp, gif).');
+                    }
+                }
+            }
+        });
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
+    }
 }
+
+
+
+

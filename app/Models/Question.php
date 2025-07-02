@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Translatable\HasTranslations;
 
 class Question extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory;
 
     const TYPE_MCQ = 'mcq';
     const TYPE_MATCHING = 'matching';
@@ -22,8 +21,7 @@ class Question extends Model
 
     protected $fillable = [
         'course_id',
-        'level_id',
-        'lesson_id',
+        'title',
         'question_text',
         'type',
         'options',
@@ -31,14 +29,12 @@ class Question extends Model
         'points',
         'difficulty',
         'tags',
-        'explanation',
+
+        'correct_feedback',
+        'incorrect_feedback',
         'media_url',
         'media_type',
-    ];
-
-    public array $translatable = [
-        'question_text',
-        'explanation',
+        'audio_url',
     ];
 
     protected $casts = [
@@ -52,15 +48,7 @@ class Question extends Model
         return $this->belongsTo(Course::class);
     }
 
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(Level::class);
-    }
 
-    public function lesson(): BelongsTo
-    {
-        return $this->belongsTo(Lesson::class);
-    }
 
     public function examSections(): BelongsToMany
     {

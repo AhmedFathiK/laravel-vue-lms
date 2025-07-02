@@ -30,24 +30,19 @@ class Slide extends Model
     protected $fillable = [
         'lesson_id',
         'type',
-        'content',
-        'options',
-        'correct_answer',
-        'feedback',
-        'sort_order',
+        'title',
         'question_id',
         'term_id',
+        'content',
+        'sort_order',
     ];
 
     public array $translatable = [
         'content',
-        'feedback',
     ];
 
     protected $casts = [
         'sort_order' => 'integer',
-        'options' => 'array',
-        'correct_answer' => 'array',
     ];
 
     public function lesson(): BelongsTo

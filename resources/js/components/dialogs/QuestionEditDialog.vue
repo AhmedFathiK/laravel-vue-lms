@@ -1,7 +1,10 @@
 <script setup>
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+import api from '@/utils/api'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
+import { requiredValidator, integerValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
   isDialogVisible: {
@@ -12,14 +15,20 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  courseId: {
+    type: [Number, String],
+    required: true,
+  },
 })
 
 const emit = defineEmits([
   'update:isDialogVisible',
-  'submit',
+  'refresh',
 ])
 
 const { t, locale } = useI18n()
+const toast = useToast()
+const formRef = ref(null)
 const isSubmitting = ref(false)
 const formErrors = ref({})
 
@@ -27,18 +36,19 @@ const formErrors = ref({})
 const formData = ref({
   id: null,
   course_id: null,
-  level_id: null,
-  lesson_id: null,
-  question_text: { en: '' },
+  title: '',
+  question_text: '',
   type: 'mcq',
   options: [],
   correct_answer: [],
   points: 1,
   difficulty: 'medium',
   tags: [],
-  explanation: { en: '' },
+
+  correct_feedback: '',
+  incorrect_feedback: '',
   media_url: null,
-  media_type: null,
+  media_type: 'none',
 
   // For fill in the blank
   blanks: [],
@@ -55,43 +65,70 @@ const formData = ref({
   max_words: 0,
 })
 
-// Text area for fill in the blank answers (one per line)
-const blankAnswersText = ref('')
+// Handle tag input
+const newTag = ref('')
 
-// Update fill in the blank answers from textarea
-const updateBlankAnswers = text => {
-  // Split by new lines and filter empty lines
-  const answers = text.split('\n').filter(line => line.trim() !== '')
+// Computed property to detect blanks for fill_blank type
+const detectedBlanks = computed(() => {
+  if (!['fill_blank', 'fill_blank_choices'].includes(formData.value.type))
+    return []
 
-  formData.value.correct_answer = answers
-}
+  const regex = /\[blank\d+\]/g
+  const matches = formData.value.question_text.match(regex) || []
+  const uniqueMatches = [...new Set(matches)]
 
-// Initialize blank answers text from existing data
-const initializeBlankAnswersText = () => {
-  if (formData.value.type === 'fill_blank' && Array.isArray(formData.value.correct_answer)) {
-    blankAnswersText.value = formData.value.correct_answer.join('\n')
-  } else {
-    blankAnswersText.value = ''
-  }
-}
-
-// Add a new blank for fill in the blank with choices
-const addBlank = () => {
-  if (!formData.value.blanks) {
-    formData.value.blanks = []
-  }
-  
-  formData.value.blanks.push({
-    placeholder: '',
-    options: ['', ''],
-    correct_answer: '0', // Default first option as correct
+  // Sort by the number inside [blankX]
+  uniqueMatches.sort((a, b) => {
+    const numA = parseInt(a.match(/\d+/)[0], 10)
+    const numB = parseInt(b.match(/\d+/)[0], 10)
+    
+    return numA - numB
   })
-}
 
-// Remove a blank
-const removeBlank = index => {
-  formData.value.blanks.splice(index, 1)
-}
+  return uniqueMatches
+})
+
+// Watch for changes in detected blanks and update the correct_answer array
+watch(detectedBlanks, (newBlanks, oldBlanks) => {
+  if (formData.value.type === 'fill_blank') {
+    const newSize = newBlanks.length
+    const currentAnswers = Array.isArray(formData.value.correct_answer) ? formData.value.correct_answer : []
+
+    // Only update if the size of blanks has changed
+    if (newSize !== currentAnswers.length) {
+      const newAnswers = Array(newSize).fill(null).map(() => [])
+
+      // Preserve existing answers
+      for (let i = 0; i < Math.min(newSize, currentAnswers.length); i++) {
+        // Ensure the preserved answer is an array
+        newAnswers[i] = Array.isArray(currentAnswers[i]) ? currentAnswers[i] : [currentAnswers[i]]
+      }
+      formData.value.correct_answer = newAnswers
+    }
+  }
+}, { immediate: true })
+
+// Watch for changes in detected blanks and update the blanks for fill_blank_choices
+watch(detectedBlanks, (newBlanks, oldBlanks) => {
+  if (formData.value.type === 'fill_blank_choices') {
+    const newSize = newBlanks.length
+    const currentBlanks = Array.isArray(formData.value.blanks) ? formData.value.blanks : []
+
+    if (newSize !== currentBlanks.length) {
+      const newBlanksArray = Array(newSize).fill(null).map((_, index) => {
+        return currentBlanks[index] || {
+          placeholder: `Blank ${index + 1}`,
+          options: ['', ''],
+          correct_answer: '0',
+        }
+      })
+
+      formData.value.blanks = newBlanksArray
+    }
+  }
+}, { immediate: true })
+
+
 
 // Add an option to a blank
 const addBlankOption = blankIndex => {
@@ -220,10 +257,7 @@ const initializeQuestionTypeData = () => {
   }
   
   // Initialize specific type data
-  if (type === 'fill_blank') {
-    // For fill in the blank, initialize the text area with correct answers
-    initializeBlankAnswersText()
-  } else if (type === 'fill_blank_choices') {
+  if (type === 'fill_blank_choices') {
     // For fill in the blank with choices, initialize blanks from options
     if (!formData.value.blanks.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
       formData.value.blanks = formData.value.options
@@ -273,6 +307,41 @@ const questionTypes = [
   { title: 'Writing', value: 'writing' },
 ]
 
+const mediaTypes = [
+  { title: 'None', value: 'none' },
+  { title: 'Image', value: 'image' },
+  { title: 'Image with Audio', value: 'image_with_audio' },
+  { title: 'Video', value: 'video' },
+]
+
+// For file uploads
+const mediaFile = ref(null)
+
+// Handle file selection
+const handleFileUpload = file => {
+  mediaFile.value = file || null
+  
+  // If a file is selected, create a temporary URL for preview
+  if (mediaFile.value) {
+    formData.value.media_url = URL.createObjectURL(mediaFile.value)
+  }
+}
+
+// Clear media when media type changes
+watch(() => formData.value.media_type, newValue => {
+  if (newValue === 'none') {
+    formData.value.media_url = null
+    formData.value.audio_url = null
+    mediaFile.value = null
+  } else if (newValue === 'video') {
+    // Clear file upload data when switching to video (URL only)
+    mediaFile.value = null
+  } else if (newValue !== 'image_with_audio') {
+    // Clear audio URL when switching to a type that doesn't use audio
+    formData.value.audio_url = null
+  }
+})
+
 // Difficulty levels
 const difficultyLevels = [
   { title: 'Easy', value: 'easy' },
@@ -280,9 +349,44 @@ const difficultyLevels = [
   { title: 'Hard', value: 'hard' },
 ]
 
+// Function to reset the form to its default state for creating a new question
+const resetForm = () => {
+  formData.value = {
+    id: null,
+    course_id: props.courseId,
+    title: '',
+    question_text: '',
+    type: 'mcq',
+    options: [],
+    correct_answer: [],
+    points: 1,
+    difficulty: 'medium',
+    tags: [],
+    correct_feedback: '',
+    incorrect_feedback: '',
+    media_url: null,
+    media_type: 'none',
+    audio_url: null,
+    blanks: [],
+    matching_pairs: [],
+    reordering_items: [],
+    grading_guidelines: '',
+    min_words: 0,
+    max_words: 0,
+  }
+
+  // Reset other related state
+  formErrors.value = {}
+  newTag.value = ''
+
+  // Initialize data for the default question type
+  initializeQuestionTypeData()
+}
+
 // Watch for changes in the question prop
 watch(() => props.question, newQuestion => {
-  if (newQuestion) {
+  if (newQuestion && newQuestion.id) {
+    // Editing an existing question
     // Reset form errors
     formErrors.value = {}
     
@@ -291,30 +395,22 @@ watch(() => props.question, newQuestion => {
     
     // Clone to avoid direct modification of props
     formData.value = JSON.parse(JSON.stringify(newQuestion))
-    
-    // Ensure question_text has required structure
-    if (!formData.value.question_text) {
-      formData.value.question_text = { en: '' }
+
+
+
+    // Ensure tags is an array
+    if (!formData.value.tags) {
+      formData.value.tags = []
     }
-    
-    // Ensure explanation has required structure
-    if (!formData.value.explanation) {
-      formData.value.explanation = { en: '' }
-    }
-    
-    // Ensure options is an array
-    if (!Array.isArray(formData.value.options)) {
-      formData.value.options = []
-    }
-    
-    // Ensure correct_answer is an array
-    if (!Array.isArray(formData.value.correct_answer)) {
+
+    // Ensure correct_answer is an array for mcq
+    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.correct_answer)) {
       formData.value.correct_answer = []
     }
-    
-    // Ensure tags is an array
-    if (!Array.isArray(formData.value.tags)) {
-      formData.value.tags = []
+
+    // Ensure options is an array for mcq
+    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.options)) {
+      formData.value.options = []
     }
     
     // Ensure points has a valid value
@@ -324,6 +420,9 @@ watch(() => props.question, newQuestion => {
     
     // Initialize data for specific question types
     initializeQuestionTypeData()
+  } else {
+    // Creating a new question, so reset the form
+    resetForm()
   }
 }, { immediate: true, deep: true })
 
@@ -336,44 +435,74 @@ const closeDialog = () => {
 
 // Submit form
 const submitForm = async () => {
-  // Basic validation
-  formErrors.value = {}
-  
-  if (!formData.value.question_text?.en?.trim()) {
-    formErrors.value.question_text = 'Question text is required'
-    
-    return
-  }
-  
-  // Type-specific validation
-  if (formData.value.type === 'mcq') {
-    if (!formData.value.options || formData.value.options.length < 2) {
-      formErrors.value.options = 'At least 2 options are required'
-      
-      return
-    }
-    
-    if (!formData.value.correct_answer || formData.value.correct_answer.length === 0) {
-      formErrors.value.correct_answer = 'At least one correct answer is required'
-      
+  if (formRef.value) {
+    const { valid } = await formRef.value.validate()
+    if (!valid) {
       return
     }
   }
-  
-  // Set submitting state
+
   isSubmitting.value = true
-  
+  formErrors.value = {}
+
   try {
-    // Emit submit event with form data
-    emit('submit', { ...formData.value })
+    const questionData = JSON.parse(JSON.stringify(formData.value))
+
+    // Create FormData object for file uploads
+    const formDataObj = new FormData()
     
-    // Close dialog
+    // Add all form fields to FormData
+    Object.keys(questionData).forEach(key => {
+      if (key !== 'mediaFile') { // Skip the file input reference
+        if (typeof questionData[key] === 'object' && questionData[key] !== null) {
+          formDataObj.append(key, JSON.stringify(questionData[key]))
+        } else if (questionData[key] !== null) {
+          formDataObj.append(key, questionData[key])
+        }
+      }
+    })
+    
+    // Add media file if it exists (only for image uploads)
+    if (mediaFile.value && (questionData.media_type === 'image' || questionData.media_type === 'image_with_audio')) {
+      formDataObj.append('media', mediaFile.value)
+    }
+    
+    // For video type, we're using URL directly so no file upload is needed
+    // For image_with_audio, we're using audio_url directly
+    // Both are already included in the formDataObj from the loop above
+
+    if (questionData.id) {
+      // Update existing question
+      await api.put(`/admin/courses/${props.courseId}/questions/${questionData.id}`, formDataObj, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      toast.success('Question updated successfully')
+    } else {
+      // Create new question
+      formDataObj.append('course_id', props.courseId)
+      await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      toast.success('Question created successfully')
+    }
+    emit('refresh')
     closeDialog()
   } catch (error) {
-    console.error('Error submitting question:', error)
+    console.error('Error saving question:', error)
+    if (error.response && error.response.status === 422) {
+      if (error.response.data && error.response.data.errors) {
+        formErrors.value = error.response.data.errors
+      }
+      toast.error('Please correct the validation errors.')
+    } else {
+      const message = error.response?.data?.message || 'Failed to save question'
 
-    // Show generic error
-    formErrors.value.general = 'Failed to save question'
+      toast.error(message)
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -431,9 +560,6 @@ const isCorrectAnswer = index => {
   return formData.value.correct_answer?.includes(index.toString())
 }
 
-// Handle tag input
-const newTag = ref('')
-
 const addTag = () => {
   if (newTag.value.trim() && !formData.value.tags.includes(newTag.value.trim())) {
     formData.value.tags.push(newTag.value.trim())
@@ -483,16 +609,30 @@ watch(() => formData.value.type, newType => {
           {{ formErrors.general }}
         </VAlert>
         
-        <VForm @submit.prevent="submitForm">
+        <VForm
+          ref="formRef"
+          @submit.prevent="submitForm"
+        >
           <VRow>
-            <!-- Question Text -->
+            <!-- Question Title -->
             <VCol cols="12">
               <AppTextField
-                v-model="formData.question_text.en"
+                v-model="formData.title"
+                label="Title (Optional)"
+                placeholder="Enter an optional title for the question"
+                :error-messages="formErrors.title"
+              />
+            </VCol>
+            
+            <!-- Question Text -->
+            <VCol cols="12">
+              <AppTextarea
+                v-model="formData.question_text"
                 label="Question Text"
-                placeholder="Enter the question text"
+                :rules="[requiredValidator]"
                 :error-messages="formErrors.question_text"
-                autofocus
+                placeholder="Enter the question text"
+                rows="3"
               />
             </VCol>
             
@@ -528,6 +668,75 @@ watch(() => formData.value.type, newType => {
               />
             </VCol>
             
+            <!-- Media Type Selection -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppSelect
+                v-model="formData.media_type"
+                label="Media Type"
+                :items="mediaTypes"
+                item-title="title"
+                item-value="value"
+                :error-messages="formErrors.media_type"
+                class="mb-3"
+              />
+            </VCol>
+            
+            <!-- Media Upload Fields -->
+            <VCol
+              v-if="formData.media_type === 'image' || formData.media_type === 'image_with_audio'"
+              cols="12"
+              md="6"
+            >
+              <VFileInput
+                label="Upload Image"
+                accept="image/*"
+                :error-messages="formErrors.media"
+                prepend-icon="tabler-upload"
+                :hint="formData.media_url ? 'Image selected' : 'Select an image file'"
+                persistent-hint
+                @update:model-value="handleFileUpload"
+              />
+              <div
+                v-if="formData.media_url"
+                class="mt-2"
+              >
+                <img
+                  :src="formData.media_url"
+                  style="max-height: 150px; max-width: 100%;"
+                >
+              </div>
+            </VCol>
+            
+            <!-- Audio URL for Image with Audio -->
+            <VCol
+              v-if="formData.media_type === 'image_with_audio'"
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="formData.audio_url"
+                label="Audio URL"
+                placeholder="Enter URL for audio file"
+                :error-messages="formErrors.audio_url"
+              />
+            </VCol>
+            
+            <VCol
+              v-if="formData.media_type === 'video'"
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="formData.media_url"
+                label="Video URL"
+                placeholder="Enter URL for video file"
+                :error-messages="formErrors.media_url"
+              />
+            </VCol>
+            
             <!-- Points -->
             <VCol
               cols="12"
@@ -538,6 +747,7 @@ watch(() => formData.value.type, newType => {
                 label="Points"
                 type="number"
                 min="1"
+                :rules="[requiredValidator, integerValidator, v => v > 0 || 'Points must be at least 1']"
                 :error-messages="formErrors.points"
               />
             </VCol>
@@ -552,14 +762,16 @@ watch(() => formData.value.type, newType => {
                   <AppTextField
                     v-model="newTag"
                     label="Tags"
+                    class="me-2"
                     placeholder="Add tags (press Enter)"
                     @keyup.enter="addTag"
                   />
                 </VCol>
                 <VCol cols="3">
                   <VBtn
+                    width="100%"
                     color="primary"
-                    class="ml-2 mt-1"
+                    class="mt-6"
                     @click="addTag"
                   >
                     Add Tag
@@ -579,6 +791,28 @@ watch(() => formData.value.type, newType => {
               </div>
             </VCol>
             
+            <!-- Correct Feedback -->
+            <VCol cols="12">
+              <AppTextarea
+                v-model="formData.correct_feedback"
+                label="Correct Feedback (Optional)"
+                placeholder="Message to show when the user answers correctly"
+                rows="2"
+                :error-messages="formErrors.correct_feedback"
+              />
+            </VCol>
+            
+            <!-- Incorrect Feedback -->
+            <VCol cols="12">
+              <AppTextarea
+                v-model="formData.incorrect_feedback"
+                label="Incorrect Feedback (Optional)"
+                placeholder="Message to show when the user answers incorrectly"
+                rows="2"
+                :error-messages="formErrors.incorrect_feedback"
+              />
+            </VCol>
+            
             <!-- Multiple Choice Options (show only for MCQ type) -->
             <VCol
               v-if="formData.type === 'mcq'"
@@ -594,6 +828,14 @@ watch(() => formData.value.type, newType => {
                   Add Option
                 </VBtn>
               </div>
+              <VInput
+                :model-value="formData"
+                :rules="[
+                  () => formData.options.length >= 2 || 'MCQ questions must have at least 2 options.',
+                  () => formData.correct_answer.length > 0 || 'Please select at least one correct answer.'
+                ]"
+                class="mt-2"
+              />
               
               <VAlert
                 v-if="formErrors.options"
@@ -631,6 +873,7 @@ watch(() => formData.value.type, newType => {
                   v-model="formData.options[index]"
                   :placeholder="`Option ${index + 1}`"
                   class="flex-grow-1"
+                  :rules="[requiredValidator]"
                   hide-details
                 />
                 
@@ -662,34 +905,38 @@ watch(() => formData.value.type, newType => {
               cols="12"
             >
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Fill in the Blank</h4>
-                <p class="text-caption">
-                  Use [blank] in your question text to indicate where blanks should appear.
-                </p>
+                <h4>Fill in the Blank Answers</h4>
               </div>
-              
+
               <VAlert
                 color="info"
                 variant="tonal"
                 class="mb-4"
               >
-                <p>Example: "The capital of France is [blank]."</p>
-                <p>Then define the correct answers below.</p>
+                For each blank, enter all possible correct answers, with each answer on a new line.
               </VAlert>
-              
-              <h4 class="mb-2">
-                Correct Answers
-              </h4>
-              <p class="text-caption mb-2">
-                Add all possible correct answers, one per line:
-              </p>
-              
-              <AppTextarea
-                v-model="blankAnswersText"
-                rows="4"
-                placeholder="Enter one correct answer per line (e.g. Paris)"
-                @update:model-value="updateBlankAnswers"
-              />
+
+              <div v-if="detectedBlanks.length > 0">
+                <div
+                  v-for="(blank, index) in detectedBlanks"
+                  :key="blank"
+                  class="mb-4"
+                >
+                  <AppTextarea
+                    :model-value="Array.isArray(formData.correct_answer[index]) ? formData.correct_answer[index].join('\n') : ''"
+                    :label="`Answers for ${blank}`"
+                    placeholder="Enter possible answers, one per line..."
+                    rows="3"
+                    @update:model-value="formData.correct_answer[index] = $event.split('\n')"
+                  />
+                </div>
+              </div>
+
+              <div v-else>
+                <p class="text-medium-emphasis">
+                  No blanks detected. Please add blanks like <code>[blank1]</code> to the question text above.
+                </p>
+              </div>
             </VCol>
             
             <!-- Fill in the Blank with Choices -->
@@ -721,16 +968,7 @@ watch(() => formData.value.type, newType => {
                   class="mb-4 pa-4 border rounded"
                 >
                   <div class="d-flex justify-space-between align-center mb-2">
-                    <h5>Blank #{{ blankIndex + 1 }}</h5>
-                    <VBtn
-                      size="small"
-                      color="error"
-                      variant="text"
-                      icon
-                      @click="removeBlank(blankIndex)"
-                    >
-                      <VIcon icon="tabler-trash" />
-                    </VBtn>
+                    <h5>{{ detectedBlanks[blankIndex] || `Blank #${blankIndex + 1}` }}</h5>
                   </div>
                   
                   <div class="mb-2">
@@ -795,14 +1033,6 @@ watch(() => formData.value.type, newType => {
                     </VBtn>
                   </div>
                 </div>
-                
-                <VBtn
-                  prepend-icon="tabler-plus"
-                  class="mt-2"
-                  @click="addBlank"
-                >
-                  Add Blank
-                </VBtn>
               </div>
             </VCol>
             
@@ -814,6 +1044,11 @@ watch(() => formData.value.type, newType => {
               <div class="d-flex justify-space-between align-center mb-2">
                 <h4>Matching Pairs</h4>
               </div>
+              <VInput
+                :model-value="formData.matching_pairs"
+                :rules="[v => v.length >= 2 || 'Matching questions must have at least 2 pairs.']"
+                class="mt-2"
+              />
               
               <div class="mb-4">
                 <div 
@@ -882,7 +1117,11 @@ watch(() => formData.value.type, newType => {
                   Add items in the correct order. They will be randomized for the student.
                 </p>
               </div>
-              
+              <VInput
+                :model-value="formData.reordering_items"
+                :rules="[v => v.length >= 2 || 'Reordering questions must have at least 2 items.']"
+                class="mt-2"
+              />
               <div class="mb-4">
                 <div 
                   v-for="(item, itemIndex) in formData.reordering_items || []" 
@@ -1020,4 +1259,4 @@ watch(() => formData.value.type, newType => {
       </VCardText>
     </VCard>
   </VDialog>
-</template> 
+</template>

@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\Slide;
 use App\Models\Slide;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateRequest extends FormRequest
 {
@@ -36,17 +38,20 @@ class UpdateRequest extends FormRequest
                 Slide::TYPE_QUESTION,
                 Slide::TYPE_TERM_REFERENCE,
             ])],
-            'content' => ['sometimes', 'array'],
-            'content.*' => ['string'],
-            'options' => ['nullable', 'array'],
-            'correct_answer' => ['nullable', 'array'],
-            'feedback' => ['nullable', 'array'],
-            'feedback.*' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer'],
+            'title' => ['nullable', 'string', 'max:255'],
             'question_id' => ['nullable', 'integer', 'exists:questions,id'],
             'term_id' => ['nullable', 'integer', 'exists:terms,id'],
+            'content' => ['sometimes', 'array'],
+            'content.*' => ['string'],
+
+            'sort_order' => ['nullable', 'integer'],
         ];
 
         return $rules;
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

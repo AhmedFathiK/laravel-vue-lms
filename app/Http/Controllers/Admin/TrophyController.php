@@ -3,14 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\TrophyResource;
 use App\Models\Trophy;
+use App\Services\TrophyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class TrophyController extends Controller
 {
+    protected $trophyService;
+
+    public function __construct(TrophyService $trophyService)
+    {
+        $this->trophyService = $trophyService;
+    }
+
     /**
      * Display a listing of trophies.
      */
@@ -45,6 +56,19 @@ class TrophyController extends Controller
 
         $trophies = $query->paginate($request->input('per_page', 15));
 
+        // Add recipient counts to each trophy
+        $trophies->getCollection()->transform(function ($trophy) {
+            $stats = $this->trophyService->getTrophyStats($trophy);
+            $trophy->recipients_count = $stats['awarded_count'];
+            return $trophy;
+        });
+        return response()->json([
+            'items' => TrophyResource::collection($trophies->items()),
+            'totalItems' => $trophies->total(),
+            'currentPage' => $trophies->currentPage(),
+            'perPage' => $trophies->perPage(),
+            'lastPage' => $trophies->lastPage(),
+        ]);
         return response()->json($trophies);
     }
 
@@ -54,27 +78,24 @@ class TrophyController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|array',
-            'name.en' => 'required|string|max:255',
-            'description' => 'nullable|array',
-            'icon' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'icon' => 'nullable|image|max:2048', // Accept image upload
             'course_id' => 'nullable|exists:courses,id',
             'trigger_type' => [
                 'required',
                 'string',
                 Rule::in([
-                    'points',
-                    'lesson_completed',
-                    'exam_passed',
+                    'completed_lesson',
+                    'quiz_score',
                     'level_completed',
                     'course_completed',
                     'term_mastered',
-                    'concept_mastered',
                     'streak',
                     'custom'
                 ])
             ],
-            'requirements' => 'nullable|array',
+            'trigger_repeat_count' => 'required|integer|min:1',
             'points' => 'integer|min:0',
             'points_threshold' => 'nullable|integer|min:0',
             'rarity' => [
@@ -89,7 +110,34 @@ class TrophyController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $trophy = Trophy::create($request->all());
+        // Handle icon upload if provided
+        $iconUrl = null;
+        if ($request->hasFile('icon')) {
+            $file = $request->file('icon');
+            $path = $file->store('trophies', 'public');
+            $iconUrl = Storage::url($path);
+        }
+
+        // Prepare data for trophy creation
+        $data = [
+            'name' => [
+                app()->getLocale() => $request->input('name')
+            ],
+            'description' => $request->has('description') ? [
+                app()->getLocale() => $request->input('description')
+            ] : null,
+            'icon_url' => $iconUrl,
+            'course_id' => $request->input('course_id'),
+            'trigger_type' => $request->input('trigger_type'),
+            'trigger_repeat_count' => $request->input('trigger_repeat_count', 1),
+            'points' => $request->input('points', 0),
+            'points_threshold' => $request->input('points_threshold'),
+            'rarity' => $request->input('rarity', 'common'),
+            'is_hidden' => $request->boolean('is_hidden', false),
+            'is_active' => $request->boolean('is_active', true),
+        ];
+
+        $trophy = Trophy::create($data);
 
         return response()->json([
             'message' => 'Trophy created successfully',
@@ -102,6 +150,11 @@ class TrophyController extends Controller
      */
     public function show(Trophy $trophy): JsonResponse
     {
+        // Add recipient stats
+        $stats = $this->trophyService->getTrophyStats($trophy);
+        $trophy->recipients_count = $stats['awarded_count'];
+        $trophy->recipients_percentage = $stats['percentage'];
+
         return response()->json($trophy);
     }
 
@@ -111,41 +164,96 @@ class TrophyController extends Controller
     public function update(Request $request, Trophy $trophy): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'array',
-            'name.en' => 'string|max:255',
-            'description' => 'nullable|array',
-            'icon' => 'nullable|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'icon' => 'nullable|image|max:2048', // Accept image upload
             'course_id' => 'nullable|exists:courses,id',
             'trigger_type' => [
+                'sometimes',
+                'required',
                 'string',
                 Rule::in([
-                    'points',
-                    'lesson_completed',
-                    'exam_passed',
+                    'completed_lesson',
+                    'quiz_score',
                     'level_completed',
                     'course_completed',
                     'term_mastered',
-                    'concept_mastered',
                     'streak',
                     'custom'
                 ])
             ],
-            'requirements' => 'nullable|array',
-            'points' => 'integer|min:0',
+            'trigger_repeat_count' => 'sometimes|required|integer|min:1',
+            'points' => 'sometimes|required|integer|min:0',
             'points_threshold' => 'nullable|integer|min:0',
             'rarity' => [
+                'sometimes',
+                'required',
                 'string',
                 Rule::in(['common', 'uncommon', 'rare', 'epic', 'legendary'])
             ],
-            'is_hidden' => 'boolean',
-            'is_active' => 'boolean',
+            'is_hidden' => 'sometimes|required|boolean',
+            'is_active' => 'sometimes|required|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $trophy->update($request->all());
+        // Handle icon upload if provided
+        if ($request->hasFile('icon')) {
+            // Delete old icon if exists
+            if ($trophy->icon_url && Storage::disk('public')->exists(str_replace('/storage/', '', $trophy->icon_url))) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $trophy->icon_url));
+            }
+
+            $file = $request->file('icon');
+            $path = $file->store('trophies', 'public');
+            $trophy->icon_url = Storage::url($path);
+        }
+
+        // Update translatable fields
+        if ($request->has('name')) {
+            $trophy->setTranslation('name', app()->getLocale(), $request->input('name'));
+        }
+
+        if ($request->has('description')) {
+            $trophy->setTranslation('description', app()->getLocale(), $request->input('description'));
+        }
+
+        // Update other fields
+        if ($request->has('course_id')) {
+            $trophy->course_id = $request->input('course_id');
+        }
+
+        if ($request->has('trigger_type')) {
+            $trophy->trigger_type = $request->input('trigger_type');
+        }
+
+        if ($request->has('trigger_repeat_count')) {
+            $trophy->trigger_repeat_count = $request->input('trigger_repeat_count');
+        }
+
+        if ($request->has('points')) {
+            $trophy->points = $request->input('points');
+        }
+
+        if ($request->has('points_threshold')) {
+            $trophy->points_threshold = $request->input('points_threshold');
+        }
+
+        if ($request->has('rarity')) {
+            $trophy->rarity = $request->input('rarity');
+        }
+
+        if ($request->has('is_hidden')) {
+            $trophy->is_hidden = $request->boolean('is_hidden');
+        }
+
+        if ($request->has('is_active')) {
+            $trophy->is_active = $request->boolean('is_active');
+        }
+
+        $trophy->save();
 
         return response()->json([
             'message' => 'Trophy updated successfully',
@@ -168,6 +276,11 @@ class TrophyController extends Controller
             ], 422);
         }
 
+        // Delete icon if exists
+        if ($trophy->icon_url && Storage::disk('public')->exists(str_replace('/storage/', '', $trophy->icon_url))) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $trophy->icon_url));
+        }
+
         $trophy->delete();
 
         return response()->json([
@@ -176,20 +289,18 @@ class TrophyController extends Controller
     }
 
     /**
-     * Get available trigger types for trophies.
+     * Get available trigger types.
      */
     public function getTriggerTypes(): JsonResponse
     {
         $triggerTypes = [
-            'points' => 'Points Threshold',
-            'lesson_completed' => 'Lesson Completed',
-            'exam_passed' => 'Exam Passed',
+            'completed_lesson' => 'Lesson Completed',
+            'quiz_score' => 'Quiz Score Achieved',
             'level_completed' => 'Level Completed',
             'course_completed' => 'Course Completed',
             'term_mastered' => 'Term Mastered',
-            'concept_mastered' => 'Concept Mastered',
-            'streak' => 'Login Streak',
-            'custom' => 'Custom Trigger'
+            'streak' => 'Streak Achieved',
+            'custom' => 'Custom Achievement'
         ];
 
         return response()->json($triggerTypes);

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\Role;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class GetPermissionsRequest extends FormRequest
 {
@@ -24,5 +26,10 @@ class GetPermissionsRequest extends FormRequest
         return [
             //
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

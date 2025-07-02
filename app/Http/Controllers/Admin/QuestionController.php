@@ -8,30 +8,23 @@ use App\Http\Requests\Admin\Question\IndexQuestionRequest;
 use App\Http\Requests\Admin\Question\ShowQuestionRequest;
 use App\Http\Requests\Admin\Question\StoreQuestionRequest;
 use App\Http\Requests\Admin\Question\UpdateQuestionRequest;
+use App\Models\Course;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class QuestionController extends Controller
 {
     /**
      * Display a listing of the questions.
      */
-    public function index(IndexQuestionRequest $request): JsonResponse
+    public function index(IndexQuestionRequest $request, Course $course): JsonResponse
     {
         $query = Question::query();
 
         // Apply filters
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-        }
-
-        if ($request->has('level_id')) {
-            $query->where('level_id', $request->level_id);
-        }
-
-        if ($request->has('lesson_id')) {
-            $query->where('lesson_id', $request->lesson_id);
-        }
+        $query->where('course_id', $course->id);
 
         if ($request->has('type')) {
             $query->where('type', $request->type);
@@ -50,6 +43,13 @@ class QuestionController extends Controller
             });
         }
 
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('question_text', 'LIKE', "%{$search}%");
+            });
+        }
+
         // Order by
         $query->orderBy($request->get('sort_by', 'created_at'), $request->get('sort_direction', 'desc'));
 
@@ -61,11 +61,59 @@ class QuestionController extends Controller
     }
 
     /**
+     * Display a listing of the questions.
+     */
+    public function getQuestionsForSelectFields(IndexQuestionRequest $request, Course $course): JsonResponse
+    {
+        if (!Gate::allows('view.questions')) {
+            abort(403);
+        }
+        $query = Question::query();
+
+        // Apply filters
+        $query->where('course_id', $course->id);
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                    ->orWhere('question_text', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $questions = $query->get();
+
+        return response()->json($questions);
+    }
+
+    /**
      * Store a newly created question in storage.
      */
-    public function store(StoreQuestionRequest $request): JsonResponse
+    public function store(StoreQuestionRequest $request, Course $course): JsonResponse
     {
         $data = $request->validated();
+
+        // Handle media file upload if present
+        if ($request->hasFile('media')) {
+            if (!isset($data['media_type'])) {
+                $data['media_type'] = 'image'; // Default to image if not specified
+            }
+            $data['media_url'] = $this->handleMediaUpload($request->file('media'), $data['media_type']);
+        }
+
+        // For video type, media_url is directly provided as a URL
+        if (isset($data['media_type']) && $data['media_type'] === 'video' && isset($data['media_url'])) {
+            // No processing needed as media_url is already set from the request
+        }
+
+        // For image_with_audio type, audio_url is directly provided
+        if (isset($data['media_type']) && $data['media_type'] === 'image_with_audio' && isset($data['audio_url'])) {
+            // No processing needed as audio_url is already set from the request
+        }
 
         // Process question data based on type
         $this->processQuestionDataByType($data);
@@ -81,7 +129,7 @@ class QuestionController extends Controller
     /**
      * Display the specified question.
      */
-    public function show(Question $question, ShowQuestionRequest $request): JsonResponse
+    public function show(Question $question, Course $course, ShowQuestionRequest $request): JsonResponse
     {
         return response()->json($question);
     }
@@ -89,9 +137,46 @@ class QuestionController extends Controller
     /**
      * Update the specified question in storage.
      */
-    public function update(UpdateQuestionRequest $request, Question $question): JsonResponse
+    public function update(UpdateQuestionRequest $request, Course $course, Question $question): JsonResponse
     {
         $data = $request->validated();
+
+        // Handle media file upload if present and media type is there
+        if ($request->hasFile('media') && isset($data['media_type'])) {
+            // Delete old media file if exists and different from default
+            if ($question->media_url && $question->media_type !== 'none') {
+                $this->deleteOldMedia($question->media_url);
+            }
+
+            $data['media_url'] = $this->handleMediaUpload($request->file('media'), $data['media_type']);
+        }
+
+        // For video type, media_url is directly provided as a URL
+        if (isset($data['media_type']) && $data['media_type'] === 'video' && isset($data['media_url'])) {
+            // If changing from a file-based video to a URL-based video, delete the old file
+            if ($question->media_url && $question->media_type === 'video' && strpos($question->media_url, '/storage/') === 0) {
+                $this->deleteOldMedia($question->media_url);
+            }
+            // No processing needed as media_url is already set from the request
+        }
+
+        // For image_with_audio type, audio_url is directly provided
+        if (isset($data['media_type']) && $data['media_type'] === 'image_with_audio' && isset($data['audio_url'])) {
+            // No processing needed as audio_url is already set from the request
+        } else if (isset($data['media_type']) && $data['media_type'] !== 'image_with_audio') {
+            // If changing from image_with_audio to another type, clear the audio_url
+            $data['audio_url'] = null;
+        }
+
+        // If media type is changed to none, remove media_url and audio_url
+        if (isset($data['media_type']) && $data['media_type'] === 'none') {
+            // Delete old media file if exists
+            if ($question->media_url && $question->media_type !== 'none') {
+                $this->deleteOldMedia($question->media_url);
+            }
+            $data['media_url'] = null;
+            $data['audio_url'] = null;
+        }
 
         // Process question data based on type
         $this->processQuestionDataByType($data);
@@ -107,7 +192,7 @@ class QuestionController extends Controller
     /**
      * Remove the specified question from storage.
      */
-    public function destroy(Question $question, DestroyQuestionRequest $request): JsonResponse
+    public function destroy(DestroyQuestionRequest $request, Course $course, Question $question): JsonResponse
     {
         // Check if the question is used in any exams
         if ($question->examSections()->exists()) {
@@ -128,6 +213,11 @@ class QuestionController extends Controller
      */
     private function processQuestionDataByType(array &$data): void
     {
+        // Remove media field as it's not in the database schema
+        if (isset($data['media'])) {
+            unset($data['media']);
+        }
+
         $type = $data['type'] ?? null;
 
         if (!$type) {
@@ -214,6 +304,47 @@ class QuestionController extends Controller
                 // Remove extra fields from data
                 unset($data['grading_guidelines'], $data['min_words'], $data['max_words']);
                 break;
+        }
+    }
+
+    /**
+     * Handle media file upload and return the file path
+     */
+    private function handleMediaUpload($file, string $mediaType): string
+    {
+        // Determine the storage directory based on media type
+        $directory = 'questions/';
+
+        switch ($mediaType) {
+            case 'image':
+            case 'image_with_audio':
+                $directory .= 'images';
+                break;
+            case 'video':
+                $directory .= 'videos';
+                break;
+            default:
+                $directory .= 'media';
+        }
+
+        // Store the file
+        $path = $file->store($directory, 'public');
+
+        // Return the URL to access the file
+        return Storage::url($path);
+    }
+
+    /**
+     * Delete old media file
+     */
+    private function deleteOldMedia(string $mediaUrl): void
+    {
+        // Convert storage URL to path
+        $path = str_replace('/storage', '', $mediaUrl);
+
+        // Delete the file if it exists
+        if (Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
         }
     }
 }

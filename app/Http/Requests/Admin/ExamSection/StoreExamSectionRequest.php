@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin\ExamSection;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreExamSectionRequest extends FormRequest
 {
@@ -38,5 +40,10 @@ class StoreExamSectionRequest extends FormRequest
             'questions.*.id' => ['nullable', 'exists:questions,id'],
             'questions.*.order' => ['required_with:questions.*.id', 'integer', 'min:0'],
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

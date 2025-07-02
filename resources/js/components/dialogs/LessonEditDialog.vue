@@ -17,6 +17,10 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  courseId: {
+    type: [Number, String],
+    required: true,
+  },
 })
 
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
@@ -96,24 +100,24 @@ const onSubmit = async () => {
     description: {
       en: description.value,
     },
-    video_url: videoUrl.value,
-    is_free: isFree.value,
+    "video_url": videoUrl.value,
+    "is_free": isFree.value,
     status: status.value,
-    level_id: props.levelId,
-    reshow_incorrect_slides: reshowIncorrectSlides.value,
-    reshow_count: reshowCount.value,
-    require_correct_answers: requireCorrectAnswers.value,
+    "level_id": props.levelId,
+    "reshow_incorrect_slides": reshowIncorrectSlides.value,
+    "reshow_count": reshowCount.value,
+    "require_correct_answers": requireCorrectAnswers.value,
   }
 
   try {
     isSubmitting.value = true
-    
+
     // If editing, update existing lesson, otherwise create new lesson
     if (props.lessonData?.id) {
-      await api.put(`/admin/lessons/${props.lessonData.id}`, formData)
+      await api.put(`/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonData.id}`, formData)
       toast.success('Lesson updated successfully')
     } else {
-      await api.post('/admin/lessons', formData)
+      await api.post(`/admin/courses/${props.courseId}/levels/${props.levelId}/lessons`, formData)
       toast.success('Lesson created successfully')
     }
     

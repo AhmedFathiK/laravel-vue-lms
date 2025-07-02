@@ -64,8 +64,8 @@ const widgetData = ref([
 
 // Fetch courses
 const coursesData = ref({
-  courses: [],
-  totalCourses: 0,
+  items: [],
+  totalItems: 0,
   currentPage: 1,
   perPage: 10,
   lastPage: 1,
@@ -128,8 +128,8 @@ const fetchCourses = async () => {
       console.warn('API returned HTML instead of JSON')
       
       coursesData.value = {
-        courses: [],
-        totalCourses: 0,
+        items: [],
+        totalItems: 0,
         currentPage: page.value,
         perPage: itemsPerPage.value,
         lastPage: 1,
@@ -143,14 +143,14 @@ const fetchCourses = async () => {
       coursesData.value = response
     } else {
       console.warn('Unexpected API response format:', response)
-      coursesData.value = { courses: [], totalCourses: 0 }
+      coursesData.value = { items: [], totalItems: 0 }
     }
     
     // Update widget data with counts
     updateWidgetCounts()
   } catch (error) {
     console.error('Error fetching courses:', error)
-    coursesData.value = { courses: [], totalCourses: 0 }
+    coursesData.value = { items: [], totalItems: 0 }
     
     // Update widget data with counts
     updateWidgetCounts()
@@ -169,12 +169,12 @@ const updateWidgetCounts = () => {
   }
 
   // Set total courses - safely handle potential undefined values
-  const totalCoursesCount = coursesData.value.totalCourses || coursesData.value.total || 0
+  const totalCoursesCount = coursesData.value.totalItems || coursesData.value.total || 0
 
   widgetData.value[0].value = totalCoursesCount.toString()
   
   // Make sure courses array exists
-  const coursesList = coursesData.value.courses || coursesData.value.data || []
+  const coursesList = coursesData.value.items || coursesData.value.data || []
   
   // Count active, draft, and subscription courses
   let activeCount = 0
@@ -249,13 +249,13 @@ watch(() => locale.value, () => {
 const courses = computed(() => {
   if (!coursesData.value) return []
   
-  return coursesData.value.courses || coursesData.value.data || []
+  return coursesData.value.items || coursesData.value.data || []
 })
 
 const totalCourses = computed(() => {
   if (!coursesData.value) return 0
   
-  return coursesData.value.totalCourses || coursesData.value.total || 0
+  return coursesData.value.totalItems || coursesData.value.total || 0
 })
 
 // Categories for dropdown
@@ -367,6 +367,10 @@ const navigateToTerms = courseId => {
 
 const navigateToQuestions = courseId => {
   router.push(`/admin/courses/${courseId}/questions`)
+}
+
+const navigateToConcepts = courseId => {
+  router.push(`/admin/courses/${courseId}/concepts`)
 }
 
 // Show edit course dialog
@@ -639,6 +643,16 @@ onMounted(() => {
             <VIcon icon="tabler-help-circle" />
             <VTooltip activator="parent">
               Questions
+            </VTooltip>
+          </IconBtn>
+          
+          <IconBtn
+            color="secondary"
+            @click="navigateToConcepts(item.id)"
+          >
+            <VIcon icon="tabler-bulb" />
+            <VTooltip activator="parent">
+              Concepts
             </VTooltip>
           </IconBtn>
         </template>

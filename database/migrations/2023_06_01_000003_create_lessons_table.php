@@ -22,7 +22,9 @@ return new class extends Migration
             $table->boolean('reshow_incorrect_slides')->default(false);
             $table->integer('reshow_count')->default(1);
             $table->boolean('require_correct_answers')->default(false);
+            $table->boolean('is_free')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

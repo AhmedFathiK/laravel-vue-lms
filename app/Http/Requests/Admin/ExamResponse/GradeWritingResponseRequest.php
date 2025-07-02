@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\ExamResponse;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class GradeWritingResponseRequest extends FormRequest
 {
@@ -25,5 +27,10 @@ class GradeWritingResponseRequest extends FormRequest
             'score' => 'required|numeric|min:0',
             'feedback' => 'nullable|string',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

@@ -60,8 +60,8 @@ const loadData = async () => {
     // Load everything in parallel
     const [courseResponse, levelResponse, lessonsResponse] = await Promise.all([
       api.get(`/admin/courses/${courseId.value}`),
-      api.get(`/admin/levels/${levelId.value}`),
-      api.get(`/admin/levels/${levelId.value}/lessons`, {
+      api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}`),
+      api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons`, {
         params: {
           sortField: sortBy.value,
           sortDirection: sortDesc.value ? 'desc' : 'asc',
@@ -140,7 +140,7 @@ const refreshLessons = async () => {
   if (!levelId.value) return
   
   try {
-    const response = await api.get(`/admin/levels/${levelId.value}/lessons`, {
+    const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons`, {
       params: {
         sortField: sortBy.value,
         sortDirection: sortDesc.value ? 'desc' : 'asc',
@@ -239,7 +239,7 @@ const handlePasswordConfirm = async result => {
   if (!result.confirmed || !lessonToDelete.value) return
   
   try {
-    await api.delete(`/admin/lessons/${lessonToDelete.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonToDelete.value.id}`)
     toast.success('Lesson deleted successfully')
     refreshLessons()
   } catch (error) {
@@ -450,23 +450,23 @@ onMounted(() => {
               <VIcon
                 icon="tabler-book"
                 size="48"
-          color="primary"
+                color="primary"
                 class="mb-3"
-        />
+              />
               <div class="text-h6">
                 No Lessons Found
-        </div>
+              </div>
               <p class="mt-2">
                 Get started by adding your first lesson to this level.
               </p>
-          <VBtn
-            color="primary"
+              <VBtn
+                color="primary"
                 class="mt-2"
                 @click="openAddDialog"
-          >
+              >
                 Add Lesson
-          </VBtn>
-        </div>
+              </VBtn>
+            </div>
           </template>
         </VDataTable>
       </VCardText>
@@ -477,6 +477,7 @@ onMounted(() => {
       v-model:is-dialog-visible="isDialogVisible"
       :lesson-data="editingLesson"
       :level-id="levelId"
+      :course-id="courseId"
       @refresh="refreshLessons"
     />
     

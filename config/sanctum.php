@@ -92,6 +92,6 @@ return [
     |
     */
 
-    'prefix' => env('SANCTUM_PREFIX', 'api'),
+    'prefix' => env('SANCTUM_PREFIX', 'api/sanctum'),
 
 ];

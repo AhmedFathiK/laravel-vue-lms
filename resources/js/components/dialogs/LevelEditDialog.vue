@@ -92,10 +92,10 @@ const onSubmit = async () => {
     
     // If editing, update existing level, otherwise create new level
     if (props.levelData?.id) {
-      await api.put(`/admin/levels/${props.levelData.id}`, formData)
+      await api.put(`/admin/courses/${props.courseId}/levels/${props.levelData.id}`, formData)
       toast.success('Level updated successfully')
     } else {
-      await api.post('/admin/levels', formData)
+      await api.post(`/admin/courses/${props.courseId}/levels`, formData)
       toast.success('Level created successfully')
     }
     
@@ -167,7 +167,7 @@ const onSubmit = async () => {
               cols="12"
               md="6"
             >
-              <AppSwitch
+              <VSwitch
                 v-model="isFree"
                 label="Free Access"
                 color="success"

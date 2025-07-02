@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class DestroyUserRequest extends FormRequest
 {
@@ -41,5 +43,10 @@ class DestroyUserRequest extends FormRequest
                 $validator->errors()->add('user', "Users with the Super Admin role cannot be deleted.");
             }
         });
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

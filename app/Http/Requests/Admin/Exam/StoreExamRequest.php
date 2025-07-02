@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\Exam;
 use App\Models\Exam;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreExamRequest extends FormRequest
 {
@@ -47,5 +49,10 @@ class StoreExamRequest extends FormRequest
             'show_answers' => ['boolean'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

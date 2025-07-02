@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin\Level;
 
 use App\Models\Level;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreRequest extends FormRequest
 {
@@ -42,5 +44,10 @@ class StoreRequest extends FormRequest
         if (!$this->has('status')) {
             $this->merge(['status' => 'draft']);
         }
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

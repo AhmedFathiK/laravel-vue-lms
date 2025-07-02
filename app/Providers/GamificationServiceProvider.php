@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\GamificationService;
+use App\Services\TrophyService;
 use Illuminate\Support\ServiceProvider;
 
 class GamificationServiceProvider extends ServiceProvider
@@ -14,6 +15,10 @@ class GamificationServiceProvider extends ServiceProvider
     {
         $this->app->singleton(GamificationService::class, function ($app) {
             return new GamificationService();
+        });
+
+        $this->app->singleton(TrophyService::class, function ($app) {
+            return new TrophyService();
         });
     }
 

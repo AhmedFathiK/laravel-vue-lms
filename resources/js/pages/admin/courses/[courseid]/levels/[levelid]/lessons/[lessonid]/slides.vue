@@ -1,4 +1,5 @@
 <script setup>
+import SlideEditDialog from '@/components/dialogs/SlideEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,45 +10,49 @@ const router = useRouter()
 const toast = useToast()
 const route = useRoute()
 const isLoading = ref(false)
-const slideTypes = ref([])
+
+const slideTypes = ref([
+  { value: "mcq", label: "Multiple Choice", description: "Select one or more correct answers from options", isQuestion: true },
+  { value: "matching", label: "Matching Pairs", description: "Match items from two columns", isQuestion: true },
+  { value: "reordering", label: "Reordering", description: "Arrange items in the correct order", isQuestion: true },
+  { value: "fill_blank", label: "Fill in the Blank", description: "Complete sentences by typing missing words", isQuestion: true },
+  { value: "fill_blank_choices", label: "Fill in the Blank (with choices)", description: "Complete sentences by selecting from options", isQuestion: true },
+  { value: "term", label: "Term", description: "Vocabulary term with definition", isQuestion: false },
+  { value: "explanation", label: "Explanation", description: "Text explanation or content", isQuestion: false },
+])
+
 const slides = ref([])
 const course = ref(null)
 const level = ref(null)
 const lesson = ref(null)
 const dialog = ref(false)
 const deleteDialog = ref(false)
-const isSubmitting = ref(false)
 
 const editedItem = ref({
   id: null,
-  lesson_id: null,
+  "lesson_id": null,
   type: 'explanation',
-  content: { en: '' },
+  content: '',
   options: [],
-  correct_answer: [],
-  feedback: { en: '' },
-  sort_order: 0,
-  question_id: null,
-  term_id: null,
+  "correct_answer": [],
+  "sort_order": 0,
+  "question_id": null,
+  "term_id": null,
 })
 
 const defaultItem = {
   id: null,
-  lesson_id: null,
+  "lesson_id": null,
   type: 'explanation',
-  content: { en: '' },
+  content: '',
   options: [],
-  correct_answer: [],
-  feedback: { en: '' },
-  sort_order: 0,
-  question_id: null,
-  term_id: null,
+  "correct_answer": [],
+  "sort_order": 0,
+  "question_id": null,
+  "term_id": null,
 }
 
 const selectedSlide = ref(null)
-const selectedQuestion = ref(null)
-const selectedTerm = ref(null)
-const formTitle = computed(() => editedItem.value.id ? 'Edit Slide' : 'New Slide')
 const reordering = ref(false)
 
 // Get IDs from route parameters
@@ -62,18 +67,6 @@ const headers = [
   { title: 'Content', key: 'content', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end', width: '120px' },
 ]
-
-// Fetch slide types
-const fetchSlideTypes = async () => {
-  try {
-    const response = await api.get('/admin/slides/types')
-
-    slideTypes.value = response
-  } catch (error) {
-    console.error('Error fetching slide types:', error)
-    toast.error('Failed to load slide types')
-  }
-}
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -99,7 +92,7 @@ const fetchLevel = async () => {
   if (!levelId.value) return
   
   try {
-    const response = await api.get(`/admin/levels/${levelId.value}`)
+    const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}`)
     
     if (response && typeof response === 'object') {
       level.value = response
@@ -119,7 +112,7 @@ const fetchLesson = async () => {
   
   isLoading.value = true
   try {
-    const response = await api.get(`/admin/lessons/${lessonId.value}`)
+    const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}`)
     
     if (response && typeof response === 'object') {
       lesson.value = response
@@ -141,7 +134,7 @@ const fetchSlides = async () => {
   
   isLoading.value = true
   try {
-    const response = await api.get(`/admin/lessons/${lessonId.value}/slides`)
+    const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides`)
 
     slides.value = response
   } catch (error) {
@@ -158,7 +151,6 @@ const refreshData = () => {
   fetchLevel()
   fetchLesson()
   fetchSlides()
-  fetchSlideTypes()
 }
 
 // Get slide type label
@@ -177,8 +169,8 @@ const editItem = item => {
 // Create new item
 const createItem = () => {
   editedItem.value = JSON.parse(JSON.stringify(defaultItem))
-  editedItem.value.lesson_id = parseInt(lessonId.value)
-  editedItem.value.sort_order = slides.value.length + 1
+  editedItem.value["lesson_id"] = parseInt(lessonId.value)
+  editedItem.value["sort_order"] = slides.value.length + 1
   dialog.value = true
 }
 
@@ -192,90 +184,16 @@ const deleteItem = item => {
 const confirmDelete = async () => {
   if (!selectedSlide.value) return
   
-  isSubmitting.value = true
   try {
     await api.delete(`/admin/slides/${selectedSlide.value.id}`)
     toast.success('Slide deleted successfully')
-    fetchSlides()
     deleteDialog.value = false
-  } catch (error) {
-    console.error('Error deleting slide:', error)
-    toast.error('Failed to delete slide')
-  } finally {
-    isSubmitting.value = false
-    selectedSlide.value = null
-  }
-}
-
-// Save item
-const save = async () => {
-  isSubmitting.value = true
-  
-  try {
-    // Prepare data for submission
-    const submitData = { ...editedItem.value }
-    
-    // If type is question, add the question_id
-    if (editedItem.value.type === 'question' && selectedQuestion.value) {
-      submitData.question_id = selectedQuestion.value.id
-      submitData.content = { en: selectedQuestion.value.question_text.en || selectedQuestion.value.question_text }
-    }
-    
-    // If type is term, add the term_id
-    if (editedItem.value.type === 'term' && selectedTerm.value) {
-      submitData.term_id = selectedTerm.value.id
-      submitData.content = { en: selectedTerm.value.term }
-    }
-    
-    if (editedItem.value.id) {
-      // Update existing slide
-      await api.put(`/admin/slides/${editedItem.value.id}`, submitData)
-      toast.success('Slide updated successfully')
-    } else {
-      // Create new slide
-      await api.post('/admin/slides', submitData)
-      toast.success('Slide created successfully')
-    }
-    
-    dialog.value = false
     fetchSlides()
   } catch (error) {
-    console.error('Error saving slide:', error)
-    toast.error('Failed to save slide')
-  } finally {
-    isSubmitting.value = false
+    toast.error('Failed to delete slide')
   }
 }
 
-// Handle question selection
-const onQuestionSelected = question => {
-  if (question) {
-    selectedQuestion.value = question
-
-    // Update content with question text
-    editedItem.value.content = { en: question.question_text.en || question.question_text }
-  }
-}
-
-// Handle term selection
-const onTermSelected = term => {
-  if (term) {
-    selectedTerm.value = term
-
-    // Update content with term text
-    editedItem.value.content = { en: term.term }
-  }
-}
-
-// Check if slide type is question
-const isQuestionType = computed(() => {
-  return editedItem.value.type === 'question'
-})
-
-// Check if slide type is term
-const isTermType = computed(() => {
-  return editedItem.value.type === 'term'
-})
 
 // Toggle reorder mode
 const toggleReorderMode = () => {
@@ -324,7 +242,7 @@ onMounted(refreshData)
       :items="[
         { title: 'Admin', disabled: true },
         { title: 'Courses', to: '/admin/courses' },
-        { title: course ? course.title : 'Course', to: `/admin/courses/${courseId}` },
+        { title: course ? course.title : 'Course', disabled: true },
         { title: level ? level.title : 'Level', to: `/admin/courses/${courseId}/levels/${levelId}` },
         { title: 'Lessons', to: `/admin/courses/${courseId}/levels/${levelId}/lessons` },
         { title: lesson ? lesson.title : 'Slides', disabled: true }
@@ -412,6 +330,7 @@ onMounted(refreshData)
         class="elevation-1"
       >
         <!-- Type column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.type="{ item }">
           <VChip size="small">
             {{ getSlideTypeLabel(item.type) }}
@@ -419,6 +338,7 @@ onMounted(refreshData)
         </template>
 
         <!-- Content column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.content="{ item }">
           <div
             class="text-truncate"
@@ -429,6 +349,7 @@ onMounted(refreshData)
         </template>
 
         <!-- Actions column -->
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.actions="{ item }">
           <div class="d-flex justify-end">
             <VBtn
@@ -487,199 +408,16 @@ onMounted(refreshData)
       </VCardText>
     </VCard>
 
-    <!-- Create/Edit Dialog -->
-    <VDialog
-      v-model="dialog"
-      max-width="600px"
-      persistent
-    >
-      <VCard>
-        <VCardTitle>
-          <span class="text-h5">{{ formTitle }}</span>
-        </VCardTitle>
-
-        <VCardText>
-          <VRow>
-            <VCol cols="12">
-              <VSelect
-                v-model="editedItem.type"
-                :items="slideTypes"
-                item-title="label"
-                item-value="value"
-                label="Slide Type"
-                required
-              >
-                <template #item="{ item, props }">
-                  <VListItem v-bind="props">
-                    <VListItemTitle>{{ item.label }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.description }}</VListItemSubtitle>
-                  </VListItem>
-                </template>
-              </VSelect>
-            </VCol>
-            
-            <!-- Question Selector (for question type) -->
-            <VCol
-              v-if="isQuestionType"
-              cols="12"
-            >
-              <AppServerSideAutocomplete
-                api-link="/admin/questions"
-                api-method="get"
-                :api-request-data="{ course_id: null }"
-                api-search-key="search"
-                :minimum-search-chars="3"
-                label="Select Question"
-                item-title="question_text.en"
-                item-value="id"
-                return-object
-                @item-selected="onQuestionSelected"
-              >
-                <template #item="{ item, props }">
-                  <VListItem v-bind="props">
-                    <VListItemTitle>{{ item.question_text.en || item.question_text }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.type }} - {{ item.difficulty }}</VListItemSubtitle>
-                  </VListItem>
-                </template>
-              </AppServerSideAutocomplete>
-              
-              <div
-                v-if="selectedQuestion"
-                class="mt-2 pa-2 border rounded"
-              >
-                <div class="d-flex align-center justify-space-between">
-                  <div>
-                    <strong>Selected Question:</strong> {{ selectedQuestion.question_text.en || selectedQuestion.question_text }}
-                  </div>
-                  <VBtn
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="selectedQuestion = null"
-                  >
-                    <VIcon icon="tabler-x" />
-                  </VBtn>
-                </div>
-                <div class="mt-1">
-                  <small>Type: {{ selectedQuestion.type }} | Difficulty: {{ selectedQuestion.difficulty }}</small>
-                </div>
-              </div>
-            </VCol>
-            
-            <!-- Term Selector (for term type) -->
-            <VCol
-              v-if="isTermType"
-              cols="12"
-            >
-              <AppServerSideAutocomplete
-                api-link="/admin/terms"
-                api-method="get"
-                :api-request-data="{ course_id: null }"
-                api-search-key="search"
-                :minimum-search-chars="3"
-                label="Select Term"
-                item-title="term"
-                item-value="id"
-                return-object
-                @item-selected="onTermSelected"
-              >
-                <template #item="{ item, props }">
-                  <VListItem v-bind="props">
-                    <VListItemTitle>{{ item.term }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.definition?.en || item.definition }}</VListItemSubtitle>
-                  </VListItem>
-                </template>
-              </AppServerSideAutocomplete>
-              
-              <div
-                v-if="selectedTerm"
-                class="mt-2 pa-2 border rounded"
-              >
-                <div class="d-flex align-center justify-space-between">
-                  <div>
-                    <strong>Selected Term:</strong> {{ selectedTerm.term }}
-                  </div>
-                  <VBtn
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="selectedTerm = null"
-                  >
-                    <VIcon icon="tabler-x" />
-                  </VBtn>
-                </div>
-                <div class="mt-1">
-                  <small>Definition: {{ selectedTerm.definition?.en || selectedTerm.definition }}</small>
-                </div>
-              </div>
-            </VCol>
-            
-            <VCol
-              v-if="!isQuestionType && !isTermType"
-              cols="12"
-            >
-              <VTextarea
-                v-model="editedItem.content.en"
-                label="Content (English)"
-                required
-                rows="4"
-                auto-grow
-              />
-            </VCol>
-            
-            <VCol
-              v-if="['mcq', 'matching_pairs', 'reordering', 'fill_blank_choices'].includes(editedItem.type)"
-              cols="12"
-            >
-              <VTextField
-                v-model="editedItem.options"
-                label="Options (comma separated)"
-                hint="Enter options separated by commas"
-              />
-            </VCol>
-            
-            <VCol
-              v-if="['mcq', 'matching_pairs', 'reordering', 'fill_blank', 'fill_blank_choices'].includes(editedItem.type)"
-              cols="12"
-            >
-              <VTextField
-                v-model="editedItem.correct_answer"
-                label="Correct Answer"
-                hint="For MCQ: index of correct option(s). For matching: pairs of indices."
-              />
-            </VCol>
-            
-            <VCol cols="12">
-              <VTextarea
-                v-model="editedItem.feedback.en"
-                label="Feedback (English)"
-                rows="2"
-                auto-grow
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            color="blue-darken-1"
-            variant="text"
-            @click="dialog = false"
-          >
-            Cancel
-          </VBtn>
-          <VBtn
-            color="blue-darken-1"
-            variant="text"
-            :loading="isSubmitting"
-            @click="save"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+    <!-- Use SlideEditDialog component -->
+    <SlideEditDialog
+      v-model:is-dialog-visible="dialog"
+      :slide-data="editedItem"
+      :lesson-id="lessonId"
+      :course-id="courseId"
+      :level-id="levelId"
+      :slide-types="slideTypes"
+      @refresh="fetchSlides"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <VDialog
@@ -705,7 +443,6 @@ onMounted(refreshData)
           <VBtn
             color="error"
             variant="text"
-            :loading="isSubmitting"
             @click="confirmDelete"
           >
             Delete
@@ -714,4 +451,4 @@ onMounted(refreshData)
       </VCard>
     </VDialog>
   </section>
-</template> 
+</template>

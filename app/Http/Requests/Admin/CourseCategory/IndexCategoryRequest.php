@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\CourseCategory;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class IndexCategoryRequest extends FormRequest
 {
@@ -28,5 +30,10 @@ class IndexCategoryRequest extends FormRequest
             'orderBy' => 'nullable|string|in:asc,desc',
             'perPage' => 'nullable|integer|min:1|max:100',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

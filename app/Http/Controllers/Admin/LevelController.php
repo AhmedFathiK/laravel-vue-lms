@@ -57,7 +57,7 @@ class LevelController extends Controller
     /**
      * Store a newly created level in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreRequest $request, Course $course): JsonResponse
     {
         $data = $request->validated();
 
@@ -84,7 +84,7 @@ class LevelController extends Controller
     /**
      * Display the specified level.
      */
-    public function show(Level $level): JsonResponse
+    public function show(Course $course, Level $level): JsonResponse
     {
         if (!Gate::allows('view.levels')) {
             abort(403);
@@ -98,7 +98,7 @@ class LevelController extends Controller
     /**
      * Update the specified level in storage.
      */
-    public function update(UpdateRequest $request, Level $level): JsonResponse
+    public function update(UpdateRequest $request, Course $course, Level $level): JsonResponse
     {
         $data = $request->validated();
 
@@ -111,7 +111,7 @@ class LevelController extends Controller
     /**
      * Remove the specified level from storage.
      */
-    public function destroy(Level $level): JsonResponse
+    public function destroy(Course $course, Level $level): JsonResponse
     {
         if (!Gate::allows('delete.levels')) {
             abort(403);
@@ -149,7 +149,7 @@ class LevelController extends Controller
     /**
      * Toggle the unlock status of a level.
      */
-    public function toggleUnlock(Level $level): JsonResponse
+    public function toggleUnlock(Course $course, Level $level): JsonResponse
     {
         if (!Gate::allows('unlock.levels')) {
             abort(403);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Lesson\StoreRequest;
 use App\Http\Requests\Admin\Lesson\UpdateRequest;
+use App\Models\Course;
 use App\Models\Level;
 use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,7 @@ class LessonController extends Controller
     /**
      * Display a listing of the lessons for a level.
      */
-    public function index(Request $request, Level $level): JsonResponse
+    public function index(Request $request, Course $course, Level $level): JsonResponse
     {
         if (!Gate::allows('view.lessons')) {
             abort(403);
@@ -61,7 +62,7 @@ class LessonController extends Controller
     /**
      * Store a newly created lesson in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreRequest $request, Course $course, Level $level): JsonResponse
     {
         $lesson = Lesson::create($request->validated());
 
@@ -85,7 +86,7 @@ class LessonController extends Controller
     /**
      * Display the specified lesson.
      */
-    public function show(Lesson $lesson): JsonResponse
+    public function show(Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         if (!Gate::allows('view.lessons')) {
             abort(403);
@@ -131,7 +132,7 @@ class LessonController extends Controller
     /**
      * Update the specified lesson in storage.
      */
-    public function update(UpdateRequest $request, Lesson $lesson): JsonResponse
+    public function update(UpdateRequest $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         $lesson->update($request->validated());
 
@@ -155,7 +156,7 @@ class LessonController extends Controller
     /**
      * Remove the specified lesson from storage.
      */
-    public function destroy(Lesson $lesson): JsonResponse
+    public function destroy(Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         if (!Gate::allows('delete.lessons')) {
             abort(403);
@@ -169,7 +170,7 @@ class LessonController extends Controller
     /**
      * Update lesson order within a level.
      */
-    public function updateOrder(Request $request, Level $level): JsonResponse
+    public function updateOrder(Request $request, Course $course, Level $level): JsonResponse
     {
         if (!Gate::allows('reorder.slides')) {
             abort(403);
@@ -193,7 +194,7 @@ class LessonController extends Controller
     /**
      * Configure lesson settings.
      */
-    public function configure(Request $request, Lesson $lesson): JsonResponse
+    public function configure(Request $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         if (!Gate::allows('configure.lessons')) {
             abort(403);

@@ -3,14 +3,14 @@ import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vu
 import TermEditDialog from '@/components/dialogs/TermEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
-
-// Removed useI18n import
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
 const router = useRouter()
 const toast = useToast()
 const route = useRoute()
+const { locale } = useI18n()
 
 // Removed locale reference
 const isLoading = ref(false)
@@ -86,12 +86,14 @@ const fetchTerms = async () => {
     })
     
     if (searchQuery.value) {
-      params.append('term', searchQuery.value)
+      params.append('search', searchQuery.value)
     }
     
     const response = await api.get(`/admin/courses/${courseId.value}/terms?${params.toString()}`)
 
-    terms.value = response.data || []
+    terms.value = response.items || []
+    console.log(terms.value)
+    
     totalItems.value = response.total || 0
   } catch (error) {
     console.error('Error fetching terms:', error)
@@ -187,7 +189,11 @@ watch(searchQuery, () => {
   fetchTerms()
 })
 
-// Removed locale watch
+// Watch for locale changes and refresh data
+watch(() => locale.value, () => {
+  fetchCourse()
+  fetchTerms()
+})
 
 onMounted(() => {
   fetchCourse()

@@ -15,9 +15,10 @@ return new class extends Migration
             $table->id();
             $table->json('name'); // Translatable
             $table->json('description')->nullable(); // Translatable
-            $table->string('icon')->nullable(); // Path or class name for the trophy icon
+            $table->string('icon_url')->nullable(); // Path to the trophy icon image
             $table->foreignId('course_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('trigger_type'); // e.g., 'points', 'lesson_completed', 'exam_passed'
+            $table->string('trigger_type'); // e.g., 'completed_lesson', 'quiz_score', 'level_completed'
+            $table->integer('trigger_repeat_count')->default(1); // Number of times the trigger must be met
             $table->json('requirements')->nullable(); // JSON with specific requirements
             $table->integer('points')->default(0); // Points awarded for earning this trophy
             $table->integer('points_threshold')->nullable(); // Points required for point-based trophies

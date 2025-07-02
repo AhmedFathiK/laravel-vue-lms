@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Slide\StoreRequest;
 use App\Http\Requests\Admin\Slide\UpdateRequest;
+use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\Level;
 use App\Models\Slide;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +18,7 @@ class SlideController extends Controller
     /**
      * Display a listing of the slides for a lesson.
      */
-    public function index(Request $request, Lesson $lesson): JsonResponse
+    public function index(Request $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         if (!Gate::allows('view.slides')) {
             abort(403);
@@ -42,10 +44,10 @@ class SlideController extends Controller
                 'id' => $slide->id,
                 'lesson_id' => $slide->lesson_id,
                 'type' => $slide->type,
+                'title' => $slide->title,
+                'question_id' => $slide->question_id,
+                'term_id' => $slide->term_id,
                 'content' => $slide->content,
-                'options' => $slide->options,
-                'correct_answer' => $slide->correct_answer,
-                'feedback' => $slide->feedback,
                 'sort_order' => $slide->sort_order,
                 'created_at' => $slide->created_at,
                 'updated_at' => $slide->updated_at,
@@ -58,7 +60,7 @@ class SlideController extends Controller
     /**
      * Store a newly created slide in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreRequest $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         $slide = Slide::create($request->validated());
 
@@ -66,10 +68,10 @@ class SlideController extends Controller
             'id' => $slide->id,
             'lesson_id' => $slide->lesson_id,
             'type' => $slide->type,
+            'title' => $slide->title,
+            'question_id' => $slide->question_id,
+            'term_id' => $slide->term_id,
             'content' => $slide->content,
-            'options' => $slide->options,
-            'correct_answer' => $slide->correct_answer,
-            'feedback' => $slide->feedback,
             'sort_order' => $slide->sort_order,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
@@ -79,7 +81,7 @@ class SlideController extends Controller
     /**
      * Display the specified slide.
      */
-    public function show(Slide $slide): JsonResponse
+    public function show(Course $course, Level $level, Lesson $lesson, Slide $slide): JsonResponse
     {
         if (!Gate::allows('view.slides')) {
             abort(403);
@@ -89,10 +91,10 @@ class SlideController extends Controller
             'id' => $slide->id,
             'lesson_id' => $slide->lesson_id,
             'type' => $slide->type,
+            'title' => $slide->title,
+            'question_id' => $slide->question_id,
+            'term_id' => $slide->term_id,
             'content' => $slide->content,
-            'options' => $slide->options,
-            'correct_answer' => $slide->correct_answer,
-            'feedback' => $slide->feedback,
             'sort_order' => $slide->sort_order,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
@@ -102,7 +104,7 @@ class SlideController extends Controller
     /**
      * Update the specified slide in storage.
      */
-    public function update(UpdateRequest $request, Slide $slide): JsonResponse
+    public function update(UpdateRequest $request, Course $course, Level $level, Lesson $lesson, Slide $slide): JsonResponse
     {
         $slide->update($request->validated());
 
@@ -113,7 +115,6 @@ class SlideController extends Controller
             'content' => $slide->content,
             'options' => $slide->options,
             'correct_answer' => $slide->correct_answer,
-            'feedback' => $slide->feedback,
             'sort_order' => $slide->sort_order,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
@@ -123,7 +124,7 @@ class SlideController extends Controller
     /**
      * Remove the specified slide from storage.
      */
-    public function destroy(Slide $slide): JsonResponse
+    public function destroy(Course $course, Level $level, Lesson $lesson, Slide $slide): JsonResponse
     {
         if (!Gate::allows('delete.slides')) {
             abort(403);

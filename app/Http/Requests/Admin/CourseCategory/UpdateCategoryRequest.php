@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\CourseCategory;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateCategoryRequest extends FormRequest
 {
@@ -28,5 +30,10 @@ class UpdateCategoryRequest extends FormRequest
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

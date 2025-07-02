@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class TokenRequest extends FormRequest
 {
@@ -21,7 +23,7 @@ class TokenRequest extends FormRequest
     {
         return [
             'email' => 'required|email|exists:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:5',
             'device_name' => 'required|string|max:255|min:3',
             'abilities' => 'sometimes|array',
             'abilities.*' => 'string|in:create,read,update,delete,manage',
@@ -99,5 +101,10 @@ class TokenRequest extends FormRequest
     public function getExpiresAt(): ?\DateTime
     {
         return $this->has('expires_at') ? new \DateTime($this->expires_at) : null;
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

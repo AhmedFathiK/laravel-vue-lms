@@ -5,6 +5,8 @@ namespace App\Http\Requests\Admin\User;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class AssignRoleRequest extends FormRequest
 {
@@ -58,5 +60,10 @@ class AssignRoleRequest extends FormRequest
         return [
             'roles.*.not_in' => 'The Super Admin role cannot be assigned through the API.',
         ];
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

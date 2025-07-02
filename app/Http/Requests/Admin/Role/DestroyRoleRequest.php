@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin\Role;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Illuminate\Contracts\Validation\Validator as ValidationValidator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class DestroyRoleRequest extends FormRequest
 {
@@ -51,5 +53,10 @@ class DestroyRoleRequest extends FormRequest
                 $validator->errors()->add('role', "The student role cannot be deleted as it is a protected system role.");
             }
         });
+    }
+
+    protected function failedValidation(ValidationValidator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

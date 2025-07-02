@@ -109,11 +109,11 @@ const submitForm = async () => {
   try {
     if (isEditMode.value) {
       // Update existing term
-      await api.patch(`/admin/terms/${props.term.id}`, formData.value)
+      await api.put(`/admin/courses/${props.courseId}/terms/${props.term.id}`, formData.value)
       toast.success('Term updated successfully')
     } else {
       // Create new term
-      await api.post('/admin/terms', formData.value)
+      await api.post(`/admin/courses/${props.courseId}/terms`, formData.value)
       toast.success('Term created successfully')
     }
     

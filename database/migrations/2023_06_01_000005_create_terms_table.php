@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->string('term');
             $table->json('definition');
-            // $table->json('translation')->nullable(); // Removed, now handled by Spatie translatable
             $table->string('media_url')->nullable();
             $table->string('media_type')->nullable(); // image, image_audio, video
             $table->string('audio_url')->nullable(); // For image_audio type, stores the audio file URL

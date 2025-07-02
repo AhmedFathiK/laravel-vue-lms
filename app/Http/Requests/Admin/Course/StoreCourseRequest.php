@@ -3,15 +3,17 @@
 namespace App\Http\Requests\Admin\Course;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
-class UpdateRequest extends FormRequest
+class StoreCourseRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()->can('edit.courses');
+        return $this->user()->can('create.courses');
     }
 
     /**
@@ -24,10 +26,10 @@ class UpdateRequest extends FormRequest
         $rules = [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'course_category_id' => 'sometimes|required|exists:course_categories,id',
-            'main_locale' => 'sometimes|required|string|size:2',
+            'course_category_id' => 'required|exists:course_categories,id',
+            'main_locale' => 'required|string|size:2',
             'level_id' => 'nullable|exists:levels,id',
-            'status' => 'sometimes|required|in:draft,published,archived',
+            'status' => 'required|in:draft,published,archived',
             'is_featured' => 'boolean',
             'image' => 'nullable|image|max:2048',
             'video_url' => 'nullable|url',
@@ -38,5 +40,24 @@ class UpdateRequest extends FormRequest
         ];
 
         return $rules;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('status')) {
+            $this->merge(['status' => 'draft']);
+        }
+
+        if (!$this->has('main_locale')) {
+            $this->merge(['main_locale' => config('app.locale', 'en')]);
+        }
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

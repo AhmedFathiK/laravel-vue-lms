@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\Course\StoreRequest;
-use App\Http\Requests\Admin\Course\UpdateRequest;
+use App\Http\Requests\Admin\Course\StoreCourseRequest;
+use App\Http\Requests\Admin\Course\UpdateCourseRequest;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use App\Models\SubscriptionPlan;
@@ -67,8 +67,8 @@ class CourseController extends Controller
         $courses = $query->paginate($perPage);
 
         return response()->json([
-            'courses' => CourseResource::collection($courses->items()),
-            'totalCourses' => $courses->total(),
+            'items' => CourseResource::collection($courses->items()),
+            'totalItems' => $courses->total(),
             'currentPage' => $courses->currentPage(),
             'perPage' => $courses->perPage(),
             'lastPage' => $courses->lastPage(),
@@ -78,7 +78,7 @@ class CourseController extends Controller
     /**
      * Store a newly created course in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreCourseRequest $request): JsonResponse
     {
         $data = $request->validated();
 
@@ -131,7 +131,7 @@ class CourseController extends Controller
     /**
      * Update the specified course in storage.
      */
-    public function update(UpdateRequest $request, Course $course): JsonResponse
+    public function update(UpdateCourseRequest $request, Course $course): JsonResponse
     {
         $data = $request->validated();
 

@@ -3,29 +3,22 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreSubscriptionPlanRequest;
+use App\Http\Requests\Admin\UpdateSubscriptionPlanRequest;
 use App\Models\Course;
-use App\Models\Level;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Validator;
 
 class SubscriptionPlanController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     */
-    public function __construct()
-    {
-        $this->middleware('permission:view.subscriptions', ['only' => ['index', 'show']]);
-        $this->middleware('permission:configure.pricing', ['only' => ['store', 'update', 'destroy']]);
-    }
+
 
     /**
      * Display a listing of the subscription plans.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, Course $course): JsonResponse
     {
         if (!Gate::allows('view.subscriptions')) {
             abort(403);
@@ -60,60 +53,37 @@ class SubscriptionPlanController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sortBy', 'created_at');
-        $orderBy = $request->get('orderBy', 'desc');
-
-        $query->orderBy($sortBy, $orderBy);
+        if ($request->has('sortBy')) {
+            $sortByArray = $request->get('sortBy');
+            if (is_array($sortByArray)) {
+                foreach ($sortByArray as $sortItem) {
+                    if (isset($sortItem['key'], $sortItem['order']) && in_array(strtolower($sortItem['order']), ['asc', 'desc'])) {
+                        $query->orderBy($sortItem['key'], $sortItem['order']);
+                    }
+                }
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
         // Include relationships
         $query->with('course');
 
         // Apply pagination
-        $perPage = $request->get('perPage', 15);
+        $perPage = $request->get('itemsPerPage', 15);
         $plans = $query->paginate($perPage);
 
         return response()->json([
-            'plans' => $plans->items(),
-            'totalPlans' => $plans->total(),
-            'currentPage' => $plans->currentPage(),
-            'perPage' => $plans->perPage(),
-            'lastPage' => $plans->lastPage(),
+            'items' => $plans->items(),
+            'total' => $plans->total(),
         ]);
     }
 
     /**
      * Store a newly created subscription plan in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreSubscriptionPlanRequest $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('create.subscriptions')) {
-            abort(403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'course_id' => 'required|exists:courses,id',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
-            'billing_cycle' => 'required|string|in:monthly,quarterly,yearly,one-time',
-            'plan_type' => 'required|string|in:recurring,one-time,free',
-            'is_free' => 'boolean',
-            'accessible_levels' => 'nullable|array',
-            'accessible_levels.*' => 'exists:levels,id',
-            'duration_days' => 'nullable|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        // Handle the case where plan_type is free
-        if ($request->plan_type === 'free') {
-            $request->merge(['is_free' => true, 'price' => 0]);
-        }
-
         // Verify that all accessible_levels belong to the specified course
         if ($request->has('accessible_levels') && !empty($request->accessible_levels)) {
             $course = Course::findOrFail($request->course_id);
@@ -128,7 +98,14 @@ class SubscriptionPlanController extends Controller
             }
         }
 
-        $plan = SubscriptionPlan::create($request->all());
+        $validatedData = $request->validated();
+
+        // Enforce one-time billing cycle for one-time plans
+        if (isset($validatedData['plan_type']) && $validatedData['plan_type'] === 'one-time') {
+            $validatedData['billing_cycle'] = 'one-time';
+        }
+
+        $plan = SubscriptionPlan::create($validatedData);
 
         return response()->json($plan, 201);
     }
@@ -136,7 +113,7 @@ class SubscriptionPlanController extends Controller
     /**
      * Display the specified subscription plan.
      */
-    public function show(SubscriptionPlan $subscriptionPlan): JsonResponse
+    public function show(Course $course, SubscriptionPlan $subscriptionPlan): JsonResponse
     {
         if (!Gate::allows('view.subscriptions')) {
             abort(403);
@@ -150,36 +127,8 @@ class SubscriptionPlanController extends Controller
     /**
      * Update the specified subscription plan in storage.
      */
-    public function update(Request $request, SubscriptionPlan $subscriptionPlan): JsonResponse
+    public function update(UpdateSubscriptionPlanRequest $request, Course $course, SubscriptionPlan $subscriptionPlan): JsonResponse
     {
-        if (!Gate::allows('edit.subscriptions')) {
-            abort(403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'course_id' => 'exists:courses,id',
-            'name' => 'string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'string|size:3',
-            'billing_cycle' => 'string|in:monthly,quarterly,yearly,one-time',
-            'plan_type' => 'string|in:recurring,one-time,free',
-            'is_free' => 'boolean',
-            'accessible_levels' => 'nullable|array',
-            'accessible_levels.*' => 'exists:levels,id',
-            'duration_days' => 'nullable|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        // Handle the case where plan_type is free
-        if ($request->has('plan_type') && $request->plan_type === 'free') {
-            $request->merge(['is_free' => true, 'price' => 0]);
-        }
-
         // Verify that all accessible_levels belong to the specified course
         if ($request->has('accessible_levels') && !empty($request->accessible_levels)) {
             $courseId = $request->has('course_id') ? $request->course_id : $subscriptionPlan->course_id;
@@ -195,7 +144,14 @@ class SubscriptionPlanController extends Controller
             }
         }
 
-        $subscriptionPlan->update($request->all());
+        $validatedData = $request->validated();
+
+        // Enforce one-time billing cycle for one-time plans
+        if (isset($validatedData['plan_type']) && $validatedData['plan_type'] === 'one-time') {
+            $validatedData['billing_cycle'] = 'one-time';
+        }
+
+        $subscriptionPlan->update($validatedData);
 
         return response()->json($subscriptionPlan);
     }
@@ -203,7 +159,7 @@ class SubscriptionPlanController extends Controller
     /**
      * Remove the specified subscription plan from storage.
      */
-    public function destroy(SubscriptionPlan $subscriptionPlan): JsonResponse
+    public function destroy(Course $course, SubscriptionPlan $subscriptionPlan): JsonResponse
     {
         if (!Gate::allows('delete.subscriptions')) {
             abort(403);

@@ -34,16 +34,17 @@ use App\Http\Controllers\Learner\SubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
-| SPA Authentication Routes (Session-based)
+| Authentication Routes
 |--------------------------------------------------------------------------
 */
 
+// SPA Authentication (Session-based)
 Route::prefix('auth')->group(function () {
     // Public routes
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
 
-    // Protected routes (session-based)
+    // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
@@ -52,17 +53,13 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| API Token Authentication Routes
-|--------------------------------------------------------------------------
-*/
+// API Token Authentication
 Route::prefix('token')->group(function () {
     // Public routes
     Route::post('/create', [TokenController::class, 'createToken']);
     Route::post('/register', [TokenController::class, 'register']);
 
-    // Protected routes (token-based)
+    // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', [TokenController::class, 'user']);
         Route::delete('/revoke', [TokenController::class, 'revokeToken']);
@@ -74,11 +71,12 @@ Route::prefix('token')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Example Protected API Routes
+| General User Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('auth:sanctum')->group(function () {
-    // This route works with both session and token authentication
+    // Profile and general user routes
     Route::get('/profile', function (Request $request) {
         return response()->json([
             'user' => $request->user(),
@@ -86,118 +84,123 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
-    // Example resource routes
-    // Route::apiResource('posts', 'PostController');
-    // Route::apiResource('categories', 'CategoryController');
-
-    // User routes
     Route::post('/user/locale', [UserController::class, 'updateLocale']);
 });
 
-// Admin API Routes
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
-    // User Management
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    // User & Role Management
     Route::apiResource('users', AdminUserController::class);
     Route::post('users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus']);
     Route::post('users/{user}/assign-role', [AdminUserController::class, 'assignRole']);
     Route::get('roles', [AdminUserController::class, 'getRoles']);
-
-    // Role Management
     Route::apiResource('roles', RoleController::class);
     Route::get('permissions', [RoleController::class, 'getPermissions']);
 
-    // Trash Management
+    // System Management
     Route::get('trash', [\App\Http\Controllers\Admin\TrashController::class, 'index']);
     Route::post('trash/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore']);
     Route::delete('trash/{id}', [\App\Http\Controllers\Admin\TrashController::class, 'destroy']);
     Route::post('trash/empty', [\App\Http\Controllers\Admin\TrashController::class, 'emptyTrash']);
     Route::get('trash/model-types', [\App\Http\Controllers\Admin\TrashController::class, 'getModelTypes']);
 
-    // Course Management
+    // Course Structure Management
     Route::apiResource('courses', CourseController::class);
     Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);
 
-    // Level Management
-    Route::get('courses/{course}/levels', [LevelController::class, 'index']);
-    Route::post('courses/{course}/levels/order', [LevelController::class, 'updateOrder']);
-    Route::apiResource('levels', LevelController::class)->except(['index']);
-    Route::patch('levels/{level}/unlock', [LevelController::class, 'toggleUnlock']);
+    // Courses Content
+    Route::prefix('/courses/{course}')->scopeBindings()->group(function () {
+        Route::prefix('/levels')->group(function () {
+            Route::get('/', [LevelController::class, 'index']);
+            Route::post('/order', [LevelController::class, 'updateOrder']);
+            Route::post('/', [LevelController::class, 'store']);
+            Route::get('{level}', [LevelController::class, 'show']);
+            Route::put('{level}', [LevelController::class, 'update']);
+            Route::delete('{level}', [LevelController::class, 'destroy']);
+            Route::patch('{level}/unlock', [LevelController::class, 'toggleUnlock']);
 
-    // Lesson Management
-    Route::get('levels/{level}/lessons', [LessonController::class, 'index']);
-    Route::post('levels/{level}/lessons/order', [LessonController::class, 'updateOrder']);
-    Route::apiResource('lessons', LessonController::class)->except(['index']);
-    Route::patch('lessons/{lesson}/configure', [LessonController::class, 'configure']);
+            // Lesson Management (nested under levels)
+            Route::prefix('/{level}/lessons')->group(function () {
+                Route::get('/', [LessonController::class, 'index']);
+                Route::post('/order', [LessonController::class, 'updateOrder']);
+                Route::post('/', [LessonController::class, 'store']);
+                Route::get('/{lesson}', [LessonController::class, 'show']);
+                Route::put('/{lesson}', [LessonController::class, 'update']);
+                Route::delete('/{lesson}', [LessonController::class, 'destroy']);
+                Route::patch('/{lesson}/configure', [LessonController::class, 'configure']);
 
-    // Slide Management
-    Route::get('lessons/{lesson}/slides', [SlideController::class, 'index']);
-    Route::post('lessons/{lesson}/slides/order', [SlideController::class, 'updateOrder']);
+                // Slide Management (nested under lessons)
+                Route::prefix('/{lesson}/slides')->group(function () {
+                    Route::get('/', [SlideController::class, 'index']);
+                    Route::post('/order', [SlideController::class, 'updateOrder']);
+                    Route::post('/', [SlideController::class, 'store']);
+                    Route::get('{slide}', [SlideController::class, 'show']);
+                    Route::put('{slide}', [SlideController::class, 'update']);
+                    Route::delete('{slide}', [SlideController::class, 'destroy']);
+                });
+            });
+        });
+
+        // Assessment System
+        Route::get('/questions/types', [\App\Http\Controllers\Admin\QuestionController::class, 'getTypes']);
+        Route::get('/questions/select-fields', [\App\Http\Controllers\Admin\QuestionController::class, 'getQuestionsForSelectFields']);
+        Route::apiResource('/questions', \App\Http\Controllers\Admin\QuestionController::class);
+        Route::apiResource('/exams', \App\Http\Controllers\Admin\ExamController::class);
+        Route::apiResource('/exam-sections', \App\Http\Controllers\Admin\ExamSectionController::class);
+        Route::post('/exam-sections/{section}/questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'addQuestion']);
+        Route::delete('/exam-sections/{section}/questions/{question}', [\App\Http\Controllers\Admin\ExamSectionController::class, 'removeQuestion']);
+        Route::post('/exam-sections/{section}/reorder-questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'reorderQuestions']);
+
+        // Exam Grading
+        Route::get('/exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
+        Route::get('/exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
+        Route::post('/exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
+
+        // Subscription Plans
+        Route::apiResource('subscription-plans', SubscriptionPlanController::class);
+
+        // Content Management (nested under courses)
+        // Terms
+        Route::prefix('/terms')->group(function () {
+            Route::get('/', [TermController::class, 'index']);
+            Route::get('/select-fields', [TermController::class, 'getTermsForSelectFields']);
+            Route::post('/', [TermController::class, 'store']);
+            Route::get('/{term}', [TermController::class, 'show']);
+            Route::put('/{term}', [TermController::class, 'update']);
+            Route::delete('/{term}', [TermController::class, 'destroy']);
+        });
+    });
+
+    Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);
     Route::get('slides/types', [SlideController::class, 'getTypes']);
-    Route::apiResource('slides', SlideController::class)->except(['index']);
-
-    // Term Management
-    Route::get('courses/{course}/terms', [TermController::class, 'index']);
-    Route::apiResource('terms', TermController::class)->except(['index']);
-    Route::post('terms/{term}/translate', [TermController::class, 'translate']);
-
-    // Concept Management
-    Route::get('courses/{course}/concepts', [ConceptController::class, 'index']);
-    Route::apiResource('concepts', ConceptController::class)->except(['index']);
     Route::get('concepts/types', [ConceptController::class, 'getTypes']);
-    Route::post('concepts/{concept}/translate', [ConceptController::class, 'translate']);
 
-    // Gamification - Trophy Management
+
+    // Gamification Management
+    Route::get('trophies/trigger-types', [TrophyController::class, 'getTriggerTypes']);
+    Route::get('trophies/rarity-levels', [TrophyController::class, 'getRarityLevels']);
     Route::apiResource('trophies', TrophyController::class);
-    Route::get('trophy-trigger-types', [TrophyController::class, 'getTriggerTypes']);
-    Route::get('trophy-rarity-levels', [TrophyController::class, 'getRarityLevels']);
-
-    // Gamification - Leaderboard Management
     Route::apiResource('leaderboards', LeaderboardController::class);
     Route::get('leaderboard-reset-frequencies', [LeaderboardController::class, 'getResetFrequencies']);
     Route::get('leaderboards/{leaderboard}/entries', [LeaderboardController::class, 'viewEntries']);
     Route::post('leaderboards/{leaderboard}/recalculate', [LeaderboardController::class, 'recalculateRanks']);
     Route::post('leaderboards/{leaderboard}/reset', [LeaderboardController::class, 'resetLeaderboard']);
-});
 
-// Admin Assessment System routes
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
-    // Question bank routes
-    Route::apiResource('questions', \App\Http\Controllers\Admin\QuestionController::class);
-
-    // Exam routes
-    Route::apiResource('exams', \App\Http\Controllers\Admin\ExamController::class);
-
-    // Exam section routes
-    Route::apiResource('exam-sections', \App\Http\Controllers\Admin\ExamSectionController::class);
-    Route::post('exam-sections/{section}/questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'addQuestion']);
-    Route::delete('exam-sections/{section}/questions/{question}', [\App\Http\Controllers\Admin\ExamSectionController::class, 'removeQuestion']);
-    Route::post('exam-sections/{section}/reorder-questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'reorderQuestions']);
-
-    // Exam response routes (for grading writing questions)
-    Route::get('exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
-    Route::get('exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
-    Route::post('exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
-});
-
-// Admin Payment & Subscription routes
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
-    // Payment routes
+    // Payment & Subscription Management
     Route::apiResource('payments', PaymentController::class);
-
-    // Receipt routes
     Route::apiResource('receipts', ReceiptController::class)->only(['index', 'show']);
     Route::get('receipts/{receipt}/download', [ReceiptController::class, 'download']);
 
-    // Subscription plan routes
-    Route::apiResource('subscription-plans', SubscriptionPlanController::class);
-    Route::get('courses/{course}/subscription-plans', [CourseController::class, 'getSubscriptionPlans']);
-    Route::get('courses/{course}/levels-for-plans', [SubscriptionPlanController::class, 'getLevelsForCourse']);
 
-    // User subscription routes
     Route::apiResource('user-subscriptions', UserSubscriptionController::class);
     Route::post('user-subscriptions/{userSubscription}/cancel', [UserSubscriptionController::class, 'cancel']);
 
-    // Course access routes
+    // Access Control Management
     Route::post('courses/{course}/access-type', [CourseAccessController::class, 'setCourseAccessType']);
     Route::post('levels/{level}/access-type', [CourseAccessController::class, 'setLevelAccessType']);
     Route::post('lessons/{lesson}/access-type', [CourseAccessController::class, 'setLessonAccessType']);
@@ -205,46 +208,34 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('batch-update-free-access', [CourseAccessController::class, 'batchUpdateFreeAccess']);
 });
 
-// Learner API Routes
+/*
+|--------------------------------------------------------------------------
+| Learner Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
-    // Course Routes
+    // Course Access & Navigation
     Route::get('courses', [LearnerCourseController::class, 'index']);
     Route::get('courses/{course}', [LearnerCourseController::class, 'show']);
-    Route::get('courses/{course}/free-content', [SubscriptionController::class, 'getFreeCourseContent']);
-    Route::get('courses/{course}/subscription-plans', [SubscriptionController::class, 'getAvailablePlans']);
-
-    // Level Routes
     Route::get('levels/{level}', [LearnerLevelController::class, 'show']);
-    Route::get('levels/{level}/access-status', [SubscriptionController::class, 'checkLevelAccess']);
-
-    // Lesson Routes
     Route::get('lessons/{lesson}', [LearnerLessonController::class, 'show']);
-    Route::get('lessons/{lesson}/access-status', [SubscriptionController::class, 'checkLessonAccess']);
 
-    // Subscription Routes
-    Route::get('subscriptions', [SubscriptionController::class, 'index']);
-    Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
-    Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
-    Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
-    Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew']);
-
-    // Term Routes
+    // Course Content
     Route::get('courses/{course}/terms', [LearnerTermController::class, 'index']);
     Route::get('terms/{term}', [LearnerTermController::class, 'show']);
-
-    // Concept Routes
     Route::get('courses/{course}/concepts', [LearnerConceptController::class, 'index']);
     Route::get('concepts/{concept}', [LearnerConceptController::class, 'show']);
     Route::get('courses/{course}/concepts/{type}', [LearnerConceptController::class, 'getByType']);
 
-    // Enrollment Routes
+    // Enrollment Management
     Route::get('enrollments', [EnrollmentController::class, 'index']);
     Route::post('courses/{course}/enroll', [EnrollmentController::class, 'enroll']);
     Route::get('courses/{course}/enrollment', [EnrollmentController::class, 'show']);
     Route::post('courses/{course}/update-last-accessed', [EnrollmentController::class, 'updateLastAccessed']);
     Route::post('courses/{course}/mark-completed', [EnrollmentController::class, 'markAsCompleted']);
 
-    // Progress Routes
+    // Progress Tracking
     Route::get('courses/{course}/progress', [ProgressController::class, 'courseProgress']);
     Route::get('lessons/{lesson}/progress', [ProgressController::class, 'lessonProgress']);
     Route::post('slides/{slide}/progress', [ProgressController::class, 'updateSlideProgress']);
@@ -252,66 +243,56 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::post('courses/{course}/reset-progress', [ProgressController::class, 'resetCourseProgress']);
     Route::get('statistics', [ProgressController::class, 'userStatistics']);
 
-    // Receipt Routes (Billing History)
+    // Subscription & Access
+    Route::get('subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
+    Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
+    Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
+    Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew']);
+    Route::get('courses/{course}/free-content', [SubscriptionController::class, 'getFreeCourseContent']);
+    Route::get('courses/{course}/subscription-plans', [SubscriptionController::class, 'getAvailablePlans']);
+    Route::get('levels/{level}/access-status', [SubscriptionController::class, 'checkLevelAccess']);
+    Route::get('lessons/{lesson}/access-status', [SubscriptionController::class, 'checkLessonAccess']);
+
+    // Billing & Receipts
     Route::get('receipts', [LearnerReceiptController::class, 'index']);
     Route::get('receipts/{receipt}', [LearnerReceiptController::class, 'show']);
     Route::get('receipts/{receipt}/download', [LearnerReceiptController::class, 'download']);
-});
 
-// Learner Assessment System routes
-Route::middleware(['auth:sanctum'])->prefix('learner')->group(function () {
-    // Exam routes
+    // Assessment System
     Route::get('exams', [\App\Http\Controllers\Learner\ExamController::class, 'index']);
     Route::get('exams/{exam}', [\App\Http\Controllers\Learner\ExamController::class, 'show']);
     Route::post('exams/{exam}/start', [\App\Http\Controllers\Learner\ExamController::class, 'startAttempt']);
     Route::get('exams/{exam}/attempts', [\App\Http\Controllers\Learner\ExamController::class, 'examAttempts']);
-
-    // Exam attempt routes
     Route::get('exam-attempts/{attempt}', [\App\Http\Controllers\Learner\ExamController::class, 'showAttempt']);
     Route::post('exam-attempts/{attempt}/complete', [\App\Http\Controllers\Learner\ExamController::class, 'completeAttempt']);
     Route::post('exam-attempts/{attempt}/questions/{question}', [\App\Http\Controllers\Learner\ExamController::class, 'submitResponse']);
-
-    // Placement test routes
     Route::get('placement-test', [\App\Http\Controllers\Learner\ExamController::class, 'getPlacementTest']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Revision System Routes
+| Specialized Feature Routes
 |--------------------------------------------------------------------------
 */
+
+// Revision System
 Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
-    // Revision item management
     Route::get('items', [RevisionController::class, 'index']);
     Route::get('due-items', [RevisionController::class, 'getDueItems']);
     Route::post('add-item', [RevisionController::class, 'addItem']);
     Route::post('items/{revisionItem}/response', [RevisionController::class, 'recordResponse']);
-
-    // Mastery progress tracking
     Route::get('mastery-progress', [RevisionController::class, 'getMasteryProgress']);
-
-    // Practice generation
     Route::get('practice', [RevisionController::class, 'generatePractice']);
-
-    // Statistics
     Route::get('statistics', [RevisionController::class, 'getStatistics']);
 });
 
-/*
-|--------------------------------------------------------------------------
-| Gamification System Routes
-|--------------------------------------------------------------------------
-*/
+// Gamification System
 Route::middleware('auth:sanctum')->prefix('gamification')->group(function () {
-    // Trophy routes
     Route::get('trophies', [GamificationController::class, 'getUserTrophies']);
     Route::get('available-trophies', [GamificationController::class, 'getAvailableTrophies']);
     Route::get('trophy-statistics', [GamificationController::class, 'getTrophyStatistics']);
-
-    // Points routes
     Route::get('points', [GamificationController::class, 'getUserPoints']);
-
-    // Leaderboard routes
     Route::get('leaderboards/{leaderboard}', [GamificationController::class, 'viewLeaderboard']);
     Route::get('rankings', [GamificationController::class, 'getUserLeaderboardRankings']);
 });

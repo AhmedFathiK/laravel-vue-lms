@@ -19,7 +19,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->string('status')->default('draft'); // draft, published, archived
             $table->boolean('is_unlocked')->default(false);
+            $table->boolean('is_free')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

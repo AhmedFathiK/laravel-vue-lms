@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('slides', function (Blueprint $table) {
-            $table->softDeletes();
+        Schema::table('questions', function (Blueprint $table) {
+            $table->string('audio_url')->nullable()->after('media_type');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('slides', function (Blueprint $table) {
-            $table->dropSoftDeletes();
+        Schema::table('questions', function (Blueprint $table) {
+            $table->dropColumn('audio_url');
         });
     }
 };
