@@ -13,7 +13,7 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('update.course_category');
+        return $this->user()->can('edit.course_category');
     }
 
     /**
