@@ -41,7 +41,7 @@ class PermissionSeeder extends Seeder
             // Course Category Management (New)
             'view.course_category',
             'create.course_category',
-            'update.course_category',
+            'edit.course_category',
             'delete.course_category',
 
             // Level Management
@@ -106,16 +106,26 @@ class PermissionSeeder extends Seeder
             'view.course_stats',
             'analyze_weakness.user_stats',
 
-            // Subscriptions & Payments
+            // Receipts & Payments
+            'view.receipts',
+            'create.receipts',
+            'edit.receipts',
+            'delete.receipts',
+            'store.receipts',
+            'download.receipts',
+            'resend.receipts',
             'view.payments',
+            'create.payments',
+            'edit.payments',
+            'delete.payments',
+            'store.payments',
+
+            // Subscriptions & Payments
             'view.subscriptions',
             'create.subscriptions',
             'edit.subscriptions',
             'delete.subscriptions',
             'manage.subscriptions',
-            'configure.pricing',
-            'manage.receipts',
-            'download.receipts',
 
             // Settings & Localization
             'access.settings',
@@ -131,11 +141,34 @@ class PermissionSeeder extends Seeder
             'access.admin_panel',
         ];
 
-        // Create permissions
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+        // STEP 1: Get current permissions from DB
+        $existingPermissions = Permission::pluck('name')->toArray();
+
+        // STEP 2: Add missing permissions
+        $toAdd = array_diff($permissions, $existingPermissions);
+        foreach ($toAdd as $permissionName) {
+            Permission::create(['name' => $permissionName]);
+            $this->command->info("➕ Added: {$permissionName}");
         }
 
-        $this->command->info('Permissions seeded successfully!');
+        // STEP 3: Delete removed permissions safely
+        $toDelete = array_diff($existingPermissions, $permissions);
+        foreach ($toDelete as $permissionName) {
+            $permission = Permission::where('name', $permissionName)->first();
+
+            if ($permission) {
+                // Detach from roles and users first
+                $permission->roles()->detach();
+                $permission->users()->detach();
+                $permission->delete();
+
+                $this->command->warn("❌ Deleted: {$permissionName}");
+            }
+        }
+
+        // STEP 4: Clear cache again after making changes
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $this->command->info("✅ Permissions synced successfully!");
     }
 }
