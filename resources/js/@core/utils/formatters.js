@@ -44,3 +44,12 @@ export const formatDateToMonthShort = (value, toTimeForCurrentDay = true) => {
   return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
 }
 export const prefixWithPlus = value => value > 0 ? `+${value}` : value
+
+
+// Format currency
+export const formatCurrency = (amount, currency = 'USD') => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount)
+}

@@ -15,7 +15,7 @@ const props = defineProps({
   noDataText: { type: String },
 })
 
-const emit = defineEmits(['update:modelValue', 'search', 'item-selected'])
+const emit = defineEmits(['update:modelValue', 'search', 'itemSelected'])
 
 defineOptions({
   name: 'AppServerSideAutocomplete',
@@ -69,9 +69,9 @@ const searchApi = async () => {
     } else {
       searchResults.value = responseData
       emit('search', responseData)
-      console.log(responseData)
-      
+      searchNoDataText.value = t(`Please enter ${props.minimumSearchChars} or more characters`)
     }
+
   } catch (error) {
     console.log(error)
     toast.error("Error fetching results.")
@@ -93,7 +93,7 @@ watch(search, newValue => {
   }
 
   if (newValue.length < minChars) {
-    searchNoDataText.value = t("Please enter {number} or more characters", { 
+    searchNoDataText.value = t(`Please enter ${props.minimumSearchChars} or more characters`, { 
       number: (minChars - newValue.length), 
     })
   } else if (newValue.length >= minChars && !fieldHasItemsSelected.value) {
@@ -106,8 +106,8 @@ const onSelecting = item => {
   if (!('multiple' in attrs)) {
     fieldHasItemsSelected.value = true
   }
-  
-  emit('item-selected', item)
+  emit('update:modelValue', item)
+  emit('itemSelected', item)
 }
 
 // Clear the field
