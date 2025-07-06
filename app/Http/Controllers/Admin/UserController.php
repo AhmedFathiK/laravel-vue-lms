@@ -15,7 +15,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -33,7 +32,8 @@ class UserController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
 
@@ -78,6 +78,58 @@ class UserController extends Controller
     }
 
     /**
+     * Display a listing of users without pagination.
+     */
+    public function getUsersForSelectFields(IndexUserRequest $request): JsonResponse
+    {
+        $query = User::with('roles');
+
+        // Search by name or email
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone_number', 'like', "{$search}%");
+            });
+        }
+
+        // Filter by role
+        if ($request->has('role')) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        // Filter by status (email verification)
+        if ($request->has('status')) {
+            if ($request->status === 'verified') {
+                $query->whereNotNull('email_verified_at');
+            } elseif ($request->status === 'unverified') {
+                $query->whereNull('email_verified_at');
+            }
+        }
+
+        // Sorting
+        $sortBy = $request->sortBy ?? 'created_at';
+        $orderBy = $request->orderBy ?? 'desc';
+        $query->orderBy($sortBy, $orderBy);
+
+        // Pagination
+        $query->limit(5);
+        $users = $query->get();
+
+        // Transform data to include role names
+        $usersCollection = collect($users)->map(function ($user) {
+            $user->role_names = $user->getRoleNames();
+            return $user;
+        });
+
+        return response()->json($usersCollection);
+    }
+
+    /**
      * Store a newly created user.
      */
     public function store(StoreUserRequest $request): JsonResponse
@@ -89,6 +141,7 @@ class UserController extends Controller
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
+            'phone_number' => $validated['phone_number'] ?? null,
             'password' => Hash::make($validated['password']),
             'email_verified_at' => $request->has('verified') && $request->verified ? now() : null,
         ]);
@@ -131,6 +184,7 @@ class UserController extends Controller
         $user->first_name = $validated['first_name'];
         $user->last_name = $validated['last_name'];
         $user->email = $validated['email'];
+        $user->phone_number = $validated['phone_number'] ?? null;
 
         if (isset($validated['password'])) {
             $user->password = Hash::make($validated['password']);

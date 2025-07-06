@@ -76,6 +76,60 @@ class CourseController extends Controller
     }
 
     /**
+     * Display a listing of the courses.
+     */
+    public function getCoursesForSelectFields(Request $request): JsonResponse
+    {
+        if (!Gate::allows('view.courses')) {
+            abort(403);
+        }
+
+        $query = Course::query();
+
+        // Apply filters
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('featured')) {
+            $query->where('is_featured', $request->boolean('featured'));
+        }
+
+        if ($request->has('category')) {
+            $query->where('course_category_id', $request->category);
+        }
+
+        if ($request->has('is_free')) {
+            $query->where('is_free', $request->boolean('is_free'));
+        }
+
+        // Apply search
+        if ($request->has('search')) {
+            $search = strtolower($request->get('search'));
+            $query->where(function ($q) use ($search) {
+                // For JSON fields, we need to use whereRaw
+                $q->whereRaw("LOWER(JSON_EXTRACT(title, '$.*')) LIKE ?", ['%' . $search . '%'])
+                    ->orWhereRaw("LOWER(JSON_EXTRACT(description, '$.*')) LIKE ?", ['%' . $search . '%']);
+            });
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sortBy', 'created_at');
+        $orderBy = $request->get('orderBy', 'desc');
+
+        $query->orderBy($sortBy, $orderBy);
+
+        // Include category relationship
+        $query->with('category:id,name');
+
+        // Apply pagination
+        $query->limit(5);
+        $courses = $query->get();
+
+        return response()->json(CourseResource::collection($courses));
+    }
+
+    /**
      * Store a newly created course in storage.
      */
     public function store(StoreCourseRequest $request): JsonResponse

@@ -65,9 +65,6 @@ class QuestionController extends Controller
      */
     public function getQuestionsForSelectFields(IndexQuestionRequest $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('view.questions')) {
-            abort(403);
-        }
         $query = Question::query();
 
         // Apply filters
