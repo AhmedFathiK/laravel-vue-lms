@@ -47,7 +47,6 @@ const permissionGroups = ref([
 const isSelectAll = ref(false)
 const role = ref('')
 const refPermissionForm = ref()
-const availablePermissions = ref([])
 const isLoading = ref(false)
 
 // Fetch available permissions from the API
@@ -55,8 +54,6 @@ const fetchPermissions = async () => {
   isLoading.value = true
   try {
     const response = await api.get('/admin/permissions')
-
-    console.log('API Response:', response)
     
     // Check if we have a valid response with permissions
     if (response && response.permissions) {
