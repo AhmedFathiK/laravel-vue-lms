@@ -12,8 +12,8 @@ import {
 } from 'vuetify/lib/components/VInput/VInput'
 
 
-import { filterInputAttrs } from 'vuetify/lib/util/helpers'
 import { useConfigStore } from '@core/stores/config'
+import { filterInputAttrs } from 'vuetify/lib/util/helpers'
 
 const props = defineProps({
   autofocus: Boolean,
@@ -65,6 +65,26 @@ const { focused } = useFocus(refFlatPicker)
 const isCalendarOpen = ref(false)
 const isInlinePicker = ref(false)
 
+const onOpenHandler = (selectedDates, dateStr, instance) => {
+  /* const dialog = instance.element.closest('.v-overlay__content')
+  const calendar = instance.calendarContainer
+
+  if (dialog && calendar && !dialog.contains(calendar)) {
+    dialog.appendChild(calendar)
+    instance.positionCalendar()
+    setTimeout(() => {
+      
+    }, 0)
+  } */
+  const dialog = instance.element.closest('.v-overlay')
+  if (dialog) {
+    const calendarElement = instance.calendarContainer
+
+    calendarElement.style.pointerEvents = 'auto'
+    dialog.appendChild(calendarElement)
+  }
+}
+
 // flat picker prop manipulation
 if (compAttrs.config && compAttrs.config.inline) {
   isInlinePicker.value = compAttrs.config.inline
@@ -72,6 +92,10 @@ if (compAttrs.config && compAttrs.config.inline) {
 }
 compAttrs.config = {
   ...compAttrs.config,
+  onOpen: (...args) => {
+    onOpenHandler(...args)
+    props.config?.onOpen?.(...args)
+  },
   prevArrow: '<i class="tabler-chevron-left v-icon" style="font-size: 20px; height: 20px; width: 20px;"></i>',
   nextArrow: '<i class="tabler-chevron-right v-icon" style="font-size: 20px; height: 20px; width: 20px;"></i>',
 }

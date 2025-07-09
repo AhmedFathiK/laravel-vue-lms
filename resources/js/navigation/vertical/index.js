@@ -49,6 +49,19 @@ export default [
     icon: { icon: 'tabler-category' },
   },
   { 
+    heading: "Finance",
+    abilities: [
+      { subject: 'payments', action: ['view'] },
+    ],
+  },
+  {
+    title: 'Receipts',
+    to: { name: 'admin-receipts' },
+    icon: { icon: 'tabler-receipt' },
+    action: 'view',
+    subject: 'payments',
+  },
+  { 
     heading: "General",
     abilities: [
       { subject: 'trash', action: ['view'] },

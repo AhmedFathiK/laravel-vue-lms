@@ -363,6 +363,9 @@
     "api": true,
     "useAbility": true,
     "maxLengthValidator": true,
-    "minLengthValidator": true
+    "minLengthValidator": true,
+    "formatCurrency": true,
+    "formatFileSize": true,
+    "truncateString": true
   }
 }

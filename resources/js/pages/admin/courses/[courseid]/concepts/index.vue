@@ -70,6 +70,7 @@ const fetchConcepts = async () => {
   try {
     // Build query parameters
     const params = new URLSearchParams()
+
     params.append('page', page.value)
     params.append('per_page', perPage.value)
     params.append('sort_by', sortBy.value)
@@ -193,7 +194,9 @@ onMounted(() => {
     
     <VCard v-else-if="!course">
       <VCardText class="text-center pa-10">
-        <p class="text-h6 mb-4">Course not found</p>
+        <p class="text-h6 mb-4">
+          Course not found
+        </p>
         <VBtn
           color="primary"
           variant="text"
@@ -225,7 +228,11 @@ onMounted(() => {
       <VCardText>
         <!-- Search -->
         <VRow class="mb-4">
-          <VCol cols="12" sm="6" md="4">
+          <VCol
+            cols="12"
+            sm="6"
+            md="4"
+          >
             <VTextField
               v-model="searchQuery"
               label="Search"
@@ -245,16 +252,30 @@ onMounted(() => {
               <th>Title</th>
               <th>Type</th>
               <th>Status</th>
-              <th class="text-center">Actions</th>
+              <th class="text-center">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="concepts.length === 0">
-              <td colspan="4" class="text-center pa-4">
-                No concepts found. <VBtn variant="text" color="primary" @click="openAddDialog">Add a concept</VBtn>
+              <td
+                colspan="4"
+                class="text-center pa-4"
+              >
+                No concepts found. <VBtn
+                  variant="text"
+                  color="primary"
+                  @click="openAddDialog"
+                >
+                  Add a concept
+                </VBtn>
               </td>
             </tr>
-            <tr v-for="concept in concepts" :key="concept.id">
+            <tr
+              v-for="concept in concepts"
+              :key="concept.id"
+            >
               <td>{{ concept.title }}</td>
               <td>{{ concept.type }}</td>
               <td>
@@ -274,7 +295,10 @@ onMounted(() => {
                   size="small"
                   @click="openEditDialog(concept)"
                 >
-                  <VIcon size="20" icon="tabler-edit" />
+                  <VIcon
+                    size="20"
+                    icon="tabler-edit"
+                  />
                 </VBtn>
                 
                 <VBtn
@@ -284,7 +308,10 @@ onMounted(() => {
                   size="small"
                   @click="confirmDeleteConcept(concept)"
                 >
-                  <VIcon size="20" icon="tabler-trash" />
+                  <VIcon
+                    size="20"
+                    icon="tabler-trash"
+                  />
                 </VBtn>
               </td>
             </tr>

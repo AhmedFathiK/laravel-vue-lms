@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class UserSubscriptionRequest extends FormRequest
+class StoreUserSubscriptionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +23,7 @@ class UserSubscriptionRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             'user_id' => ['required', 'exists:users,id'],
             'subscription_plan_id' => ['required', 'exists:subscription_plans,id'],
             'payment_id' => ['nullable', 'exists:payments,id'],
@@ -33,8 +33,6 @@ class UserSubscriptionRequest extends FormRequest
             'auto_renew' => ['boolean'],
             'cancellation_reason' => ['nullable', 'string', 'max:255'],
         ];
-
-        return $rules;
     }
 
     protected function failedValidation(Validator $validator)

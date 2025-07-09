@@ -137,7 +137,7 @@ class PaymentController extends Controller
         return Receipt::create([
             'user_id' => $payment->user_id,
             'payment_id' => $payment->id,
-            'receipt_number' => Receipt::generateReceiptNumber(),
+            'receipt_number' => Receipt::generateUniqueReceiptNumber(),
             'item_type' => $itemType,
             'item_id' => $itemId,
             'item_name' => $itemName ?? 'Payment',

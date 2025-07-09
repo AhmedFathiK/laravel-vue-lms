@@ -65,6 +65,7 @@ watch(() => props.concept, () => {
 const fetchConceptTypes = async () => {
   try {
     const response = await api.get('/admin/concepts/types')
+
     conceptTypes.value = response || []
   } catch (error) {
     console.error('Error fetching concept types:', error)
@@ -77,16 +78,19 @@ const fetchConceptTypes = async () => {
 const validateForm = () => {
   if (!formData.value.title) {
     toast.error('Title is required')
+    
     return false
   }
   
   if (!formData.value.type) {
     toast.error('Type is required')
+    
     return false
   }
   
   if (!formData.value.content) {
     toast.error('Content is required')
+    
     return false
   }
   
@@ -135,9 +139,9 @@ onMounted(() => {
 <template>
   <VDialog
     :model-value="props.isDialogVisible"
-    @update:model-value="closeDialog"
     max-width="700px"
     persistent
+    @update:model-value="closeDialog"
   >
     <VCard>
       <VCardTitle class="d-flex align-center pa-4">
@@ -151,7 +155,10 @@ onMounted(() => {
           size="small"
           @click="closeDialog"
         >
-          <VIcon size="24" icon="tabler-x" />
+          <VIcon
+            size="24"
+            icon="tabler-x"
+          />
         </VBtn>
       </VCardTitle>
       
@@ -172,7 +179,10 @@ onMounted(() => {
             </VCol>
             
             <!-- Type -->
-            <VCol cols="12" md="6">
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VSelect
                 v-model="formData.type"
                 label="Type"
@@ -185,7 +195,10 @@ onMounted(() => {
             </VCol>
             
             <!-- Status -->
-            <VCol cols="12" md="6">
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VSelect
                 v-model="formData.status"
                 label="Status"

@@ -3,32 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\UserSubscriptionRequest;
+use App\Http\Requests\Admin\CancelUserSubscriptionRequest;
+use App\Http\Requests\Admin\DestroyUserSubscriptionRequest;
+use App\Http\Requests\Admin\StoreUserSubscriptionRequest;
+use App\Http\Requests\Admin\UpdateUserSubscriptionRequest;
+use App\Http\Requests\Admin\ViewUserSubscriptionRequest;
 use App\Models\UserSubscription;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class UserSubscriptionController extends Controller
 {
     /**
-     * Create a new controller instance.
-     */
-    public function __construct()
-    {
-        $this->middleware('permission:view.payments', ['only' => ['index', 'show']]);
-        $this->middleware('permission:manage.subscriptions', ['only' => ['store', 'update', 'destroy', 'cancel']]);
-    }
-
-    /**
      * Display a listing of user subscriptions.
      */
-    public function index(Request $request): JsonResponse
+    public function index(ViewUserSubscriptionRequest $request): JsonResponse
     {
         $query = UserSubscription::with(['user', 'plan', 'payment']);
 
         // Filter by user
         if ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
+        }
+
+        // Filter by payment ID
+        if ($request->has('payment_id')) {
+            $query->where('payment_id', $request->payment_id);
         }
 
         // Filter by subscription plan
@@ -64,7 +63,7 @@ class UserSubscriptionController extends Controller
     /**
      * Store a newly created user subscription.
      */
-    public function store(UserSubscriptionRequest $request): JsonResponse
+    public function store(StoreUserSubscriptionRequest $request): JsonResponse
     {
         $subscription = UserSubscription::create($request->validated());
 
@@ -77,7 +76,7 @@ class UserSubscriptionController extends Controller
     /**
      * Display the specified user subscription.
      */
-    public function show(UserSubscription $userSubscription): JsonResponse
+    public function show(ViewUserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
     {
         return response()->json([
             'subscription' => $userSubscription->load(['user', 'plan', 'payment']),
@@ -87,7 +86,7 @@ class UserSubscriptionController extends Controller
     /**
      * Update the specified user subscription.
      */
-    public function update(UserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
+    public function update(UpdateUserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
     {
         $userSubscription->update($request->validated());
 
@@ -100,7 +99,7 @@ class UserSubscriptionController extends Controller
     /**
      * Cancel the specified user subscription.
      */
-    public function cancel(Request $request, UserSubscription $userSubscription): JsonResponse
+    public function cancel(CancelUserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
     {
         if ($userSubscription->status !== 'active') {
             return response()->json([
@@ -123,7 +122,7 @@ class UserSubscriptionController extends Controller
     /**
      * Remove the specified user subscription.
      */
-    public function destroy(UserSubscription $userSubscription): JsonResponse
+    public function destroy(DestroyUserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
     {
         // Check if subscription can be deleted
         if ($userSubscription->status === 'active') {

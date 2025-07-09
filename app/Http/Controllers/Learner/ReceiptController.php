@@ -49,8 +49,20 @@ class ReceiptController extends Controller
             ], 403);
         }
 
+        $receipt->load(['payment']);
+        
+        // Load subscription if exists
+        $subscription = null;
+        if ($receipt->payment) {
+            $subscription = $receipt->payment->subscription;
+            if ($subscription) {
+                $subscription->load('plan');
+            }
+        }
+
         return response()->json([
-            'receipt' => $receipt->load('payment'),
+            'receipt' => $receipt,
+            'subscription' => $subscription,
         ]);
     }
 

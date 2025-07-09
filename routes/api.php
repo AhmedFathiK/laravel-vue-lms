@@ -95,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     // User & Role Management
+    Route::get('users/select-fields', [AdminUserController::class, 'getUsersForSelectFields']);
     Route::apiResource('users', AdminUserController::class);
     Route::post('users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus']);
     Route::post('users/{user}/assign-role', [AdminUserController::class, 'assignRole']);
@@ -110,6 +111,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('trash/model-types', [\App\Http\Controllers\Admin\TrashController::class, 'getModelTypes']);
 
     // Course Structure Management
+    Route::get('courses/select-fields', [CourseController::class, 'getCoursesForSelectFields']);
     Route::apiResource('courses', CourseController::class);
     Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);
 
@@ -193,8 +195,11 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     // Payment & Subscription Management
     Route::apiResource('payments', PaymentController::class);
-    Route::apiResource('receipts', ReceiptController::class)->only(['index', 'show']);
+    Route::get('receipts/statistics', [ReceiptController::class, 'statistics']);
+    Route::apiResource('receipts', ReceiptController::class);
     Route::get('receipts/{receipt}/download', [ReceiptController::class, 'download']);
+    Route::post('receipts/{receipt}/resend', [ReceiptController::class, 'resend']);
+    Route::post('receipts/{receipt}/regenerate-pdf', [ReceiptController::class, 'regeneratePdf']);
 
 
     Route::apiResource('user-subscriptions', UserSubscriptionController::class);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Receipt extends Model
 {
@@ -19,6 +20,7 @@ class Receipt extends Model
         'item_name',
         'amount',
         'currency',
+        'source_type',
     ];
 
     protected $casts = [
@@ -42,7 +44,43 @@ class Receipt extends Model
     }
 
     /**
-     * Generate a unique receipt number.
+     * Get the payment associated with this receipt.
+     */
+    public function subscription(): HasOneThrough
+    {
+        return $this->hasOneThrough(UserSubscription::class, Payment::class, 'id', 'payment_id', 'id', 'id');
+    }
+
+    /**
+     * Get the course associated with this receipt.
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(Course::class, 'item_id');
+    }
+
+    /**
+     * Get the subscription plan associated with this receipt.
+     */
+    public function subscriptionPlan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'item_id');
+    }
+
+    /**
+     * Generate a receipt number.
+     */
+    public static function generateUniqueReceiptNumber(): string
+    {
+        do {
+            $number = self::generateReceiptNumber();
+        } while (self::where('receipt_number', $number)->exists());
+
+        return $number;
+    }
+
+    /**
+     * Generate a receipt number.
      */
     public static function generateReceiptNumber(): string
     {
