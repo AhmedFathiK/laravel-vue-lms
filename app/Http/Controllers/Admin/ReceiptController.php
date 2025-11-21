@@ -13,11 +13,13 @@ use App\Models\Receipt;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\SubscriptionPlan;
+use App\Models\UserSubscription;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReceiptController extends Controller
 {
@@ -33,7 +35,12 @@ class ReceiptController extends Controller
      */
     public function index(ViewReceiptRequest $request): JsonResponse
     {
-        $query = Receipt::with(['user', 'payment', 'course', 'subscriptionPlan.course']);
+        $query = Receipt::with(['user', 'payment', 'course', 'subscriptionPlan.course', 'voidedBy']);
+
+        // Handle soft-deleted receipts
+        if ($request->boolean('with_trashed')) {
+            $query->onlyTrashed();
+        }
 
         // Filter by user (name or email)
         if ($request->has('user_query')) {
@@ -302,36 +309,25 @@ class ReceiptController extends Controller
      */
     public function destroy(DeleteReceiptRequest $request, Receipt $receipt): JsonResponse
     {
-        // Only allow deleting manual receipts
-        if ($receipt->payment->payment_provider !== 'Manual') {
-            return response()->json([
-                'message' => 'Only manual receipts can be deleted',
-            ], 403);
-        }
+        $validated = $request->validated();
 
         DB::beginTransaction();
 
         try {
-            // Delete associated subscription if exists and is the only one linked to this payment
-            if ($receipt->payment->subscription) {
-                $receipt->payment->subscription->delete();
-            }
+            // Set the deletion reason and user on the model instance for the observer
+            $receipt->deletion_reason = $validated['reason'];
+            $receipt->deleted_by = $request->user()->id;
 
-            // Delete payment
-            $receipt->payment->delete();
-
-            // Delete receipt
             $receipt->delete();
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'Receipt deleted successfully',
-            ]);
+            return response()->json(['message' => 'Receipt deleted successfully.']);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Failed to delete receipt',
+                'message' => 'Failed to delete receipt.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -340,14 +336,13 @@ class ReceiptController extends Controller
     /**
      * Download the specified receipt as PDF.
      */
-    public function download(ViewReceiptRequest $request, Receipt $receipt): JsonResponse
+    public function download(ViewReceiptRequest $request, Receipt $receipt)
     {
-        // This would typically generate a PDF and return it
-        // For now, we'll just return a success message
-        return response()->json([
-            'message' => 'Receipt download functionality will be implemented',
-            'receipt' => $receipt->load(['user', 'payment']),
-        ]);
+        $receipt->load(['user', 'payment']);
+
+        $pdf = Pdf::loadView('receipts.pdf', compact('receipt'))->setPaper('a5', 'landscape');
+
+        return $pdf->download('receipt-' . $receipt->receipt_number . '.pdf');
     }
 
     /**
@@ -423,6 +418,55 @@ class ReceiptController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to fetch receipt statistics',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Void the specified receipt.
+     */
+    public function void(Request $request, Receipt $receipt): JsonResponse
+    {
+        $this->authorize('void', $receipt);
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        if ($receipt->voided_at) {
+            return response()->json(['message' => 'This receipt has already been voided.'], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Void the receipt
+            $receipt->update([
+                'voided_at' => now(),
+                'voided_by' => $request->user()->id,
+                'void_reason' => $validated['reason'],
+            ]);
+
+            // Update related payment
+            if ($receipt->payment && $receipt->payment->status === 'completed') {
+                $receipt->payment->update(['status' => 'cancelled']);
+            }
+
+            // Update related subscription
+            $subscription = $receipt->subscription;
+            if ($subscription && $subscription->status === 'active') {
+                $subscription->update(['status' => 'inactive']);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Receipt voided successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to void receipt.',
                 'error' => $e->getMessage(),
             ], 500);
         }

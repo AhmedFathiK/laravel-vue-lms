@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Learner;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,19 +18,13 @@ class CourseResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'status' => $this->status,
             'thumbnail' => $this->thumbnail,
-            'is_featured' => $this->is_featured,
-            'course_category_id' => $this->course_category_id,
-            'main_locale' => $this->main_locale,
             'is_free' => $this->is_free,
-            'leaderboard_reset_frequency' => $this->leaderboard_reset_frequency,
-            'prerequisites' => $this->prerequisites,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'is_featured' => $this->is_featured,
             'category' => new CourseCategoryResource($this->whenLoaded('category')),
-            'levels' => $this->whenLoaded('levels'),
-            'subscriptionPlans' => $this->whenLoaded('subscriptionPlans'),
+            'levels' => $this->whenLoaded('levels', function () {
+                return $this->levels;
+            }),
         ];
     }
 }

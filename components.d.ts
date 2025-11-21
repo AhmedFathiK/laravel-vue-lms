@@ -59,6 +59,7 @@ declare module 'vue' {
     ProductDescriptionEditor: typeof import('./resources/js/@core/components/ProductDescriptionEditor.vue')['default']
     QuestionEditDialog: typeof import('./resources/js/components/dialogs/QuestionEditDialog.vue')['default']
     ReceiptDialog: typeof import('./resources/js/components/dialogs/ReceiptDialog.vue')['default']
+    ReceiptViewDialog: typeof import('./resources/js/components/dialogs/ReceiptViewDialog.vue')['default']
     ReferAndEarnDialog: typeof import('./resources/js/components/dialogs/ReferAndEarnDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

@@ -22,7 +22,7 @@ const props = defineProps({
 
 <template>
   <li
-    v-if="can(item.action, item.subject)"
+    v-if="!item.action && !item.subject || can(item.action, item.subject)"
     class="nav-link"
     :class="[{
       'sub-item': props.isSubItem,

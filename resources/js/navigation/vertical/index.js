@@ -25,7 +25,7 @@ export default [
     to: { name: 'admin-roles' },
     icon: { icon: 'tabler-lock' },
     action: 'view',
-    subject: 'users',
+    subject: 'roles',
   },
   { 
     heading: "Education",
@@ -59,7 +59,7 @@ export default [
     to: { name: 'admin-receipts' },
     icon: { icon: 'tabler-receipt' },
     action: 'view',
-    subject: 'payments',
+    subject: 'receipts',
   },
   { 
     heading: "General",

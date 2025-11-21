@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Learner\CourseResource;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,23 +16,47 @@ class CourseController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Course::where('status', 'published');
+        $query = Course::where('status', 'published')->with('category');
 
-        // Apply filters
-        if ($request->has('featured')) {
-            $query->where('is_featured', $request->boolean('featured'));
+        // Filter by search query
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by category
+        if ($request->has('category_id')) {
+            $query->where('course_category_id', $request->category_id);
+        }
+
+        // Filter by pricing
+        if ($request->has('is_free')) {
+            $query->where('is_free', $request->boolean('is_free'));
         }
 
         // Apply sorting
-        $sortField = $request->get('sort_field', 'sort_order');
-        $sortDirection = $request->get('sort_direction', 'asc');
-        $query->orderBy($sortField, $sortDirection);
+        $sort = $request->input('sort', 'created_at');
+        $order = $request->input('order', 'desc');
+
+        if ($sort === 'popularity') {
+            $query->withCount('enrollments')->orderBy('enrollments_count', $order);
+        } elseif ($sort === 'title') {
+            $query->orderBy('title', $order);
+        } else {
+            $query->orderBy($sort, $order);
+        }
 
         // Apply pagination
-        $perPage = $request->get('per_page', 15);
+        $perPage = $request->get('perPage', 9);
         $courses = $query->paginate($perPage);
 
-        return response()->json($courses);
+        return response()->json([
+            'data' => CourseResource::collection($courses->items()),
+            'total' => $courses->total(),
+        ]);
     }
 
     /**
@@ -50,6 +75,6 @@ class CourseController extends Controller
                 ->orderBy('sort_order');
         }]);
 
-        return response()->json($course);
+        return response()->json(new CourseResource($course));
     }
 }

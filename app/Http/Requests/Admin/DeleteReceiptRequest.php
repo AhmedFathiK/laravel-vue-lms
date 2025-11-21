@@ -11,7 +11,7 @@ class DeleteReceiptRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage.payments');
+        return $this->user()->can('delete.receipts');
     }
 
     /**
@@ -22,7 +22,7 @@ class DeleteReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // No validation rules needed for deletion
+            'reason' => 'required|string|max:255',
         ];
     }
 }

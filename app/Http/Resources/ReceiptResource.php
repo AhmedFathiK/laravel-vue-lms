@@ -28,6 +28,11 @@ class ReceiptResource extends JsonResource
             'course' => new CourseResource($this->whenLoaded('course')),
             'subscription_plan' => new SubscriptionPlanResource($this->whenLoaded('subscriptionPlan')),
             'is_linked_to_subscription' => $this->when(isset($this->is_linked_to_subscription), $this->is_linked_to_subscription),
+
+            // Voided Info
+            'voided_at' => $this->voided_at,
+            'void_reason' => $this->void_reason,
+            'voided_by' => new UserResource($this->whenLoaded('voidedBy')),
         ];
     }
 }

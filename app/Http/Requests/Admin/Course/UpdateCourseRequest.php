@@ -55,11 +55,23 @@ class UpdateCourseRequest extends FormRequest
             'video_url' => 'nullable|url',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'price' => 'nullable|numeric|min:0',
             'subscription_only' => 'boolean',
+            'prerequisites' => 'nullable|array',
+            'prerequisites.*' => 'string|max:255',
         ];
 
         return $rules;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('prerequisites') && is_string($this->get('prerequisites'))) {
+            $prerequisites = json_decode($this->get('prerequisites'), true);
+            $this->merge(['prerequisites' => $prerequisites]);
+        }
     }
 
     protected function failedValidation(Validator $validator)

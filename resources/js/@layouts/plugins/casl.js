@@ -64,6 +64,7 @@ export const canViewNavMenuGroup = item => {
   
   return can(item.action, item.subject) && hasAnyVisibleChild
 }
+
 export const canNavigate = to => {
   const ability = getAbility()
 

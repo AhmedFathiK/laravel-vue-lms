@@ -36,8 +36,10 @@ declare module 'vue-router/auto-routes' {
     'admin-trophies': RouteRecordInfo<'admin-trophies', '/admin/trophies', Record<never, never>, Record<never, never>>,
     'admin-users': RouteRecordInfo<'admin-users', '/admin/users', Record<never, never>, Record<never, never>>,
     'admin-users-id': RouteRecordInfo<'admin-users-id', '/admin/users/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'browse-courses': RouteRecordInfo<'browse-courses', '/browse-courses', Record<never, never>, Record<never, never>>,
     'checkout': RouteRecordInfo<'checkout', '/checkout', Record<never, never>, Record<never, never>>,
     'courses-id-terms': RouteRecordInfo<'courses-id-terms', '/courses/:id/terms', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'dashboard': RouteRecordInfo<'dashboard', '/dashboard', Record<never, never>, Record<never, never>>,
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'help-center': RouteRecordInfo<'help-center', '/help-center', Record<never, never>, Record<never, never>>,
     'help-center-article-title': RouteRecordInfo<'help-center-article-title', '/help-center/article/:title', { title: ParamValue<true> }, { title: ParamValue<false> }>,
@@ -47,5 +49,6 @@ declare module 'vue-router/auto-routes' {
     'pricing': RouteRecordInfo<'pricing', '/pricing', Record<never, never>, Record<never, never>>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
+    'test': RouteRecordInfo<'test', '/test', Record<never, never>, Record<never, never>>,
   }
 }

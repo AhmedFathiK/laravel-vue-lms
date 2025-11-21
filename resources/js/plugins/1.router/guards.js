@@ -85,12 +85,10 @@ export const setupGuards = router => {
       }
       
       // User-specific routes
-      if (userRole === 'client' || userRole === 'student') {
-        return { name: 'access-control' }
+      if (userRole === 'student') {
+        return { name: 'dashboard' }
       }
-      
-      // Default dashboard for other roles
-      return { name: 'access-control' }
+
     }
 
     // Check for permissions/abilities to access the route

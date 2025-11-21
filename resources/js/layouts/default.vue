@@ -2,10 +2,15 @@
 import { useConfigStore } from '@core/stores/config'
 import { AppContentLayoutNav } from '@layouts/enums'
 import { switchToVerticalNavOnLtOverlayNavBreakpoint } from '@layouts/utils'
+import { layoutConfig } from '@themeConfig'
+
+const configStore = useConfigStore()
+
+// Make sure to return to the default layout orientation in case of moving from learner layout to admin layout
+configStore.appContentLayoutNav = layoutConfig.app.contentLayoutNav
 
 const DefaultLayoutWithHorizontalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithHorizontalNav.vue'))
 const DefaultLayoutWithVerticalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithVerticalNav.vue'))
-const configStore = useConfigStore()
 
 // ℹ️ This will switch to vertical nav when define breakpoint is reached when in horizontal nav layout
 

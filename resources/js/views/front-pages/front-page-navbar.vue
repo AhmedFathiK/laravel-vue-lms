@@ -1,12 +1,13 @@
 <script setup>
+import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
+import { useAuthStore } from '@/stores/auth'
+import navImg from '@images/front-pages/misc/nav-item-col-img.png'
+import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
+import { can } from '@layouts/plugins/casl'
+import { themeConfig } from '@themeConfig'
 import { useWindowScroll } from '@vueuse/core'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay } from 'vuetify'
-import navImg from '@images/front-pages/misc/nav-item-col-img.png'
-import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
-import { themeConfig } from '@themeConfig'
-import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({ activeId: String })
 
@@ -362,7 +363,7 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
 
             <RouterLink
               v-if="isAuthenticated"
-              to="/access-control"
+              :to="can('access', 'admin_panel') ? 'access-control' : 'dashboard'"
               class="font-weight-medium nav-link"
             >
               Dashboard

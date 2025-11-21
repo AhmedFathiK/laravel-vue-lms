@@ -3,8 +3,7 @@ import { can } from '@/@layouts/plugins/casl'
 
 definePage({
   meta: {
-    action: 'view',
-    subject: 'users',
+    layout: 'learner',
   },
 })
 </script>

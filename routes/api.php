@@ -199,7 +199,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('receipts', ReceiptController::class);
     Route::get('receipts/{receipt}/download', [ReceiptController::class, 'download']);
     Route::post('receipts/{receipt}/resend', [ReceiptController::class, 'resend']);
-    Route::post('receipts/{receipt}/regenerate-pdf', [ReceiptController::class, 'regeneratePdf']);
+    Route::post('receipts/{receipt}/regenerate-pdf', [\App\Http\Controllers\Admin\ReceiptController::class, 'regeneratePdf']);
+    Route::post('receipts/{receipt}/void', [\App\Http\Controllers\Admin\ReceiptController::class, 'void']);
 
 
     Route::apiResource('user-subscriptions', UserSubscriptionController::class);

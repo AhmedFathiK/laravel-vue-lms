@@ -111,6 +111,7 @@ class PermissionSeeder extends Seeder
             'create.receipts',
             'edit.receipts',
             'delete.receipts',
+            'void.receipts',
             'store.receipts',
             'download.receipts',
             'resend.receipts',

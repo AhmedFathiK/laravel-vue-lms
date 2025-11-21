@@ -15,8 +15,8 @@ export default [
     icon: { icon: 'tabler-books' },
   },
   {
-    title: 'Second page',
-    to: { name: 'second-page' },
-    icon: { icon: 'tabler-file' },
+    title: 'Admin Dashboard',
+    to: { name: 'admin-users' },
+    icon: { icon: 'tabler-device-ipad-cog' },
   },
 ]

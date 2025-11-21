@@ -92,7 +92,7 @@ watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([is
 
       user.value = {
         id: receipt.user.id,
-        full_name: receipt.user.full_name,
+        "full_name": receipt.user.full_name,
       }
 
       if (receipt.item_type == 'course') {
@@ -171,8 +171,8 @@ const submitForm = async () => {
     "payment_date": paymentDate.value,
     notes: notes.value,
     "notify_user": notifyUser.value,
-    auto_generate_pdf: autoGeneratePdf.value,
-    receipt_number: receiptNumber.value,
+    "auto_generate_pdf": autoGeneratePdf.value,
+    "receipt_number": receiptNumber.value,
   }
 
   const editableData = isLinkedToSubscription.value ? {} : {

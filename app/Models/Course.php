@@ -24,6 +24,7 @@ class Course extends Model
         'main_locale',
         'is_free',
         'leaderboard_reset_frequency',
+        'prerequisites',
     ];
 
     public array $translatable = [
@@ -34,6 +35,7 @@ class Course extends Model
     protected $casts = [
         'is_featured' => 'boolean',
         'is_free' => 'boolean',
+        'prerequisites' => 'array',
     ];
 
     /**
@@ -70,6 +72,11 @@ class Course extends Model
     public function questions(): HasMany
     {
         return $this->hasMany(Question::class);
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
     }
 
     /**

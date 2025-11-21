@@ -66,17 +66,16 @@ class TrashController extends Controller
         $modelClass = $trashItem->model_type;
         $modelId = $trashItem->model_id;
 
-        // Check if the model exists in the trash
         $model = $modelClass::onlyTrashed()->find($modelId);
 
         if (!$model) {
             return response()->json(['message' => 'Item not found in trash'], 404);
         }
 
-        // Restore the model
         $model->restore();
 
-        // Return success response
+        // The observer will handle deleting the trash item, so we don't do it here.
+
         return response()->json(['message' => 'Item restored successfully']);
     }
 
