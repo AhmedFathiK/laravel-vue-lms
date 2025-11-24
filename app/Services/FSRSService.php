@@ -7,25 +7,11 @@ use Carbon\Carbon;
 
 class FSRSService
 {
-    // FSRS-6 default parameters (17 weights)
+    // FSRS-5 default parameters (19 weights)
     private array $weights = [
-        0.4,    // w[0] - initial stability for Again
-        0.6,    // w[1] - initial stability for Hard  
-        2.4,    // w[2] - initial stability for Good
-        5.8,    // w[3] - initial stability for Easy
-        4.93,   // w[4] - initial difficulty base
-        0.94,   // w[5] - initial difficulty adjustment
-        0.86,   // w[6] - difficulty decay rate
-        0.01,   // w[7] - minimum stability
-        1.49,   // w[8] - stability increase factor
-        0.14,   // w[9] - stability power
-        0.94,   // w[10] - retrievability factor
-        2.18,   // w[11] - post-lapse stability base
-        0.05,   // w[12] - post-lapse difficulty factor
-        0.34,   // w[13] - post-lapse stability power
-        1.26,   // w[14] - post-lapse difficulty decay
-        0.29,   // w[15] - hard penalty
-        2.61    // w[16] - easy bonus
+        0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046, 
+        1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315, 
+        2.9898, 0.51655, 0.6621
     ];
 
     // Grade constants
@@ -37,12 +23,11 @@ class FSRSService
     // Configuration
     private float $requestRetention = 0.9;    // Target retention rate
     private float $maximumInterval = 36500;   // Maximum interval in days
-    private float $easyBonus = 1.3;          // Easy button bonus multiplier
-    private float $hardInterval = 1.2;       // Hard button interval multiplier
+    
 
-    public function __construct(array $customWeights = null)
+    public function __construct(?array $customWeights = null)
     {
-        if ($customWeights && count($customWeights) === 17) {
+        if ($customWeights && count($customWeights) === 19) {
             $this->weights = $customWeights;
         }
     }
@@ -58,25 +43,31 @@ class FSRSService
 
     /**
      * FORMULA 2: Initial Difficulty after first rating
-     * D₀(G) = w[4] - w[5] × (G - 3)
+     * D₀(G) = w[4] - e^(w[5] * (G - 1)) + 1
      * Constrained to [1, 10]
      */
     private function getInitialDifficulty(int $grade): float
     {
-        $difficulty = $this->weights[4] - $this->weights[5] * ($grade - 3);
+        $difficulty = $this->weights[4] - exp($this->weights[5] * ($grade - 1)) + 1;
         return min(max(1.0, $difficulty), 10.0);
     }
 
     /**
-     * FORMULA 3: Difficulty update after review (Linear Damping)
-     * D' = D + w[6] × (8 - 9G) / 17
+     * FORMULA 3: Difficulty update after review (Linear Damping & Mean Reversion)
+     * D' = D - w[6] * (G - 3)
+     * D'' = w[7] * D₀(4) + (1 - w[7]) * D'
      * Constrained to [1, 10]
      */
     private function updateDifficulty(float $currentDifficulty, int $grade): float
     {
-        $deltaD = $this->weights[6] * (8 - 9 * $grade) / 17;
-        $newDifficulty = $currentDifficulty + $deltaD;
-        return min(max(1.0, $newDifficulty), 10.0);
+        $w = $this->weights;
+        $newDifficulty = $currentDifficulty - $w[6] * ($grade - 3);
+        
+        // Mean reversion
+        $initialDifficultyEasy = $this->getInitialDifficulty(self::GRADE_EASY);
+        $meanRevertedDifficulty = $w[7] * $initialDifficultyEasy + (1 - $w[7]) * $newDifficulty;
+
+        return min(max(1.0, $meanRevertedDifficulty), 10.0);
     }
 
     /**
@@ -102,26 +93,20 @@ class FSRSService
 
     /**
      * FORMULA 6: Stability after successful review (Recall)
-     * S' = S × SInc
+     * S' = S * (1 + e^(w[8]) * (11 - D) * S^(-w[9]) * (e^((1-R)*w[10]) - 1))
      */
     private function calculateStabilityAfterRecall(
         float $difficulty,
         float $stability,
-        float $retrievability,
-        int $grade
+        float $retrievability
     ): float {
         $w = $this->weights;
-
-        $hardPenalty = ($grade === self::GRADE_HARD) ? $w[15] : 1.0;
-        $easyBonus = ($grade === self::GRADE_EASY) ? $w[16] : 1.0;
 
         $stabilityIncrease = 1 + (
             exp($w[8]) *
             (11 - $difficulty) *
             pow($stability, -$w[9]) *
-            (exp((1 - $retrievability) * $w[10]) - 1) *
-            $hardPenalty *
-            $easyBonus
+            (exp((1 - $retrievability) * $w[10]) - 1)
         );
 
         return $stability * $stabilityIncrease;
@@ -129,16 +114,16 @@ class FSRSService
 
     /**
      * FORMULA 7: Post-lapse stability (after forgetting/lapse)
-     * S' = w[11] × D^(-w[12]) × ((S+1)^w[13] - 1) × exp(-w[14] × D)
+     * S' = w[11] * D^(-w[12]) * ((S+1)^w[13] - 1) * e^(w[14] * (1-R))
      */
-    private function calculatePostLapseStability(float $difficulty, float $stability): float
+    private function calculatePostLapseStability(float $difficulty, float $stability, float $retrievability): float
     {
         $w = $this->weights;
 
         $postLapseStability = $w[11] *
             pow($difficulty, -$w[12]) *
             (pow($stability + 1, $w[13]) - 1) *
-            exp(-$w[14] * $difficulty);
+            exp($w[14] * (1 - $retrievability));
 
         return max(0.1, $postLapseStability);
     }
@@ -181,7 +166,7 @@ class FSRSService
     /**
      * Update a revision item after review
      */
-    public function updateRevisionItem(RevisionItem $item, int $grade, Carbon $reviewDate = null): RevisionItem
+    public function updateRevisionItem(RevisionItem $item, int $grade, ?Carbon $reviewDate = null): RevisionItem
     {
         $reviewDate = $reviewDate ?? now();
         $lastReview = $item->last_review ?? $reviewDate->copy()->subDay();
@@ -199,7 +184,8 @@ class FSRSService
             // Lapse: use post-lapse stability formula
             $newStability = $this->calculatePostLapseStability(
                 $item->difficulty,
-                $item->stability
+                $item->stability,
+                $retrievability
             );
             $state = 'relearning';
             $lapseCount = ($item->lapse_count ?? 0) + 1;
@@ -208,16 +194,20 @@ class FSRSService
             $newStability = $this->calculateStabilityAfterRecall(
                 $item->difficulty,
                 $item->stability,
-                $retrievability,
-                $grade
+                $retrievability
             );
             $state = 'review';
             $lapseCount = $item->lapse_count ?? 0;
         }
 
         // Calculate new interval
-        $baseInterval = $this->calculateInterval($newStability, $this->requestRetention);
-        $newInterval = $this->adjustIntervalByGrade($baseInterval, $grade, $item->interval ?? 1);
+        $newInterval = $this->calculateInterval($newStability, $this->requestRetention);
+        
+        // FSRS-5 handles grade-specific adjustments internally, but we can add a fuzz factor
+        if ($elapsedDays > 0) {
+            $newInterval = $this->applyFuzz($newInterval, $lastReview->timestamp);
+        }
+
         $newInterval = min(max(1, round($newInterval)), $this->maximumInterval);
 
         // Update response history
@@ -248,24 +238,18 @@ class FSRSService
     }
 
     /**
-     * INTERVAL ADJUSTMENT: Apply grade-specific interval modifications
+     * Add a small random fuzz to the interval to prevent items from clumping together
      */
-    private function adjustIntervalByGrade(float $baseInterval, int $grade, float $lastInterval): float
+    private function applyFuzz(float $interval, int $lastReviewTimestamp): float
     {
-        switch ($grade) {
-            case self::GRADE_HARD:
-                // Hard: constrain to not increase too much from last interval
-                return max(1, $lastInterval * $this->hardInterval);
-
-            case self::GRADE_EASY:
-                // Easy: apply bonus multiplier
-                return $baseInterval * $this->easyBonus;
-
-            case self::GRADE_GOOD:
-            case self::GRADE_AGAIN:
-            default:
-                return $baseInterval;
+        if ($interval < 2.5) {
+            return $interval;
         }
+
+        $fuzzFactor = ($lastReviewTimestamp % 1000) / 1000; // Consistent fuzz per item
+        $fuzz = $interval * 0.05 * $fuzzFactor; // Max 5% fuzz
+        
+        return $interval + $fuzz;
     }
 
     /**
@@ -300,7 +284,7 @@ class FSRSService
     /**
      * Calculate current retention probability
      */
-    public function calculateRetention(RevisionItem $item, Carbon $date = null): float
+    public function calculateRetention(RevisionItem $item, ?Carbon $date = null): float
     {
         $date = $date ?? now();
         $lastReview = $item->last_review ?? $date->copy()->subDay();
@@ -315,7 +299,7 @@ class FSRSService
      */
     public function setWeights(array $weights): void
     {
-        if (count($weights) === 17) {
+        if (count($weights) === 19) {
             $this->weights = $weights;
         }
     }
@@ -330,15 +314,9 @@ class FSRSService
         $this->maximumInterval = max(1, $days);
     }
 
-    public function setEasyBonus(float $bonus): void
-    {
-        $this->easyBonus = max(1.0, $bonus);
-    }
+    
 
-    public function setHardInterval(float $multiplier): void
-    {
-        $this->hardInterval = max(1.0, $multiplier);
-    }
+    
 
     /**
      * Access current configuration

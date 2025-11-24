@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class EnrollmentController extends Controller
+class LearnerEnrollmentController extends Controller
 {
     /**
      * Get all enrollments for the current user.
@@ -21,7 +21,7 @@ class EnrollmentController extends Controller
             ->with(['course' => function ($query) {
                 $query->where('status', 'published')
                     ->select('id', 'title', 'description', 'thumbnail');
-            }]);
+            }, 'userSubscription.subscriptionPlan']);
 
         // Apply filters
         if ($request->has('completed')) {
@@ -33,7 +33,12 @@ class EnrollmentController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $query->orderBy($sortField, $sortDirection);
 
-        $enrollments = $query->get();
+        try {
+            $enrollments = $query->get();
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
 
         return response()->json($enrollments);
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseEnrollment;
 use App\Models\Term;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,14 +15,14 @@ class TermController extends Controller
     /**
      * Get terms for a specific course for learners.
      */
-    public function index(Request $request, Course $course): JsonResponse
+    public function index(Request $request, CourseEnrollment $courseEnrollment): JsonResponse
     {
         // Check if the course is published
-        if ($course->status !== 'published') {
+        if ($courseEnrollment->status !== 'published') {
             return response()->json(['error' => 'Course not available'], 404);
         }
 
-        $query = $course->terms();
+        $query = $courseEnrollment->terms();
 
         // Apply filters
         if ($request->has('term')) {

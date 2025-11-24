@@ -49,6 +49,11 @@ class Lesson extends Model
         return $this->belongsTo(Level::class);
     }
 
+    public function studiedBy()
+    {
+        return $this->hasMany(UserStudiedLesson::class);
+    }
+
     public function slides(): HasMany
     {
         return $this->hasMany(Slide::class)->orderBy('sort_order');

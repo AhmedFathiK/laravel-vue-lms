@@ -22,7 +22,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Learner\ConceptController as LearnerConceptController;
 use App\Http\Controllers\Learner\CourseController as LearnerCourseController;
-use App\Http\Controllers\Learner\EnrollmentController;
+use App\Http\Controllers\Learner\LearnerEnrollmentController;
 use App\Http\Controllers\Learner\GamificationController;
 use App\Http\Controllers\Learner\LessonController as LearnerLessonController;
 use App\Http\Controllers\Learner\LevelController as LearnerLevelController;
@@ -228,18 +228,18 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::get('lessons/{lesson}', [LearnerLessonController::class, 'show']);
 
     // Course Content
-    Route::get('courses/{course}/terms', [LearnerTermController::class, 'index']);
-    Route::get('terms/{term}', [LearnerTermController::class, 'show']);
-    Route::get('courses/{course}/concepts', [LearnerConceptController::class, 'index']);
-    Route::get('concepts/{concept}', [LearnerConceptController::class, 'show']);
-    Route::get('courses/{course}/concepts/{type}', [LearnerConceptController::class, 'getByType']);
+    Route::get('my-courses/{courseEnrollment}/terms', [LearnerTermController::class, 'index']);
+    Route::get('my-courses/{courseEnrollment}/terms/{term}', [LearnerTermController::class, 'show']);
+    Route::get('my-courses/{courseEnrollment}/concepts', [LearnerConceptController::class, 'index']);
+    Route::get('my-courses/{courseEnrollment}/concepts/{concept}', [LearnerConceptController::class, 'show']);
+    Route::get('my-courses/{courseEnrollment}/concepts/{type}', [LearnerConceptController::class, 'getByType']);
 
     // Enrollment Management
-    Route::get('enrollments', [EnrollmentController::class, 'index']);
-    Route::post('courses/{course}/enroll', [EnrollmentController::class, 'enroll']);
-    Route::get('courses/{course}/enrollment', [EnrollmentController::class, 'show']);
-    Route::post('courses/{course}/update-last-accessed', [EnrollmentController::class, 'updateLastAccessed']);
-    Route::post('courses/{course}/mark-completed', [EnrollmentController::class, 'markAsCompleted']);
+    Route::get('enrollments', [LearnerEnrollmentController::class, 'index']);
+    Route::post('courses/{course}/enroll', [LearnerEnrollmentController::class, 'enroll']);
+    Route::get('courses/{course}/enrollment', [LearnerEnrollmentController::class, 'show']);
+    Route::post('courses/{course}/update-last-accessed', [LearnerEnrollmentController::class, 'updateLastAccessed']);
+    Route::post('courses/{course}/mark-completed', [LearnerEnrollmentController::class, 'markAsCompleted']);
 
     // Progress Tracking
     Route::get('courses/{course}/progress', [ProgressController::class, 'courseProgress']);

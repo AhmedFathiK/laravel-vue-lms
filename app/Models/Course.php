@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\App;
 use Spatie\Translatable\HasTranslations;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Course extends Model
 {
@@ -37,6 +37,19 @@ class Course extends Model
         'is_free' => 'boolean',
         'prerequisites' => 'array',
     ];
+
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
 
     /**
      * Get the category that owns the course.

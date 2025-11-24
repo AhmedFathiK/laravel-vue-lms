@@ -10,6 +10,11 @@ export default [
     icon: { icon: 'tabler-dashboard' },
   },
   {
+    title: 'My Courses',
+    to: { name: 'my-courses' },
+    icon: { icon: 'tabler-books' },
+  },  
+  {
     title: 'Browse Courses',
     to: { name: 'browse-courses' },
     icon: { icon: 'tabler-books' },

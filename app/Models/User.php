@@ -61,6 +61,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function studiedLessons()
+    {
+        return $this->hasMany(UserStudiedLesson::class);
+    }
+
     /**
      * Get the user's full name (combines first and last name)
      */
