@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseEnrollment;
 use App\Models\Lesson;
 use App\Models\Level;
 use App\Models\SubscriptionPlan;
@@ -13,20 +14,49 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
-class SubscriptionController extends Controller
+class LearnerSubscriptionController extends Controller
 {
     /**
      * Display a listing of the user's subscriptions.
      */
     public function index(): JsonResponse
     {
-        $user = Auth::user();
-        $subscriptions = $user->subscriptions()
-            ->with(['plan', 'plan.course'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return response()->json([]);
+    }
 
-        return response()->json($subscriptions);
+    /**
+     * Get all enrollments for the current user.
+     */
+    public function myCourses(Request $request): JsonResponse
+    {
+        $query = CourseEnrollment::where('user_id', Auth::id())
+            ->with([
+                'course' => function ($query) {
+                    $query->where('status', 'published')
+                        ->select('id', 'title', 'description', 'thumbnail');
+                },
+                'userSubscription:id,subscription_plan_id,ends_at,status',
+                'userSubscription.subscriptionPlan:id,name'
+            ]);
+
+        // Apply filters
+        if ($request->has('completed')) {
+            $query->where('completed_at', "!=", null);
+        }
+
+        // Apply sorting
+        $sortField = $request->get('sort_field', 'last_accessed_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        $query->orderBy($sortField, $sortDirection);
+
+        try {
+            $enrollments = $query->get();
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+
+        return response()->json($enrollments);
     }
 
     /**

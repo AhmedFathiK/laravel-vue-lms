@@ -7,9 +7,8 @@ use App\Http\Resources\Learner\CourseResource;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class CourseController extends Controller
+class LearnerCourseController extends Controller
 {
     /**
      * Get a list of all published courses.
@@ -23,7 +22,7 @@ class CourseController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 

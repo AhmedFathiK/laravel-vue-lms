@@ -18,19 +18,15 @@ use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\Learner\ConceptController as LearnerConceptController;
-use App\Http\Controllers\Learner\CourseController as LearnerCourseController;
-use App\Http\Controllers\Learner\LearnerEnrollmentController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Learner\LearnerUserController;
+use App\Http\Controllers\Learner\LearnerCourseController;
 use App\Http\Controllers\Learner\GamificationController;
-use App\Http\Controllers\Learner\LessonController as LearnerLessonController;
-use App\Http\Controllers\Learner\LevelController as LearnerLevelController;
 use App\Http\Controllers\Learner\ProgressController;
-use App\Http\Controllers\Learner\ReceiptController as LearnerReceiptController;
-use App\Http\Controllers\Learner\TermController as LearnerTermController;
+use App\Http\Controllers\Learner\LearnerReceiptController;
 use App\Http\Controllers\Admin\CourseAccessController;
-use App\Http\Controllers\Learner\SubscriptionController;
+use App\Http\Controllers\Learner\CoursesContentController;
+use App\Http\Controllers\Learner\LearnerSubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
-    Route::post('/user/locale', [UserController::class, 'updateLocale']);
+    Route::post('/user/locale', [LearnerUserController::class, 'updateLocale']);
 });
 
 /*
@@ -95,11 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     // User & Role Management
-    Route::get('users/select-fields', [AdminUserController::class, 'getUsersForSelectFields']);
-    Route::apiResource('users', AdminUserController::class);
-    Route::post('users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus']);
-    Route::post('users/{user}/assign-role', [AdminUserController::class, 'assignRole']);
-    Route::get('roles', [AdminUserController::class, 'getRoles']);
+    Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);
+    Route::apiResource('users', UserController::class);
+    Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus']);
+    Route::post('users/{user}/assign-role', [UserController::class, 'assignRole']);
+    Route::get('roles', [UserController::class, 'getRoles']);
     Route::apiResource('roles', RoleController::class);
     Route::get('permissions', [RoleController::class, 'getPermissions']);
 
@@ -221,25 +217,14 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 */
 
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
-    // Course Access & Navigation
+    // Courses Browsing
     Route::get('courses', [LearnerCourseController::class, 'index']);
     Route::get('courses/{course}', [LearnerCourseController::class, 'show']);
-    Route::get('levels/{level}', [LearnerLevelController::class, 'show']);
-    Route::get('lessons/{lesson}', [LearnerLessonController::class, 'show']);
 
     // Course Content
-    Route::get('my-courses/{courseEnrollment}/terms', [LearnerTermController::class, 'index']);
-    Route::get('my-courses/{courseEnrollment}/terms/{term}', [LearnerTermController::class, 'show']);
-    Route::get('my-courses/{courseEnrollment}/concepts', [LearnerConceptController::class, 'index']);
-    Route::get('my-courses/{courseEnrollment}/concepts/{concept}', [LearnerConceptController::class, 'show']);
-    Route::get('my-courses/{courseEnrollment}/concepts/{type}', [LearnerConceptController::class, 'getByType']);
+    Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
+    Route::get('my-courses/{enrollment}', [CoursesContentController::class, 'show']);
 
-    // Enrollment Management
-    Route::get('enrollments', [LearnerEnrollmentController::class, 'index']);
-    Route::post('courses/{course}/enroll', [LearnerEnrollmentController::class, 'enroll']);
-    Route::get('courses/{course}/enrollment', [LearnerEnrollmentController::class, 'show']);
-    Route::post('courses/{course}/update-last-accessed', [LearnerEnrollmentController::class, 'updateLastAccessed']);
-    Route::post('courses/{course}/mark-completed', [LearnerEnrollmentController::class, 'markAsCompleted']);
 
     // Progress Tracking
     Route::get('courses/{course}/progress', [ProgressController::class, 'courseProgress']);
@@ -250,15 +235,15 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::get('statistics', [ProgressController::class, 'userStatistics']);
 
     // Subscription & Access
-    Route::get('subscriptions', [SubscriptionController::class, 'index']);
-    Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
-    Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
-    Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
-    Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew']);
-    Route::get('courses/{course}/free-content', [SubscriptionController::class, 'getFreeCourseContent']);
-    Route::get('courses/{course}/subscription-plans', [SubscriptionController::class, 'getAvailablePlans']);
-    Route::get('levels/{level}/access-status', [SubscriptionController::class, 'checkLevelAccess']);
-    Route::get('lessons/{lesson}/access-status', [SubscriptionController::class, 'checkLessonAccess']);
+    Route::get('subscriptions', [LearnerSubscriptionController::class, 'index']);
+    Route::get('subscriptions/{subscription}', [LearnerSubscriptionController::class, 'show']);
+    Route::post('subscribe', [LearnerSubscriptionController::class, 'subscribe']);
+    Route::post('subscriptions/{subscription}/cancel', [LearnerSubscriptionController::class, 'cancel']);
+    Route::post('subscriptions/{subscription}/renew', [LearnerSubscriptionController::class, 'renew']);
+    Route::get('courses/{course}/free-content', [LearnerSubscriptionController::class, 'getFreeCourseContent']);
+    Route::get('courses/{course}/subscription-plans', [LearnerSubscriptionController::class, 'getAvailablePlans']);
+    Route::get('levels/{level}/access-status', [LearnerSubscriptionController::class, 'checkLevelAccess']);
+    Route::get('lessons/{lesson}/access-status', [LearnerSubscriptionController::class, 'checkLessonAccess']);
 
     // Billing & Receipts
     Route::get('receipts', [LearnerReceiptController::class, 'index']);

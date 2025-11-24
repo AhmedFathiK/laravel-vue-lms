@@ -17,7 +17,6 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->timestamp('enrolled_at')->useCurrent();
             $table->timestamp('last_accessed_at')->nullable();
-            $table->boolean('is_completed')->default(false);
             $table->float('completion_percentage', 5, 2)->default(0);
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();

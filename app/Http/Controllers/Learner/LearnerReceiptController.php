@@ -7,7 +7,7 @@ use App\Models\Receipt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ReceiptController extends Controller
+class LearnerReceiptController extends Controller
 {
     /**
      * Display a listing of the user's receipts (billing history).
@@ -50,7 +50,7 @@ class ReceiptController extends Controller
         }
 
         $receipt->load(['payment']);
-        
+
         // Load subscription if exists
         $subscription = null;
         if ($receipt->payment) {

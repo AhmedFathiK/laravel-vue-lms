@@ -14,7 +14,7 @@ const error = ref(null)
 
 const fetchEnrollments = async () => {
   try {
-    const response = await api.get("/learner/enrollments")
+    const response = await api.get("/learner/my-courses")
 
     enrollments.value = response
   } catch (err) {
