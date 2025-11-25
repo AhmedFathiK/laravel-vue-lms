@@ -39,6 +39,20 @@ class Level extends Model
      */
     public static $cascadingDelete = false;
 
+
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);

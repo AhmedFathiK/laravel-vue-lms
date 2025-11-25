@@ -121,7 +121,7 @@ class PermissionSeeder extends Seeder
             'delete.payments',
             'store.payments',
 
-            // Subscriptions & Payments
+            // Subscriptions
             'view.subscriptions',
             'create.subscriptions',
             'edit.subscriptions',

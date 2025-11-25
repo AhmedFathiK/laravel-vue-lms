@@ -34,6 +34,19 @@ class ExamSection extends Model
         'time_limit' => 'integer',
     ];
 
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     public function exam(): BelongsTo
     {
         return $this->belongsTo(Exam::class);

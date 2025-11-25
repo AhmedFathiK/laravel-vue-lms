@@ -24,8 +24,8 @@ class SlideController extends Controller
             abort(403);
         }
 
-        $query = $lesson->slides();
-
+        $query = Slide::query();
+        $query->where('lesson_id', $lesson->id)->with(['term', 'question']);
         // Apply filters
         if ($request->has('type')) {
             $query->where('type', $request->type);
@@ -42,15 +42,17 @@ class SlideController extends Controller
         $transformedSlides = $slides->map(function ($slide) {
             return [
                 'id' => $slide->id,
-                'lesson_id' => $slide->lesson_id,
-                'type' => $slide->type,
-                'title' => $slide->title,
-                'question_id' => $slide->question_id,
-                'term_id' => $slide->term_id,
-                'content' => $slide->content,
-                'sort_order' => $slide->sort_order,
-                'created_at' => $slide->created_at,
-                'updated_at' => $slide->updated_at,
+                'lesson_id'     => $slide->lesson_id,
+                'type'          => $slide->type,
+                'title'         => $slide->title,
+                'question_id'   => $slide->question_id,
+                'term_id'       => $slide->term_id,
+                'content'       => $slide->content,
+                'sort_order'    => $slide->sort_order,
+                'created_at'    => $slide->created_at,
+                'updated_at'    => $slide->updated_at,
+                'term'          => $slide->term,
+                'question'      => $slide->question
             ];
         });
 
@@ -138,7 +140,7 @@ class SlideController extends Controller
     /**
      * Update slide order within a lesson.
      */
-    public function updateOrder(Request $request, Lesson $lesson): JsonResponse
+    public function updateOrder(Request $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
         if (!Gate::allows('reorder.slides')) {
             abort(403);

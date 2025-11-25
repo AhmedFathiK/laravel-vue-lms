@@ -31,7 +31,7 @@ class TermController extends Controller
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
                 // For JSON fields, we need to use whereRaw
-                $q->whereRaw("JSON_EXTRACT(term, '$.*') LIKE ?", ['%' . $search . '%'])
+                $q->where("term", "like",  '%' . $search . '%')
                     ->orWhereRaw("JSON_EXTRACT(definition, '$.*') LIKE ?", ['%' . $search . '%'])
                     ->orWhereRaw("JSON_EXTRACT(example, '$.*') LIKE ?", ['%' . $search . '%']);
             });
@@ -117,6 +117,7 @@ class TermController extends Controller
      */
     public function update(UpdateRequest $request, Course $course, Term $term): JsonResponse
     {
+
         try {
             DB::beginTransaction();
 

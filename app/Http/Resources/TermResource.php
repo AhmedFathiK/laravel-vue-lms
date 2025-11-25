@@ -24,6 +24,7 @@ class TermResource extends JsonResource
             'media_type' => $this->media_type,
             'audio_url' => $this->audio_url,
             'example' => $this->example,
+            'example_translation' => $this->example_translation,
             'example_audio_url' => $this->example_audio_url,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

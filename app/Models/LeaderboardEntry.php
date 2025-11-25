@@ -28,6 +28,19 @@ class LeaderboardEntry extends Model
         'period_end' => 'datetime',
     ];
 
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     /**
      * Get the leaderboard this entry belongs to
      */

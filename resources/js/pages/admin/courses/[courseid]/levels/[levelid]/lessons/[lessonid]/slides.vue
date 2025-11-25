@@ -1,10 +1,18 @@
 <script setup>
-import SlideEditDialog from '@/components/dialogs/SlideEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { SlickItem, SlickList } from 'vue-slicksort'
+import LessonSlideCard from '@/views/lessons/LessonSlideCard.vue'
+import { v4 as uuidv4 } from 'uuid'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'slides',
+  },
+})
 
 const router = useRouter()
 const toast = useToast()
@@ -25,8 +33,8 @@ const slides = ref([])
 const course = ref(null)
 const level = ref(null)
 const lesson = ref(null)
-const dialog = ref(false)
-const deleteDialog = ref(false)
+const isSlideEditDialogVisible = ref(false)
+const isDeleteDialogVisible = ref(false)
 
 const editedItem = ref({
   id: null,
@@ -54,19 +62,13 @@ const defaultItem = {
 
 const selectedSlide = ref(null)
 const reordering = ref(false)
+const isSubmitting = ref(false)
 
 // Get IDs from route parameters
 const courseId = computed(() => route.params.courseid)
 const levelId = computed(() => route.params.levelid)
 const lessonId = computed(() => route.params.lessonid)
 
-// Table headers
-const headers = [
-  { title: 'Order', key: 'sort_order', sortable: true, width: '80px' },
-  { title: 'Type', key: 'type', sortable: true, width: '150px' },
-  { title: 'Content', key: 'content', sortable: false },
-  { title: 'Actions', key: 'actions', sortable: false, align: 'end', width: '120px' },
-]
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -137,6 +139,7 @@ const fetchSlides = async () => {
     const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides`)
 
     slides.value = response
+    addRandomKeyToSlides(slides.value)
   } catch (error) {
     console.error('Error fetching slides:', error)
     toast.error('Failed to load slides')
@@ -144,6 +147,16 @@ const fetchSlides = async () => {
     isLoading.value = false
   }
 }
+
+const addRandomKeyToSlides = slides => {
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i]
+
+    slide.randomKey = uuidv4()
+    
+  }
+}
+
 
 // Refresh all data
 const refreshData = () => {
@@ -163,7 +176,7 @@ const getSlideTypeLabel = type => {
 // Edit item
 const editItem = item => {
   editedItem.value = JSON.parse(JSON.stringify(item))
-  dialog.value = true
+  isSlideEditDialogVisible.value = true
 }
 
 // Create new item
@@ -171,13 +184,13 @@ const createItem = () => {
   editedItem.value = JSON.parse(JSON.stringify(defaultItem))
   editedItem.value["lesson_id"] = parseInt(lessonId.value)
   editedItem.value["sort_order"] = slides.value.length + 1
-  dialog.value = true
+  isSlideEditDialogVisible.value = true
 }
 
 // Delete item
 const deleteItem = item => {
   selectedSlide.value = item
-  deleteDialog.value = true
+  isDeleteDialogVisible.value = true
 }
 
 // Confirm delete
@@ -187,7 +200,7 @@ const confirmDelete = async () => {
   try {
     await api.delete(`/admin/slides/${selectedSlide.value.id}`)
     toast.success('Slide deleted successfully')
-    deleteDialog.value = false
+    isDeleteDialogVisible.value = false
     fetchSlides()
   } catch (error) {
     toast.error('Failed to delete slide')
@@ -207,13 +220,13 @@ const saveOrder = async () => {
   try {
     const order = slides.value.map(slide => slide.id)
 
-    await api.post(`/admin/lessons/${lessonId.value}/slides/order`, { order })
-    toast.success('Slide order updated successfully')
     reordering.value = false
-    fetchSlides()
+    await api.put(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides/order`, { order })
+    toast.success('Slide order updated successfully')
   } catch (error) {
     console.error('Error updating slide order:', error)
     toast.error('Failed to update slide order')
+    reordering.value = true
   } finally {
     isSubmitting.value = false
   }
@@ -222,7 +235,7 @@ const saveOrder = async () => {
 // Update slide order
 const updateSortOrder = () => {
   slides.value.forEach((slide, index) => {
-    slide.sort_order = index + 1
+    slide["sort_order"] = index + 1
   })
 }
 
@@ -321,65 +334,39 @@ onMounted(refreshData)
           This lesson doesn't have any slides yet. Click the "Add Slide" button to create your first slide.
         </p>
       </VCardText>
-
-      <VDataTable
-        v-else
-        :headers="headers"
-        :items="slides"
-        :items-per-page="10"
-        class="elevation-1"
-      >
-        <!-- Type column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.type="{ item }">
-          <VChip size="small">
-            {{ getSlideTypeLabel(item.type) }}
-          </VChip>
-        </template>
-
-        <!-- Content column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.content="{ item }">
-          <div
-            class="text-truncate"
-            style="max-width: 500px;"
-          >
-            {{ item.content }}
-          </div>
-        </template>
-
-        <!-- Actions column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.actions="{ item }">
-          <div class="d-flex justify-end">
-            <VBtn
-              icon
-              variant="text"
-              size="small"
-              color="primary"
-              @click="editItem(item)"
+      <VCardText>
+        <SlickList 
+          v-if="slides.length > 0"
+          v-model:list="slides"
+          axis="xy"
+          helper-class="sortable-helper"
+          use-drag-handle
+        >
+          <VRow>
+            <VCol
+              v-for="(slide, index) in slides"
+              :key="slide.randomKey"
+              cols="12"
+              sm="6"
+              lg="4"
             >
-              <VIcon size="20">
-                tabler-pencil
-              </VIcon>
-            </VBtn>
-            
-            <VBtn
-              icon
-              variant="text"
-              size="small"
-              color="error"
-              @click="deleteItem(item)"
-            >
-              <VIcon size="20">
-                tabler-trash
-              </VIcon>
-            </VBtn>
-          </div>
-        </template>
-      </VDataTable>
+              <SlickItem
+                class="sortable-list-item"
+                :index="index"
+              >
+                <LessonSlideCard
+                  :data="slide"
+                  :slide-number="index + 1"
+                  :reordering="reordering"
+                  @click:edit="editItem(slide)"
+                  @click:delete="deleteItem(slide)"
+                />
+              </SlickItem>
+            </VCol>
+          </VRow>
+        </SlickList>
+      </VCardText>
     </VCard>
-    
     <VCard
       v-else
       class="text-center py-8"
@@ -407,10 +394,9 @@ onMounted(refreshData)
         </div>
       </VCardText>
     </VCard>
-
     <!-- Use SlideEditDialog component -->
     <SlideEditDialog
-      v-model:is-dialog-visible="dialog"
+      v-model:is-dialog-visible="isSlideEditDialogVisible"
       :slide-data="editedItem"
       :lesson-id="lessonId"
       :course-id="courseId"
@@ -420,35 +406,14 @@ onMounted(refreshData)
     />
 
     <!-- Delete Confirmation Dialog -->
-    <VDialog
-      v-model="deleteDialog"
-      max-width="500px"
-    >
-      <VCard>
-        <VCardTitle class="text-h5">
-          Delete Slide
-        </VCardTitle>
-        <VCardText>
-          Are you sure you want to delete this slide? This action cannot be undone.
-        </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            color="blue-darken-1"
-            variant="text"
-            @click="deleteDialog = false"
-          >
-            Cancel
-          </VBtn>
-          <VBtn
-            color="error"
-            variant="text"
-            @click="confirmDelete"
-          >
-            Delete
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+    <ConfirmDialog
+      v-model:is-dialog-visible="isDeleteDialogVisible"
+      confirmation-question="Are you sure you want to delete this slide?"
+      confirm-title="Success"
+      confirm-msg="Slide deleted."
+      cancel-title="Cancel"
+      cancel-msg="Slide not deleted."
+      @confirm="confirmDelete"
+    />
   </section>
 </template>

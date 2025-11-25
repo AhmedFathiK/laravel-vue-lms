@@ -29,6 +29,19 @@ class CourseCategory extends Model
         'sort_order' => 'integer',
     ];
 
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     /**
      * Get the courses for this category.
      */

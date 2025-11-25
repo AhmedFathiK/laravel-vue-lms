@@ -7,6 +7,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'lessons',
+  },
+})
+
 const router = useRouter()
 const toast = useToast()
 const route = useRoute()

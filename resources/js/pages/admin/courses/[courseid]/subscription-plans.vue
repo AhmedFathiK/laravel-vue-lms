@@ -6,6 +6,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'subscriptions',
+  },
+})
+
 const toast = useToast()
 const route = useRoute()
 const isLoading = ref(false)

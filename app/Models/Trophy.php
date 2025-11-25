@@ -41,6 +41,19 @@ class Trophy extends Model
         'is_active' => 'boolean',
     ];
 
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     /**
      * Get the course this trophy belongs to (if any)
      */

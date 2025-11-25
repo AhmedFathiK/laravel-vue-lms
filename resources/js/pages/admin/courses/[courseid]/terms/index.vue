@@ -80,9 +80,9 @@ const fetchTerms = async () => {
     // Build query params
     const params = new URLSearchParams({
       page: page.value,
-      per_page: itemsPerPage.value,
-      sort_field: sortBy.value,
-      sort_direction: sortDesc.value ? 'desc' : 'asc',
+      "per_page": itemsPerPage.value,
+      "sort_field": sortBy.value,
+      "sort_direction": sortDesc.value ? 'desc' : 'asc',
     })
     
     if (searchQuery.value) {

@@ -15,11 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->string('term');
-            $table->json('definition');
+            $table->json('definition'); // translation of the term
             $table->string('media_url')->nullable();
             $table->string('media_type')->nullable(); // image, image_audio, video
             $table->string('audio_url')->nullable(); // For image_audio type, stores the audio file URL
             $table->json('example')->nullable(); // Example text with translations
+            $table->json('example_translation')->nullable(); // translation of the example
             $table->string('example_audio_url')->nullable(); // Audio pronunciation of the example
             $table->timestamps();
         });

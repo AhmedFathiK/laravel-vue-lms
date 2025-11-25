@@ -135,7 +135,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
                 // Slide Management (nested under lessons)
                 Route::prefix('/{lesson}/slides')->group(function () {
                     Route::get('/', [SlideController::class, 'index']);
-                    Route::post('/order', [SlideController::class, 'updateOrder']);
+                    Route::put('/order', [SlideController::class, 'updateOrder']);
                     Route::post('/', [SlideController::class, 'store']);
                     Route::get('{slide}', [SlideController::class, 'show']);
                     Route::put('{slide}', [SlideController::class, 'update']);

@@ -1,5 +1,4 @@
 <script setup>
-import videoPlaceholder from '@images/pages/default-course-image.png'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 
 const props = defineProps({
@@ -14,6 +13,11 @@ const props = defineProps({
   isLoading: {
     type: Boolean,
     required: false,
+  },
+  reordering: {
+    type: Boolean,
+    required: false,
+    default: true,
   },
 })
 
@@ -30,6 +34,8 @@ const editItem = () => {
 const deleteItem = () => {
   emit("click:delete", props.slideNumber)
 }
+
+console.log(props.data)
 </script>
 
 <template>
@@ -44,7 +50,7 @@ const deleteItem = () => {
                   md="2"
                   class="slide-number"
                 >
-                  <DragHandle />
+                  <DragHandle v-if="reordering" />
                 </VCol>
                 <VCol
                   md="6"
@@ -88,7 +94,7 @@ const deleteItem = () => {
                   class="d-flex flex-column align-center justify-center"
                 >
                   <p class="slide-title">
-                    <template v-if="['course_term', 'explanation'].includes(data.type)">
+                    <template v-if="['term', 'explanation'].includes(data.type)">
                       {{ data.title }}
                     </template>
                     <template v-else>
@@ -100,20 +106,20 @@ const deleteItem = () => {
                     class="slide-img w-50"
                   >
                     <VImg
-                      v-if="data.course_term_id && ['image', 'image_with_audio'].includes(data.term.media_type) && data.term.image"
+                      v-if="data.term_id && ['image', 'image_audio1'].includes(data.term.media_type) && data.term.media_url"
                       cover
-                      :src="data.term.image"
+                      :src="data.term.media_url"
                       height="162.13"
                     /> 
 
-                    <VImg
+                    <VIcon
                       v-else
-                      cover
-                      :src="videoPlaceholder"
+                      icon="tabler-camera-off"
+                      size="162.13"
                     />
                   </div>
                   <div
-                    v-if="!['course_term', 'blanks_mcq'].includes(data.type)"
+                    v-if="!['term', 'blanks_mcq'].includes(data.type)"
                     class="slide-text"
                   >
                     <PerfectScrollbar
@@ -268,7 +274,7 @@ const deleteItem = () => {
                       </VCol>
                     </VRow>
                   </PerfectScrollbar>
-                  <VRow v-if="data.type == 'course_term'">
+                  <VRow v-if="data.type == 'term'">
                     <VCol
                       cols="12"
                       class="d-flex justify-center flex-column pt-0"
@@ -278,7 +284,7 @@ const deleteItem = () => {
                           {{ data.term.term }}
                         </div>
                         <div class="term-meaning-text-placeholder pa-1">
-                          {{ data.term.meaning }}
+                          {{ data.term.definition }}
                         </div>
                       </div>
                       <div class="term-example">
@@ -286,8 +292,8 @@ const deleteItem = () => {
                         <div class="example-placeholder mb-2 text-start pa-1">
                           {{ data.term.example }}
                         </div>
-                        <div class="example-meaning-placeholder pa-1">
-                          {{ data.term.example_meaning }}
+                        <div class="example-teanslation-placeholder pa-1">
+                          {{ data.term.example_translation }}
                         </div>
                       </div>
                     </VCol>
@@ -393,7 +399,7 @@ const deleteItem = () => {
   border-radius: 6px;
   background-color:rgba(var(--v-theme-surface));
 }
-.example-meaning-placeholder{
+.example-teanslation-placeholder{
   border-radius: 6px;
   background-color:rgba(var(--v-theme-surface));
 }

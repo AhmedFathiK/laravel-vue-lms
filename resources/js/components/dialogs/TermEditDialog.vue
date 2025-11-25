@@ -19,7 +19,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:isDialogVisible', 'term-saved'])
+const emit = defineEmits(['update:isDialogVisible', 'termSaved'])
 
 const toast = useToast()
 const isSubmitting = ref(false)
@@ -33,14 +33,15 @@ const exampleAudioPreview = ref(null)
 
 // Form data
 const formData = ref({
-  course_id: props.courseId,
+  "course_id": props.courseId,
   term: '',
   definition: '',
-  media_url: '',
-  media_type: '',
-  audio_url: '',
+  "media_url": '',
+  "media_type": '',
+  "audio_url": '',
   example: '',
-  example_audio_url: '',
+  'example_translation': '',
+  "example_audio_url": '',
 })
 
 // Media type options
@@ -60,14 +61,15 @@ watch(() => props.isDialogVisible, isVisible => {
     resetForm()
     if (props.term) {
       formData.value = {
-        course_id: props.courseId,
+        "course_id": props.courseId,
         term: props.term.term || '',
         definition: props.term.definition || '',
-        media_url: props.term.media_url || '',
-        media_type: props.term.media_type || '',
-        audio_url: props.term.audio_url || '',
+        "media_url": props.term.media_url || '',
+        "media_type": props.term.media_type || '',
+        "audio_url": props.term.audio_url || '',
         example: props.term.example || '',
-        example_audio_url: props.term.example_audio_url || '',
+        'example_translation': props.term.example_translation || '',
+        "example_audio_url": props.term.example_audio_url || '',
       }
       if (props.term.media_url) mediaPreview.value = props.term.media_url
       if (props.term.audio_url) audioPreview.value = props.term.audio_url
@@ -79,14 +81,15 @@ watch(() => props.isDialogVisible, isVisible => {
 // Reset form fields to default
 const resetForm = () => {
   formData.value = {
-    course_id: props.courseId,
+    "course_id": props.courseId,
     term: '',
     definition: '',
-    media_url: '',
-    media_type: '',
-    audio_url: '',
+    "media_url": '',
+    "media_type": '',
+    "audio_url": '',
     example: '',
-    example_audio_url: '',
+    'example_translation': '',
+    "example_audio_url": '',
   }
   
   mediaPreview.value = null
@@ -117,7 +120,7 @@ const submitForm = async () => {
       toast.success('Term created successfully')
     }
     
-    emit('term-saved')
+    emit('termSaved')
     dialogModelValueUpdate(false)
   } catch (error) {
     console.error('Error submitting term:', error)
@@ -302,6 +305,16 @@ const showAudioField = computed(() => {
               <VTextarea
                 v-model="formData.example"
                 label="Example"
+                auto-grow
+                rows="2"
+              />
+            </VCol>
+            
+            <!-- Example Translation -->
+            <VCol cols="12">
+              <VTextarea
+                v-model="formData.example_translation"
+                label="Example Translation"
                 auto-grow
                 rows="2"
               />

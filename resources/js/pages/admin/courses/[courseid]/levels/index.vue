@@ -7,6 +7,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'levels',
+  },
+})
 
 const router = useRouter()
 const toast = useToast()

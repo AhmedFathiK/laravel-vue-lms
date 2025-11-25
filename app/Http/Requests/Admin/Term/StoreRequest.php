@@ -29,6 +29,7 @@ class StoreRequest extends FormRequest
             'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],
             'example' => ['nullable', 'string'],
+            'example_translation' => ['nullable', 'string'],
             'example_audio_url' => ['nullable', 'string', 'max:255'],
         ];
 

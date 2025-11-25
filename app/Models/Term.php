@@ -20,6 +20,7 @@ class Term extends Model
         'media_type',
         'audio_url',
         'example',
+        'example_translation',
         'example_audio_url',
     ];
 
@@ -27,7 +28,21 @@ class Term extends Model
         'term',
         'definition',
         'example',
+        'example_translation',
     ];
+
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
 
     public function course(): BelongsTo
     {

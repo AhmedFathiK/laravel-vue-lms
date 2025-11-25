@@ -44,6 +44,20 @@ class Lesson extends Model
      */
     public static $cascadingDelete = false;
 
+
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        foreach ($this->translatable as $field) {
+            if (isset($attributes[$field])) {
+                $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+            }
+        }
+
+        return $attributes;
+    }
+
     public function level(): BelongsTo
     {
         return $this->belongsTo(Level::class);
