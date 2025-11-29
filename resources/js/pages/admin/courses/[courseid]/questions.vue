@@ -240,16 +240,6 @@ const deleteQuestion = async () => {
   }
 }
 
-// Format question text (first 50 chars)
-const formatQuestionText = question => {
-  const text = question.question_text?.[locale.value] || question.question_text?.en || ''
-  if (text.length > 50) {
-    return text.substring(0, 50) + '...'
-  }
-  
-  return text
-}
-
 // Get question type display name
 const getQuestionTypeLabel = type => {
   const typeObj = questionTypes.find(t => t.value === type)
@@ -416,7 +406,34 @@ watch(() => locale.value, () => {
         <!-- Question text column -->
         <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.question_text="{ item }">
-          <div>{{ formatQuestionText(item) }}</div>
+          <div v-if="item.type == 'mcq'">
+            {{ item.question_text }}
+            <ol
+              type="a"
+              class="ms-5"
+            >
+              <li
+                v-for="(option, index) in item.options"
+                :key="index"
+              >
+                {{ option }}
+              </li>
+            </ol>
+          </div>
+          <div v-else-if="item.type == 'fill_blank'">
+            {{ item.question_text }}
+          </div>
+          <div v-else-if="item.type == 'matching'">
+            {{ item.question_text }}
+            <ul class="ms-5">
+              <li
+                v-for="(pair, index) in item.options"
+                :key="index"
+              >
+                Left: {{ pair.left }} | Right: {{ pair.right }}
+              </li>
+            </ul>
+          </div>
         </template>
 
         <!-- Type column -->

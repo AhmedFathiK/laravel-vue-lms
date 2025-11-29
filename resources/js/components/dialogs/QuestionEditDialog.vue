@@ -128,8 +128,6 @@ watch(detectedBlanks, (newBlanks, oldBlanks) => {
   }
 }, { immediate: true })
 
-
-
 // Add an option to a blank
 const addBlankOption = blankIndex => {
   if (!formData.value.blanks[blankIndex].options) {
@@ -261,10 +259,8 @@ const initializeQuestionTypeData = () => {
     // For fill in the blank with choices, initialize blanks from options
     if (!formData.value.blanks.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
       formData.value.blanks = formData.value.options
-    } else if (!formData.value.blanks.length) {
-      // Add default blank if none exists
-      addBlank()
     }
+
   } else if (type === 'matching') {
     // For matching, initialize pairs from options
     if (!formData.value.matching_pairs.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
@@ -433,80 +429,87 @@ const closeDialog = () => {
   newTag.value = ''
 }
 
+function appendFormData(formData, key, value) {
+  if (value === null || value === undefined) return
+
+  // If the value is an array, recurse through it
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      appendFormData(formData, `${key}[${index}]`, item)
+    })
+    
+    return
+  }
+
+  // If the value is an object (matching_pairs, correct_answer)
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([childKey, childValue]) => {
+      appendFormData(formData, `${key}[${childKey}]`, childValue)
+    })
+    
+    return
+  }
+
+  // Primitive value (string/number/bool)
+  formData.append(key, value)
+}
+
+
 // Submit form
 const submitForm = async () => {
   if (formRef.value) {
     const { valid } = await formRef.value.validate()
-    if (!valid) {
-      return
-    }
+    if (!valid) return
   }
 
   isSubmitting.value = true
   formErrors.value = {}
 
   try {
-    const questionData = JSON.parse(JSON.stringify(formData.value))
-
-    // Create FormData object for file uploads
+    const questionData = formData.value
     const formDataObj = new FormData()
-    
-    // Add all form fields to FormData
-    Object.keys(questionData).forEach(key => {
-      if (key !== 'mediaFile') { // Skip the file input reference
-        if (typeof questionData[key] === 'object' && questionData[key] !== null) {
-          formDataObj.append(key, JSON.stringify(questionData[key]))
-        } else if (questionData[key] !== null) {
-          formDataObj.append(key, questionData[key])
-        }
+
+    Object.entries(questionData).forEach(([key, value]) => {
+      if (key !== "mediaFile") {
+        appendFormData(formDataObj, key, value)
       }
     })
-    
-    // Add media file if it exists (only for image uploads)
-    if (mediaFile.value && (questionData.media_type === 'image' || questionData.media_type === 'image_with_audio')) {
+
+    // Handle media upload
+    if (
+      mediaFile.value &&
+      (questionData.media_type === 'image' || questionData.media_type === 'image_with_audio')
+    ) {
       formDataObj.append('media', mediaFile.value)
     }
-    
-    // For video type, we're using URL directly so no file upload is needed
-    // For image_with_audio, we're using audio_url directly
-    // Both are already included in the formDataObj from the loop above
 
+    // Update or create
     if (questionData.id) {
-      // Update existing question
-      await api.put(`/admin/courses/${props.courseId}/questions/${questionData.id}`, formDataObj, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      formDataObj.append('_method', 'PUT')
+      await api.post(`/admin/courses/${props.courseId}/questions/${questionData.id}`, formDataObj)
       toast.success('Question updated successfully')
     } else {
-      // Create new question
       formDataObj.append('course_id', props.courseId)
-      await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+
+      await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj)
       toast.success('Question created successfully')
     }
+
     emit('refresh')
     closeDialog()
   } catch (error) {
-    console.error('Error saving question:', error)
-    if (error.response && error.response.status === 422) {
-      if (error.response.data && error.response.data.errors) {
-        formErrors.value = error.response.data.errors
-      }
+    if (error.response?.status === 422) {
+      formErrors.value = error.response.data.errors || {}
       toast.error('Please correct the validation errors.')
     } else {
-      const message = error.response?.data?.message || 'Failed to save question'
-
-      toast.error(message)
+      toast.error(error.response?.data?.message || 'Failed to save question')
     }
   } finally {
     isSubmitting.value = false
   }
 }
+
+
 
 // Add new option for multiple choice
 const addOption = () => {
@@ -812,7 +815,6 @@ watch(() => formData.value.type, newType => {
                 :error-messages="formErrors.incorrect_feedback"
               />
             </VCol>
-            
             <!-- Multiple Choice Options (show only for MCQ type) -->
             <VCol
               v-if="formData.type === 'mcq'"
@@ -829,12 +831,13 @@ watch(() => formData.value.type, newType => {
                 </VBtn>
               </div>
               <VInput
+                :key="`mcq-validation-${formData.options.length}-${formData.correct_answer.length}`"
                 :model-value="formData"
                 :rules="[
                   () => formData.options.length >= 2 || 'MCQ questions must have at least 2 options.',
                   () => formData.correct_answer.length > 0 || 'Please select at least one correct answer.'
                 ]"
-                class="mt-2"
+                class="mb-2"
               />
               
               <VAlert
@@ -874,7 +877,6 @@ watch(() => formData.value.type, newType => {
                   :placeholder="`Option ${index + 1}`"
                   class="flex-grow-1"
                   :rules="[requiredValidator]"
-                  hide-details
                 />
                 
                 <VBtn
@@ -991,6 +993,12 @@ watch(() => formData.value.type, newType => {
                       v-model="blank.correct_answer"
                       hide-details
                     >
+                      <VInput
+                        :key="`blank-options-validation-${blankIndex}-${blank.options.length}`"
+                        :model-value="blank.options"
+                        :rules="[v => v.length >= 2 || 'There must be at least 2 options.']"
+                        class="mb-2"
+                      />
                       <div
                         v-for="(option, optIndex) in blank.options"
                         :key="optIndex"
@@ -1033,6 +1041,12 @@ watch(() => formData.value.type, newType => {
                     </VBtn>
                   </div>
                 </div>
+
+                <div v-if="formData.blanks.length < 1">
+                  <p class="text-medium-emphasis">
+                    No blanks detected. Please add blanks like <code>[blank1]</code> to the question text above.
+                  </p>
+                </div>
               </div>
             </VCol>
             
@@ -1045,6 +1059,7 @@ watch(() => formData.value.type, newType => {
                 <h4>Matching Pairs</h4>
               </div>
               <VInput
+                :key="`matching-validation-${formData.matching_pairs.length}`"
                 :model-value="formData.matching_pairs"
                 :rules="[v => v.length >= 2 || 'Matching questions must have at least 2 pairs.']"
                 class="mt-2"
@@ -1118,6 +1133,7 @@ watch(() => formData.value.type, newType => {
                 </p>
               </div>
               <VInput
+                :key="`reordering-validation-${formData.reordering_items.length}`"
                 :model-value="formData.reordering_items"
                 :rules="[v => v.length >= 2 || 'Reordering questions must have at least 2 items.']"
                 class="mt-2"

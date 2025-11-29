@@ -163,7 +163,7 @@ class UpdateQuestionRequest extends FormRequest
      */
     private function isChangingMediaType(): bool
     {
-        $question = Question::find($this->route('question')->id);
+        $question = $this->route('question');
 
         if (!$question) {
             return false;
