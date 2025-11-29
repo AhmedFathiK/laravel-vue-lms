@@ -26,7 +26,7 @@ class StoreRequest extends FormRequest
             'term' => ['required', 'string', 'max:255'],
             'definition' => ['required', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
-            'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
+            'media_type' => ['nullable', 'string', 'in:image,image_with_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],
             'example' => ['nullable', 'string'],
             'example_translation' => ['nullable', 'string'],

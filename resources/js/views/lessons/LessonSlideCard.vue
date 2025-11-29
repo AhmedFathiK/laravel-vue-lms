@@ -106,7 +106,7 @@ console.log(props.data)
                     class="slide-img w-50"
                   >
                     <VImg
-                      v-if="data.term_id && ['image', 'image_audio1'].includes(data.term.media_type) && data.term.media_url"
+                      v-if="data.term_id && ['image', 'image_with_audio'].includes(data.term.media_type) && data.term.media_url"
                       cover
                       :src="data.term.media_url"
                       height="162.13"
@@ -135,14 +135,14 @@ console.log(props.data)
                           <div class="d-flex flex-column py-2">
                             <div
                               class="mb-2 pa-1"
-                              v-html="data.text"
+                              v-html="data.content"
                             />
                           </div>
                         </VCol>
                       </VRow>
                     </PerfectScrollbar>
                     <template v-else>
-                      {{ data.question.text }}
+                      {{ data.question.question_text }}
                     </template>
                   </div>
                 </VCol>
@@ -159,7 +159,7 @@ console.log(props.data)
                       <VCol cols="6">
                         <VList>
                           <VListItem
-                            v-for="(answer, index) in data.question.answers"
+                            v-for="(answer, index) in data.question.options"
                             :key="index"
                             color="primary"
                             rounded="xl"
@@ -167,7 +167,7 @@ console.log(props.data)
                           >
                             <VListItemTitle>
                               <div class="matching-item pa-1 text-truncate">
-                                {{ answer.column_a }}
+                                {{ answer.left }}
                               </div>
                             </VListItemTitle>
                           </VListItem>
@@ -176,7 +176,7 @@ console.log(props.data)
                       <VCol cols="6">
                         <VList>
                           <VListItem
-                            v-for="(answer, index) in data.question.answers"
+                            v-for="(answer, index) in data.question.options"
                             :key="index"
                             color="primary"
                             rounded="xl"
@@ -184,7 +184,7 @@ console.log(props.data)
                           >
                             <VListItemTitle>
                               <div class="matching-item pa-1 text-truncate">
-                                {{ answer.column_b }}
+                                {{ answer.right }}
                               </div>
                             </VListItemTitle>
                           </vlistitem>
@@ -203,30 +203,17 @@ console.log(props.data)
                         class="d-flex justify-center flex-column"
                       >
                         <div
-                          v-for="(answer, index) in data.question.answers"
+                          v-for="(answer, index) in data.question.options"
                           :key="index"
                           class="mcq-answer my-1 overflow-y-auto pa-1"
                         >
-                          {{ answer.text }}
+                          {{ answer }}
                         </div>
                       </VCol>
                     </VRow>
                   </PerfectScrollbar>
-                  <VRow v-if="data.type == 'true_false'">
-                    <VCol
-                      cols="12"
-                      class="d-flex justify-center flex-column"
-                    >
-                      <div class="mcq-answer my-1">
-                        True
-                      </div>
-                      <div class="mcq-answer my-1">
-                        False
-                      </div>
-                    </VCol>
-                  </VRow>
                   <PerfectScrollbar
-                    v-if="data.type == 'blanks_mcq'"
+                    v-if="['fill_blank', 'fill_blank_choices'].includes(data.type)"
                     :options="{ wheelPropagation: false }"
                     style="max-block-size: 9.4rem;"
                   >
@@ -237,30 +224,23 @@ console.log(props.data)
                       >
                         <div class="blanks-mcq-question mb-4 pa-2">
                           <template
-                            v-for="(questionPart, index) in data.question.text.split('[...]')"
+                            v-for="(questionPart, index) in data.question.question_text.split(/\[blank\d+\]/)"
                             :key="index"
                           >
                             <div class="blanks-mcq-question-text-placeholder mx-2 pt-1">
                               {{ questionPart }}
                             </div>
-                          
+  
                             <div
-                              v-if="index < data.question.text.split('[...]').length - 1"
+                              v-if="index < data.question.question_text.split(/\[blank\d+\]/).length - 1"
                               class="blank-placeholder ma-1"
                             />
-                          <!--
-                            {{ questionPart }}
-                            
-                            <div
-                            v-else
-                            class="blanks-mcq-question-text-placeholder mx-2 pt-1"
-                            >
-                            {{ questionPart }}
-                            </div> 
-                          -->
                           </template>
                         </div>
-                        <div class="blanks-mcq-choices">
+                        <div
+                          v-if="data.type == 'fill_blank_choices'"
+                          class="blanks-mcq-choices"
+                        >
                           <div class="blanks-choice-placeholder pt-1">
                             A
                           </div>
@@ -270,6 +250,26 @@ console.log(props.data)
                           <div class="blanks-choice-placeholder pt-1">
                             C
                           </div>
+                        </div>
+                      </VCol>
+                    </VRow>
+                  </PerfectScrollbar>
+                  <PerfectScrollbar
+                    v-if="data.type == 'reordering'"
+                    :options="{ wheelPropagation: false }"
+                    style="max-block-size: 7.1rem;"
+                  >
+                    <VRow>
+                      <VCol
+                        cols="12"
+                        class="d-flex justify-center flex-column"
+                      >
+                        <div
+                          v-for="(answer, index) in data.question.options"
+                          :key="index"
+                          class="mcq-answer my-1 overflow-y-auto pa-1"
+                        >
+                          {{ index + 1 }}. {{ answer }}
                         </div>
                       </VCol>
                     </VRow>
@@ -359,7 +359,6 @@ console.log(props.data)
 .blanks-mcq-question-text-placeholder{
   height:30px;
   border-radius: 6px;
-  background-color:rgba(var(--v-theme-surface));
 }
 .blanks-mcq-choices{
   height:50px;

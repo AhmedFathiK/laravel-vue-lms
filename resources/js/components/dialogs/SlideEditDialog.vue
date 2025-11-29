@@ -51,6 +51,8 @@ watch(() => props.slideData, newSlideData => {
     selectedQuestion.value = null
     selectedTerm.value = null
     formData.value = JSON.parse(JSON.stringify(newSlideData))
+    selectedQuestion.value = newSlideData.question_id ? newSlideData.question : null
+    selectedTerm.value = newSlideData.term_id ? newSlideData.term : null
     if (!formData.value.content) formData.value.content = ''
     if (!formData.value.title) formData.value.title = ''
     if (!formData.value.lesson_id) formData.value.lesson_id = parseInt(props.lessonId)
@@ -104,6 +106,11 @@ const isQuestionType = computed(() => {
   return !!typeMeta?.isQuestion
 })
 
+watch(selectedQuestion, newQuestion => {
+  if (newQuestion) {
+    formData.value.question_id = newQuestion.id
+  }
+})
 
 const isTermType = computed(() => formData.value.type === 'term')
 </script>
@@ -185,14 +192,70 @@ const isTermType = computed(() => formData.value.type === 'term')
                 return-object
                 :error-messages="formErrors.question_id"
               >
-                <template #item="{ item, props }">
-                  <VListItem v-bind="props">
-                    <VListItemTitle>{{ item.question_text }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.type }} - {{ item.difficulty }}</VListItemSubtitle>
+                <template #item="{ props:itemProps, item }">
+                  <VListItem
+                    v-bind="itemProps"
+                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.media_type) && item.raw.media_url ? item.raw.media_url : null"
+                    :subtitle="item.raw.question_text"
+                    :title="item.raw.title"
+                  >
+                    <template v-if="item.raw.type == 'mcq'">
+                      <span>Answers:</span>
+                      <ul>
+                        <li
+                          v-for="(answer, index) in item.raw.options"
+                          :key="index"
+                        >
+                          {{ index + 1 }}. {{ answer }} | correct: {{ item.raw.correct_answer[index] == 0 ? 'No' : 'Yes' }}
+                        </li>
+                      </ul>
+                    </template>
+                    <template v-if="item.raw.type == 'fill_blank_choices'">
+                      <span>Answers:</span>
+                      <ul>
+                        <li
+                          v-for="(answer, index) in item.raw.options"
+                          :key="index"
+                        >
+                          {{ index + 1 }}. Placeholder: {{ answer.placeholder }} | Choices: {{ answer.options.join(', ') }} | Correct Choice: {{ answer.options[answer.correct_answer] }}
+                        </li>
+                      </ul>
+                    </template>
+                    <template v-if="item.raw.type == 'true_false'">
+                      <span>Answers:</span>
+                      <ul>
+                        <li
+                          v-for="(answer, index) in item.raw.answers"
+                          :key="index"
+                        >
+                          {{ index + 1 }}. {{ answer.text }} | correct: {{ answer.correct }}
+                        </li>
+                      </ul>
+                    </template>
+                    <template v-if="item.raw.type == 'matching'">
+                      <span>Answers:</span>
+                      <ul>
+                        <li
+                          v-for="(answer, index) in item.raw.options"
+                          :key="index"
+                        >
+                          {{ index + 1 }}. Left: {{ answer.left }} | Right: {{ answer.right }}
+                        </li>
+                      </ul>
+                    </template>
+                    <template v-if="item.raw.type == 'reordering'">
+                      <ul>
+                        <li
+                          v-for="(answer, index) in item.raw.options"
+                          :key="index"
+                        >
+                          {{ index + 1 }}. {{ answer }}
+                        </li>
+                      </ul>
+                    </template>
                   </VListItem>
                 </template>
               </AppServerSideAutocomplete>
-
               <div
                 v-if="selectedQuestion"
                 class="mt-2 pa-2 border rounded"
@@ -205,7 +268,7 @@ const isTermType = computed(() => formData.value.type === 'term')
                     icon
                     variant="text"
                     size="small"
-                    @click="selectedQuestion = null"
+                    @click="selectedQuestion = undefined"
                   >
                     <VIcon icon="tabler-x" />
                   </VBtn>
@@ -233,7 +296,10 @@ const isTermType = computed(() => formData.value.type === 'term')
                 :error-messages="formErrors.term_id"
               >
                 <template #item="{ item, props }">
-                  <VListItem v-bind="props">
+                  <VListItem
+                    v-bind="props"
+                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.media_type) && item.raw.media_url ? item.raw.media_url : null"
+                  >
                     <VListItemTitle>{{ item.term }}</VListItemTitle>
                     <VListItemSubtitle>{{ item.definition }}</VListItemSubtitle>
                   </VListItem>

@@ -41,9 +41,7 @@ class UpdateRequest extends FormRequest
             'title' => ['nullable', 'string', 'max:255'],
             'question_id' => ['nullable', 'integer', 'exists:questions,id'],
             'term_id' => ['nullable', 'integer', 'exists:terms,id'],
-            'content' => ['sometimes', 'array'],
-            'content.*' => ['string'],
-
+            'content' => ['required_if:type,explanation', 'string', 'nullable'],
             'sort_order' => ['nullable', 'integer'],
         ];
 

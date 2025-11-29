@@ -175,6 +175,8 @@ const getSlideTypeLabel = type => {
 
 // Edit item
 const editItem = item => {
+  console.log(item)
+  
   editedItem.value = JSON.parse(JSON.stringify(item))
   isSlideEditDialogVisible.value = true
 }

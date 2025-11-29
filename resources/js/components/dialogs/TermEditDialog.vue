@@ -48,7 +48,7 @@ const formData = ref({
 const mediaTypeOptions = [
   { title: 'None', value: '' },
   { title: 'Image', value: 'image' },
-  { title: 'Image with Audio', value: 'image_audio' },
+  { title: 'Image with Audio', value: 'image_with_audio' },
   { title: 'Video', value: 'video' },
 ]
 
@@ -167,7 +167,7 @@ const requiredValidator = v => !!v || 'This field is required'
 
 // Determine if audio field should be shown
 const showAudioField = computed(() => {
-  return formData.value.media_type === 'image_audio'
+  return formData.value.media_type === 'image_with_audio'
 })
 </script>
 
@@ -243,7 +243,7 @@ const showAudioField = computed(() => {
               />
             </VCol>
             
-            <!-- Audio URL (for image_audio type) -->
+            <!-- Audio URL (for image_with_audio type) -->
             <VCol
               v-if="showAudioField"
               cols="12"
@@ -263,7 +263,7 @@ const showAudioField = computed(() => {
               class="d-flex justify-center"
             >
               <div class="media-preview">
-                <div v-if="formData.media_type === 'image' || formData.media_type === 'image_audio'">
+                <div v-if="formData.media_type === 'image' || formData.media_type === 'image_with_audio'">
                   <img 
                     :src="mediaPreview" 
                     alt="Media Preview" 

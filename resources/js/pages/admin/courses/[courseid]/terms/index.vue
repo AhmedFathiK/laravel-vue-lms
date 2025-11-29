@@ -161,7 +161,7 @@ const formatMediaType = type => {
   
   const types = {
     'image': 'Image',
-    'image_audio': 'Image with Audio',
+    'image_with_audio': 'Image with Audio',
     'video': 'Video',
   }
   

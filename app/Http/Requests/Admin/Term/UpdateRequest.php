@@ -26,7 +26,7 @@ class UpdateRequest extends FormRequest
             'term' => ['sometimes', 'string', 'max:255'],
             'definition' => ['sometimes', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
-            'media_type' => ['nullable', 'string', 'in:image,image_audio,video'],
+            'media_type' => ['nullable', 'string', 'in:image,image_with_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],
             'example' => ['nullable', 'string'],
             'example_translation' => ['nullable', 'string'],

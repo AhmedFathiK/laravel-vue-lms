@@ -13,7 +13,7 @@ class Slide extends Model
     use HasFactory, HasTranslations, SoftDeletes;
 
     const TYPE_MCQ = 'mcq';
-    const TYPE_MATCHING = 'matching_pairs';
+    const TYPE_MATCHING = 'matching';
     const TYPE_REORDERING = 'reordering';
     const TYPE_FILL_BLANK = 'fill_blank';
     const TYPE_FILL_BLANK_CHOICES = 'fill_blank_choices';
