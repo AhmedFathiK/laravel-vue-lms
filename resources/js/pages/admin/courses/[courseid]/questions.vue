@@ -434,6 +434,45 @@ watch(() => locale.value, () => {
               </li>
             </ul>
           </div>
+          <div v-else-if="item.type == 'fill_blank_choices'">
+            {{ item.question_text }}
+            <ul class="ms-5">
+              <li
+                v-for="(option, index) in item.options"
+                :key="index"
+              >
+                blank {{ index + 1 }}:<br>
+                <ul class="ms-2">
+                  <li>
+                    Placeholder: {{ option.placeholder }}
+                  </li>
+                  <li>
+                    Choices: {{ option.options.join(', ') }}
+                  </li>
+                  <li>
+                    Correct Choice: {{ option.options[option.correct_answer] }}
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <div v-else-if="item.type == 'reordering'">
+            {{ item.question_text }}
+            <ol
+              type="1"
+              class="ms-5"
+            >
+              <li
+                v-for="(option, index) in item.options"
+                :key="index"
+              >
+                {{ option }}
+              </li>
+            </ol>
+          </div>
+          <div v-else>
+            {{ item.question_text }}
+          </div>
         </template>
 
         <!-- Type column -->
