@@ -33,7 +33,7 @@ const showDeleted = ref(false)
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('created_at')
+const sortBy = ref('createdAt')
 const sortOrder = ref('desc')
 
 // Fetch receipts
@@ -50,7 +50,7 @@ const headers = [
   { title: 'Item', key: 'item_name' },
   { title: 'Amount', key: 'amount' },
   { title: 'Status', key: 'status', sortable: false },
-  { title: 'Date', key: 'created_at' },
+  { title: 'Date', key: 'createdAt' },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
 
@@ -68,19 +68,19 @@ const fetchReceipts = async () => {
   try {
     const params = {
       page: page.value,
-      per_page: itemsPerPage.value,
+      perPage: itemsPerPage.value,
       search: searchQuery.value || undefined,
-      payment_method: selectedPaymentMethod.value || undefined,
-      item_type: selectedItemType.value || undefined,
-      from_date: fromDate.value || undefined,
-      to_date: toDate.value || undefined,
-      receipt_id: receiptId.value || undefined,
-      user_query: userQuery.value || undefined,
-      course_id: courseId.value || undefined,
-      subscription_type: subscriptionType.value || undefined,
-      sort_by: sortBy.value,
-      sort_order: sortOrder.value,
-      with_trashed: showDeleted.value,
+      paymentMethod: selectedPaymentMethod.value || undefined,
+      itemType: selectedItemType.value || undefined,
+      fromDate: fromDate.value || undefined,
+      toDate: toDate.value || undefined,
+      receiptId: receiptId.value || undefined,
+      userQuery: userQuery.value || undefined,
+      courseId: courseId.value || undefined,
+      subscriptionType: subscriptionType.value || undefined,
+      sortBy: sortBy.value,
+      sortOrder: sortOrder.value,
+      withTrashed: showDeleted.value,
     }
     
     const response = await api.get('/admin/receipts', { params })
@@ -116,7 +116,7 @@ const paymentMethods = [
 // Item type options for dropdown
 const itemTypes = [
   { title: 'Course', value: 'course' },
-  { title: 'Subscription Plan', value: 'subscription_plan' },
+  { title: 'Subscription Plan', value: 'subscription' },
 ]
 
 // Helper functions for UI
@@ -163,7 +163,7 @@ const downloadReceipt = async receipt => {
     const link = document.createElement('a')
 
     link.href = url
-    link.setAttribute('download', `receipt-${receipt.receipt_number}.pdf`)
+    link.setAttribute('download', `receipt-${receipt.receiptNumber}.pdf`)
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -499,7 +499,7 @@ const onReceiptSubmitSuccess = () => {
         </template>
         <template #[`item.status`]="{ item }">
           <VChip
-            v-if="item.voided_at"
+            v-if="item.voidedAt"
             color="warning"
             label
             size="small"
@@ -507,7 +507,7 @@ const onReceiptSubmitSuccess = () => {
             Voided
           </VChip>
           <VChip
-            v-else-if="item.deleted_at"
+            v-else-if="item.deletedAt"
             color="error"
             label
             size="small"
@@ -523,9 +523,9 @@ const onReceiptSubmitSuccess = () => {
             Completed
           </VChip>
         </template>
-        <template #[`item.created_at`]="{ item }">
+        <template #[`item.createdAt`]="{ item }">
           <div class="text-high-emphasis text-body-1">
-            {{ formatDate(item.created_at) }}
+            {{ formatDate(item.createdAt) }}
           </div>
         </template>
         <template #[`item.actions`]="{ item }">
@@ -534,46 +534,46 @@ const onReceiptSubmitSuccess = () => {
           </IconBtn>
 
           <VTooltip
-            v-if="!item.deleted_at && !item.voided_at"
+            v-if="!item.deletedAt && !item.voidedAt"
             bottom
-            :disabled="item.source_type !== 'system'"
+            :disabled="item.sourceType !== 'system'"
           >
             <template #activator="{ props }">
               <span v-bind="props">
                 <IconBtn
-                  :disabled="item.source_type === 'system'"
+                  :disabled="item.sourceType === 'system'"
                   @click="editReceipt(item)"
                 >
                   <VIcon icon="tabler-edit" />
                 </IconBtn>
               </span>
             </template>
-            <span v-if="item.source_type === 'system'">System-generated receipts cannot be edited.</span>
+            <span v-if="item.sourceType === 'system'">System-generated receipts cannot be edited.</span>
           </VTooltip>
 
           <IconBtn
-            v-if="!item.deleted_at && !item.voided_at"
+            v-if="!item.deletedAt && !item.voidedAt"
             @click="downloadReceipt(item)"
           >
             <VIcon icon="tabler-download" />
           </IconBtn>
 
           <IconBtn
-            v-if="!item.deleted_at && !item.voided_at"
+            v-if="!item.deletedAt && !item.voidedAt"
             @click="resendReceipt(item)"
           >
             <VIcon icon="tabler-mail" />
           </IconBtn>
 
           <IconBtn
-            v-if="can('void', 'receipts') && !item.deleted_at && !item.voided_at"
+            v-if="can('void', 'receipts') && !item.deletedAt && !item.voidedAt"
             @click="openVoidDialog(item)"
           >
             <VIcon icon="tabler-circle-x" />
           </IconBtn>
 
           <IconBtn
-            v-if="can('delete', 'receipts') && !item.deleted_at && !item.voided_at"
+            v-if="can('delete', 'receipts') && !item.deletedAt && !item.voidedAt"
             @click="openDeleteDialog(item)"
           >
             <VIcon icon="tabler-trash" />

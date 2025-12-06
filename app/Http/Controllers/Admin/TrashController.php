@@ -35,21 +35,21 @@ class TrashController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sortBy', 'deleted_at');
-        $orderBy = $request->get('orderBy', 'desc');
+        $sortBy = $request->get('sort_by', 'deleted_at');
+        $orderBy = $request->get('order_by', 'desc');
 
         $query->orderBy($sortBy, $orderBy);
 
         // Apply pagination
-        $perPage = $request->get('perPage', 15);
+        $perPage = $request->get('per_page', 15);
         $trashItems = $query->paginate($perPage);
 
         return response()->json([
-            'trashItems' => $trashItems->items(),
-            'totalItems' => $trashItems->total(),
-            'currentPage' => $trashItems->currentPage(),
-            'perPage' => $trashItems->perPage(),
-            'lastPage' => $trashItems->lastPage(),
+            'trash_items' => $trashItems->items(),
+            'total_items' => $trashItems->total(),
+            'current_page' => $trashItems->currentPage(),
+            'per_page' => $trashItems->perPage(),
+            'last_page' => $trashItems->lastPage(),
         ]);
     }
 

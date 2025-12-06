@@ -35,34 +35,34 @@ const formErrors = ref({})
 // Form data with default values
 const formData = ref({
   id: null,
-  course_id: null,
+  courseId: null,
   title: '',
-  question_text: '',
+  questionText: '',
   type: 'mcq',
   options: [],
-  correct_answer: [],
+  correctAnswer: [],
   points: 1,
   difficulty: 'medium',
   tags: [],
 
-  correct_feedback: '',
-  incorrect_feedback: '',
-  media_url: null,
-  media_type: 'none',
+  correctFeedback: '',
+  incorrectFeedback: '',
+  mediaUrl: null,
+  mediaType: 'none',
 
   // For fill in the blank
   blanks: [],
 
   // For matching
-  matching_pairs: [],
+  matchingPairs: [],
 
   // For reordering
-  reordering_items: [],
+  reorderingItems: [],
 
   // For writing
-  grading_guidelines: '',
-  min_words: 0,
-  max_words: 0,
+  gradingGuidelines: '',
+  minWords: 0,
+  maxWords: 0,
 })
 
 // Handle tag input
@@ -74,7 +74,7 @@ const detectedBlanks = computed(() => {
     return []
 
   const regex = /\[blank\d+\]/g
-  const matches = formData.value.question_text.match(regex) || []
+  const matches = formData.value.questionText.match(regex) || []
   const uniqueMatches = [...new Set(matches)]
 
   // Sort by the number inside [blankX]
@@ -88,11 +88,11 @@ const detectedBlanks = computed(() => {
   return uniqueMatches
 })
 
-// Watch for changes in detected blanks and update the correct_answer array
+// Watch for changes in detected blanks and update the correctAnswer array
 watch(detectedBlanks, (newBlanks, oldBlanks) => {
   if (formData.value.type === 'fill_blank') {
     const newSize = newBlanks.length
-    const currentAnswers = Array.isArray(formData.value.correct_answer) ? formData.value.correct_answer : []
+    const currentAnswers = Array.isArray(formData.value.correctAnswer) ? formData.value.correctAnswer : []
 
     // Only update if the size of blanks has changed
     if (newSize !== currentAnswers.length) {
@@ -103,7 +103,7 @@ watch(detectedBlanks, (newBlanks, oldBlanks) => {
         // Ensure the preserved answer is an array
         newAnswers[i] = Array.isArray(currentAnswers[i]) ? currentAnswers[i] : [currentAnswers[i]]
       }
-      formData.value.correct_answer = newAnswers
+      formData.value.correctAnswer = newAnswers
     }
   }
 }, { immediate: true })
@@ -119,7 +119,7 @@ watch(detectedBlanks, (newBlanks, oldBlanks) => {
         return currentBlanks[index] || {
           placeholder: `Blank ${index + 1}`,
           options: ['', ''],
-          correct_answer: '0',
+          correctAnswer: '0',
         }
       })
 
@@ -143,43 +143,43 @@ const removeBlankOption = (blankIndex, optionIndex) => {
   
   // Update correct answer if it was the removed option
   const blank = formData.value.blanks[blankIndex]
-  if (blank.correct_answer === optionIndex.toString()) {
-    blank.correct_answer = '0' // Default to first option
-  } else if (parseInt(blank.correct_answer) > optionIndex) {
+  if (blank.correctAnswer === optionIndex.toString()) {
+    blank.correctAnswer = '0' // Default to first option
+  } else if (parseInt(blank.correctAnswer) > optionIndex) {
     // Adjust correct answer index for removed option
-    blank.correct_answer = (parseInt(blank.correct_answer) - 1).toString()
+    blank.correctAnswer = (parseInt(blank.correctAnswer) - 1).toString()
   }
 }
 
 // Add a matching pair
 const addMatchingPair = () => {
-  if (!formData.value.matching_pairs) {
-    formData.value.matching_pairs = []
+  if (!formData.value.matchingPairs) {
+    formData.value.matchingPairs = []
   }
   
-  formData.value.matching_pairs.push({
+  formData.value.matchingPairs.push({
     left: '',
     right: '',
   })
   
-  // Update correct_answer to match the pairs
+  // Update correctAnswer to match the pairs
   updateMatchingCorrectAnswers()
 }
 
 // Remove a matching pair
 const removeMatchingPair = index => {
-  formData.value.matching_pairs.splice(index, 1)
+  formData.value.matchingPairs.splice(index, 1)
   
-  // Update correct_answer to match the pairs
+  // Update correctAnswer to match the pairs
   updateMatchingCorrectAnswers()
 }
 
 // Update the correct answers for matching pairs
 const updateMatchingCorrectAnswers = () => {
-  if (!formData.value.matching_pairs) return
+  if (!formData.value.matchingPairs) return
   
-  // For matching, correct_answer should contain the mapping
-  formData.value.correct_answer = formData.value.matching_pairs.map((pair, index) => ({
+  // For matching, correctAnswer should contain the mapping
+  formData.value.correctAnswer = formData.value.matchingPairs.map((pair, index) => ({
     left: index,
     right: index,
   }))
@@ -187,27 +187,27 @@ const updateMatchingCorrectAnswers = () => {
 
 // Add a reordering item
 const addReorderingItem = () => {
-  if (!formData.value.reordering_items) {
-    formData.value.reordering_items = []
+  if (!formData.value.reorderingItems) {
+    formData.value.reorderingItems = []
   }
   
-  formData.value.reordering_items.push('')
+  formData.value.reorderingItems.push('')
   
-  // Update correct_answer to match the order
+  // Update correctAnswer to match the order
   updateReorderingCorrectAnswers()
 }
 
 // Remove a reordering item
 const removeReorderingItem = index => {
-  formData.value.reordering_items.splice(index, 1)
+  formData.value.reorderingItems.splice(index, 1)
   
-  // Update correct_answer to match the order
+  // Update correctAnswer to match the order
   updateReorderingCorrectAnswers()
 }
 
 // Move a reordering item up or down
 const moveReorderingItem = (index, direction) => {
-  const items = formData.value.reordering_items
+  const items = formData.value.reorderingItems
   
   if (direction === 'up' && index > 0) {
     // Swap with the item above
@@ -217,41 +217,56 @@ const moveReorderingItem = (index, direction) => {
     [items[index], items[index + 1]] = [items[index + 1], items[index]]
   }
   
-  // Update correct_answer to match the order
+  // Update correctAnswer to match the order
   updateReorderingCorrectAnswers()
 }
 
 // Update the correct answers for reordering
 const updateReorderingCorrectAnswers = () => {
-  if (!formData.value.reordering_items) return
+  if (!formData.value.reorderingItems) return
   
-  // For reordering, correct_answer should contain the indices in correct order
-  formData.value.correct_answer = formData.value.reordering_items.map((_, index) => index.toString())
+  // For reordering, correctAnswer should contain the indices in correct order
+  formData.value.correctAnswer = formData.value.reorderingItems.map((_, index) => index.toString())
 }
 
 // Initialize data for specific question types
 const initializeQuestionTypeData = () => {
   const type = formData.value.type
   
+  // For writing type, extract data from options FIRST before clearing
+  if (type === 'writing' && formData.value.options && typeof formData.value.options === 'object') {
+    if (!formData.value.gradingGuidelines && formData.value.options.gradingGuidelines) {
+      formData.value.gradingGuidelines = formData.value.options.gradingGuidelines
+    }
+    
+    if (!formData.value.minWords && formData.value.options.minWords) {
+      formData.value.minWords = formData.value.options.minWords
+    }
+    
+    if (!formData.value.maxWords && formData.value.options.maxWords) {
+      formData.value.maxWords = formData.value.options.maxWords
+    }
+  }
+  
   // Clear existing data if not defined
   if (!Array.isArray(formData.value.options)) {
     formData.value.options = []
   }
   
-  if (!Array.isArray(formData.value.correct_answer)) {
-    formData.value.correct_answer = []
+  if (!Array.isArray(formData.value.correctAnswer)) {
+    formData.value.correctAnswer = []
   }
   
   if (!Array.isArray(formData.value.blanks)) {
     formData.value.blanks = []
   }
   
-  if (!Array.isArray(formData.value.matching_pairs)) {
-    formData.value.matching_pairs = []
+  if (!Array.isArray(formData.value.matchingPairs)) {
+    formData.value.matchingPairs = []
   }
   
-  if (!Array.isArray(formData.value.reordering_items)) {
-    formData.value.reordering_items = []
+  if (!Array.isArray(formData.value.reorderingItems)) {
+    formData.value.reorderingItems = []
   }
   
   // Initialize specific type data
@@ -263,32 +278,33 @@ const initializeQuestionTypeData = () => {
 
   } else if (type === 'matching') {
     // For matching, initialize pairs from options
-    if (!formData.value.matching_pairs.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
-      formData.value.matching_pairs = formData.value.options
-    } else if (!formData.value.matching_pairs.length) {
+    if (!formData.value.matchingPairs.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
+      formData.value.matchingPairs = formData.value.options
+    } else if (!formData.value.matchingPairs.length) {
       // Add default pair if none exists
       addMatchingPair()
     }
   } else if (type === 'reordering') {
     // For reordering, initialize items from options
-    if (!formData.value.reordering_items.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
-      formData.value.reordering_items = formData.value.options
-    } else if (!formData.value.reordering_items.length) {
+    if (!formData.value.reorderingItems.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
+      formData.value.reorderingItems = formData.value.options
+    } else if (!formData.value.reorderingItems.length) {
       // Add default item if none exists
       addReorderingItem()
     }
   } else if (type === 'writing') {
+    
     // For writing, initialize grading guidelines and word limits from options
-    if (!formData.value.grading_guidelines && formData.value.options && formData.value.options.grading_guidelines) {
-      formData.value.grading_guidelines = formData.value.options.grading_guidelines
+    if (!formData.value.gradingGuidelines && formData.value.options && formData.value.options.gradingGuidelines) {
+      formData.value.gradingGuidelines = formData.value.options.gradingGuidelines
     }
     
-    if (!formData.value.min_words && formData.value.options && formData.value.options.min_words) {
-      formData.value.min_words = formData.value.options.min_words
+    if (!formData.value.minWords && formData.value.options && formData.value.options.minWords) {
+      formData.value.minWords = formData.value.options.minWords
     }
     
-    if (!formData.value.max_words && formData.value.options && formData.value.options.max_words) {
-      formData.value.max_words = formData.value.options.max_words
+    if (!formData.value.maxWords && formData.value.options && formData.value.options.maxWords) {
+      formData.value.maxWords = formData.value.options.maxWords
     }
   }
 }
@@ -319,22 +335,22 @@ const handleFileUpload = file => {
   
   // If a file is selected, create a temporary URL for preview
   if (mediaFile.value) {
-    formData.value.media_url = URL.createObjectURL(mediaFile.value)
+    formData.value.mediaUrl = URL.createObjectURL(mediaFile.value)
   }
 }
 
 // Clear media when media type changes
-watch(() => formData.value.media_type, newValue => {
+watch(() => formData.value.mediaType, newValue => {
   if (newValue === 'none') {
-    formData.value.media_url = null
-    formData.value.audio_url = null
+    formData.value.mediaUrl = null
+    formData.value.audioUrl = null
     mediaFile.value = null
   } else if (newValue === 'video') {
     // Clear file upload data when switching to video (URL only)
     mediaFile.value = null
   } else if (newValue !== 'image_with_audio') {
     // Clear audio URL when switching to a type that doesn't use audio
-    formData.value.audio_url = null
+    formData.value.audioUrl = null
   }
 })
 
@@ -349,26 +365,26 @@ const difficultyLevels = [
 const resetForm = () => {
   formData.value = {
     id: null,
-    course_id: props.courseId,
+    courseId: props.courseId,
     title: '',
-    question_text: '',
+    questionText: '',   
     type: 'mcq',
     options: [],
-    correct_answer: [],
+    correctAnswer: [],
     points: 1,
     difficulty: 'medium',
     tags: [],
-    correct_feedback: '',
-    incorrect_feedback: '',
-    media_url: null,
-    media_type: 'none',
-    audio_url: null,
+    correctFeedback: '',
+    incorrectFeedback: '',
+    mediaUrl: null,
+    mediaType: 'none',
+    audioUrl: null,
     blanks: [],
-    matching_pairs: [],
-    reordering_items: [],
-    grading_guidelines: '',
-    min_words: 0,
-    max_words: 0,
+    matchingPairs: [],
+    reorderingItems: [],
+    gradingGuidelines: '',
+    minWords: 0,
+    maxWords: 0,
   }
 
   // Reset other related state
@@ -391,7 +407,9 @@ watch(() => props.question, newQuestion => {
     
     // Clone to avoid direct modification of props
     formData.value = JSON.parse(JSON.stringify(newQuestion))
-
+    console.log(newQuestion)
+    console.log(formData.value )
+    
 
 
     // Ensure tags is an array
@@ -399,9 +417,9 @@ watch(() => props.question, newQuestion => {
       formData.value.tags = []
     }
 
-    // Ensure correct_answer is an array for mcq
-    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.correct_answer)) {
-      formData.value.correct_answer = []
+    // Ensure correctAnswer is an array for mcq
+    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.correctAnswer)) {
+      formData.value.correctAnswer = []
     }
 
     // Ensure options is an array for mcq
@@ -441,7 +459,7 @@ function appendFormData(formData, key, value) {
     return
   }
 
-  // If the value is an object (matching_pairs, correct_answer)
+  // If the value is an object (matchingPairs, correctAnswer)
   if (typeof value === "object") {
     Object.entries(value).forEach(([childKey, childValue]) => {
       appendFormData(formData, `${key}[${childKey}]`, childValue)
@@ -478,7 +496,7 @@ const submitForm = async () => {
     // Handle media upload
     if (
       mediaFile.value &&
-      (questionData.media_type === 'image' || questionData.media_type === 'image_with_audio')
+      (questionData.mediaType === 'image' || questionData.mediaType === 'image_with_audio')
     ) {
       formDataObj.append('media', mediaFile.value)
     }
@@ -489,7 +507,7 @@ const submitForm = async () => {
       await api.post(`/admin/courses/${props.courseId}/questions/${questionData.id}`, formDataObj)
       toast.success('Question updated successfully')
     } else {
-      formDataObj.append('course_id', props.courseId)
+      formDataObj.append('courseId', props.courseId)
 
       await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj)
       toast.success('Question created successfully')
@@ -524,14 +542,14 @@ const removeOption = index => {
   formData.value.options.splice(index, 1)
   
   // Also remove from correct answers if selected
-  if (formData.value.correct_answer.includes(index.toString())) {
-    const answerIndex = formData.value.correct_answer.indexOf(index.toString())
+  if (formData.value.correctAnswer.includes(index.toString())) {
+    const answerIndex = formData.value.correctAnswer.indexOf(index.toString())
 
-    formData.value.correct_answer.splice(answerIndex, 1)
+    formData.value.correctAnswer.splice(answerIndex, 1)
   }
   
   // Adjust correct answers for removed option
-  formData.value.correct_answer = formData.value.correct_answer
+  formData.value.correctAnswer = formData.value.correctAnswer
     .map(answer => {
       const answerNum = parseInt(answer)
       if (answerNum > index) {
@@ -545,22 +563,22 @@ const removeOption = index => {
 // Toggle correct answer for an option
 const toggleCorrectAnswer = index => {
   const indexStr = index.toString()
-  const correctAnswers = formData.value.correct_answer || []
+  const correctAnswers = formData.value.correctAnswer || []
   
   if (correctAnswers.includes(indexStr)) {
     // Remove from correct answers
     const answerIndex = correctAnswers.indexOf(indexStr)
 
-    formData.value.correct_answer.splice(answerIndex, 1)
+    formData.value.correctAnswer.splice(answerIndex, 1)
   } else {
     // Add to correct answers
-    formData.value.correct_answer.push(indexStr)
+    formData.value.correctAnswer.push(indexStr)
   }
 }
 
 // Check if an option is marked as correct
 const isCorrectAnswer = index => {
-  return formData.value.correct_answer?.includes(index.toString())
+  return formData.value.correctAnswer?.includes(index.toString())
 }
 
 const addTag = () => {
@@ -630,10 +648,10 @@ watch(() => formData.value.type, newType => {
             <!-- Question Text -->
             <VCol cols="12">
               <AppTextarea
-                v-model="formData.question_text"
+                v-model="formData.questionText"
                 label="Question Text"
                 :rules="[requiredValidator]"
-                :error-messages="formErrors.question_text"
+                :error-messages="formErrors.questionText"
                 placeholder="Enter the question text"
                 rows="3"
               />
@@ -670,26 +688,25 @@ watch(() => formData.value.type, newType => {
                 class="mb-3"
               />
             </VCol>
-            
             <!-- Media Type Selection -->
             <VCol
               cols="12"
               md="6"
             >
               <AppSelect
-                v-model="formData.media_type"
+                v-model="formData.mediaType"
                 label="Media Type"
                 :items="mediaTypes"
                 item-title="title"
                 item-value="value"
-                :error-messages="formErrors.media_type"
+                :error-messages="formErrors.mediaType"
                 class="mb-3"
               />
             </VCol>
             
             <!-- Media Upload Fields -->
             <VCol
-              v-if="formData.media_type === 'image' || formData.media_type === 'image_with_audio'"
+              v-if="formData.mediaType === 'image' || formData.mediaType === 'image_with_audio'"
               cols="12"
               md="6"
             >
@@ -698,16 +715,16 @@ watch(() => formData.value.type, newType => {
                 accept="image/*"
                 :error-messages="formErrors.media"
                 prepend-icon="tabler-upload"
-                :hint="formData.media_url ? 'Image selected' : 'Select an image file'"
+                :hint="formData.mediaUrl ? 'Image selected' : 'Select an image file'"
                 persistent-hint
                 @update:model-value="handleFileUpload"
               />
               <div
-                v-if="formData.media_url"
+                v-if="formData.mediaUrl"
                 class="mt-2"
               >
                 <img
-                  :src="formData.media_url"
+                  :src="formData.mediaUrl"
                   style="max-height: 150px; max-width: 100%;"
                 >
               </div>
@@ -715,28 +732,28 @@ watch(() => formData.value.type, newType => {
             
             <!-- Audio URL for Image with Audio -->
             <VCol
-              v-if="formData.media_type === 'image_with_audio'"
+              v-if="formData.mediaType === 'image_with_audio'"
               cols="12"
               md="6"
             >
               <AppTextField
-                v-model="formData.audio_url"
+                v-model="formData.audioUrl"
                 label="Audio URL"
                 placeholder="Enter URL for audio file"
-                :error-messages="formErrors.audio_url"
+                :error-messages="formErrors.audioUrl"
               />
             </VCol>
             
             <VCol
-              v-if="formData.media_type === 'video'"
+              v-if="formData.mediaType === 'video'"
               cols="12"
               md="6"
             >
               <AppTextField
-                v-model="formData.media_url"
+                v-model="formData.mediaUrl"
                 label="Video URL"
                 placeholder="Enter URL for video file"
-                :error-messages="formErrors.media_url"
+                :error-messages="formErrors.mediaUrl"
               />
             </VCol>
             
@@ -797,22 +814,22 @@ watch(() => formData.value.type, newType => {
             <!-- Correct Feedback -->
             <VCol cols="12">
               <AppTextarea
-                v-model="formData.correct_feedback"
+                v-model="formData.correctFeedback"
                 label="Correct Feedback (Optional)"
                 placeholder="Message to show when the user answers correctly"
                 rows="2"
-                :error-messages="formErrors.correct_feedback"
+                :error-messages="formErrors.correctFeedback"
               />
             </VCol>
             
             <!-- Incorrect Feedback -->
             <VCol cols="12">
               <AppTextarea
-                v-model="formData.incorrect_feedback"
+                v-model="formData.incorrectFeedback"
                 label="Incorrect Feedback (Optional)"
                 placeholder="Message to show when the user answers incorrectly"
                 rows="2"
-                :error-messages="formErrors.incorrect_feedback"
+                :error-messages="formErrors.incorrectFeedback"
               />
             </VCol>
             <!-- Multiple Choice Options (show only for MCQ type) -->
@@ -831,11 +848,11 @@ watch(() => formData.value.type, newType => {
                 </VBtn>
               </div>
               <VInput
-                :key="`mcq-validation-${formData.options.length}-${formData.correct_answer.length}`"
+                :key="`mcq-validation-${formData.options.length}-${formData.correctAnswer.length}`"
                 :model-value="formData"
                 :rules="[
                   () => formData.options.length >= 2 || 'MCQ questions must have at least 2 options.',
-                  () => formData.correct_answer.length > 0 || 'Please select at least one correct answer.'
+                  () => formData.correctAnswer.length > 0 || 'Please select at least one correct answer.'
                 ]"
                 class="mb-2"
               />
@@ -850,12 +867,12 @@ watch(() => formData.value.type, newType => {
               </VAlert>
               
               <VAlert
-                v-if="formErrors.correct_answer"
+                v-if="formErrors.correctAnswer"
                 color="error"
                 variant="tonal"
                 class="mb-2"
               >
-                {{ formErrors.correct_answer }}
+                {{ formErrors.correctAnswer }}
               </VAlert>
               
               <div
@@ -925,11 +942,11 @@ watch(() => formData.value.type, newType => {
                   class="mb-4"
                 >
                   <AppTextarea
-                    :model-value="Array.isArray(formData.correct_answer[index]) ? formData.correct_answer[index].join('\n') : ''"
+                    :model-value="Array.isArray(formData.correctAnswer[index]) ? formData.correctAnswer[index].join('\n') : ''"
                     :label="`Answers for ${blank}`"
                     placeholder="Enter possible answers, one per line..."
                     rows="3"
-                    @update:model-value="formData.correct_answer[index] = $event.split('\n')"
+                    @update:model-value="formData.correctAnswer[index] = $event.split('\n')"
                   />
                 </div>
               </div>
@@ -990,7 +1007,7 @@ watch(() => formData.value.type, newType => {
                       Options
                     </h6>
                     <VRadioGroup
-                      v-model="blank.correct_answer"
+                      v-model="blank.correctAnswer"
                       hide-details
                     >
                       <VInput
@@ -1059,15 +1076,15 @@ watch(() => formData.value.type, newType => {
                 <h4>Matching Pairs</h4>
               </div>
               <VInput
-                :key="`matching-validation-${formData.matching_pairs.length}`"
-                :model-value="formData.matching_pairs"
+                :key="`matching-validation-${formData.matchingPairs.length}`"
+                :model-value="formData.matchingPairs"
                 :rules="[v => v.length >= 2 || 'Matching questions must have at least 2 pairs.']"
                 class="mt-2"
               />
               
               <div class="mb-4">
                 <div 
-                  v-for="(pair, pairIndex) in formData.matching_pairs || []" 
+                  v-for="(pair, pairIndex) in formData.matchingPairs || []" 
                   :key="pairIndex"
                   class="d-flex align-center mb-2"
                 >
@@ -1102,7 +1119,7 @@ watch(() => formData.value.type, newType => {
                 </div>
                 
                 <VBtn
-                  v-if="!formData.matching_pairs?.length"
+                  v-if="!formData.matchingPairs?.length"
                   block
                   variant="outlined"
                   class="mt-2"
@@ -1133,14 +1150,14 @@ watch(() => formData.value.type, newType => {
                 </p>
               </div>
               <VInput
-                :key="`reordering-validation-${formData.reordering_items.length}`"
-                :model-value="formData.reordering_items"
+                :key="`reordering-validation-${formData.reorderingItems.length}`"
+                :model-value="formData.reorderingItems"
                 :rules="[v => v.length >= 2 || 'Reordering questions must have at least 2 items.']"
                 class="mt-2"
               />
               <div class="mb-4">
                 <div 
-                  v-for="(item, itemIndex) in formData.reordering_items || []" 
+                  v-for="(item, itemIndex) in formData.reorderingItems || []" 
                   :key="itemIndex"
                   class="d-flex align-center mb-2"
                 >
@@ -1149,7 +1166,7 @@ watch(() => formData.value.type, newType => {
                   </div>
                   
                   <AppTextField
-                    v-model="formData.reordering_items[itemIndex]"
+                    v-model="formData.reorderingItems[itemIndex]"
                     :placeholder="`Item ${itemIndex + 1}`"
                     class="flex-grow-1"
                     hide-details
@@ -1173,7 +1190,7 @@ watch(() => formData.value.type, newType => {
                       variant="text"
                       color="primary"
                       size="small"
-                      :disabled="itemIndex === formData.reordering_items.length - 1"
+                      :disabled="itemIndex === formData.reorderingItems.length - 1"
                       @click="moveReorderingItem(itemIndex, 'down')"
                     >
                       <VIcon icon="tabler-chevron-down" />
@@ -1219,7 +1236,7 @@ watch(() => formData.value.type, newType => {
               </VAlert>
               
               <AppTextarea
-                v-model="formData.grading_guidelines"
+                v-model="formData.gradingGuidelines"
                 label="Grading Guidelines"
                 placeholder="Enter guidelines for grading this writing question"
                 rows="4"
@@ -1231,7 +1248,7 @@ watch(() => formData.value.type, newType => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="formData.min_words"
+                    v-model="formData.minWords"
                     label="Minimum Words"
                     type="number"
                     min="0"
@@ -1243,7 +1260,7 @@ watch(() => formData.value.type, newType => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="formData.max_words"
+                    v-model="formData.maxWords"
                     label="Maximum Words"
                     type="number"
                     min="0"

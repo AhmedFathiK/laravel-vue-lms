@@ -33,7 +33,7 @@ const totalItems = ref(0)
 const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
 
 // Sorting
-const sortBy = ref('created_at')
+const sortBy = ref('createdAt')
 const sortDesc = ref(true)
 
 // Search
@@ -72,9 +72,9 @@ const fetchConcepts = async () => {
     const params = new URLSearchParams()
 
     params.append('page', page.value)
-    params.append('per_page', perPage.value)
-    params.append('sort_by', sortBy.value)
-    params.append('sort_desc', sortDesc.value ? '1' : '0')
+    params.append('perPage', perPage.value)
+    params.append('sortBy', sortBy.value)
+    params.append('sortDesc', sortDesc.value ? '1' : '0')
     
     if (searchQuery.value) {
       params.append('search', searchQuery.value)

@@ -65,12 +65,12 @@ watch(() => props.lessonData, () => {
   if (props.lessonData) {
     title.value = props.lessonData.title || ''
     description.value = props.lessonData.description || ''
-    videoUrl.value = props.lessonData.video_url || ''
-    isFree.value = props.lessonData.is_free || false
+    videoUrl.value = props.lessonData.videoUrl || ''
+    isFree.value = props.lessonData.isFree || false
     status.value = props.lessonData.status || 'draft'
-    reshowIncorrectSlides.value = props.lessonData.reshow_incorrect_slides || false
-    reshowCount.value = props.lessonData.reshow_count || 1
-    requireCorrectAnswers.value = props.lessonData.require_correct_answers || false
+    reshowIncorrectSlides.value = props.lessonData.reshowIncorrectSlides || false
+    reshowCount.value = props.lessonData.reshowCount || 1
+    requireCorrectAnswers.value = props.lessonData.requireCorrectAnswers || false
   } else {
     resetFormValues()
   }
@@ -100,13 +100,13 @@ const onSubmit = async () => {
     description: {
       en: description.value,
     },
-    "video_url": videoUrl.value,
-    "is_free": isFree.value,
+    videoUrl: videoUrl.value,
+    isFree: isFree.value,
     status: status.value,
-    "level_id": props.levelId,
-    "reshow_incorrect_slides": reshowIncorrectSlides.value,
-    "reshow_count": reshowCount.value,
-    "require_correct_answers": requireCorrectAnswers.value,
+    levelId: props.levelId,
+    reshowIncorrectSlides: reshowIncorrectSlides.value,
+    reshowCount: reshowCount.value,
+    requireCorrectAnswers: requireCorrectAnswers.value,
   }
 
   try {

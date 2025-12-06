@@ -28,21 +28,7 @@ const emit = defineEmits([
 const toast = useToast()
 
 // Define permission subjects with their available actions
-const permissionGroups = ref([
-  {
-    subject: 'User Management',
-    actions: [
-      { name: 'view.users', selected: false, label: 'View' },
-      { name: 'create.users', selected: false, label: 'Create' },
-      { name: 'edit.users', selected: false, label: 'Edit' },
-      { name: 'delete.users', selected: false, label: 'Delete' },
-      { name: 'ban.users', selected: false, label: 'Ban' },
-      { name: 'assign_role.users', selected: false, label: 'Assign Role' },
-    ],
-  },
-
-  // Other groups will be populated from API
-])
+const permissionGroups = ref([])
 
 const isSelectAll = ref(false)
 const role = ref('')

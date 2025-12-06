@@ -1,10 +1,11 @@
 <script setup>
-import UserBioPanel from '@/views/apps/user/view/UserBioPanel.vue'
-import UserTabAccount from '@/views/apps/user/view/UserTabAccount.vue'
-import UserTabBillingsPlans from '@/views/apps/user/view/UserTabBillingsPlans.vue'
-import UserTabConnections from '@/views/apps/user/view/UserTabConnections.vue'
-import UserTabNotifications from '@/views/apps/user/view/UserTabNotifications.vue'
-import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
+import { useApi } from '@/composables/useApi'
+import UserBioPanel from '@/views/user/UserBioPanel.vue'
+import UserTabAccount from '@/views/user/UserTabAccount.vue'
+import UserTabBillingsPlans from '@/views/user/UserTabBillingsPlans.vue'
+import UserTabConnections from '@/views/user/UserTabConnections.vue'
+import UserTabNotifications from '@/views/user/UserTabNotifications.vue'
+import UserTabSecurity from '@/views/user/UserTabSecurity.vue'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -15,7 +16,7 @@ definePage({
   },
 })
 
-const route = useRoute('apps-user-view-id')
+const route = useRoute()
 const userTab = ref(null)
 
 const tabs = [
@@ -108,7 +109,7 @@ const { data: userData } = await useApi(`/apps/users/${ route.params.id }`)
       type="error"
       variant="tonal"
     >
-      Invoice with ID  {{ route.params.id }} not found!
+      User with ID {{ route.params.id }} not found!
     </VAlert>
   </div>
 </template>

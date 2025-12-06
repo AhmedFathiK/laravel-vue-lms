@@ -224,7 +224,7 @@ console.log(props.data)
                       >
                         <div class="blanks-mcq-question mb-4 pa-2">
                           <template
-                            v-for="(questionPart, index) in data.question.question_text.split(/\[blank\d+\]/)"
+                            v-for="(questionPart, index) in data.question.questionText.split(/\[blank\d+\]/)"
                             :key="index"
                           >
                             <div class="blanks-mcq-question-text-placeholder mx-2 pt-1">
@@ -232,7 +232,7 @@ console.log(props.data)
                             </div>
   
                             <div
-                              v-if="index < data.question.question_text.split(/\[blank\d+\]/).length - 1"
+                              v-if="index < data.question.questionText.split(/\[blank\d+\]/).length - 1"
                               class="blank-placeholder ma-1"
                             />
                           </template>

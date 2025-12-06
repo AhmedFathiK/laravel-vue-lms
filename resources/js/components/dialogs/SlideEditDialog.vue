@@ -12,11 +12,11 @@ const props = defineProps({
     type: Object,
     default: () => ({
       id: null,
-      lesson_id: null,
+      lessonId: null,
       type: 'explanation',
       title: '',
       content: '',
-      sort_order: 0,
+      sortOrder: 0,
     }),
   },
   lessonId: { type: [Number, String], required: true },
@@ -36,13 +36,13 @@ const selectedTerm = ref(null)
 
 const formData = ref({
   id: null,
-  lesson_id: null,
+  lessonId: null,
   type: 'explanation',
   title: '',
-  question_id: null,
-  term_id: null,
+  questionId: null,
+  termId: null,
   content: '',
-  sort_order: 0,
+  sortOrder: 0,
 })
 
 watch(() => props.slideData, newSlideData => {
@@ -51,11 +51,11 @@ watch(() => props.slideData, newSlideData => {
     selectedQuestion.value = null
     selectedTerm.value = null
     formData.value = JSON.parse(JSON.stringify(newSlideData))
-    selectedQuestion.value = newSlideData.question_id ? newSlideData.question : null
-    selectedTerm.value = newSlideData.term_id ? newSlideData.term : null
+    selectedQuestion.value = newSlideData.questionId ? newSlideData.question : null
+    selectedTerm.value = newSlideData.termId ? newSlideData.term : null
     if (!formData.value.content) formData.value.content = ''
     if (!formData.value.title) formData.value.title = ''
-    if (!formData.value.lesson_id) formData.value.lesson_id = parseInt(props.lessonId)
+    if (!formData.value.lessonId) formData.value.lessonId = parseInt(props.lessonId)
   }
 }, { immediate: true, deep: true })
 
@@ -108,7 +108,7 @@ const isQuestionType = computed(() => {
 
 watch(selectedQuestion, newQuestion => {
   if (newQuestion) {
-    formData.value.question_id = newQuestion.id
+    formData.value.questionId = newQuestion.id
   }
 })
 
@@ -166,8 +166,8 @@ const isTermType = computed(() => formData.value.type === 'term')
                 :error-messages="formErrors.type"
                 required
               >
-                <template #item="{ item, props }">
-                  <VListItem v-bind="props">
+                <template #item="{ item, itemProps }">
+                  <VListItem v-bind="itemProps">
                     <VListItemTitle>{{ item.label }}</VListItemTitle>
                     <VListItemSubtitle>{{ item.description }}</VListItemSubtitle>
                   </VListItem>
@@ -187,16 +187,16 @@ const isTermType = computed(() => formData.value.type === 'term')
                 api-search-key="search"
                 :minimum-search-chars="1"
                 label="Select Question"
-                item-title="question_text"
+                item-title="questionText"
                 item-value="id"
                 return-object
-                :error-messages="formErrors.question_id"
+                :error-messages="formErrors.questionId"
               >
                 <template #item="{ props:itemProps, item }">
                   <VListItem
                     v-bind="itemProps"
-                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.media_type) && item.raw.media_url ? item.raw.media_url : null"
-                    :subtitle="item.raw.question_text"
+                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.mediaType) && item.raw.mediaUrl ? item.raw.mediaUrl : null"
+                    :subtitle="item.raw.questionText"
                     :title="item.raw.title"
                   >
                     <template v-if="item.raw.type == 'mcq'">
@@ -217,7 +217,7 @@ const isTermType = computed(() => formData.value.type === 'term')
                           v-for="(answer, index) in item.raw.options"
                           :key="index"
                         >
-                          {{ index + 1 }}. Placeholder: {{ answer.placeholder }} | Choices: {{ answer.options.join(', ') }} | Correct Choice: {{ answer.options[answer.correct_answer] }}
+                          {{ index + 1 }}. Placeholder: {{ answer.placeholder }} | Choices: {{ answer.options.join(', ') }} | Correct Choice: {{ answer.options[answer.correctAnswer] }}
                         </li>
                       </ul>
                     </template>
@@ -262,13 +262,13 @@ const isTermType = computed(() => formData.value.type === 'term')
               >
                 <div class="d-flex align-center justify-space-between">
                   <div>
-                    <strong>Selected Question:</strong> {{ selectedQuestion.question_text }}
+                    <strong>Selected Question:</strong> {{ selectedQuestion.questionText }}
                   </div>
                   <VBtn
                     icon
                     variant="text"
                     size="small"
-                    @click="selectedQuestion = undefined"
+                    @click="selectedQuestion = null"
                   >
                     <VIcon icon="tabler-x" />
                   </VBtn>
@@ -293,12 +293,12 @@ const isTermType = computed(() => formData.value.type === 'term')
                 item-title="term"
                 item-value="id"
                 return-object
-                :error-messages="formErrors.term_id"
+                :error-messages="formErrors.termId"
               >
-                <template #item="{ item, props }">
+                <template #item="{ item, props: itemProps }">
                   <VListItem
-                    v-bind="props"
-                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.media_type) && item.raw.media_url ? item.raw.media_url : null"
+                    v-bind="itemProps"
+                    :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.mediaType) && item.raw.mediaUrl ? item.raw.mediaUrl : null"
                   >
                     <VListItemTitle>{{ item.term }}</VListItemTitle>
                     <VListItemSubtitle>{{ item.definition }}</VListItemSubtitle>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\User;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -57,14 +58,17 @@ class UpdateUserRequest extends FormRequest
                 $user = $this->route('user');
                 $roles = $this->roles;
 
+                // Get super admin role name
+                $superAdminRoleName = Role::findOrFail(1)->name;
+
                 // Check if trying to assign Super Admin role
-                if (in_array('Super Admin', $roles) && !$user->hasRole('Super Admin')) {
-                    $validator->errors()->add('roles', "The Super Admin role cannot be assigned through the API.");
+                if (in_array($superAdminRoleName, $roles) && !$user->hasRole($superAdminRoleName)) {
+                    $validator->errors()->add('roles', "The {$superAdminRoleName} role cannot be assigned through the API.");
                 }
 
                 // Prevent removing Super Admin role
-                if ($user->hasRole('Super Admin') && !in_array('Super Admin', $roles)) {
-                    $validator->errors()->add('roles', "The Super Admin role cannot be removed from this user.");
+                if ($user->hasRole($superAdminRoleName) && !in_array($superAdminRoleName, $roles)) {
+                    $validator->errors()->add('roles', "The {$superAdminRoleName} role cannot be removed from this user.");
                 }
             }
         });

@@ -33,15 +33,15 @@ const exampleAudioPreview = ref(null)
 
 // Form data
 const formData = ref({
-  "course_id": props.courseId,
+  courseId: props.courseId,
   term: '',
   definition: '',
-  "media_url": '',
-  "media_type": '',
-  "audio_url": '',
+  mediaUrl: '',
+  mediaType: '',
+  audioUrl: '',
   example: '',
-  'example_translation': '',
-  "example_audio_url": '',
+  exampleTranslation: '',
+  exampleAudioUrl: '',
 })
 
 // Media type options
@@ -61,19 +61,19 @@ watch(() => props.isDialogVisible, isVisible => {
     resetForm()
     if (props.term) {
       formData.value = {
-        "course_id": props.courseId,
+        courseId: props.courseId,
         term: props.term.term || '',
         definition: props.term.definition || '',
-        "media_url": props.term.media_url || '',
-        "media_type": props.term.media_type || '',
-        "audio_url": props.term.audio_url || '',
+        mediaUrl: props.term.mediaUrl || '',
+        mediaType: props.term.mediaType || '',
+        audioUrl: props.term.audioUrl || '',
         example: props.term.example || '',
-        'example_translation': props.term.example_translation || '',
-        "example_audio_url": props.term.example_audio_url || '',
+        exampleTranslation: props.term.exampleTranslation || '',
+        exampleAudioUrl: props.term.exampleAudioUrl || '',
       }
-      if (props.term.media_url) mediaPreview.value = props.term.media_url
-      if (props.term.audio_url) audioPreview.value = props.term.audio_url
-      if (props.term.example_audio_url) exampleAudioPreview.value = props.term.example_audio_url
+      if (props.term.mediaUrl) mediaPreview.value = props.term.mediaUrl
+      if (props.term.audioUrl) audioPreview.value = props.term.audioUrl
+      if (props.term.exampleAudioUrl) exampleAudioPreview.value = props.term.exampleAudioUrl
     }
   }
 }, { immediate: true })
@@ -81,15 +81,15 @@ watch(() => props.isDialogVisible, isVisible => {
 // Reset form fields to default
 const resetForm = () => {
   formData.value = {
-    "course_id": props.courseId,
+    courseId: props.courseId,
     term: '',
     definition: '',
-    "media_url": '',
-    "media_type": '',
-    "audio_url": '',
+    mediaUrl: '',
+    mediaType: '',
+    audioUrl: '',
     example: '',
-    'example_translation': '',
-    "example_audio_url": '',
+    exampleTranslation: '',
+    exampleAudioUrl: '',
   }
   
   mediaPreview.value = null
@@ -132,8 +132,8 @@ const submitForm = async () => {
 
 // Handle media upload
 const onMediaUrlChange = () => {
-  if (formData.value.media_url) {
-    mediaPreview.value = formData.value.media_url
+  if (formData.value.mediaUrl) {
+    mediaPreview.value = formData.value.mediaUrl
   } else {
     mediaPreview.value = null
   }
@@ -141,8 +141,8 @@ const onMediaUrlChange = () => {
 
 // Handle audio upload
 const onAudioUrlChange = () => {
-  if (formData.value.audio_url) {
-    audioPreview.value = formData.value.audio_url
+  if (formData.value.audioUrl) {
+    audioPreview.value = formData.value.audioUrl
   } else {
     audioPreview.value = null
   }
@@ -150,8 +150,8 @@ const onAudioUrlChange = () => {
 
 // Handle example audio upload
 const onExampleAudioUrlChange = () => {
-  if (formData.value.example_audio_url) {
-    exampleAudioPreview.value = formData.value.example_audio_url
+  if (formData.value.exampleAudioUrl) {
+    exampleAudioPreview.value = formData.value.exampleAudioUrl
   } else {
     exampleAudioPreview.value = null
   }
@@ -167,7 +167,7 @@ const requiredValidator = v => !!v || 'This field is required'
 
 // Determine if audio field should be shown
 const showAudioField = computed(() => {
-  return formData.value.media_type === 'image_with_audio'
+  return formData.value.mediaType === 'image_with_audio'
 })
 </script>
 
@@ -222,7 +222,7 @@ const showAudioField = computed(() => {
               md="6"
             >
               <VSelect
-                v-model="formData.media_type"
+                v-model="formData.mediaType"
                 label="Media Type"
                 :items="mediaTypeOptions"
                 item-title="title"
@@ -232,12 +232,12 @@ const showAudioField = computed(() => {
             
             <!-- Media URL -->
             <VCol
-              v-if="formData.media_type"
+              v-if="formData.mediaType"
               cols="12"
               md="6"
             >
               <VTextField
-                v-model="formData.media_url"
+                v-model="formData.mediaUrl"
                 label="Media URL"
                 @update:model-value="onMediaUrlChange"
               />
@@ -250,7 +250,7 @@ const showAudioField = computed(() => {
               md="6"
             >
               <VTextField
-                v-model="formData.audio_url"
+                v-model="formData.audioUrl"
                 label="Audio URL"
                 @update:model-value="onAudioUrlChange"
               />
@@ -263,14 +263,14 @@ const showAudioField = computed(() => {
               class="d-flex justify-center"
             >
               <div class="media-preview">
-                <div v-if="formData.media_type === 'image' || formData.media_type === 'image_with_audio'">
+                <div v-if="formData.mediaType === 'image' || formData.mediaType === 'image_with_audio'">
                   <img 
                     :src="mediaPreview" 
                     alt="Media Preview" 
                     style="max-width: 100%; max-height: 200px;"
                   >
                 </div>
-                <div v-else-if="formData.media_type === 'video'">
+                <div v-else-if="formData.mediaType === 'video'">
                   <video 
                     :src="mediaPreview" 
                     controls 
@@ -313,7 +313,7 @@ const showAudioField = computed(() => {
             <!-- Example Translation -->
             <VCol cols="12">
               <VTextarea
-                v-model="formData.example_translation"
+                v-model="formData.exampleTranslation"
                 label="Example Translation"
                 auto-grow
                 rows="2"
@@ -323,7 +323,7 @@ const showAudioField = computed(() => {
             <!-- Example Audio URL -->
             <VCol cols="12">
               <VTextField
-                v-model="formData.example_audio_url"
+                v-model="formData.exampleAudioUrl"
                 label="Example Audio URL"
                 @update:model-value="onExampleAudioUrlChange"
               />

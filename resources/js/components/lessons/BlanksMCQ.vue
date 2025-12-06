@@ -72,7 +72,7 @@ const unchoose = (choiceIndex, chosenAnswerIndex) => {
 }
 
 const checkAnswers = () => {
-  if(['video', 'image_with_audio'].includes(currentSlide.value.question.media_type)){
+  if(['video', 'image_with_audio'].includes(currentSlide.value.question.mediaType)){
     plyr.value.player.stop()
   }
 
@@ -154,7 +154,7 @@ watch(() => props.data, () => {
 
 onMounted(() => {
   resetComponent()
-  if(['video', 'image_with_audio'].includes(currentSlide.value.question.media_type)){
+  if(['video', 'image_with_audio'].includes(currentSlide.value.question.mediaType)){
     plyr.value.player.play()
   }
 })

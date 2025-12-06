@@ -90,15 +90,14 @@ const onCancel = () => {
     :model-value="props.isDialogVisible"
     @update:model-value="updateModelValue"
   >
+    <!-- Dialog close btn -->
+    <DialogCloseBtn @click="onCancel" />
     <VCard>
-      <!-- Dialog close btn -->
-      <DialogCloseBtn @click="onCancel" />
-      
-      <VCardTitle class="text-h5 pa-6">
+      <VCardTitle class="text-h5 pa-6 pb-0">
         Confirm Deletion
       </VCardTitle>
       
-      <VCardText class="text-center px-10 pt-2 pb-4">
+      <VCardText class="text-center px-10 pt-0 pb-4">
         <VBtn
           icon
           variant="outlined"

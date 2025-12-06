@@ -16,23 +16,23 @@ class ReceiptResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'receipt_number' => $this->receipt_number,
-            'item_name' => $this->item_name,
-            'item_type' => $this->item_type,
+            'receiptNumber' => $this->receipt_number,
+            'itemName' => $this->item_name,
+            'itemType' => $this->item_type,
             'amount' => $this->amount,
             'currency' => $this->currency,
-            'source_type' => $this->source_type,
-            'created_at' => $this->created_at,
+            'sourceType' => $this->source_type,
+            'createdAt' => $this->created_at,
             'user' => new UserResource($this->whenLoaded('user')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
             'course' => new CourseResource($this->whenLoaded('course')),
-            'subscription_plan' => new SubscriptionPlanResource($this->whenLoaded('subscriptionPlan')),
-            'is_linked_to_subscription' => $this->when(isset($this->is_linked_to_subscription), $this->is_linked_to_subscription),
+            'subscriptionPlan' => new SubscriptionPlanResource($this->whenLoaded('subscriptionPlan')),
+            'isLinkedToSubscription' => $this->when(isset($this->is_linked_to_subscription), $this->is_linked_to_subscription),
 
             // Voided Info
-            'voided_at' => $this->voided_at,
-            'void_reason' => $this->void_reason,
-            'voided_by' => new UserResource($this->whenLoaded('voidedBy')),
+            'voidedAt' => $this->voided_at,
+            'voidReason' => $this->void_reason,
+            'voidedBy' => new UserResource($this->whenLoaded('voidedBy')),
         ];
     }
 }

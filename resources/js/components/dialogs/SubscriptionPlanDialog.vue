@@ -33,7 +33,7 @@ const emit = defineEmits(['update:isDialogOpen', 'submitSuccess'])
 
 const toast = useToast()
 const form = ref(null)
-const isLoading = ref(false)
+const isSubmitting = ref(false)
 
 const localPlan = ref({})
 
@@ -44,21 +44,7 @@ watch(
   newValue => {
     if (newValue) {
       if (props.dialogMode === 'edit' && props.plan) {
-        // Convert snake_case from parent to camelCase for local state
-        localPlan.value = {
-          id: props.plan.id,
-          name: props.plan.name,
-          description: props.plan.description,
-          price: props.plan.price,
-          currency: props.plan.currency,
-          billingCycle: props.plan['billing_cycle'],
-          planType: props.plan['plan_type'],
-          isFree: props.plan['is_free'],
-          durationDays: props.plan['duration_days'],
-          isActive: props.plan['is_active'],
-          courseId: props.plan['course_id'],
-          accessibleLevels: props.plan['accessible_levels'] || [],
-        }
+        localPlan.value = JSON.parse(JSON.stringify(props.plan))
       } else {
         // Initialize with camelCase keys for a new plan
         localPlan.value = {
@@ -94,13 +80,13 @@ const closeDialog = () => {
   emit('update:isDialogOpen', false)
 }
 
-const savePlan = async () => {
+const submitForm = async () => {
   const { valid } = await form.value.validate()
   if (!valid) {
     return
   }
 
-  isLoading.value = true
+  isSubmitting.value = true
 
   // If it's a free plan, set price to 0
   if (localPlan.value.isFree || localPlan.value.planType === 'free') {
@@ -114,20 +100,7 @@ const savePlan = async () => {
     localPlan.value.billingCycle = 'one-time'
   }
 
-  // Convert camelCase back to snake_case for the API request
-  const payload = {
-    name: localPlan.value.name,
-    description: localPlan.value.description,
-    price: localPlan.value.price,
-    currency: localPlan.value.currency,
-    'billing_cycle': localPlan.value.billingCycle,
-    'plan_type': localPlan.value.planType,
-    'is_free': localPlan.value.isFree,
-    'duration_days': localPlan.value.durationDays,
-    'is_active': localPlan.value.isActive,
-    'course_id': localPlan.value.courseId,
-    'accessible_levels': localPlan.value.accessibleLevels,
-  }
+  const payload = localPlan.value
 
   try {
     if (props.dialogMode === 'add') {
@@ -149,7 +122,7 @@ const savePlan = async () => {
       toast.error('Failed to save subscription plan')
     }
   } finally {
-    isLoading.value = false
+    isSubmitting.value = false
   }
 }
 </script>
@@ -157,146 +130,235 @@ const savePlan = async () => {
 <template>
   <VDialog
     :model-value="isDialogOpen"
-    max-width="700px"
+    max-width="800px"
+    persistent
     @update:model-value="closeDialog"
   >
     <DialogCloseBtn @click="closeDialog" />
-    <VCard :title="dialogTitle">
-      <VCardText>
+    <VCard class="pa-2">
+      <!-- Enhanced Header with better visual hierarchy -->
+      <VCardTitle class="text-h5 font-weight-bold pa-6 pb-4">
+        {{ dialogTitle }}
+      </VCardTitle>
+    
+      <VDivider />
+
+      <VCardText class="pa-6">
         <VForm
           ref="form"
-          @submit.prevent="savePlan"
+          @submit.prevent="submitForm"
         >
-          <VRow>
-            <VCol cols="12">
-              <VTextField
-                v-model="localPlan.name"
-                label="Plan Name"
-                :rules="[requiredValidator]"
-              />
-            </VCol>
-
-            <VCol cols="12">
-              <VTextarea
-                v-model="localPlan.description"
-                label="Description"
-                rows="3"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSelect
-                v-model="localPlan.planType"
-                :items="[
-                  { title: 'One-time Payment', value: 'one-time' },
-                  { title: 'Recurring Subscription', value: 'recurring' },
-                  { title: 'Free Access', value: 'free' },
-                ]"
-                item-title="title"
-                item-value="value"
-                label="Plan Type"
-                required
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSelect
-                v-model="localPlan.billingCycle"
-                :items="[
-                  { title: 'One-time', value: 'one-time' },
-                  { title: 'Monthly', value: 'monthly' },
-                  { title: 'Yearly', value: 'yearly' },
-                ]"
-                item-title="title"
-                item-value="value"
-                label="Billing Cycle"
-                :disabled="localPlan.planType !== 'recurring'"
-                required
-              />
-            </VCol>
-
-            <VCol
-              cols="6"
-              md="4"
-            >
-              <VTextField
-                v-model.number="localPlan.price"
-                label="Price"
-                type="number"
-                min="0"
-                step="0.01"
-                :disabled="localPlan.planType === 'free'"
-                required
-              />
-            </VCol>
-
-            <VCol
-              cols="6"
-              md="4"
-            >
-              <VSelect
-                v-model="localPlan.currency"
-                :items="['USD', 'EUR', 'GBP']"
-                label="Currency"
-                :disabled="localPlan.planType === 'free'"
-                required
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model.number="localPlan.durationDays"
-                label="Duration (days)"
-                type="number"
-                min="1"
-                :disabled="localPlan.billingCycle !== 'one-time'"
-                hint="Leave empty for unlimited access"
-                persistent-hint
-              />
-            </VCol>
-
-            <VCol cols="12">
-              <VSwitch
-                v-model="localPlan.isActive"
-                label="Active"
-                color="success"
-              />
-            </VCol>
-
-            <VCol cols="12">
-              <p class="text-subtitle-1 mb-2">
-                Accessible Levels
-              </p>
-              <div class="d-flex flex-column gap-2">
-                <VCheckbox
-                  v-for="level in availableLevels"
-                  :key="level.id"
-                  v-model="localPlan.accessibleLevels"
-                  :label="level.title"
-                  :value="level.id"
-                  hide-details
-                  density="compact"
+          <!-- Section 1: Basic Information -->
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              Basic Information
+            </p>
+            <VRow>
+              <VCol cols="12">
+                <VTextField
+                  v-model="localPlan.name"
+                  label="Plan Name"
+                  placeholder="e.g., Premium Monthly"
+                  :rules="[requiredValidator]"
+                  variant="outlined"
+                  density="comfortable"
                 />
-              </div>
-            </VCol>
-          </VRow>
+              </VCol>
+
+              <VCol cols="12">
+                <VTextarea
+                  v-model="localPlan.description"
+                  label="Description"
+                  placeholder="Describe what this plan includes..."
+                  rows="3"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+            </VRow>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <!-- Section 2: Pricing & Billing -->
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              Pricing & Billing
+            </p>
+            <VRow>
+              <VCol cols="12">
+                <VSelect
+                  v-model="localPlan.planType"
+                  :items="[
+                    { title: 'One-time Payment', value: 'one-time' },
+                    { title: 'Recurring Subscription', value: 'recurring' },
+                    { title: 'Free Access', value: 'free' },
+                  ]"
+                  item-title="title"
+                  item-value="value"
+                  label="Plan Type"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-tag-outline"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                sm="6"
+              >
+                <VSelect
+                  v-model="localPlan.billingCycle"
+                  :items="[
+                    { title: 'One-time', value: 'one-time' },
+                    { title: 'Monthly', value: 'monthly' },
+                    { title: 'Yearly', value: 'yearly' },
+                  ]"
+                  item-title="title"
+                  item-value="value"
+                  label="Billing Cycle"
+                  :disabled="localPlan.planType !== 'recurring'"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-calendar-sync"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                sm="6"
+              >
+                <VTextField
+                  v-model.number="localPlan.durationDays"
+                  label="Duration (days)"
+                  type="number"
+                  min="1"
+                  placeholder="Leave empty for unlimited"
+                  :disabled="localPlan.billingCycle !== 'one-time'"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-clock-outline"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                sm="6"
+              >
+                <VTextField
+                  v-model.number="localPlan.price"
+                  label="Price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  :disabled="localPlan.planType === 'free'"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-currency-usd"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                sm="6"
+              >
+                <VSelect
+                  v-model="localPlan.currency"
+                  :items="['USD', 'EUR', 'GBP']"
+                  label="Currency"
+                  :disabled="localPlan.planType === 'free'"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-cash"
+                />
+              </VCol>
+            </VRow>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <!-- Section 3: Access & Permissions -->
+          <div class="mb-4">
+            <p class="text-overline text-primary mb-3">
+              Access & Permissions
+            </p>
+          
+            <VRow>
+              <VCol cols="12">
+                <VSwitch
+                  v-model="localPlan.isActive"
+                  label="Active Status"
+                  color="success"
+                  density="comfortable"
+                  hide-details
+                  inset
+                >
+                  <template #label>
+                    <span class="text-body-1">
+                      {{ localPlan.isActive ? 'Plan is Active' : 'Plan is Inactive' }}
+                    </span>
+                  </template>
+                </VSwitch>
+              </VCol>
+
+              <VCol cols="12">
+                <div class="d-flex align-center justify-space-between mb-3">
+                  <p class="text-body-1 font-weight-medium mb-0">
+                    Accessible Levels
+                  </p>
+                  <VChip
+                    size="small"
+                    color="primary"
+                    variant="tonal"
+                  >
+                    {{ localPlan.accessibleLevels?.length || 0 }} selected
+                  </VChip>
+                </div>
+              
+                <VCard
+                  variant="outlined"
+                  class="pa-4"
+                >
+                  <VRow v-if="availableLevels?.length">
+                    <VCol
+                      v-for="level in availableLevels"
+                      :key="level.id"
+                      cols="12"
+                      sm="6"
+                    >
+                      <VCheckbox
+                        v-model="localPlan.accessibleLevels"
+                        :label="level.title"
+                        :value="level.id"
+                        hide-details
+                        density="comfortable"
+                        color="primary"
+                      />
+                    </VCol>
+                  </VRow>
+                  <div
+                    v-else
+                    class="text-center text-medium-emphasis py-4"
+                  >
+                    No levels available
+                  </div>
+                </VCard>
+              </VCol>
+            </VRow>
+          </div>
         </VForm>
       </VCardText>
 
-      <VCardActions>
+      <VDivider />
+
+      <!-- Enhanced Footer Actions -->
+      <VCardActions class="pa-6 pt-4">
         <VSpacer />
         <VBtn
-          color="error"
-          variant="text"
+          variant="elevated"
+          color="secondary"
+          :disabled="isSubmitting"
           @click="closeDialog"
         >
           Cancel
@@ -304,12 +366,30 @@ const savePlan = async () => {
         <VBtn
           color="primary"
           variant="elevated"
-          :loading="isLoading"
-          @click="savePlan"
+          :loading="isSubmitting"
+          @click="submitForm"
         >
-          Save
+          {{ props.plan ? 'Update' : 'Create' }}
         </VBtn>
       </VCardActions>
+      <VCardText class="d-flex justify-end flex-wrap gap-3">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          :disabled="isSubmitting"
+          @click="closeDialog"
+        >
+          Cancel
+        </VBtn>
+        
+        <VBtn
+          color="primary"
+          :loading="isSubmitting"
+          @click="submitForm"
+        >
+          {{ formData.id ? 'Update' : 'Create' }}
+        </VBtn>
+      </VCardText>
     </VCard>
   </VDialog>
 </template>

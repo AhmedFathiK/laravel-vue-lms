@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Admin;
 
 use App\Models\Term;
 use Illuminate\Http\Request;
@@ -17,17 +17,17 @@ class TermResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'course_id' => $this->course_id,
+            'courseId' => $this->course_id,
             'term' => $this->term,
             'definition' => $this->definition,
-            'media_url' => $this->media_url,
-            'media_type' => $this->media_type,
-            'audio_url' => $this->audio_url,
+            'mediaUrl' => $this->media_url,
+            'mediaType' => $this->media_type,
+            'audioUrl' => $this->audio_url,
             'example' => $this->example,
-            'example_translation' => $this->example_translation,
-            'example_audio_url' => $this->example_audio_url,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'exampleTranslation' => $this->example_translation,
+            'exampleAudioUrl' => $this->example_audio_url,
+            'createdAt' => $this->created_at,
+            'updatedAt' => $this->updated_at,
         ];
     }
 }

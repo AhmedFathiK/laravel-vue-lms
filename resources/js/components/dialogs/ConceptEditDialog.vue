@@ -18,7 +18,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:isDialogVisible', 'concept-saved'])
+const emit = defineEmits(['update:isDialogVisible', 'conceptSaved'])
 
 const toast = useToast()
 const isSubmitting = ref(false)
@@ -30,7 +30,7 @@ const formData = ref({
   content: '',
   type: '',
   status: 'active',
-  course_id: props.courseId,
+  courseId: props.courseId,
 })
 
 // Dialog title based on edit/create mode
@@ -47,7 +47,7 @@ watch(() => props.concept, () => {
       content: props.concept.content || '',
       type: props.concept.type || '',
       status: props.concept.status || 'active',
-      course_id: props.courseId,
+      courseId: props.courseId,
     }
   } else {
     // Create mode - reset form
@@ -56,7 +56,7 @@ watch(() => props.concept, () => {
       content: '',
       type: '',
       status: 'active',
-      course_id: props.courseId,
+      courseId: props.courseId,
     }
   }
 }, { immediate: true })
@@ -116,7 +116,7 @@ const onSubmit = async () => {
     
     // Close dialog and notify parent
     emit('update:isDialogVisible', false)
-    emit('concept-saved')
+    emit('conceptSaved')
   } catch (error) {
     console.error('Error saving concept:', error)
     toast.error(error.response?.data?.message || 'Failed to save concept')

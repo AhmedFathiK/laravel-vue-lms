@@ -54,8 +54,8 @@ class CourseController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sortBy', 'created_at');
-        $orderBy = $request->get('orderBy', 'desc');
+        $sortBy = $request->get('sort_by', 'created_at');
+        $orderBy = $request->get('order_by', 'desc');
 
         $query->orderBy($sortBy, $orderBy);
 
@@ -63,7 +63,7 @@ class CourseController extends Controller
         $query->with('category');
 
         // Apply pagination
-        $perPage = $request->get('perPage', 15);
+        $perPage = $request->get('per_page', 15);
         $courses = $query->paginate($perPage);
 
         return response()->json([
@@ -114,8 +114,8 @@ class CourseController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sortBy', 'created_at');
-        $orderBy = $request->get('orderBy', 'desc');
+        $sortBy = $request->get('sort_by', 'created_at');
+        $orderBy = $request->get('order_by', 'desc');
 
         $query->orderBy($sortBy, $orderBy);
 

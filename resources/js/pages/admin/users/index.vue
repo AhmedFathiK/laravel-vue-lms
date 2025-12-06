@@ -23,15 +23,15 @@ const editUser = ref(null)
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('created_at')
+const sortBy = ref('createdAt')
 const orderBy = ref('desc')
 const selectedRows = ref([])
 const availableRoles = ref([])
 
 // Fetch users
 const usersData = ref({
-  users: [],
-  totalUsers: 0,
+  data: [],
+  total: 0,
   currentPage: 1,
   perPage: 10,
   lastPage: 1,
@@ -41,7 +41,7 @@ const usersData = ref({
 const headers = [
   {
     title: 'User',
-    key: 'user',
+    key: 'fullName',
   },
   {
     title: 'Role',
@@ -66,6 +66,10 @@ const updateOptions = options => {
   if (options.sortBy?.length) {
     sortBy.value = options.sortBy[0]?.key
     orderBy.value = options.sortBy[0]?.order
+  }else{
+    // means user cleared sorting
+    sortBy.value = null
+    orderBy.value = null
   }
   fetchUsers()
 }
@@ -80,8 +84,8 @@ const fetchUsers = async () => {
       search: searchQuery.value || undefined,
       role: selectedRole.value || undefined,
       status: selectedStatus.value || undefined,
-      sortBy: sortBy.value,
-      orderBy: orderBy.value,
+      sortBy: sortBy.value || undefined,
+      orderBy: orderBy.value || undefined,
     }
     
     const response = await api.get('/admin/users', { params })
@@ -101,18 +105,18 @@ const fetchUsers = async () => {
 // Update widget data with user counts
 const updateWidgetCounts = () => {
   // Set total users
-  widgetData.value[0].value = usersData.value.totalUsers.toString()
+  widgetData.value[0].value = usersData.value.total.toString()
   
   // Count verified, unverified, and admin users
   let verifiedCount = 0
   let adminCount = 0
   
-  usersData.value.users.forEach(user => {
-    if (user.email_verified_at) {
+  usersData.value.data.forEach(user => {
+    if (user.emailVerifiedAt) {
       verifiedCount++
     }
     
-    if (user.role_names?.some(role => role.toLowerCase().includes('admin'))) {
+    if (user.roleNames?.some(role => role.toLowerCase().includes('admin'))) {
       adminCount++
     }
   })
@@ -121,7 +125,7 @@ const updateWidgetCounts = () => {
   widgetData.value[1].value = verifiedCount.toString()
   
   // Set unverified users (approximate based on current page)
-  widgetData.value[2].value = (usersData.value.users.length - verifiedCount).toString()
+  widgetData.value[2].value = (usersData.value.data.length - verifiedCount).toString()
   
   // Set admin users (approximate based on current page)
   widgetData.value[3].value = adminCount.toString()
@@ -145,8 +149,8 @@ watch([searchQuery, selectedRole, selectedStatus, page, itemsPerPage], () => {
 })
 
 // Computed properties
-const users = computed(() => usersData.value.users || [])
-const totalUsers = computed(() => usersData.value.totalUsers || 0)
+const users = computed(() => usersData.value.data || [])
+const totalUsers = computed(() => usersData.value.total || 0)
 
 // Roles for dropdown
 const roles = computed(() => availableRoles.value)
@@ -289,7 +293,7 @@ const toggleUserStatus = async user => {
   try {
     const response = await api.post(`/admin/users/${user.id}/toggle-status`)
 
-    toast.success(`User status ${user.email_verified_at ? 'unverified' : 'verified'} successfully`)
+    toast.success(`User status ${user.emailVerifiedAt ? 'unverified' : 'verified'} successfully`)
     fetchUsers()
   } catch (error) {
     console.error('Error toggling user status:', error)
@@ -487,14 +491,14 @@ onMounted(() => {
           <div class="d-flex align-center gap-x-4">
             <VAvatar
               size="34"
-              :color="resolveUserRoleVariant(item.role_names?.[0]).color"
+              :color="resolveUserRoleVariant(item.roleNames?.[0]).color"
               variant="tonal"
             >
-              <span>{{ (item.full_name || '').charAt(0).toUpperCase() }}</span>
+              <span>{{ (item.fullName || '').charAt(0).toUpperCase() }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
               <h6 class="text-base">
-                {{ item.full_name }}
+                {{ item.fullName }}
               </h6>
               <div class="text-sm">
                 {{ item.email }}
@@ -508,12 +512,12 @@ onMounted(() => {
           <div class="d-flex align-center gap-x-2">
             <VIcon
               :size="22"
-              :icon="resolveUserRoleVariant(item.role_names?.[0]).icon"
-              :color="resolveUserRoleVariant(item.role_names?.[0]).color"
+              :icon="resolveUserRoleVariant(item.roleNames?.[0]).icon"
+              :color="resolveUserRoleVariant(item.roleNames?.[0]).color"
             />
 
             <div class="text-capitalize text-high-emphasis text-body-1">
-              {{ item.role_names?.join(', ') || 'No Role' }}
+              {{ item.roleNames?.join(', ') || 'No Role' }}
             </div>
           </div>
         </template>
@@ -528,12 +532,12 @@ onMounted(() => {
         <!-- Status -->
         <template #[`item.status`]="{ item }">
           <VChip
-            :color="resolveUserStatusVariant(item.email_verified_at)"
+            :color="resolveUserStatusVariant(item.emailVerifiedAt)"
             size="small"
             label
             class="text-capitalize"
           >
-            {{ item.email_verified_at ? 'Verified' : 'Unverified' }}
+            {{ item.emailVerifiedAt ? 'Verified' : 'Unverified' }}
           </VChip>
         </template>
 
@@ -548,7 +552,7 @@ onMounted(() => {
           </IconBtn>
 
           <IconBtn @click="toggleUserStatus(item)">
-            <VIcon :icon="item.email_verified_at ? 'tabler-shield-x' : 'tabler-shield-check'" />
+            <VIcon :icon="item.emailVerifiedAt ? 'tabler-shield-x' : 'tabler-shield-check'" />
           </IconBtn>
         </template>
 

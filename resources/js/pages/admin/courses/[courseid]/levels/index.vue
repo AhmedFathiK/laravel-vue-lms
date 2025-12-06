@@ -32,8 +32,8 @@ const levelToDelete = ref(null)
 const itemsPerPage = ref(10)
 const page = ref(1)
 const totalItems = ref(0)
-const sortBy = ref('sort_order')
-const sortDesc = ref(false)
+const sortBy = ref('id')
+const orderBy = ref('asc')
 
 // Get course ID from route parameter
 const courseId = computed(() => route.params.courseid)
@@ -43,8 +43,8 @@ const headers = [
   { title: 'ID', key: 'id', width: '80px' },
   { title: 'Title', key: 'title' },
   { title: 'Description', key: 'description', sortable: false },
-  { title: 'Order', key: 'sort_order', width: '80px' },
-  { title: 'Free Access', key: 'is_free', width: '120px' },
+  { title: 'Order', key: 'sortOrder', width: '80px' },
+  { title: 'Free Access', key: 'isFree', width: '120px' },
   { title: 'Status', key: 'status', width: '120px' },
   { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
 ]
@@ -82,8 +82,8 @@ const fetchLevels = async () => {
     const params = {
       page: page.value,
       perPage: itemsPerPage.value,
-      sortField: sortBy.value,
-      sortDirection: sortDesc.value ? 'desc' : 'asc',
+      sortBy: sortBy.value || undefined,
+      orderBy: orderBy.value || undefined,
     }
     
     const response = await api.get(`/admin/courses/${courseId.value}/levels`, { params })
@@ -132,7 +132,10 @@ const handleOptionsChange = options => {
   
   if (options.sortBy && options.sortBy.length > 0) {
     sortBy.value = options.sortBy[0].key
-    sortDesc.value = options.sortBy[0].order === 'desc'
+    orderBy.value = options.sortBy[0].order === 'desc' ? 'desc' : 'asc'
+  }else{
+    sortBy.value = null
+    orderBy.value = null
   }
   
   fetchLevels()
@@ -245,12 +248,12 @@ onMounted(() => {
           </template>
           
           <!-- Free access column -->
-          <template #[`item.is_free`]="{ item }">
+          <template #[`item.isFree`]="{ item }">
             <VChip
-              :color="item.is_free ? 'success' : 'error'"
+              :color="item.isFree ? 'success' : 'error'"
               size="small"
             >
-              {{ formatBoolean(item.is_free) }}
+              {{ formatBoolean(item.isFree) }}
             </VChip>
           </template>
           

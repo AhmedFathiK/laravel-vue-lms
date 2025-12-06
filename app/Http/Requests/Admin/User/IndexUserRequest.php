@@ -27,7 +27,7 @@ class IndexUserRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:100'],
             'role' => ['nullable', 'string', 'exists:roles,name'],
             'status' => ['nullable', 'string', 'in:verified,unverified'],
-            'sortBy' => ['nullable', 'string', 'in:name,email,created_at'],
+            'sortBy' => ['nullable', 'string', 'in:fullName,email,created_at'],
             'orderBy' => ['nullable', 'string', 'in:asc,desc'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ];

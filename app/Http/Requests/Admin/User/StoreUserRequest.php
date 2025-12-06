@@ -33,7 +33,6 @@ class StoreUserRequest extends FormRequest
             'phone_number' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:8', 'confirmed', Password::defaults()],
             'roles' => ['nullable', 'array'],
-            'roles.*' => ['string', 'exists:roles,name', 'not_in:Super Admin'],
             'verified' => ['nullable', 'boolean'],
         ];
     }
@@ -49,16 +48,12 @@ class StoreUserRequest extends FormRequest
         $validator->after(function ($validator) {
             $roles = $this->input('roles', []);
 
-            // Get protected role names
-            $protectedRoleNames = Role::where('is_protected', true)->pluck('name')->toArray();
+            // Get the super admin role name
+            $superAdminRoleName = Role::findOrFail(1)->name;
 
             // Check if we're trying to assign protected roles
-            $protectedRolesInRequest = array_intersect($protectedRoleNames, $roles);
-
-            if (!empty($protectedRolesInRequest)) {
-                foreach ($protectedRolesInRequest as $roleName) {
-                    $validator->errors()->add('roles', "The {$roleName} role cannot be assigned through the API.");
-                }
+            if (in_array($superAdminRoleName, $roles)) {
+                $validator->errors()->add('roles', "The {$superAdminRoleName} role cannot be assigned through the API.");
             }
         });
     }

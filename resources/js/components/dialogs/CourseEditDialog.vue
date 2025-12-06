@@ -32,7 +32,7 @@ const description = ref('')
 const categoryId = ref(null)
 const thumbnail = ref(null)
 const thumbnailPreview = ref(null) // For image preview
-const isFree = ref(props.courseData?.is_free || false)
+const isFree = ref(props.courseData?.isFree || false)
 const leaderboardResetFrequency = ref('monthly') // never, weekly, monthly
 const prerequisites = ref([])
 const prerequisiteInput = ref('')
@@ -60,9 +60,9 @@ watch(() => props.courseData, () => {
   if (props.courseData) {
     title.value = props.courseData.title || ''
     description.value = props.courseData.description || ''
-    categoryId.value = props.courseData.course_category_id || props.courseData.category_id || null
-    isFree.value = props.courseData.is_free || false
-    leaderboardResetFrequency.value = props.courseData.leaderboard_reset_frequency || 'monthly'
+    categoryId.value = props.courseData.courseCategoryId || props.courseData.categoryId || null
+    isFree.value = props.courseData.isFree || false
+    leaderboardResetFrequency.value = props.courseData.leaderboardResetFrequency || 'monthly'
     prerequisites.value = props.courseData.prerequisites || []
     status.value = props.courseData.status || 'draft'
   } else {
@@ -139,9 +139,9 @@ const onSubmit = async () => {
 
   formData.append('title', title.value)
   formData.append('description', description.value)
-  formData.append('course_category_id', categoryId.value)
-  formData.append('is_free', isFree.value ? '1' : '0')
-  formData.append('leaderboard_reset_frequency', leaderboardResetFrequency.value)
+  formData.append('courseCategoryId', categoryId.value)
+  formData.append('isFree', isFree.value ? '1' : '0')
+  formData.append('leaderboardResetFrequency', leaderboardResetFrequency.value)
   formData.append('status', status.value)
   
   // Add prerequisites as JSON
@@ -154,7 +154,7 @@ const onSubmit = async () => {
   
   // Handle thumbnail deletion
   if (deleteThumbnail.value) {
-    formData.append('delete_thumbnail', '1')
+    formData.append('deleteThumbnail', '1')
   }
 
   try {

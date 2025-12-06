@@ -3,6 +3,9 @@ import Footer from '@/views/front-pages/front-page-footer.vue'
 import Navbar from '@/views/front-pages/front-page-navbar.vue'
 import { useConfigStore } from '@core/stores/config'
 
+import checkoutImg from '@images/front-pages/misc/checkout-image.png'
+import productImg from '@images/front-pages/misc/product-image.png'
+
 const store = useConfigStore()
 
 store.skin = 'default'
@@ -13,15 +16,38 @@ definePage({
   },
 })
 
-const articleData = ref()
+const articleData = ref({
+  title: 'How to add product in cart?',
+  lastUpdated: '1 month ago  -  Updated',
+  productContent: `
+            <p>
+              If you're after only one item, simply choose the 'Buy Now' option on the item page. This will take you directly to Checkout.
+            </p>
+            <p>
+              If you want several items, use the 'Add to Cart' button and then choose 'Keep Browsing' to continue shopping or 'Checkout' to finalize your purchase.
+            </p>
+        `,
+  checkoutContent: 'You can go back to your cart at any time by clicking on the shopping cart icon at the top right side of the page.',
+  articleList: [
+    'Template Kits',
+    'Elementor Template Kits: PHP Zip Extends',
+    'Envato Elements Template Kits',
+    'Envato Elements Template Kits',
+    'How to use the template in WordPress',
+    'How to use the Template Kit Import',
+  ],
+  checkoutImg,
+  productImg,
+})
 
+/* 
 setTimeout(async () => {
   const { data, error } = await useApi('/pages/help-center/article')
   if (error.value)
     console.log(error.value)
   else
     articleData.value = data.value
-}, 1000)
+}, 1000) */
 </script>
 
 <template>
@@ -44,7 +70,7 @@ setTimeout(async () => {
             <div>
               <VBreadcrumbs
                 class="px-0 pb-2 pt-0 help-center-breadcrumbs"
-                :items="[{ title: 'Help Center', to: { name: 'front-pages-help-center' }, class: 'text-primary' }, { title: 'how to add product in cart' }]"
+                :items="[{ title: 'Help Center', to: { name: 'help-center' }, class: 'text-primary' }, { title: 'how to add product in cart' }]"
               />
               <h4 class="text-h4 mb-2">
                 {{ articleData?.title }}

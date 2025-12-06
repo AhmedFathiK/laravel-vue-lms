@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import api from '@/utils/api'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import TrophyEditDialog from '@/components/dialogs/TrophyEditDialog.vue'
@@ -14,7 +14,7 @@ const editedIndex = ref(-1)
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const orderBy = ref('created_at')
+const orderBy = ref('createdAt')
 const orderDir = ref('desc')
 
 // These are now handled in the TrophyEditDialog component
@@ -24,46 +24,46 @@ const editedTrophy = ref({
   id: null,
   name: '',
   description: '',
-  icon_url: null,
-  trigger_type: 'completed_lesson',
-  trigger_repeat_count: 1,
-  course_id: null,
+  iconUrl: null,
+  triggerType: 'completed_lesson',
+  triggerRepeatCount: 1,
+  courseId: null,
   points: 0,
   rarity: 'common',
-  is_hidden: false,
-  is_active: true,
+  isHidden: false,
+  isActive: true,
 })
-  
+
 const defaultTrophy = {
   id: null,
   name: '',
   description: '',
-  icon_url: null,
-  trigger_type: 'completed_lesson',
-  trigger_repeat_count: 1,
-  course_id: null,
+  iconUrl: null,
+  triggerType: 'completed_lesson',
+  triggerRepeatCount: 1,
+  courseId: null,
   points: 0,
   rarity: 'common',
-  is_hidden: false,
-  is_active: true,
+  isHidden: false,
+  isActive: true,
 }
-  
+
 // Form validation is now handled in the TrophyEditDialog component
-  
+
 const rules = {
   required: value => !!value || 'Required.',
   number: value => !isNaN(Number(value)) || 'Must be a number.',
   minValue: min => value => Number(value) >= min || `Must be at least ${min}.`,
 }
-  
+
 const headers = [
-  { title: 'Icon', key: 'icon_url', sortable: false, width: '80px' },
+  { title: 'Icon', key: 'icon', sortable: false, width: '80px' },
   { title: 'Name', key: 'name' },
-  { title: 'Trigger Type', key: 'trigger_type' },
-  { title: 'Recipients', key: 'recipients_count', sortable: false },
+  { title: 'Trigger Type', key: 'trigger', sortable: false },
+  { title: 'Recipients', key: 'recipients', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
-  
+
 const updateOptions = options => {
   if (options.sortBy?.length) {
     orderBy.value = options.sortBy[0]?.key
@@ -109,15 +109,15 @@ const fetchTriggerTypes = async () => {
     console.error('Error fetching trigger types:', error)
   }
 }
-  
+
 const fetchTrophies = async () => {
   loading.value = true
   try {
     const params = {
       page: page.value,
-      "per_page": itemsPerPage.value,
-      "order_by": orderBy.value,
-      "order_dir": orderDir.value,
+      perPage: itemsPerPage.value,
+      orderBy: orderBy.value,
+      orderDir: orderDir.value,
     }
 
     const response = await api.get('/admin/trophies', { params })
@@ -134,12 +134,12 @@ const fetchTrophies = async () => {
 watch([ page, itemsPerPage], () => {
   fetchTrophies()
 })
-  
+
 onMounted(() => {
   fetchTrophies()
   fetchTriggerTypes()
 })
-  
+
 const openCreateDialog = () => {
   editedIndex.value = -1
   editedTrophy.value = Object.assign({}, defaultTrophy)
@@ -151,7 +151,7 @@ const openEditDialog = item => {
   editedTrophy.value = Object.assign({}, item)
   dialog.value = true
 }
-  
+
 const openDeleteDialog = item => {
   editedTrophy.value = { ...item }
   deleteDialog.value = true
@@ -164,7 +164,7 @@ const closeDialog = () => {
     editedIndex.value = -1
   })
 }
-  
+
 const deleteTrophyConfirm = async () => {
   deleting.value = true
   try {
@@ -218,14 +218,14 @@ const deleteTrophyConfirm = async () => {
                 @update:options="updateOptions"
               >
                 <!-- Icon column -->
-                <template #item.icon_url="{ item }">
+                <template #[`item.icon`]="{ item }">
                   <VAvatar
                     size="40"
                     rounded
                   >
                     <VImg
-                      v-if="item.icon_url"
-                      :src="item.icon_url"
+                      v-if="item.iconUrl"
+                      :src="item.iconUrl"
                       alt="Trophy icon"
                     />
                     <VIcon v-else>
@@ -235,22 +235,22 @@ const deleteTrophyConfirm = async () => {
                 </template>
               
                 <!-- Trigger type column -->
-                <template #item.trigger_type="{ item }">
+                <template #[`item.trigger`]="{ item }">
                   <VChip
-                    :color="getTriggerTypeColor(item.trigger_type)"
+                    :color="getTriggerTypeColor(item.triggerType)"
                     size="small"
                   >
-                    {{ getTriggerTypeLabel(item.trigger_type) }}
+                    {{ getTriggerTypeLabel(item.triggerType) }}
                   </VChip>
                 </template>
               
                 <!-- Recipients column -->
-                <template #item.recipients_count="{ item }">
-                  {{ item.recipients_count || 0 }} users awarded
+                <template #[`item.recipients`]="{ item }">
+                  {{ item.recipientsCount || 0 }} users awarded
                 </template>
               
                 <!-- Actions column -->
-                <template #item.actions="{ item }">
+                <template #[`item.actions`]="{ item }">
                   <IconBtn @click="openDeleteDialog(item)">
                     <VIcon icon="tabler-trash" />
                   </IconBtn>

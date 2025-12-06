@@ -13,8 +13,6 @@ use Illuminate\Support\Facades\Gate;
 
 class SubscriptionPlanController extends Controller
 {
-
-
     /**
      * Display a listing of the subscription plans.
      */
@@ -53,8 +51,8 @@ class SubscriptionPlanController extends Controller
         }
 
         // Apply sorting
-        if ($request->has('sortBy')) {
-            $sortByArray = $request->get('sortBy');
+        if ($request->has('sort_by')) {
+            $sortByArray = $request->get('sort_by');
             if (is_array($sortByArray)) {
                 foreach ($sortByArray as $sortItem) {
                     if (isset($sortItem['key'], $sortItem['order']) && in_array(strtolower($sortItem['order']), ['asc', 'desc'])) {
@@ -70,7 +68,7 @@ class SubscriptionPlanController extends Controller
         $query->with('course');
 
         // Apply pagination
-        $perPage = $request->get('itemsPerPage', 15);
+        $perPage = $request->get('per_page', 15);
         $plans = $query->paginate($perPage);
 
         return response()->json([

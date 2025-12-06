@@ -19,11 +19,11 @@ class CourseCategoryResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'slug' => $this->slug,
-            'is_active' => $this->is_active,
-            'sort_order' => $this->sort_order,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'courses_count' => $this->when(isset($this->courses_count), $this->courses_count),
+            'isActive' => $this->is_active,
+            'sortOrder' => $this->sort_order,
+            'createdAt' => $this->created_at,
+            'updatedAt' => $this->updated_at,
+            'coursesCount' => $this->when(isset($this->courses_count), $this->courses_count),
         ];
     }
 }

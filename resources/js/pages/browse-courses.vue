@@ -29,7 +29,7 @@ const pricingOptions = ['All', 'Free', 'Paid']
 
 const sortOptions = [
   { title: 'Most Popular', value: 'popularity,desc' },
-  { title: 'Newest', value: 'created_at,desc' },
+  { title: 'Newest', value: 'createdAt,desc' },
   { title: 'Alphabetical', value: 'title,asc' },
 ]
 
@@ -60,8 +60,8 @@ const fetchCourses = async () => {
       page: currentPage.value,
       perPage: perPage.value,
       search: searchQuery.value,
-      category_id: selectedCategory.value,
-      is_free: selectedPricing.value === 'Free' ? true : (selectedPricing.value === 'Paid' ? false : null),
+      categoryId: selectedCategory.value,
+      isFree: selectedPricing.value === 'Free' ? true : (selectedPricing.value === 'Paid' ? false : null),
       sort: sortField,
       order: sortOrder,
     }
@@ -88,7 +88,7 @@ const handleSubscribeClick = async course => {
 
   selectedCourseForSubscription.value = course
 
-  if (course.is_free) {
+  if (course.isFree) {
     try {
       await axios.post(`/api/learner/courses/${course.id}/enroll`)
       alert(`Successfully enrolled in ${course.title}`)
@@ -117,7 +117,7 @@ const confirmSubscription = async () => {
   }
 
   try {
-    await axios.post('/api/learner/subscribe', { plan_id: selectedPlan.value.id })
+    await axios.post('/api/learner/subscribe', { planId: selectedPlan.value.id })
     alert(`Successfully subscribed to ${selectedCourseForSubscription.value.title} - ${selectedPlan.value.name}`)
     isSubscribeDialogVisible.value = false
   } catch (error) {
@@ -211,7 +211,7 @@ onMounted(() => {
             <VCard
               class="d-flex flex-column h-100"
               rounded="lg"
-              :elevation="course.is_featured ? 8 : 2"
+              :elevation="course.isFeatured ? 8 : 2"
             >
               <div class="position-relative">
                 <VImg
@@ -223,7 +223,7 @@ onMounted(() => {
                   :aspect-ratio="16/9"
                 />
                 <VChip
-                  v-if="course.is_featured"
+                  v-if="course.isFeatured"
                   color="warning"
                   size="small"
                   class="position-absolute top-0 start-0 ma-2 font-weight-bold"
@@ -236,10 +236,10 @@ onMounted(() => {
               <VCardText class="flex-grow-1">
                 <div class="d-flex justify-space-between align-center mb-2">
                   <VChip
-                    :color="course.is_free ? 'success' : 'info'"
+                    :color="course.isFree ? 'success' : 'info'"
                     size="small"
                   >
-                    {{ course.is_free ? 'Free' : 'Paid' }}
+                    {{ course.isFree ? 'Free' : 'Paid' }}
                   </VChip>
                   <VChip
                     v-if="course.category"
@@ -341,7 +341,7 @@ onMounted(() => {
               <template #label>
                 <div>
                   <span class="font-weight-semibold">{{ plan.name }}</span>
-                  <span class="text-sm ms-2">({{ plan.price === '0.00' ? 'Free' : `${plan.price} ${plan.currency} / ${plan.billing_cycle}` }})</span>
+                  <span class="text-sm ms-2">({{ plan.price === '0.00' ? 'Free' : `${plan.price} ${plan.currency} / ${plan.billingCycle}` }})</span>
                   <p class="text-caption text-medium-emphasis">
                     {{ plan.description }}
                   </p>

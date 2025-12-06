@@ -28,7 +28,7 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const totalItems = ref(0)
 const sortBy = ref('term')
-const sortDesc = ref(false)
+const orderBy = ref('asc')
 
 // Search and filters
 const searchQuery = ref('')
@@ -42,8 +42,8 @@ const headers = [
   { title: 'ID', key: 'id', width: '80px' },
   { title: 'Term', key: 'term' },
   { title: 'Definition', key: 'definition', sortable: false },
-  { title: 'Media Type', key: 'media_type', width: '120px' },
-  { title: 'Example', key: 'has_example', width: '100px', sortable: false },
+  { title: 'Media Type', key: 'mediaType', width: '120px' },
+  { title: 'Example', key: 'hasExample', width: '100px', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
 ]
 
@@ -80,9 +80,9 @@ const fetchTerms = async () => {
     // Build query params
     const params = new URLSearchParams({
       page: page.value,
-      "per_page": itemsPerPage.value,
-      "sort_field": sortBy.value,
-      "sort_direction": sortDesc.value ? 'desc' : 'asc',
+      perPage: itemsPerPage.value,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value ? 'desc' : 'asc',
     })
     
     if (searchQuery.value) {
@@ -92,7 +92,6 @@ const fetchTerms = async () => {
     const response = await api.get(`/admin/courses/${courseId.value}/terms?${params.toString()}`)
 
     terms.value = response.items || []
-    console.log(terms.value)
     
     totalItems.value = response.total || 0
   } catch (error) {
@@ -109,10 +108,10 @@ const handleOptionsChange = options => {
   
   if (options.sortBy && options.sortBy.length > 0) {
     sortBy.value = options.sortBy[0].key
-    sortDesc.value = options.sortBy[0].order === 'desc'
+    orderBy.value = options.sortBy[0].order === 'desc'
   } else {
     sortBy.value = 'term'
-    sortDesc.value = false
+    orderBy.value = false
   }
   
   fetchTerms()
@@ -131,14 +130,14 @@ const openEditDialog = term => {
 }
 
 // Delete a term
-const deleteTerm = term => {
+const confirmDelete = term => {
   termToDelete.value = term
   isPasswordDialogVisible.value = true
 }
 
 // Confirm term deletion
-const confirmDelete = async () => {
-  if (!termToDelete.value) return
+const deleteTerm = async () => {
+  if (!result.confirmed || !questionToDelete.value) return
   
   try {
     await api.delete(`/admin/terms/${termToDelete.value.id}`)
@@ -272,18 +271,18 @@ onMounted(() => {
           </template>
           
           <!-- Media Type column -->
-          <template #[`item.media_type`]="{ item }">
+          <template #[`item.mediaType`]="{ item }">
             <VChip
-              :color="item.media_type ? 'primary' : 'secondary'"
+              :color="item.mediaType ? 'primary' : 'secondary'"
               size="small"
               label
             >
-              {{ formatMediaType(item.media_type) }}
+              {{ formatMediaType(item.mediaType) }}
             </VChip>
           </template>
           
           <!-- Example column -->
-          <template #[`item.has_example`]="{ item }">
+          <template #[`item.hasExample`]="{ item }">
             <VChip
               :color="hasExample(item) ? 'success' : 'secondary'"
               size="small"
@@ -309,7 +308,7 @@ onMounted(() => {
                 variant="text"
                 color="error"
                 size="small"
-                @click="deleteTerm(item)"
+                @click="confirmDelete(item)"
               >
                 <VIcon icon="tabler-trash" />
               </VBtn>
@@ -373,9 +372,10 @@ onMounted(() => {
     <!-- Deletion Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
-      entity-name="term"
-      :name="termToDelete ? termToDelete.term : ''"
-      @confirmed="confirmDelete"
+      confirmation-question="Are you sure you want to delete this term?"
+      confirm-title="Term Deleted"
+      confirm-msg="The term has been deleted successfully."
+      @confirm="deleteQuestion"
     />
   </section>
 </template>

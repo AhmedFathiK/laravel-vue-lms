@@ -25,7 +25,7 @@ const fetchDashboardData = async () => {
     ])
 
     userStatistics.value = statsResponse.data
-    userPoints.value = pointsResponse.data.total_points
+    userPoints.value = pointsResponse.data.totalPoints
     trophyStatistics.value = trophyStatsResponse.data
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
@@ -55,9 +55,9 @@ onMounted(() => {
         <VCardText v-if="userStatistics">
           <p>Total Enrollments: {{ userStatistics.enrollments.total }}</p>
           <p>Completed Courses: {{ userStatistics.enrollments.completed }}</p>
-          <p>In Progress Courses: {{ userStatistics.enrollments.in_progress }}</p>
+          <p>In Progress Courses: {{ userStatistics.enrollments.inProgress }}</p>
           <p>Completed Slides: {{ userStatistics.slides.completed }} / {{ userStatistics.slides.attempted }}</p>
-          <p>Accuracy: {{ userStatistics.answers.accuracy_percentage }}%</p>
+          <p>Accuracy: {{ userStatistics.answers.accuracyPercentage }}%</p>
         </VCardText>
         <VCardText v-else>
           Loading progress data...
@@ -73,8 +73,8 @@ onMounted(() => {
       <VCard title="Gamification Stats">
         <VCardText v-if="userPoints !== null && trophyStatistics">
           <p>Total Points: {{ userPoints }}</p>
-          <p>Earned Trophies: {{ trophyStatistics.earned_trophies }} / {{ trophyStatistics.total_trophies }}</p>
-          <p>Trophy Completion: {{ trophyStatistics.completion_percentage }}%</p>
+          <p>Earned Trophies: {{ trophyStatistics.earnedTrophies }} / {{ trophyStatistics.totalTrophies }}</p>
+          <p>Trophy Completion: {{ trophyStatistics.completionPercentage }}%</p>
         </VCardText>
         <VCardText v-else>
           Loading gamification data...

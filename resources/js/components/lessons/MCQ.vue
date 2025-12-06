@@ -74,7 +74,7 @@ const handleChoosing = choice => {
 
 
 const checkAnswers = () => {
-  if(['video', 'image_with_audio'].includes(currentSlide.value.question.media_type)){
+  if(['video', 'image_with_audio'].includes(currentSlide.value.question.mediaType)){
     plyr.value.player.stop()
   }
   let correctAnswers = 0
@@ -89,23 +89,23 @@ const checkAnswers = () => {
       
   if(correctAnswers != correctAnswersCount.value){
     updateDrawerData({
-      rightAnswer: currentSlide.value.question.right_answer,
-      rightAnswerMeaning: currentSlide.value.question.right_answer_meaning,
-      rightAnswerAudio: currentSlide.value.question.right_answer_audio,
+      rightAnswer: currentSlide.value.question.rightAnswer,
+      rightAnswerMeaning: currentSlide.value.question.rightAnswerMeaning,
+      rightAnswerAudio: currentSlide.value.question.rightAnswerAudio,
       answerState: 'wrong',
-      correctAnswerComment: currentSlide.value.question.correct_answer_comment,
-      wrongAnswerComment: currentSlide.value.question.wrong_answer_comment,
+      correctAnswerComment: currentSlide.value.question.correctAnswerComment,
+      wrongAnswerComment: currentSlide.value.question.wrongAnswerComment,
     })
   }else{
     currentSlide.value.completed = true
         
     updateDrawerData({
-      rightAnswer: currentSlide.value.question.right_answer,
-      rightAnswerMeaning: currentSlide.value.question.right_answer_meaning,
-      rightAnswerAudio: currentSlide.value.question.right_answer_audio,
+      rightAnswer: currentSlide.value.question.rightAnswer,
+      rightAnswerMeaning: currentSlide.value.question.rightAnswerMeaning,
+      rightAnswerAudio: currentSlide.value.question.rightAnswerAudio,
       answerState: 'right',
-      correctAnswerComment: currentSlide.value.question.correct_answer_comment,
-      wrongAnswerComment: currentSlide.value.question.wrong_answer_comment,
+      correctAnswerComment: currentSlide.value.question.correctAnswerComment,
+      wrongAnswerComment: currentSlide.value.question.wrongAnswerComment,
     })
   }
   emit("update:data", currentSlide.value)
@@ -156,7 +156,7 @@ watch(() => props.data, () => {
 
 onMounted(() => {
   resetComponent()
-  if(['video', 'image_with_audio'].includes(currentSlide.value.question.media_type)){
+  if(['video', 'image_with_audio'].includes(currentSlide.value.question.mediaType)){
     plyr.value.player.play()
   }
 })
@@ -170,7 +170,7 @@ onMounted(() => {
 
     <VCard class="question-media-wrapper">
       <div
-        v-if="['image','image_with_audio'].includes(currentSlide.question.media_type)"
+        v-if="['image','image_with_audio'].includes(currentSlide.question.mediaType)"
         class="question-img-wrapper"
       >
         <VImg
@@ -179,7 +179,7 @@ onMounted(() => {
         />
       </div>
       <div
-        v-if="currentSlide.question.media_type == 'video'"
+        v-if="currentSlide.question.mediaType == 'video'"
         class="question-video-wrapper"
       >
         <VuePlyr
@@ -200,7 +200,7 @@ onMounted(() => {
       </div>
       
       <VuePlyr
-        v-if="['audio','image_with_audio'].includes(currentSlide.question.media_type)"
+        v-if="['audio','image_with_audio'].includes(currentSlide.question.mediaType)"
         ref="plyr"
         :options="playerOptions"
       >

@@ -87,37 +87,37 @@ const resetFormData = () => {
 watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([isVisible, receipt, mode]) => {
   if (isVisible) {
     if (mode === 'edit' && receipt && receipt.id) {
-      isSystemGenerated.value = receipt.source_type !== 'manual'
-      isLinkedToSubscription.value = receipt.is_linked_to_subscription
+      isSystemGenerated.value = receipt.sourceType !== 'manual'
+      isLinkedToSubscription.value = receipt.isLinkedToSubscription
 
       user.value = {
         id: receipt.user.id,
-        "full_name": receipt.user.full_name,
+        fullName: receipt.user.fullName,
       }
 
-      if (receipt.item_type == 'course') {
+      if (receipt.itemType == 'course') {
         course.value = {
           id: receipt.course.id,
           title: receipt.course.title,
         }
-      } else if (receipt.item_type == 'subscription_plan') {
+      } else if (receipt.itemType == 'subscriptionPlan') {
         planId.value = {
-          id: receipt.subscription_plan.id,
-          name: receipt.subscription_plan.name,
+          id: receipt.subscriptionPlan.id,
+          name: receipt.subscriptionPlan.name,
         }
-        if (receipt.subscription_plan.course) {
+        if (receipt.subscriptionPlan.course) {
           course.value = {
-            id: receipt.subscription_plan.course.id,
-            title: receipt.subscription_plan.course.title,
+            id: receipt.subscriptionPlan.course.id,
+            title: receipt.subscriptionPlan.course.title,
           }
         }
       }
       
       amount.value = receipt.amount
-      paymentMethod.value = receipt.payment?.payment_method || 'manual'
-      paymentDate.value = receipt.payment?.payment_details?.payment_date || new Date(receipt.created_at).toISOString().split('T')[0]
-      receiptNumber.value = receipt.receipt_number
-      notes.value = receipt.payment?.payment_details?.notes || ''
+      paymentMethod.value = receipt.payment?.paymentMethod || 'manual'
+      paymentDate.value = receipt.payment?.paymentDetails?.paymentDate || new Date(receipt.createdAt).toISOString().split('T')[0]
+      receiptNumber.value = receipt.receiptNumber
+      notes.value = receipt.payment?.paymentDetails?.notes || ''
       currency.value = receipt.currency || 'USD'
       autoGeneratePdf.value = true
       notifyUser.value = true
@@ -167,20 +167,20 @@ const submitForm = async () => {
   isSubmitting.value = true
   
   const baseData = {
-    "payment_method": paymentMethod.value,
-    "payment_date": paymentDate.value,
+    "paymentMethod": paymentMethod.value,
+    "paymentDate": paymentDate.value,
     notes: notes.value,
-    "notify_user": notifyUser.value,
-    "auto_generate_pdf": autoGeneratePdf.value,
-    "receipt_number": receiptNumber.value,
+    "notifyUser": notifyUser.value,
+    "autoGeneratePdf": autoGeneratePdf.value,
+    "receiptNumber": receiptNumber.value,
   }
 
   const editableData = isLinkedToSubscription.value ? {} : {
-    "user_id": user.value?.id,
-    "course_id": course.value?.id,
-    "plan_id": planId.value?.id,
+    "userId": user.value?.id,
+    "courseId": course.value?.id,
+    "planId": planId.value?.id,
     amount: amount.value,
-    "create_subscription": createSubscription.value,
+    "createSubscription": createSubscription.value,
   }
 
   const receiptData = { ...baseData, ...editableData }
@@ -249,7 +249,7 @@ const onDialogVisibleUpdate = val => {
             >
               <AppTextField
                 v-if="isLinkedToSubscription || isSystemGenerated"
-                :model-value="user.full_name"
+                :model-value="user.fullName"
                 label="User"
                 readonly
                 disabled
@@ -260,7 +260,7 @@ const onDialogVisibleUpdate = val => {
                 label="User"
                 placeholder="Select a user"
                 api-link="/admin/users/select-fields"
-                item-title="full_name"
+                item-title="fullName"
                 item-value="id"
                 :rules="validationRules.user"
               />

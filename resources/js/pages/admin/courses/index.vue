@@ -29,7 +29,7 @@ const editCourse = ref(null)
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('created_at')
+const sortBy = ref('createdAt')
 const orderBy = ref('desc')
 const selectedRows = ref([])
 const availableCategories = ref([])
@@ -75,7 +75,7 @@ const coursesData = ref({
 const headers = [
   {
     title: 'Course',
-    key: 'course',
+    key: 'title',
   },
   {
     title: 'Levels',
@@ -531,7 +531,7 @@ onMounted(() => {
         @update:options="updateOptions"
       >
         <!-- Course -->
-        <template #[`item.course`]="{ item }">
+        <template #[`item.title`]="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
               size="32"
@@ -680,6 +680,7 @@ onMounted(() => {
     <!-- 👉 Password Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
+      :confirmation-question="deleteCourse ? 'Are you sure you want to delete this course? This action cannot be undone.' : 'Are you sure you want to delete this subscription plan? This action cannot be undone.'"
       @confirm="handlePasswordConfirm"
     />
   </section>

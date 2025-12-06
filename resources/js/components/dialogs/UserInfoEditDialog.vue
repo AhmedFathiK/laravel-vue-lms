@@ -102,8 +102,8 @@ watch(() => props.isDialogVisible, isVisible => {
     // Reset form when dialog opens
     if (props.userData) {
       // Split name into first and last name if firstName is not available
-      let firstName = props.userData.first_name || ''
-      let lastName = props.userData.last_name || ''
+      let firstName = props.userData.firstName || ''
+      let lastName = props.userData.lastName || ''
       
       if (!firstName && !lastName && props.userData.name) {
         const nameParts = props.userData.name.split(' ')
@@ -119,8 +119,8 @@ watch(() => props.isDialogVisible, isVisible => {
         email: props.userData.email || '',
         password: '',
         passwordConfirmation: '',
-        roles: props.userData.role_names || [],
-        verified: props.userData.email_verified_at ? true : false,
+        roles: props.userData.roleNames || [],
+        verified: props.userData.emailVerifiedAt ? true : false,
       }
     } else {
       // Ensure form is completely reset for new user
@@ -141,25 +141,6 @@ watch(() => props.isDialogVisible, isVisible => {
 
 const isEditMode = computed(() => !!props.userData)
 
-// Convert form data from camelCase to snake_case for API
-const prepareFormData = () => {
-  // Convert camelCase to snake_case for API
-  const { firstName, lastName, password, passwordConfirmation, ...rest } = form.value
-  
-  const formData = {
-    ...rest,
-    ['first_name']: firstName, // Using bracket notation to avoid linter errors
-    ['last_name']: lastName,
-  }
-  
-  // Only include password fields if password is provided
-  if (password) {
-    formData.password = password
-    formData['password_confirmation'] = passwordConfirmation
-  }
-  
-  return formData
-}
 
 // Form submission handler
 const submitForm = async () => {
@@ -170,8 +151,18 @@ const submitForm = async () => {
   isSubmitting.value = true
   
   try {
-    // Convert form data for API
-    const formData = prepareFormData()
+    
+    const { password, passwordConfirmation, ...rest } = form.value
+  
+    const formData = {
+      ...rest,
+    }
+  
+    // Only include password fields if password is provided
+    if (password) {
+      formData.password = password
+      formData['passwordConfirmation'] = passwordConfirmation
+    }
     
     await emit('submit', formData)
 
@@ -186,21 +177,10 @@ const submitForm = async () => {
     if (error.response?.data?.errors) {
       const apiErrors = error.response.data.errors
       
-      // Map API snake_case errors to camelCase form fields
-      const errorMapping = {
-        ['first_name']: 'firstName',
-        ['last_name']: 'lastName',
-      }
       
       // Process all errors
       Object.entries(apiErrors).forEach(([key, messages]) => {
-        // If there's a mapping for this field, use it
-        if (errorMapping[key]) {
-          errors.value[errorMapping[key]] = messages
-        } else {
-          // Otherwise use the original key
-          errors.value[key] = messages
-        }
+        errors.value[key] = messages
       })
       
       // Show all error messages in toasts
@@ -219,13 +199,13 @@ const onFormReset = () => {
   }
   form.value = props.userData ? {
     id: props.userData.id || 0,
-    firstName: props.userData.first_name || '',
-    lastName: props.userData.last_name || '',
+    firstName: props.userData.firstName || '',
+    lastName: props.userData.lastName || '',
     email: props.userData.email || '',
     password: '',
     passwordConfirmation: '',
-    roles: props.userData.role_names || [],
-    verified: props.userData.email_verified_at ? true : false,
+    roles: props.userData.roleNames || [],
+    verified: props.userData.emailVerifiedAt ? true : false,
   } : JSON.parse(JSON.stringify(defaultForm))
   errors.value = {}
   emit('update:isDialogVisible', false)

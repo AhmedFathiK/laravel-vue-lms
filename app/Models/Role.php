@@ -18,4 +18,13 @@ class Role extends SpatieRole
         'name',
         'guard_name',
     ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'pivot',
+    ];
 }

@@ -38,8 +38,8 @@ class CourseCategoryController extends Controller
         }
 
         // Apply sorting
-        $sortField = $request->get('sortBy', 'id');
-        $sortDirection = $request->get('orderBy', 'asc');
+        $sortField = $request->get('sort_field', 'id');
+        $sortDirection = $request->get('sort_direction', 'asc');
 
         if ($sortField === 'name') {
             // For JSON fields, we need to use orderByRaw
@@ -49,14 +49,14 @@ class CourseCategoryController extends Controller
         }
 
         // Apply pagination
-        $perPage = $request->get('perPage', 15);
+        $perPage = $request->get('per_page', 15);
         $categories = $query->withCount('courses')->paginate($perPage);
 
         return response()->json([
             'categories' => CourseCategoryResource::collection($categories->items()),
             'total' => $categories->total(),
             'currentPage' => $categories->currentPage(),
-            'perPage' => $categories->perPage(),
+            'per_page' => $categories->perPage(),
             'lastPage' => $categories->lastPage(),
         ]);
     }

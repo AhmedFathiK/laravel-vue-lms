@@ -45,9 +45,15 @@ class UpdateSubscriptionPlanRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        if ($this->has('plan_type') && $this->plan_type === 'free') {
+        if ($this->plan_type === 'free') {
             $this->merge([
                 'is_free' => true,
+                'price' => 0,
+            ]);
+        }
+
+        if ($this->is_free) {
+            $this->merge([
                 'price' => 0,
             ]);
         }

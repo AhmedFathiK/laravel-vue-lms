@@ -79,16 +79,16 @@ onMounted(fetchEnrollments)
             <div class="d-flex justify-space-between align-center mb-2">
               <VChip
                 v-if="
-                  enrollment.user_subscription &&
-                    enrollment.user_subscription
-                      .subscription_plan
+                  enrollment.userSubscription &&
+                    enrollment.userSubscription
+                      .subscriptionPlan
                 "
                 color="info"
                 size="small"
               >
                 {{
-                  enrollment.user_subscription
-                    .subscription_plan.name
+                  enrollment.userSubscription
+                    .subscriptionPlan.name
                 }}
               </VChip>
               <VChip
@@ -104,26 +104,26 @@ onMounted(fetchEnrollments)
             </h5>
             <p
               v-if="
-                enrollment.user_subscription &&
-                  enrollment.user_subscription.ends_at
+                enrollment.userSubscription &&
+                  enrollment.userSubscription.endsAt
               "
               class="text-caption"
             >
               Subscription ends on:
               {{
                 new Date(
-                  enrollment.user_subscription.ends_at
+                  enrollment.userSubscription.endsAt
                 ).toLocaleDateString()
               }}
             </p>
             <VProgressLinear
-              :model-value="enrollment.completion_percentage"
+              :model-value="enrollment.completionPercentage"
               color="primary"
               height="8"
               rounded
               class="my-2"
             />
-            <span class="text-caption">{{ enrollment.completion_percentage }}%
+            <span class="text-caption">{{ enrollment.completionPercentage }}%
               Complete</span>
           </VCardText>
           <VBtn

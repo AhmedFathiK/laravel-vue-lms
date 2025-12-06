@@ -38,17 +38,17 @@ const lessonToDelete = ref(null)
 const itemsPerPage = ref(10)
 const page = ref(1)
 const totalItems = ref(0)
-const sortBy = ref('sort_order')
-const sortDesc = ref(false)
+const sortBy = ref('id')
+const orderBy = ref('asc')
 
 // Headers for data table
 const headers = [
   { title: 'ID', key: 'id', width: '80px' },
   { title: 'Title', key: 'title' },
   { title: 'Video', key: 'video', sortable: false, width: '80px' },
-  { title: 'Slides', key: 'slides_count', width: '80px' },
-  { title: 'Order', key: 'sort_order', width: '80px' },
-  { title: 'Free Access', key: 'is_free', width: '100px' },
+  { title: 'Slides', key: 'slidesCount', width: '80px' },
+  { title: 'Order', key: 'sortOrder', width: '80px' },
+  { title: 'Free Access', key: 'isFree', width: '100px' },
   { title: 'Status', key: 'status', width: '100px' },
   { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
 ]
@@ -70,8 +70,8 @@ const loadData = async () => {
       api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}`),
       api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons`, {
         params: {
-          sortField: sortBy.value,
-          sortDirection: sortDesc.value ? 'desc' : 'asc',
+          sortBy: sortBy.value || undefined,
+          orderBy: orderBy.value || undefined,
         },
       }),
     ])
@@ -149,8 +149,8 @@ const refreshLessons = async () => {
   try {
     const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons`, {
       params: {
-        sortField: sortBy.value,
-        sortDirection: sortDesc.value ? 'desc' : 'asc',
+        sortBy: sortBy.value || undefined,
+        orderBy: orderBy.value || undefined,
       },
     })
     
@@ -211,10 +211,10 @@ const handleOptionsChange = options => {
   // Update sort settings
   if (options.sortBy && options.sortBy.length > 0) {
     sortBy.value = options.sortBy[0].key
-    sortDesc.value = options.sortBy[0].order === 'desc'
+    orderBy.value = options.sortBy[0].order === 'desc' ? 'desc' : 'asc'
   } else {
-    sortBy.value = 'sort_order'
-    sortDesc.value = false
+    sortBy.value = null
+    orderBy.value = null
   }
   
   // Update pagination
@@ -371,7 +371,7 @@ onMounted(() => {
           <!-- Video Column -->
           <template #[`item.video`]="{ item }">
             <VIcon
-              v-if="item.video_url"
+              v-if="item.videoUrl"
               icon="tabler-video"
               color="success"
             />
@@ -383,7 +383,7 @@ onMounted(() => {
           </template>
           
           <!-- Slides Count Column -->
-          <template #[`item.slides_count`]="{ item }">
+          <template #[`item.slidesCount`]="{ item }">
             <VChip
               :color="item.slides && Array.isArray(item.slides) && item.slides.length > 0 ? 'primary' : 'secondary'"
               size="small"
@@ -394,13 +394,13 @@ onMounted(() => {
           </template>
           
           <!-- Free Access Column -->
-          <template #[`item.is_free`]="{ item }">
+          <template #[`item.isFree`]="{ item }">
             <VChip
-              :color="item.is_free ? 'success' : 'error'"
+              :color="item.isFree ? 'success' : 'error'"
               size="small"
               label
             >
-              {{ item.is_free ? 'Free' : 'Premium' }}
+              {{ item.isFree ? 'Free' : 'Premium' }}
             </VChip>
           </template>
           

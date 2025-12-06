@@ -113,7 +113,7 @@
                   </VCardSubtitle>
                   <VCardText class="pt-2">
                     <VSelect
-                      v-model="editedTrophy.trigger_type"
+                      v-model="editedTrophy.triggerType"
                       :items="triggerTypes"
                       item-title="label"
                       item-value="value"
@@ -125,7 +125,7 @@
                     />
                   
                     <VTextField
-                      v-model="editedTrophy.trigger_repeat_count"
+                      v-model="editedTrophy.triggerRepeatCount"
                       label="Number of Repeats"
                       type="number"
                       min="1"
@@ -138,7 +138,7 @@
                     />
                   
                     <VSelect
-                      v-model="editedTrophy.course_id"
+                      v-model="editedTrophy.courseId"
                       :items="courses"
                       item-title="name"
                       item-value="id"
@@ -199,7 +199,7 @@
                         sm="6"
                       >
                         <VSwitch
-                          v-model="editedTrophy.is_hidden"
+                          v-model="editedTrophy.isHidden"
                           label="Hidden Trophy"
                           hint="Hidden until earned"
                           persistent-hint
@@ -212,7 +212,7 @@
                         sm="6"
                       >
                         <VSwitch
-                          v-model="editedTrophy.is_active"
+                          v-model="editedTrophy.isActive"
                           label="Active"
                           hint="Trophy can be earned"
                           persistent-hint
@@ -288,14 +288,14 @@ const editedTrophy = ref({
   id: null,
   name: '',
   description: '',
-  icon_url: null,
-  trigger_type: 'completed_lesson',
-  trigger_repeat_count: 1,
-  course_id: null,
+  iconUrl: null,
+  triggerType: 'completed_lesson',
+  triggerRepeatCount: 1,
+  courseId: null,
   points: 0,
   rarity: 'common',
-  is_hidden: false,
-  is_active: true,
+  isHidden: false,
+  isActive: true,
 })
 
 // File upload
@@ -320,7 +320,7 @@ watch(
   newTrophy => {
     if (newTrophy && Object.keys(newTrophy).length > 0) {
       editedTrophy.value = { ...newTrophy }
-      iconPreview.value = newTrophy.icon_url
+      iconPreview.value = newTrophy.iconUrl
     } else {
       resetForm()
     }
@@ -334,14 +334,14 @@ const resetForm = () => {
     id: null,
     name: '',
     description: '',
-    icon_url: null,
-    trigger_type: 'completed_lesson',
-    trigger_repeat_count: 1,
-    course_id: null,
+    iconUrl: null,
+    triggerType: 'completed_lesson',
+    triggerRepeatCount: 1,
+    courseId: null,
     points: 0,
     rarity: 'common',
-    is_hidden: false,
-    is_active: true,
+    isHidden: false,
+    isActive: true,
   }
   iconFile.value = null
   iconPreview.value = null
@@ -447,16 +447,16 @@ const saveTrophy = async () => {
   // Add all trophy fields
   formData.append('name', editedTrophy.value.name)
   formData.append('description', editedTrophy.value.description || '')
-  formData.append('trigger_type', editedTrophy.value.trigger_type)
-  formData.append('trigger_repeat_count', editedTrophy.value.trigger_repeat_count)
+  formData.append('triggerType', editedTrophy.value.triggerType)
+  formData.append('triggerRepeatCount', editedTrophy.value.triggerRepeatCount)
   formData.append('points', editedTrophy.value.points)
   formData.append('rarity', editedTrophy.value.rarity)
-  formData.append('is_hidden', editedTrophy.value.is_hidden ? '1' : '0')
-  formData.append('is_active', editedTrophy.value.is_active ? '1' : '0')
+  formData.append('isHidden', editedTrophy.value.isHidden ? '1' : '0')
+  formData.append('isActive', editedTrophy.value.isActive ? '1' : '0')
   
-  // Add course_id if selected
-  if (editedTrophy.value.course_id) {
-    formData.append('course_id', editedTrophy.value.course_id)
+  // Add courseId if selected
+  if (editedTrophy.value.courseId) {
+    formData.append('courseId', editedTrophy.value.courseId)
   }
   
   // Add icon file if selected

@@ -55,7 +55,7 @@ watch(() => props.levelData, () => {
   if (props.levelData) {
     title.value = props.levelData.title || ''
     description.value = props.levelData.description || ''
-    isFree.value = props.levelData.is_free || false
+    isFree.value = props.levelData.isFree || false
     status.value = props.levelData.status || 'draft'
   } else {
     resetFormValues()
@@ -82,9 +82,9 @@ const onSubmit = async () => {
   const formData = {
     title: title.value,
     description: description.value,
-    "is_free": isFree.value,
+    isFree: isFree.value,
     status: status.value,
-    "course_id": props.courseId,
+    courseId: props.courseId,
   }
 
   try {

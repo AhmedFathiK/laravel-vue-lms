@@ -77,13 +77,13 @@ const resendReceipt = () => {
                     Receipt
                   </h5>
                   <p class="text-body-2 mb-0">
-                    #{{ receipt.receipt_number }}
+                    #{{ receipt.receiptNumber }}
                   </p>
                 </div>
               </div>
               <div class="text-end">
                 <p class="text-body-2 mb-0">
-                  <strong>Date:</strong> {{ formatDate(receipt.created_at) }}
+                  <strong>Date:</strong> {{ formatDate(receipt.createdAt) }}
                 </p>
               </div>
             </div>
@@ -113,7 +113,7 @@ const resendReceipt = () => {
                         class="me-2"
                       />
                     </template>
-                    <VListItemTitle>{{ receipt.user.full_name }}</VListItemTitle>
+                    <VListItemTitle>{{ receipt.user.fullName }}</VListItemTitle>
                   </VListItem>
                   <VListItem>
                     <template #prepend>
@@ -125,7 +125,7 @@ const resendReceipt = () => {
                     </template>
                     <VListItemTitle>{{ receipt.user.email }}</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="receipt.user.phone_number">
+                  <VListItem v-if="receipt.user.phoneNumber">
                     <template #prepend>
                       <VIcon
                         icon="tabler-phone"
@@ -133,7 +133,7 @@ const resendReceipt = () => {
                         class="me-2"
                       />
                     </template>
-                    <VListItemTitle>{{ receipt.user.phone_number }}</VListItemTitle>
+                    <VListItemTitle>{{ receipt.user.phoneNumber }}</VListItemTitle>
                   </VListItem>
                 </VList>
               </VCol>
@@ -153,12 +153,12 @@ const resendReceipt = () => {
                   <VListItem>
                     <VListItemTitle>
                       <VIcon
-                        :icon="resolvePaymentMethodVariant(receipt.payment.payment_method).icon"
-                        :color="resolvePaymentMethodVariant(receipt.payment.payment_method).color"
+                        :icon="resolvePaymentMethodVariant(receipt.payment.paymentMethod).icon"
+                        :color="resolvePaymentMethodVariant(receipt.payment.paymentMethod).color"
                         size="20"
                         class="me-2"
                       />
-                      <span class="text-capitalize">{{ receipt.payment.payment_method }}</span>
+                      <span class="text-capitalize">{{ receipt.payment.paymentMethod }}</span>
                     </VListItemTitle>
                   </VListItem>
                   <VListItem>
@@ -168,7 +168,7 @@ const resendReceipt = () => {
                         size="20"
                         class="me-2"
                       />
-                      {{ receipt.payment.transaction_id || 'N/A' }}
+                      {{ receipt.payment.transactionId || 'N/A' }}
                     </VListItemTitle>
                   </VListItem>
                 </VList>
@@ -193,14 +193,14 @@ const resendReceipt = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{{ receipt.item_name }}</td>
+                  <td>{{ receipt.itemName }}</td>
                   <td class="text-capitalize">
                     <VChip
-                      :color="resolveItemTypeVariant(receipt.item_type).color"
+                      :color="resolveItemTypeVariant(receipt.itemType).color"
                       size="small"
                       label
                     >
-                      {{ receipt.item_type.replace('_', ' ') }}
+                      {{ receipt.itemType.replace('_', ' ') }}
                     </VChip>
                   </td>
                   <td class="text-right">

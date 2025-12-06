@@ -68,7 +68,7 @@ const login = async () => {
   loginInProgress.value = true
   
   try {
-    logDebug('Login attempt', { ...credentials.value, "remember_me": rememberMe.value })
+    logDebug('Login attempt', { ...credentials.value, "rememberMe": rememberMe.value })
     
     // First, get CSRF cookie for Sanctum
     await api.get('/sanctum/csrf-cookie')
@@ -77,7 +77,7 @@ const login = async () => {
     const result = await authStore.login({
       email: credentials.value.email,
       password: credentials.value.password,
-      "remember_me": rememberMe.value,
+      "rememberMe": rememberMe.value,
     })
 
     logDebug('Login result', result)

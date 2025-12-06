@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\User\ShowUserRequest;
 use App\Http\Requests\Admin\User\StoreUserRequest;
 use App\Http\Requests\Admin\User\ToggleStatusRequest;
 use App\Http\Requests\Admin\User\UpdateUserRequest;
+use App\Http\Resources\CamelCasePaginatedResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -19,9 +20,6 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of users.
-     */
     public function index(IndexUserRequest $request): JsonResponse
     {
         $query = User::with('roles');
@@ -44,7 +42,7 @@ class UserController extends Controller
             });
         }
 
-        // Filter by status (email verification)
+        // Filter by email verification status
         if ($request->has('status')) {
             if ($request->status === 'verified') {
                 $query->whereNotNull('email_verified_at');
@@ -54,9 +52,13 @@ class UserController extends Controller
         }
 
         // Sorting
-        $sortBy = $request->sortBy ?? 'created_at';
-        $orderBy = $request->orderBy ?? 'desc';
-        $query->orderBy($sortBy, $orderBy);
+        if ($request->has('sort_by')) {
+            $sortBy = $request->sort_by === 'fullName' ? 'CONCAT_WS(" ", first_name, last_name)' : $request->sort_by;
+        } else {
+            $sortBy = 'id';
+        }
+        $orderBy = $request->order_by ?? 'desc';
+        $query->orderByRaw("$sortBy $orderBy");
 
         // Pagination
         $perPage = $request->per_page ?? 10;
@@ -69,13 +71,14 @@ class UserController extends Controller
         });
 
         return response()->json([
-            'users' => $usersCollection,
-            'totalUsers' => $users->total(),
+            'data' => $usersCollection,
+            'total' => $users->total(),
             'currentPage' => $users->currentPage(),
             'perPage' => $users->perPage(),
             'lastPage' => $users->lastPage(),
         ]);
     }
+
 
     /**
      * Display a listing of users without pagination.
@@ -112,9 +115,9 @@ class UserController extends Controller
         }
 
         // Sorting
-        $sortBy = $request->sortBy ?? 'created_at';
-        $orderBy = $request->orderBy ?? 'desc';
-        $query->orderBy($sortBy, $orderBy);
+        $sort_by = $request->sort_by ?? 'created_at';
+        $order_by = $request->order_by ?? 'desc';
+        $query->orderBy($sort_by, $order_by);
 
         // Pagination
         $query->limit(5);
@@ -137,14 +140,18 @@ class UserController extends Controller
         $validated = $request->validated();
 
         // Create user
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'phone_number' => $validated['phone_number'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'email_verified_at' => $request->has('verified') && $request->verified ? now() : null,
-        ]);
+        $user = new User;
+        $user->first_name = $validated['first_name'];
+        $user->last_name = $validated['last_name'];
+        $user->email = $validated['email'];
+        $user->phone_number = $validated['phone_number'] ?? null;
+        $user->password = Hash::make($validated['password']);
+
+        // Update verification status
+        if ($request->has('verified')) {
+            $user->email_verified_at = $request->verified ? now() : null;
+        }
+        $user->save();
 
         // Assign roles if provided
         if (!empty($validated['roles'])) {
@@ -197,8 +204,8 @@ class UserController extends Controller
 
         $user->save();
 
-        // Update roles if provided
-        if (isset($validated['roles'])) {
+        // Update roles if provided and Prevent the Super Admin User from changing his role
+        if (isset($validated['roles']) && $user->id !== 1) {
             $user->syncRoles($validated['roles']);
         }
 

@@ -72,7 +72,13 @@ class PaymentController extends Controller
 
         // Generate receipt automatically
         if ($payment->status === 'completed') {
-            $this->generateReceipt($payment, $request->item_type, $request->item_id, $request->item_name);
+            $validated = $request->validated();
+            $this->generateReceipt(
+                payment: $payment,
+                itemType: $validated['item_type'] ?? null,
+                itemId: $validated['item_id'] ?? null,
+                itemName: $validated['item_name'] ?? null
+            );
         }
 
         return response()->json([
@@ -101,7 +107,13 @@ class PaymentController extends Controller
 
         // Generate receipt if payment status changed to completed
         if ($oldStatus !== 'completed' && $payment->status === 'completed' && !$payment->receipt) {
-            $this->generateReceipt($payment, $request->item_type, $request->item_id, $request->item_name);
+            $validated = $request->validated();
+            $this->generateReceipt(
+                payment: $payment,
+                itemType: $validated['item_type'] ?? null,
+                itemId: $validated['item_id'] ?? null,
+                itemName: $validated['item_name'] ?? null
+            );
         }
 
         return response()->json([

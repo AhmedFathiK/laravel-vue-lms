@@ -116,12 +116,11 @@ class ReceiptController extends Controller
 
         return response()->json([
             'items' => ReceiptResource::collection($receipts->items()),
-            'totalItems' => $receipts->total(),
-            'currentPage' => $receipts->currentPage(),
-            'perPage' => $receipts->perPage(),
-            'lastPage' => $receipts->lastPage(),
+            'total_items' => $receipts->total(),
+            'current_page' => $receipts->currentPage(),
+            'per_page' => $receipts->perPage(),
+            'last_page' => $receipts->lastPage(),
         ]);
-        return response()->json();
     }
 
     /**

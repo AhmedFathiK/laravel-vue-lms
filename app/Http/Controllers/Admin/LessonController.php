@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Lesson\StoreRequest;
 use App\Http\Requests\Admin\Lesson\UpdateRequest;
+use App\Http\Resources\Admin\LessonResource;
 use App\Models\Course;
 use App\Models\Level;
 use App\Models\Lesson;
@@ -19,68 +20,62 @@ class LessonController extends Controller
      */
     public function index(Request $request, Course $course, Level $level): JsonResponse
     {
+        // Authorization
         if (!Gate::allows('view.lessons')) {
             abort(403);
         }
 
+        // Validate filtering & sorting query parameters
+        $request->validate([
+            'status'   => 'nullable|in:active,inactive',
+            'sort_by'  => 'nullable|string|in:id,title,sort_order,status,created_at',
+            'order_by' => 'nullable|in:asc,desc',
+        ]);
+
+        // Build query
         $query = $level->lessons();
 
         // Apply filters
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         // Apply sorting
-        $sortField = $request->get('sort_field', 'sort_order');
-        $sortDirection = $request->get('sort_direction', 'asc');
+        $sortField = $request->get('sort_by', 'id');
+        $sortDirection = $request->get('order_by', 'asc');
         $query->orderBy($sortField, $sortDirection);
 
+        // Fetch lessons
         $lessons = $query->get();
 
-        // Transform lessons to ensure translations are properly handled
-        $transformedLessons = $lessons->map(function ($lesson) {
-            return [
-                'id' => $lesson->id,
-                'level_id' => $lesson->level_id,
-                'title' => $lesson->title,
-                'description' => $lesson->description,
-                'sort_order' => $lesson->sort_order,
-                'status' => $lesson->status,
-                'is_free' => $lesson->is_free,
-                'video_url' => $lesson->video_url,
-                'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
-                'reshow_count' => $lesson->reshow_count,
-                'require_correct_answers' => $lesson->require_correct_answers,
-                'created_at' => $lesson->created_at,
-                'updated_at' => $lesson->updated_at,
-            ];
-        });
-
-        return response()->json($transformedLessons);
+        // Return as Resource Collection
+        return response()->json(
+            LessonResource::collection($lessons)
+        );
     }
+
 
     /**
      * Store a newly created lesson in storage.
      */
     public function store(StoreRequest $request, Course $course, Level $level): JsonResponse
     {
-        $lesson = Lesson::create($request->validated());
+        // Compute next sort order for this level
+        $nextSortOrder = $level->lessons()->max('sort_order') + 1;
 
-        return response()->json([
-            'id' => $lesson->id,
-            'level_id' => $lesson->level_id,
-            'title' => $lesson->title,
-            'description' => $lesson->description,
-            'sort_order' => $lesson->sort_order,
-            'status' => $lesson->status,
-            'is_free' => $lesson->is_free,
-            'video_url' => $lesson->video_url,
-            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
-            'reshow_count' => $lesson->reshow_count,
-            'require_correct_answers' => $lesson->require_correct_answers,
-            'created_at' => $lesson->created_at,
-            'updated_at' => $lesson->updated_at,
-        ], 201);
+        // Merge it into validated data
+        $data = array_merge(
+            $request->validated(),
+            ['sort_order' => $nextSortOrder]
+        );
+
+        // Create lesson
+        $lesson = Lesson::create($data);
+
+        return response()->json(
+            new LessonResource($lesson),
+            201
+        );
     }
 
     /**
@@ -93,40 +88,7 @@ class LessonController extends Controller
         }
 
         $lesson->load('slides');
-
-        // Transform lesson to ensure translations are properly handled
-        $transformedLesson = [
-            'id' => $lesson->id,
-            'level_id' => $lesson->level_id,
-            'title' => $lesson->title,
-            'description' => $lesson->description,
-            'sort_order' => $lesson->sort_order,
-            'status' => $lesson->status,
-            'is_free' => $lesson->is_free,
-            'video_url' => $lesson->video_url,
-            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
-            'reshow_count' => $lesson->reshow_count,
-            'require_correct_answers' => $lesson->require_correct_answers,
-            'created_at' => $lesson->created_at,
-            'updated_at' => $lesson->updated_at,
-            'slides' => $lesson->slides->map(function ($slide) {
-                return [
-                    'id' => $slide->id,
-                    'lesson_id' => $slide->lesson_id,
-                    'title' => $slide->title ?? null,
-                    'content' => $slide->content,
-                    'options' => $slide->options,
-                    'correct_answer' => $slide->correct_answer,
-                    'feedback' => $slide->feedback,
-                    'sort_order' => $slide->sort_order,
-                    'type' => $slide->type,
-                    'created_at' => $slide->created_at,
-                    'updated_at' => $slide->updated_at,
-                ];
-            }),
-        ];
-
-        return response()->json($transformedLesson);
+        return response()->json(new LessonResource($lesson));
     }
 
     /**

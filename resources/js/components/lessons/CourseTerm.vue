@@ -57,7 +57,7 @@ onMounted(() => {
 
     <VCard class="term-media-wrapper mt-5">
       <div
-        v-if="['image','image_with_audio'].includes(currentSlide.term.media_type)"
+        v-if="['image','image_with_audio'].includes(currentSlide.term.mediaType)"
         class="term-img-wrapper"
       >
         <VImg
@@ -66,7 +66,7 @@ onMounted(() => {
         />
       </div>
       <div
-        v-if="currentSlide.term.media_type == 'video'"
+        v-if="currentSlide.term.mediaType == 'video'"
         class="term-video-wrapper"
       >
         <VuePlyr
@@ -87,7 +87,7 @@ onMounted(() => {
       </div>
       
       <VuePlyr
-        v-if="['audio','image_with_audio'].includes(currentSlide.term.media_type)"
+        v-if="['audio','image_with_audio'].includes(currentSlide.term.mediaType)"
         ref="plyr"
         :options="playerOptions"
       >
@@ -113,12 +113,12 @@ onMounted(() => {
       <p>Example</p>
       <div class="d-flex d-flex justify-start align-center">
         <AppIconAudioPlayer
-          v-if="currentSlide.term.example_audio"
+          v-if="currentSlide.term.exampleAudio"
           :sources="[{link: 'https://server6.mp3quran.net/thubti/001.mp3', type: 'audio/mp3'}]"
         />
         <span>{{ currentSlide.term.example }}</span>
       </div>
-      <span>{{ currentSlide.term.example_meaning }}</span>
+      <span>{{ currentSlide.term.exampleMeaning }}</span>
     </div>
   </div>
 </template>

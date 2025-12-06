@@ -31,7 +31,7 @@ const isLoading = ref(false)
 const course = ref(null)
 const page = ref(1)
 const itemsPerPage = ref(10)
-const sortBy = ref([{ key: 'created_at', order: 'desc' }])
+const sortBy = ref([{ key: 'createdAt', order: 'desc' }])
 const selectedRows = ref([])
 
 const questionsData = ref({
@@ -69,7 +69,8 @@ const difficultyLevels = [
 
 // Data table headers
 const headers = [
-  { title: 'Question', key: 'question_text' },
+  { title: 'ID', key: 'id' },
+  { title: 'Question', key: 'questionText' },
   { title: 'Type', key: 'type' },
   { title: 'Difficulty', key: 'difficulty' },
   { title: 'Points', key: 'points' },
@@ -127,15 +128,15 @@ const fetchQuestions = async () => {
   isLoading.value = true
   try {
     const params = {
-      "course_id": courseId.value,
+      courseId: courseId.value,
       search: searchQuery.value || undefined,
       type: selectedType.value || undefined,
       difficulty: selectedDifficulty.value || undefined,
       tags: selectedTag.value || undefined,
-      "sort_by": sortBy.value[0]?.key || 'created_at',
-      "sort_direction": sortBy.value[0]?.order || 'desc',
+      sortBy: sortBy.value[0]?.key || 'createdAt',
+      sortDirection: sortBy.value[0]?.order || 'desc',
       page: page.value,
-      "per_page": itemsPerPage.value,
+      perPage: itemsPerPage.value,
     }
     
     const response = await api.get(`/admin/courses/${courseId.value}/questions`, { params })
@@ -202,13 +203,13 @@ const updateOptions = options => {
 // Add new question
 const addNewQuestion = () => {
   editQuestion.value = {
-    "course_id": courseId.value,
+    courseId: courseId.value,
     type: 'mcq',
     difficulty: 'medium',
     points: 1,
-    "question_text": '',
+    questionText: '',
     options: [],
-    "correct_answer": [],
+    correctAnswer: [],
     tags: [],
 
   }
@@ -217,7 +218,9 @@ const addNewQuestion = () => {
 
 // Edit question
 const onEditQuestion = question => {
-  editQuestion.value = { ...question }
+  editQuestion.value = JSON.parse(JSON.stringify(question))
+  console.log(editQuestion.value)
+  
   isEditDialogVisible.value = true
 }
 
@@ -227,8 +230,12 @@ const confirmDelete = question => {
   isDeleteDialogVisible.value = true
 }
 
-const deleteQuestion = async () => {
-  if (!questionToDelete.value) return
+const deleteQuestion = async result => {
+  if (!result.confirmed || !questionToDelete.value){
+    questionToDelete.value = null
+    
+    return
+  } 
   
   try {
     await api.delete(`/admin/courses/${courseId.value}/questions/${questionToDelete.value.id}`)
@@ -391,7 +398,6 @@ watch(() => locale.value, () => {
       </VCardText>
 
       <VDivider />
-
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
@@ -405,9 +411,9 @@ watch(() => locale.value, () => {
       >
         <!-- Question text column -->
         <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.question_text="{ item }">
+        <template #item.questionText="{ item }">
           <div v-if="item.type == 'mcq'">
-            {{ item.question_text }}
+            {{ item.questionText }}
             <ol
               type="a"
               class="ms-5"
@@ -421,10 +427,10 @@ watch(() => locale.value, () => {
             </ol>
           </div>
           <div v-else-if="item.type == 'fill_blank'">
-            {{ item.question_text }}
+            {{ item.questionText }}
           </div>
           <div v-else-if="item.type == 'matching'">
-            {{ item.question_text }}
+            {{ item.questionText }}
             <ul class="ms-5">
               <li
                 v-for="(pair, index) in item.options"
@@ -435,7 +441,7 @@ watch(() => locale.value, () => {
             </ul>
           </div>
           <div v-else-if="item.type == 'fill_blank_choices'">
-            {{ item.question_text }}
+            {{ item.questionText }}
             <ul class="ms-5">
               <li
                 v-for="(option, index) in item.options"
@@ -450,14 +456,14 @@ watch(() => locale.value, () => {
                     Choices: {{ option.options.join(', ') }}
                   </li>
                   <li>
-                    Correct Choice: {{ option.options[option.correct_answer] }}
+                    Correct Choice: {{ option.options[option.correctAnswer] }}
                   </li>
                 </ul>
               </li>
             </ul>
           </div>
           <div v-else-if="item.type == 'reordering'">
-            {{ item.question_text }}
+            {{ item.questionText }}
             <ol
               type="1"
               class="ms-5"
@@ -471,7 +477,7 @@ watch(() => locale.value, () => {
             </ol>
           </div>
           <div v-else>
-            {{ item.question_text }}
+            {{ item.questionText }}
           </div>
         </template>
 

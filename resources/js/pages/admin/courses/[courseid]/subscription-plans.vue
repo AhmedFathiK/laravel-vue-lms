@@ -36,9 +36,9 @@ const courseId = computed(() => parseInt(route.params.courseid))
 const headers = [
   { title: 'Name', key: 'name' },
   { title: 'Price', key: 'price' },
-  { title: 'Type', key: 'plan_type' },
-  { title: 'Billing Cycle', key: 'billing_cycle' },
-  { title: 'Status', key: 'is_active' },
+  { title: 'Type', key: 'planType' },
+  { title: 'Billing Cycle', key: 'billingCycle' },
+  { title: 'Status', key: 'isActive' },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
 
@@ -96,13 +96,13 @@ const fetchLevels = async () => {
 // Toggle plan status
 const togglePlanStatus = async plan => {
   try {
-    const updatedPlan = { ...plan, is_active: !plan.is_active }
+    const updatedPlan = { ...plan, isActive: !plan.isActive }
     const response = await api.put(`/admin/courses/${courseId.value}/subscription-plans/${plan.id}`, updatedPlan)
     const index = plans.value.findIndex(p => p.id === plan.id)
     if (index !== -1) {
       plans.value[index] = response
     }
-    toast.success(`Plan ${!plan.is_active ? 'activated' : 'deactivated'} successfully`)
+    toast.success(`Plan ${!plan.isActive ? 'activated' : 'deactivated'} successfully`)
   } catch (error) {
     console.error('Error toggling plan status:', error)
     toast.error('Failed to update plan status')
@@ -110,7 +110,7 @@ const togglePlanStatus = async plan => {
     // Revert the switch state on failure
     const index = plans.value.findIndex(p => p.id === plan.id)
     if (index !== -1) {
-      plans.value[index].is_active = plan.is_active
+      plans.value[index].isActive = plan.isActive
     }
   }
 }
@@ -140,16 +140,12 @@ const openDeleteDialog = plan => {
   isDeleteDialogVisible.value = true
 }
 
-const handleDeleteConfirm = async ({ confirmed }) => {
-  // If the user cancelled, do nothing. The dialog will close itself.
-  if (!confirmed) {
+const handleDeleteConfirm = async result => {
+  if (!result.confirmed || !questionToDelete.value){
     planToDelete.value = null
     
     return
-  }
-
-  // If confirmed, proceed with deletion
-  if (!planToDelete.value) return
+  } 
 
   try {
     await api.delete(`/admin/courses/${courseId.value}/subscription-plans/${planToDelete.value.id}`)
@@ -228,35 +224,35 @@ onMounted(() => {
           @update:options="fetchPlans"
         >
           <!-- Column Templates -->
-          <template #item.name="{ item }">
+          <template #[`item.name`]="{ item }">
             <span class="font-weight-medium">{{ item.name }}</span>
           </template>
 
-          <template #item.price="{ item }">
+          <template #[`item.price`]="{ item }">
             <span>{{ formatPrice(item.price, item.currency) }}</span>
           </template>
 
-          <template #item.plan_type="{ item }">
-            <span>{{ formatPlanType(item.plan_type) }}</span>
+          <template #[`item.planType`]="{ item }">
+            <span>{{ formatPlanType(item.planType) }}</span>
           </template>
 
-          <template #item.billing_cycle="{ item }">
-            <span>{{ formatBillingCycle(item.billing_cycle) }}</span>
+          <template #[`item.billingCycle`]="{ item }">
+            <span>{{ formatBillingCycle(item.billingCycle) }}</span>
           </template>
 
-          <template #item.is_active="{ item }">
+          <template #[`item.isActive`]="{ item }">
             <VChip
-              :color="item.is_active ? 'success' : 'error'"
+              :color="item.isActive ? 'success' : 'error'"
               size="small"
               label
             >
-              {{ item.is_active ? 'Active' : 'Inactive' }}
+              {{ item.isActive ? 'Active' : 'Inactive' }}
             </VChip>
           </template>
 
           <!-- Actions column -->
-          <template #item.actions="{ item }">
-            <div class="d-flex gap-1">
+          <template #[`item.actions`]="{ item }">
+            <div class="d-flex gap-1 align-center">
               <VBtn
                 icon
                 variant="text"
@@ -267,8 +263,11 @@ onMounted(() => {
                 <VIcon icon="tabler-edit" />
               </VBtn>
               <VSwitch
-                :model-value="item.is_active"
+                :model-value="item.isActive"
                 color="success"
+                hide-details
+                density="compact"
+                class="flex-shrink-0"
                 @update:model-value="togglePlanStatus(item)"
               />
               <VBtn
@@ -315,7 +314,9 @@ onMounted(() => {
     <!-- Deletion Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
-      :item-name="planToDelete ? planToDelete.name : ''"
+      confirmation-question="Are you sure you want to delete this subscription plan?"
+      confirm-title="Subscription Plan Deleted"
+      confirm-msg="The subscription plan has been deleted successfully."
       @confirm="handleDeleteConfirm"
     />
   </section>

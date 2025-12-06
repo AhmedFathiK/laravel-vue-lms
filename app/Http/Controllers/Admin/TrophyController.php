@@ -64,10 +64,10 @@ class TrophyController extends Controller
         });
         return response()->json([
             'items' => TrophyResource::collection($trophies->items()),
-            'totalItems' => $trophies->total(),
-            'currentPage' => $trophies->currentPage(),
-            'perPage' => $trophies->perPage(),
-            'lastPage' => $trophies->lastPage(),
+            'total_items' => $trophies->total(),
+            'current_page' => $trophies->currentPage(),
+            'per_page' => $trophies->perPage(),
+            'last_page' => $trophies->lastPage(),
         ]);
         return response()->json($trophies);
     }

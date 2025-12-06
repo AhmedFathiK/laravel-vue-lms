@@ -36,8 +36,8 @@ class LevelController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         // Apply pagination if requested
-        if ($request->has('perPage')) {
-            $perPage = (int) $request->get('perPage', 10);
+        if ($request->has('per_page')) {
+            $perPage = (int) $request->get('per_page', 10);
             $levels = $query->paginate($perPage);
 
             return response()->json([
