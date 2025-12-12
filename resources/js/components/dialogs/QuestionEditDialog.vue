@@ -11,9 +11,14 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    default: 'add',
+    validator: value => ['add', 'edit'].includes(value),
+  },
   question: {
     type: Object,
-    required: true,
+    default: () => ({}),
   },
   courseId: {
     type: [Number, String],
@@ -21,21 +26,28 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits([
-  'update:isDialogVisible',
-  'refresh',
-])
+const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const toast = useToast()
 const formRef = ref(null)
+const isFormValid = ref(true)
 const isSubmitting = ref(false)
 const formErrors = ref({})
 
-// Form data with default values
-const formData = ref({
+// Local question state
+const localQuestion = ref({})
+
+// Handle tag input
+const newTag = ref('')
+
+// For file uploads
+const mediaFile = ref(null)
+
+// Get default question data
+const getDefaultQuestion = () => ({
   id: null,
-  courseId: null,
+  courseId: props.courseId,
   title: '',
   questionText: '',
   type: 'mcq',
@@ -44,40 +56,58 @@ const formData = ref({
   points: 1,
   difficulty: 'medium',
   tags: [],
-
   correctFeedback: '',
   incorrectFeedback: '',
   mediaUrl: null,
   mediaType: 'none',
-
-  // For fill in the blank
+  audioUrl: null,
   blanks: [],
-
-  // For matching
   matchingPairs: [],
-
-  // For reordering
   reorderingItems: [],
-
-  // For writing
   gradingGuidelines: '',
   minWords: 0,
   maxWords: 0,
 })
 
-// Handle tag input
-const newTag = ref('')
+// Computed dialog title
+const dialogTitle = computed(() =>
+  props.dialogMode === 'add'
+    ? t('questions.dialog.addNewQuestion', 'Add New Question')
+    : t('questions.dialog.editQuestion', 'Edit Question'),
+)
+
+// Question types
+const questionTypes = computed(() => [
+  { title: t('questions.types.multipleChoice', 'Multiple Choice'), value: 'mcq' },
+  { title: t('questions.types.matching', 'Matching'), value: 'matching' },
+  { title: t('questions.types.fillBlank', 'Fill in the Blank'), value: 'fill_blank' },
+  { title: t('questions.types.fillBlankChoices', 'Fill in the Blank with Choices'), value: 'fill_blank_choices' },
+  { title: t('questions.types.reordering', 'Reordering'), value: 'reordering' },
+  { title: t('questions.types.writing', 'Writing'), value: 'writing' },
+])
+
+const mediaTypes = computed(() => [
+  { title: t('questions.media.none', 'None'), value: 'none' },
+  { title: t('questions.media.image', 'Image'), value: 'image' },
+  { title: t('questions.media.imageWithAudio', 'Image with Audio'), value: 'image_with_audio' },
+  { title: t('questions.media.video', 'Video'), value: 'video' },
+])
+
+const difficultyLevels = computed(() => [
+  { title: t('questions.difficulty.easy', 'Easy'), value: 'easy' },
+  { title: t('questions.difficulty.medium', 'Medium'), value: 'medium' },
+  { title: t('questions.difficulty.hard', 'Hard'), value: 'hard' },
+])
 
 // Computed property to detect blanks for fill_blank type
 const detectedBlanks = computed(() => {
-  if (!['fill_blank', 'fill_blank_choices'].includes(formData.value.type))
+  if (!['fill_blank', 'fill_blank_choices'].includes(localQuestion.value.type))
     return []
 
   const regex = /\[blank\d+\]/g
-  const matches = formData.value.questionText.match(regex) || []
+  const matches = localQuestion.value.questionText.match(regex) || []
   const uniqueMatches = [...new Set(matches)]
 
-  // Sort by the number inside [blankX]
   uniqueMatches.sort((a, b) => {
     const numA = parseInt(a.match(/\d+/)[0], 10)
     const numB = parseInt(b.match(/\d+/)[0], 10)
@@ -88,31 +118,50 @@ const detectedBlanks = computed(() => {
   return uniqueMatches
 })
 
-// Watch for changes in detected blanks and update the correctAnswer array
-watch(detectedBlanks, (newBlanks, oldBlanks) => {
-  if (formData.value.type === 'fill_blank') {
-    const newSize = newBlanks.length
-    const currentAnswers = Array.isArray(formData.value.correctAnswer) ? formData.value.correctAnswer : []
+// Watch for dialog visibility changes
+watch(
+  () => props.isDialogVisible,
+  newValue => {
+    if (newValue) {
+      formErrors.value = {}
+      newTag.value = ''
+      mediaFile.value = null
+      
+      if (props.dialogMode === 'edit' && props.question && Object.keys(props.question).length > 0) {
+        localQuestion.value = JSON.parse(JSON.stringify(props.question))
+        initializeQuestionTypeData()
+      } else {
+        localQuestion.value = getDefaultQuestion()
+      }
+      isFormValid.value = true
+    } else {
+      localQuestion.value = {}
+    }
+  },
+  { immediate: true },
+)
 
-    // Only update if the size of blanks has changed
+// Watch for changes in detected blanks - fill_blank
+watch(detectedBlanks, newBlanks => {
+  if (localQuestion.value.type === 'fill_blank') {
+    const newSize = newBlanks.length
+    const currentAnswers = Array.isArray(localQuestion.value.correctAnswer) ? localQuestion.value.correctAnswer : []
+
     if (newSize !== currentAnswers.length) {
       const newAnswers = Array(newSize).fill(null).map(() => [])
-
-      // Preserve existing answers
       for (let i = 0; i < Math.min(newSize, currentAnswers.length); i++) {
-        // Ensure the preserved answer is an array
         newAnswers[i] = Array.isArray(currentAnswers[i]) ? currentAnswers[i] : [currentAnswers[i]]
       }
-      formData.value.correctAnswer = newAnswers
+      localQuestion.value.correctAnswer = newAnswers
     }
   }
 }, { immediate: true })
 
-// Watch for changes in detected blanks and update the blanks for fill_blank_choices
-watch(detectedBlanks, (newBlanks, oldBlanks) => {
-  if (formData.value.type === 'fill_blank_choices') {
+// Watch for changes in detected blanks - fill_blank_choices
+watch(detectedBlanks, newBlanks => {
+  if (localQuestion.value.type === 'fill_blank_choices') {
     const newSize = newBlanks.length
-    const currentBlanks = Array.isArray(formData.value.blanks) ? formData.value.blanks : []
+    const currentBlanks = Array.isArray(localQuestion.value.blanks) ? localQuestion.value.blanks : []
 
     if (newSize !== currentBlanks.length) {
       const newBlanksArray = Array(newSize).fill(null).map((_, index) => {
@@ -123,334 +172,97 @@ watch(detectedBlanks, (newBlanks, oldBlanks) => {
         }
       })
 
-      formData.value.blanks = newBlanksArray
+      localQuestion.value.blanks = newBlanksArray
     }
   }
 }, { immediate: true })
 
-// Add an option to a blank
-const addBlankOption = blankIndex => {
-  if (!formData.value.blanks[blankIndex].options) {
-    formData.value.blanks[blankIndex].options = []
+// Watch for media type changes
+watch(() => localQuestion.value.mediaType, newValue => {
+  if (newValue === 'none') {
+    localQuestion.value.mediaUrl = null
+    localQuestion.value.audioUrl = null
+    mediaFile.value = null
+  } else if (newValue === 'video') {
+    mediaFile.value = null
+  } else if (newValue !== 'image_with_audio') {
+    localQuestion.value.audioUrl = null
   }
-  
-  formData.value.blanks[blankIndex].options.push('')
-}
+})
 
-// Remove an option from a blank
-const removeBlankOption = (blankIndex, optionIndex) => {
-  formData.value.blanks[blankIndex].options.splice(optionIndex, 1)
-  
-  // Update correct answer if it was the removed option
-  const blank = formData.value.blanks[blankIndex]
-  if (blank.correctAnswer === optionIndex.toString()) {
-    blank.correctAnswer = '0' // Default to first option
-  } else if (parseInt(blank.correctAnswer) > optionIndex) {
-    // Adjust correct answer index for removed option
-    blank.correctAnswer = (parseInt(blank.correctAnswer) - 1).toString()
-  }
-}
-
-// Add a matching pair
-const addMatchingPair = () => {
-  if (!formData.value.matchingPairs) {
-    formData.value.matchingPairs = []
-  }
-  
-  formData.value.matchingPairs.push({
-    left: '',
-    right: '',
-  })
-  
-  // Update correctAnswer to match the pairs
-  updateMatchingCorrectAnswers()
-}
-
-// Remove a matching pair
-const removeMatchingPair = index => {
-  formData.value.matchingPairs.splice(index, 1)
-  
-  // Update correctAnswer to match the pairs
-  updateMatchingCorrectAnswers()
-}
-
-// Update the correct answers for matching pairs
-const updateMatchingCorrectAnswers = () => {
-  if (!formData.value.matchingPairs) return
-  
-  // For matching, correctAnswer should contain the mapping
-  formData.value.correctAnswer = formData.value.matchingPairs.map((pair, index) => ({
-    left: index,
-    right: index,
-  }))
-}
-
-// Add a reordering item
-const addReorderingItem = () => {
-  if (!formData.value.reorderingItems) {
-    formData.value.reorderingItems = []
-  }
-  
-  formData.value.reorderingItems.push('')
-  
-  // Update correctAnswer to match the order
-  updateReorderingCorrectAnswers()
-}
-
-// Remove a reordering item
-const removeReorderingItem = index => {
-  formData.value.reorderingItems.splice(index, 1)
-  
-  // Update correctAnswer to match the order
-  updateReorderingCorrectAnswers()
-}
-
-// Move a reordering item up or down
-const moveReorderingItem = (index, direction) => {
-  const items = formData.value.reorderingItems
-  
-  if (direction === 'up' && index > 0) {
-    // Swap with the item above
-    [items[index], items[index - 1]] = [items[index - 1], items[index]]
-  } else if (direction === 'down' && index < items.length - 1) {
-    // Swap with the item below
-    [items[index], items[index + 1]] = [items[index + 1], items[index]]
-  }
-  
-  // Update correctAnswer to match the order
-  updateReorderingCorrectAnswers()
-}
-
-// Update the correct answers for reordering
-const updateReorderingCorrectAnswers = () => {
-  if (!formData.value.reorderingItems) return
-  
-  // For reordering, correctAnswer should contain the indices in correct order
-  formData.value.correctAnswer = formData.value.reorderingItems.map((_, index) => index.toString())
-}
+// Watch for question type changes
+watch(() => localQuestion.value.type, () => {
+  initializeQuestionTypeData()
+})
 
 // Initialize data for specific question types
 const initializeQuestionTypeData = () => {
-  const type = formData.value.type
-  
-  // For writing type, extract data from options FIRST before clearing
-  if (type === 'writing' && formData.value.options && typeof formData.value.options === 'object') {
-    if (!formData.value.gradingGuidelines && formData.value.options.gradingGuidelines) {
-      formData.value.gradingGuidelines = formData.value.options.gradingGuidelines
-    }
-    
-    if (!formData.value.minWords && formData.value.options.minWords) {
-      formData.value.minWords = formData.value.options.minWords
-    }
-    
-    if (!formData.value.maxWords && formData.value.options.maxWords) {
-      formData.value.maxWords = formData.value.options.maxWords
-    }
-  }
-  
-  // Clear existing data if not defined
-  if (!Array.isArray(formData.value.options)) {
-    formData.value.options = []
-  }
-  
-  if (!Array.isArray(formData.value.correctAnswer)) {
-    formData.value.correctAnswer = []
-  }
-  
-  if (!Array.isArray(formData.value.blanks)) {
-    formData.value.blanks = []
-  }
-  
-  if (!Array.isArray(formData.value.matchingPairs)) {
-    formData.value.matchingPairs = []
-  }
-  
-  if (!Array.isArray(formData.value.reorderingItems)) {
-    formData.value.reorderingItems = []
-  }
-  
-  // Initialize specific type data
-  if (type === 'fill_blank_choices') {
-    // For fill in the blank with choices, initialize blanks from options
-    if (!formData.value.blanks.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
-      formData.value.blanks = formData.value.options
-    }
+  const type = localQuestion.value.type
 
+  if (type === 'writing' && localQuestion.value.options && typeof localQuestion.value.options === 'object') {
+    if (!localQuestion.value.gradingGuidelines && localQuestion.value.options.gradingGuidelines) {
+      localQuestion.value.gradingGuidelines = localQuestion.value.options.gradingGuidelines
+    }
+    if (!localQuestion.value.minWords && localQuestion.value.options.minWords) {
+      localQuestion.value.minWords = localQuestion.value.options.minWords
+    }
+    if (!localQuestion.value.maxWords && localQuestion.value.options.maxWords) {
+      localQuestion.value.maxWords = localQuestion.value.options.maxWords
+    }
+  }
+
+  if (!Array.isArray(localQuestion.value.options)) {
+    localQuestion.value.options = []
+  }
+  if (!Array.isArray(localQuestion.value.correctAnswer)) {
+    localQuestion.value.correctAnswer = []
+  }
+  if (!Array.isArray(localQuestion.value.blanks)) {
+    localQuestion.value.blanks = []
+  }
+  if (!Array.isArray(localQuestion.value.matchingPairs)) {
+    localQuestion.value.matchingPairs = []
+  }
+  if (!Array.isArray(localQuestion.value.reorderingItems)) {
+    localQuestion.value.reorderingItems = []
+  }
+
+  if (type === 'fill_blank_choices') {
+    if (!localQuestion.value.blanks.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
+      localQuestion.value.blanks = localQuestion.value.options
+    }
   } else if (type === 'matching') {
-    // For matching, initialize pairs from options
-    if (!formData.value.matchingPairs.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
-      formData.value.matchingPairs = formData.value.options
-    } else if (!formData.value.matchingPairs.length) {
-      // Add default pair if none exists
+    if (!localQuestion.value.matchingPairs.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
+      localQuestion.value.matchingPairs = localQuestion.value.options
+    } else if (!localQuestion.value.matchingPairs.length) {
       addMatchingPair()
     }
   } else if (type === 'reordering') {
-    // For reordering, initialize items from options
-    if (!formData.value.reorderingItems.length && Array.isArray(formData.value.options) && formData.value.options.length > 0) {
-      formData.value.reorderingItems = formData.value.options
-    } else if (!formData.value.reorderingItems.length) {
-      // Add default item if none exists
+    if (!localQuestion.value.reorderingItems.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
+      localQuestion.value.reorderingItems = localQuestion.value.options
+    } else if (!localQuestion.value.reorderingItems.length) {
       addReorderingItem()
-    }
-  } else if (type === 'writing') {
-    
-    // For writing, initialize grading guidelines and word limits from options
-    if (!formData.value.gradingGuidelines && formData.value.options && formData.value.options.gradingGuidelines) {
-      formData.value.gradingGuidelines = formData.value.options.gradingGuidelines
-    }
-    
-    if (!formData.value.minWords && formData.value.options && formData.value.options.minWords) {
-      formData.value.minWords = formData.value.options.minWords
-    }
-    
-    if (!formData.value.maxWords && formData.value.options && formData.value.options.maxWords) {
-      formData.value.maxWords = formData.value.options.maxWords
     }
   }
 }
-
-// Question types
-const questionTypes = [
-  { title: 'Multiple Choice', value: 'mcq' },
-  { title: 'Matching', value: 'matching' },
-  { title: 'Fill in the Blank', value: 'fill_blank' },
-  { title: 'Fill in the Blank with Choices', value: 'fill_blank_choices' },
-  { title: 'Reordering', value: 'reordering' },
-  { title: 'Writing', value: 'writing' },
-]
-
-const mediaTypes = [
-  { title: 'None', value: 'none' },
-  { title: 'Image', value: 'image' },
-  { title: 'Image with Audio', value: 'image_with_audio' },
-  { title: 'Video', value: 'video' },
-]
-
-// For file uploads
-const mediaFile = ref(null)
 
 // Handle file selection
 const handleFileUpload = file => {
   mediaFile.value = file || null
-  
-  // If a file is selected, create a temporary URL for preview
   if (mediaFile.value) {
-    formData.value.mediaUrl = URL.createObjectURL(mediaFile.value)
+    localQuestion.value.mediaUrl = URL.createObjectURL(mediaFile.value)
   }
 }
 
-// Clear media when media type changes
-watch(() => formData.value.mediaType, newValue => {
-  if (newValue === 'none') {
-    formData.value.mediaUrl = null
-    formData.value.audioUrl = null
-    mediaFile.value = null
-  } else if (newValue === 'video') {
-    // Clear file upload data when switching to video (URL only)
-    mediaFile.value = null
-  } else if (newValue !== 'image_with_audio') {
-    // Clear audio URL when switching to a type that doesn't use audio
-    formData.value.audioUrl = null
-  }
-})
-
-// Difficulty levels
-const difficultyLevels = [
-  { title: 'Easy', value: 'easy' },
-  { title: 'Medium', value: 'medium' },
-  { title: 'Hard', value: 'hard' },
-]
-
-// Function to reset the form to its default state for creating a new question
-const resetForm = () => {
-  formData.value = {
-    id: null,
-    courseId: props.courseId,
-    title: '',
-    questionText: '',   
-    type: 'mcq',
-    options: [],
-    correctAnswer: [],
-    points: 1,
-    difficulty: 'medium',
-    tags: [],
-    correctFeedback: '',
-    incorrectFeedback: '',
-    mediaUrl: null,
-    mediaType: 'none',
-    audioUrl: null,
-    blanks: [],
-    matchingPairs: [],
-    reorderingItems: [],
-    gradingGuidelines: '',
-    minWords: 0,
-    maxWords: 0,
-  }
-
-  // Reset other related state
-  formErrors.value = {}
-  newTag.value = ''
-
-  // Initialize data for the default question type
-  initializeQuestionTypeData()
-}
-
-// Watch for changes in the question prop
-watch(() => props.question, newQuestion => {
-  if (newQuestion && newQuestion.id) {
-    // Editing an existing question
-    // Reset form errors
-    formErrors.value = {}
-    
-    // Reset newTag input
-    newTag.value = ''
-    
-    // Clone to avoid direct modification of props
-    formData.value = JSON.parse(JSON.stringify(newQuestion))
-    console.log(newQuestion)
-    console.log(formData.value )
-    
-
-
-    // Ensure tags is an array
-    if (!formData.value.tags) {
-      formData.value.tags = []
-    }
-
-    // Ensure correctAnswer is an array for mcq
-    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.correctAnswer)) {
-      formData.value.correctAnswer = []
-    }
-
-    // Ensure options is an array for mcq
-    if (formData.value.type === 'mcq' && !Array.isArray(formData.value.options)) {
-      formData.value.options = []
-    }
-    
-    // Ensure points has a valid value
-    if (!formData.value.points) {
-      formData.value.points = 1
-    }
-    
-    // Initialize data for specific question types
-    initializeQuestionTypeData()
-  } else {
-    // Creating a new question, so reset the form
-    resetForm()
-  }
-}, { immediate: true, deep: true })
-
-// Close dialog and reset form
+// Close dialog
 const closeDialog = () => {
   emit('update:isDialogVisible', false)
-  formErrors.value = {}
-  newTag.value = ''
 }
 
+// Helper function to append form data recursively
 function appendFormData(formData, key, value) {
   if (value === null || value === undefined) return
 
-  // If the value is an array, recurse through it
   if (Array.isArray(value)) {
     value.forEach((item, index) => {
       appendFormData(formData, `${key}[${index}]`, item)
@@ -459,7 +271,6 @@ function appendFormData(formData, key, value) {
     return
   }
 
-  // If the value is an object (matchingPairs, correctAnswer)
   if (typeof value === "object") {
     Object.entries(value).forEach(([childKey, childValue]) => {
       appendFormData(formData, `${key}[${childKey}]`, childValue)
@@ -468,49 +279,41 @@ function appendFormData(formData, key, value) {
     return
   }
 
-  // Primitive value (string/number/bool)
   formData.append(key, value)
 }
 
-
 // Submit form
 const submitForm = async () => {
-  if (formRef.value) {
-    const { valid } = await formRef.value.validate()
-    if (!valid) return
-  }
+  const { valid } = await formRef.value.validate()
+  if (!valid) return
 
   isSubmitting.value = true
   formErrors.value = {}
 
   try {
-    const questionData = formData.value
     const formDataObj = new FormData()
 
-    Object.entries(questionData).forEach(([key, value]) => {
+    Object.entries(localQuestion.value).forEach(([key, value]) => {
       if (key !== "mediaFile") {
         appendFormData(formDataObj, key, value)
       }
     })
 
-    // Handle media upload
     if (
       mediaFile.value &&
-      (questionData.mediaType === 'image' || questionData.mediaType === 'image_with_audio')
+      (localQuestion.value.mediaType === 'image' || localQuestion.value.mediaType === 'image_with_audio')
     ) {
       formDataObj.append('media', mediaFile.value)
     }
 
-    // Update or create
-    if (questionData.id) {
+    if (props.dialogMode === 'edit') {
       formDataObj.append('_method', 'PUT')
-      await api.post(`/admin/courses/${props.courseId}/questions/${questionData.id}`, formDataObj)
-      toast.success('Question updated successfully')
+      await api.post(`/admin/courses/${props.courseId}/questions/${localQuestion.value.id}`, formDataObj)
+      toast.success(t('questions.success.questionUpdated', 'Question updated successfully'))
     } else {
       formDataObj.append('courseId', props.courseId)
-
       await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj)
-      toast.success('Question created successfully')
+      toast.success(t('questions.success.questionCreated', 'Question created successfully'))
     }
 
     emit('refresh')
@@ -518,109 +321,163 @@ const submitForm = async () => {
   } catch (error) {
     if (error.response?.status === 422) {
       formErrors.value = error.response.data.errors || {}
-      toast.error('Please correct the validation errors.')
+      toast.error(t('validation.correctErrors', 'Please correct the validation errors'))
     } else {
-      toast.error(error.response?.data?.message || 'Failed to save question')
+      toast.error(error.response?.data?.message || t('questions.errors.failedToSave', 'Failed to save question'))
     }
   } finally {
     isSubmitting.value = false
   }
 }
 
-
-
-// Add new option for multiple choice
+// MCQ functions
 const addOption = () => {
-  if (!formData.value.options) {
-    formData.value.options = []
+  if (!localQuestion.value.options) {
+    localQuestion.value.options = []
   }
-  formData.value.options.push('')
+  localQuestion.value.options.push('')
 }
 
-// Remove option
 const removeOption = index => {
-  formData.value.options.splice(index, 1)
-  
-  // Also remove from correct answers if selected
-  if (formData.value.correctAnswer.includes(index.toString())) {
-    const answerIndex = formData.value.correctAnswer.indexOf(index.toString())
+  localQuestion.value.options.splice(index, 1)
+  if (localQuestion.value.correctAnswer.includes(index.toString())) {
+    const answerIndex = localQuestion.value.correctAnswer.indexOf(index.toString())
 
-    formData.value.correctAnswer.splice(answerIndex, 1)
+    localQuestion.value.correctAnswer.splice(answerIndex, 1)
   }
-  
-  // Adjust correct answers for removed option
-  formData.value.correctAnswer = formData.value.correctAnswer
-    .map(answer => {
-      const answerNum = parseInt(answer)
-      if (answerNum > index) {
-        return (answerNum - 1).toString()
-      }
-      
-      return answer
-    })
+  localQuestion.value.correctAnswer = localQuestion.value.correctAnswer.map(answer => {
+    const answerNum = parseInt(answer)
+    if (answerNum > index) {
+      return (answerNum - 1).toString()
+    }
+    
+    return answer
+  })
 }
 
-// Toggle correct answer for an option
 const toggleCorrectAnswer = index => {
   const indexStr = index.toString()
-  const correctAnswers = formData.value.correctAnswer || []
-  
+  const correctAnswers = localQuestion.value.correctAnswer || []
   if (correctAnswers.includes(indexStr)) {
-    // Remove from correct answers
     const answerIndex = correctAnswers.indexOf(indexStr)
 
-    formData.value.correctAnswer.splice(answerIndex, 1)
+    localQuestion.value.correctAnswer.splice(answerIndex, 1)
   } else {
-    // Add to correct answers
-    formData.value.correctAnswer.push(indexStr)
+    localQuestion.value.correctAnswer.push(indexStr)
   }
 }
 
-// Check if an option is marked as correct
 const isCorrectAnswer = index => {
-  return formData.value.correctAnswer?.includes(index.toString())
+  return localQuestion.value.correctAnswer?.includes(index.toString())
 }
 
+// Fill blank with choices functions
+const addBlankOption = blankIndex => {
+  if (!localQuestion.value.blanks[blankIndex].options) {
+    localQuestion.value.blanks[blankIndex].options = []
+  }
+  localQuestion.value.blanks[blankIndex].options.push('')
+}
+
+const removeBlankOption = (blankIndex, optionIndex) => {
+  localQuestion.value.blanks[blankIndex].options.splice(optionIndex, 1)
+
+  const blank = localQuestion.value.blanks[blankIndex]
+  if (blank.correctAnswer === optionIndex.toString()) {
+    blank.correctAnswer = '0'
+  } else if (parseInt(blank.correctAnswer) > optionIndex) {
+    blank.correctAnswer = (parseInt(blank.correctAnswer) - 1).toString()
+  }
+}
+
+// Matching functions
+const addMatchingPair = () => {
+  if (!localQuestion.value.matchingPairs) {
+    localQuestion.value.matchingPairs = []
+  }
+  localQuestion.value.matchingPairs.push({ left: '', right: '' })
+  updateMatchingCorrectAnswers()
+}
+
+const removeMatchingPair = index => {
+  localQuestion.value.matchingPairs.splice(index, 1)
+  updateMatchingCorrectAnswers()
+}
+
+const updateMatchingCorrectAnswers = () => {
+  if (!localQuestion.value.matchingPairs) return
+  localQuestion.value.correctAnswer = localQuestion.value.matchingPairs.map((pair, index) => ({
+    left: index,
+    right: index,
+  }))
+}
+
+// Reordering functions
+const addReorderingItem = () => {
+  if (!localQuestion.value.reorderingItems) {
+    localQuestion.value.reorderingItems = []
+  }
+  localQuestion.value.reorderingItems.push('')
+  updateReorderingCorrectAnswers()
+}
+
+const removeReorderingItem = index => {
+  localQuestion.value.reorderingItems.splice(index, 1)
+  updateReorderingCorrectAnswers()
+}
+
+const moveReorderingItem = (index, direction) => {
+  const items = localQuestion.value.reorderingItems
+  if (direction === 'up' && index > 0) {
+    [items[index], items[index - 1]] = [items[index - 1], items[index]]
+  } else if (direction === 'down' && index < items.length - 1) {
+    [items[index], items[index + 1]] = [items[index + 1], items[index]]
+  }
+  updateReorderingCorrectAnswers()
+}
+
+const updateReorderingCorrectAnswers = () => {
+  if (!localQuestion.value.reorderingItems) return
+  localQuestion.value.correctAnswer = localQuestion.value.reorderingItems.map((_, index) => index.toString())
+}
+
+// Tag functions
 const addTag = () => {
-  if (newTag.value.trim() && !formData.value.tags.includes(newTag.value.trim())) {
-    formData.value.tags.push(newTag.value.trim())
+  if (newTag.value.trim() && !localQuestion.value.tags.includes(newTag.value.trim())) {
+    localQuestion.value.tags.push(newTag.value.trim())
     newTag.value = ''
   }
 }
 
-// Remove a tag
 const removeTag = tag => {
-  const index = formData.value.tags.indexOf(tag)
+  const index = localQuestion.value.tags.indexOf(tag)
   if (index !== -1) {
-    formData.value.tags.splice(index, 1)
+    localQuestion.value.tags.splice(index, 1)
   }
 }
-
-// Computed property to determine dialog title
-const dialogTitle = computed(() => {
-  return formData.value.id ? 'Edit Question' : 'Add New Question'
-})
-
-// Reset options when changing question type
-watch(() => formData.value.type, newType => {
-  // Initialize appropriate data structures for the question type
-  initializeQuestionTypeData()
-})
 </script>
 
 <template>
   <VDialog
     :model-value="isDialogVisible"
-    max-width="800"
+    max-width="900px"
     persistent
-    @update:model-value="val => emit('update:isDialogVisible', val)"
+    scrollable
+    @update:model-value="closeDialog"
   >
-    <!-- Dialog Close Btn -->
     <DialogCloseBtn @click="closeDialog" />
     
-    <VCard :title="dialogTitle">
-      <VCardText>
-        <!-- Form Error -->
+    <VCard class="pa-2">
+      <VCardTitle class="text-h5 font-weight-bold pa-6 pb-4">
+        {{ dialogTitle }}
+      </VCardTitle>
+      
+      <VDivider />
+
+      <VCardText
+        class="pa-6"
+        style="max-height: 70vh; overflow-y: auto;"
+      >
         <VAlert
           v-if="formErrors.general"
           color="error"
@@ -632,257 +489,210 @@ watch(() => formData.value.type, newType => {
         
         <VForm
           ref="formRef"
+          v-model="isFormValid"
           @submit.prevent="submitForm"
         >
-          <VRow>
-            <!-- Question Title -->
-            <VCol cols="12">
-              <AppTextField
-                v-model="formData.title"
-                label="Title (Optional)"
-                placeholder="Enter an optional title for the question"
-                :error-messages="formErrors.title"
-              />
-            </VCol>
-            
-            <!-- Question Text -->
-            <VCol cols="12">
-              <AppTextarea
-                v-model="formData.questionText"
-                label="Question Text"
-                :rules="[requiredValidator]"
-                :error-messages="formErrors.questionText"
-                placeholder="Enter the question text"
-                rows="3"
-              />
-            </VCol>
-            
-            <!-- Question Type -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSelect
-                v-model="formData.type"
-                label="Question Type"
-                :items="questionTypes"
-                item-title="title"
-                item-value="value"
-                :error-messages="formErrors.type"
-                class="mb-3"
-              />
-            </VCol>
-            
-            <!-- Difficulty -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSelect
-                v-model="formData.difficulty"
-                label="Difficulty"
-                :items="difficultyLevels"
-                item-title="title"
-                item-value="value"
-                :error-messages="formErrors.difficulty"
-                class="mb-3"
-              />
-            </VCol>
-            <!-- Media Type Selection -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="formData.mediaType"
-                label="Media Type"
-                :items="mediaTypes"
-                item-title="title"
-                item-value="value"
-                :error-messages="formErrors.mediaType"
-                class="mb-3"
-              />
-            </VCol>
-            
-            <!-- Media Upload Fields -->
-            <VCol
-              v-if="formData.mediaType === 'image' || formData.mediaType === 'image_with_audio'"
-              cols="12"
-              md="6"
-            >
-              <VFileInput
-                label="Upload Image"
-                accept="image/*"
-                :error-messages="formErrors.media"
-                prepend-icon="tabler-upload"
-                :hint="formData.mediaUrl ? 'Image selected' : 'Select an image file'"
-                persistent-hint
-                @update:model-value="handleFileUpload"
-              />
-              <div
-                v-if="formData.mediaUrl"
-                class="mt-2"
-              >
-                <img
-                  :src="formData.mediaUrl"
-                  style="max-height: 150px; max-width: 100%;"
-                >
-              </div>
-            </VCol>
-            
-            <!-- Audio URL for Image with Audio -->
-            <VCol
-              v-if="formData.mediaType === 'image_with_audio'"
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="formData.audioUrl"
-                label="Audio URL"
-                placeholder="Enter URL for audio file"
-                :error-messages="formErrors.audioUrl"
-              />
-            </VCol>
-            
-            <VCol
-              v-if="formData.mediaType === 'video'"
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="formData.mediaUrl"
-                label="Video URL"
-                placeholder="Enter URL for video file"
-                :error-messages="formErrors.mediaUrl"
-              />
-            </VCol>
-            
-            <!-- Points -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="formData.points"
-                label="Points"
-                type="number"
-                min="1"
-                :rules="[requiredValidator, integerValidator, v => v > 0 || 'Points must be at least 1']"
-                :error-messages="formErrors.points"
-              />
-            </VCol>
-            
-            <!-- Tags -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VRow no-gutters>
-                <VCol cols="9">
-                  <AppTextField
-                    v-model="newTag"
-                    label="Tags"
-                    class="me-2"
-                    placeholder="Add tags (press Enter)"
-                    @keyup.enter="addTag"
-                  />
-                </VCol>
-                <VCol cols="3">
-                  <VBtn
-                    width="100%"
-                    color="primary"
-                    class="mt-6"
-                    @click="addTag"
-                  >
-                    Add Tag
-                  </VBtn>
-                </VCol>
-              </VRow>
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              {{ t('questions.dialog.basicInformation', 'Basic Information') }}
+            </p>
+            <VRow>
+              <VCol cols="12">
+                <AppTextField
+                  v-model="localQuestion.title"
+                  :label="t('questions.dialog.title', 'Title (Optional)')"
+                  :placeholder="t('questions.dialog.titlePlaceholder', 'Enter an optional title for the question')"
+                  :error-messages="formErrors.title"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
               
-              <div class="d-flex flex-wrap gap-1 mt-2">
-                <VChip
-                  v-for="(tag, index) in formData.tags"
-                  :key="index"
-                  closable
-                  @click:close="removeTag(tag)"
+              <VCol cols="12">
+                <AppTextarea
+                  v-model="localQuestion.questionText"
+                  :label="t('questions.dialog.questionText', 'Question Text')"
+                  :rules="[requiredValidator]"
+                  :error-messages="formErrors.questionText"
+                  :placeholder="t('questions.dialog.questionTextPlaceholder', 'Enter the question text')"
+                  rows="3"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+              
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VSelect
+                  v-model="localQuestion.type"
+                  :label="t('questions.dialog.questionType', 'Question Type')"
+                  :items="questionTypes"
+                  item-title="title"
+                  item-value="value"
+                  :error-messages="formErrors.type"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="tabler-list"
+                />
+              </VCol>
+              
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VSelect
+                  v-model="localQuestion.difficulty"
+                  :label="t('questions.dialog.difficulty', 'Difficulty')"
+                  :items="difficultyLevels"
+                  item-title="title"
+                  item-value="value"
+                  :error-messages="formErrors.difficulty"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="tabler-chart-bar"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="localQuestion.points"
+                  :label="t('questions.dialog.points', 'Points')"
+                  type="number"
+                  min="1"
+                  :rules="[requiredValidator, integerValidator, v => v > 0 || t('validation.minValue', 'Must be at least {min}', { min: 1 })]"
+                  :error-messages="formErrors.points"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="tabler-star"
+                />
+              </VCol>
+            </VRow>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              {{ t('questions.dialog.media', 'Media') }}
+            </p>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="localQuestion.mediaType"
+                  :label="t('questions.dialog.mediaType', 'Media Type')"
+                  :items="mediaTypes"
+                  item-title="title"
+                  item-value="value"
+                  :error-messages="formErrors.mediaType"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+              
+              <VCol
+                v-if="localQuestion.mediaType === 'image' || localQuestion.mediaType === 'image_with_audio'"
+                cols="12"
+                md="6"
+              >
+                <VFileInput
+                  :label="t('questions.dialog.uploadImage', 'Upload Image')"
+                  accept="image/*"
+                  :error-messages="formErrors.media"
+                  prepend-icon="tabler-upload"
+                  :hint="localQuestion.mediaUrl ? t('questions.dialog.imageSelected', 'Image selected') : t('questions.dialog.selectImage', 'Select an image file')"
+                  persistent-hint
+                  variant="outlined"
+                  density="comfortable"
+                  @update:model-value="handleFileUpload"
+                />
+                <div
+                  v-if="localQuestion.mediaUrl"
+                  class="mt-2"
                 >
-                  {{ tag }}
-                </VChip>
-              </div>
-            </VCol>
-            
-            <!-- Correct Feedback -->
-            <VCol cols="12">
-              <AppTextarea
-                v-model="formData.correctFeedback"
-                label="Correct Feedback (Optional)"
-                placeholder="Message to show when the user answers correctly"
-                rows="2"
-                :error-messages="formErrors.correctFeedback"
-              />
-            </VCol>
-            
-            <!-- Incorrect Feedback -->
-            <VCol cols="12">
-              <AppTextarea
-                v-model="formData.incorrectFeedback"
-                label="Incorrect Feedback (Optional)"
-                placeholder="Message to show when the user answers incorrectly"
-                rows="2"
-                :error-messages="formErrors.incorrectFeedback"
-              />
-            </VCol>
-            <!-- Multiple Choice Options (show only for MCQ type) -->
-            <VCol
-              v-if="formData.type === 'mcq'"
-              cols="12"
-            >
+                  <img
+                    :src="localQuestion.mediaUrl"
+                    style="max-height: 150px; max-width: 100%;"
+                    :alt="t('questions.dialog.imagePreview', 'Image preview')"
+                  >
+                </div>
+              </VCol>
+              
+              <VCol
+                v-if="localQuestion.mediaType === 'image_with_audio'"
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="localQuestion.audioUrl"
+                  :label="t('questions.dialog.audioUrl', 'Audio URL')"
+                  :placeholder="t('questions.dialog.audioUrlPlaceholder', 'Enter URL for audio file')"
+                  :error-messages="formErrors.audioUrl"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+              
+              <VCol
+                v-if="localQuestion.mediaType === 'video'"
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="localQuestion.mediaUrl"
+                  :label="t('questions.dialog.videoUrl', 'Video URL')"
+                  :placeholder="t('questions.dialog.videoUrlPlaceholder', 'Enter URL for video file')"
+                  :error-messages="formErrors.mediaUrl"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+            </VRow>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              {{ t('questions.dialog.questionContent', 'Question Content') }}
+            </p>
+
+            <div v-if="localQuestion.type === 'mcq'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Multiple Choice Options</h4>
+                <h4>{{ t('questions.dialog.mcqOptions', 'Multiple Choice Options') }}</h4>
                 <VBtn
                   size="small"
                   prepend-icon="tabler-plus"
                   @click="addOption"
                 >
-                  Add Option
+                  {{ t('questions.dialog.addOption', 'Add Option') }}
                 </VBtn>
               </div>
               <VInput
-                :key="`mcq-validation-${formData.options.length}-${formData.correctAnswer.length}`"
-                :model-value="formData"
+                :key="`mcq-validation-${localQuestion.options.length}-${localQuestion.correctAnswer.length}`"
+                :model-value="localQuestion"
                 :rules="[
-                  () => formData.options.length >= 2 || 'MCQ questions must have at least 2 options.',
-                  () => formData.correctAnswer.length > 0 || 'Please select at least one correct answer.'
+                  () => localQuestion.options.length >= 2 || t('questions.validation.minOptions', 'There must be at least 2 options.'),
+                  () => localQuestion.correctAnswer.length > 0 || t('questions.validation.selectCorrect', 'Please select at least one correct answer')
                 ]"
                 class="mb-2"
               />
               
-              <VAlert
-                v-if="formErrors.options"
-                color="error"
-                variant="tonal"
-                class="mb-2"
-              >
-                {{ formErrors.options }}
-              </VAlert>
-              
-              <VAlert
-                v-if="formErrors.correctAnswer"
-                color="error"
-                variant="tonal"
-                class="mb-2"
-              >
-                {{ formErrors.correctAnswer }}
-              </VAlert>
-              
               <div
-                v-for="(option, index) in formData.options"
+                v-for="(option, index) in localQuestion.options"
                 :key="index"
                 class="d-flex align-center mb-2"
               >
                 <VCheckbox
                   :model-value="isCorrectAnswer(index)"
-                  label="Correct"
+                  :label="t('questions.dialog.correct', 'Correct')"
                   color="success"
                   class="me-2"
                   hide-details
@@ -890,10 +700,12 @@ watch(() => formData.value.type, newType => {
                 />
                 
                 <AppTextField
-                  v-model="formData.options[index]"
-                  :placeholder="`Option ${index + 1}`"
+                  v-model="localQuestion.options[index]"
+                  :placeholder="t('questions.dialog.optionPlaceholder', 'Option {num}', { num: index + 1 })"
                   class="flex-grow-1"
                   :rules="[requiredValidator]"
+                  variant="outlined"
+                  density="comfortable"
                 />
                 
                 <VBtn
@@ -909,22 +721,18 @@ watch(() => formData.value.type, newType => {
               </div>
               
               <VBtn
-                v-if="!formData.options.length"
+                v-if="!localQuestion.options.length"
                 block
                 variant="outlined"
                 @click="addOption"
               >
-                Add First Option
+                {{ t('questions.dialog.addFirstOption', 'Add First Option') }}
               </VBtn>
-            </VCol>
-            
-            <!-- Fill in the Blank -->
-            <VCol
-              v-if="formData.type === 'fill_blank'"
-              cols="12"
-            >
+            </div>
+
+            <div v-if="localQuestion.type === 'fill_blank'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Fill in the Blank Answers</h4>
+                <h4>{{ t('questions.dialog.fillBlankAnswers', 'Fill in the Blank Answers') }}</h4>
               </div>
 
               <VAlert
@@ -932,7 +740,7 @@ watch(() => formData.value.type, newType => {
                 variant="tonal"
                 class="mb-4"
               >
-                For each blank, enter all possible correct answers, with each answer on a new line.
+                {{ t('questions.dialog.fillBlankInfo', 'For each blank, enter all possible correct answers, with each answer on a new line.') }}
               </VAlert>
 
               <div v-if="detectedBlanks.length > 0">
@@ -942,29 +750,27 @@ watch(() => formData.value.type, newType => {
                   class="mb-4"
                 >
                   <AppTextarea
-                    :model-value="Array.isArray(formData.correctAnswer[index]) ? formData.correctAnswer[index].join('\n') : ''"
-                    :label="`Answers for ${blank}`"
-                    placeholder="Enter possible answers, one per line..."
+                    :model-value="Array.isArray(localQuestion.correctAnswer[index]) ? localQuestion.correctAnswer[index].join('\n') : ''"
+                    :label="t('questions.dialog.fillBlankAnswerLabel', { blankPlaceholder: blank })"
+                    :placeholder="t('questions.dialog.fillBlankPlaceholder', 'Enter possible answers, one per line...')"
                     rows="3"
-                    @update:model-value="formData.correctAnswer[index] = $event.split('\n')"
+                    variant="outlined"
+                    density="comfortable"
+                    @update:model-value="localQuestion.correctAnswer[index] = $event.split('\n')"
                   />
                 </div>
               </div>
 
               <div v-else>
                 <p class="text-medium-emphasis">
-                  No blanks detected. Please add blanks like <code>[blank1]</code> to the question text above.
+                  {{ t('questions.dialog.noBlanks', 'No blanks detected. Please add blanks like [blank1] to the question text above.') }}
                 </p>
               </div>
-            </VCol>
-            
-            <!-- Fill in the Blank with Choices -->
-            <VCol
-              v-if="formData.type === 'fill_blank_choices'"
-              cols="12"
-            >
+            </div>
+
+            <div v-if="localQuestion.type === 'fill_blank_choices'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Fill in the Blank with Choices</h4>
+                <h4>{{ t('questions.dialog.fillBlankChoices', 'Fill in the Blank with Choices') }}</h4>
               </div>
               
               <VAlert
@@ -972,17 +778,17 @@ watch(() => formData.value.type, newType => {
                 variant="tonal"
                 class="mb-4"
               >
-                <p>Use [blank1], [blank2], etc. in your question text to indicate blanks.</p>
-                <p>Then define options for each blank below.</p>
+                <p>{{ t('questions.dialog.fillBlankChoiceInfo1', 'Use [blank1], [blank2], etc. in your question text to indicate blanks.') }}</p>
+                <p>{{ t('questions.dialog.fillBlankChoiceInfo2', 'Then define options for each blank below.') }}</p>
               </VAlert>
               
               <div class="mb-4">
                 <h4 class="mb-2">
-                  Blanks and Options
+                  {{ t('questions.dialog.blanksAndOptions', 'Blanks and Options') }}
                 </h4>
                 
                 <div 
-                  v-for="(blank, blankIndex) in formData.blanks || []" 
+                  v-for="(blank, blankIndex) in localQuestion.blanks || []" 
                   :key="blankIndex"
                   class="mb-4 pa-4 border rounded"
                 >
@@ -995,8 +801,10 @@ watch(() => formData.value.type, newType => {
                       <VCol cols="12">
                         <AppTextField
                           v-model="blank.placeholder"
-                          label="Placeholder text (optional)"
-                          placeholder="e.g. 'Select the correct city'"
+                          :label="t('questions.dialog.placeholder', 'Placeholder text (optional)')"
+                          :placeholder="t('questions.dialog.placeholderExample', 'e.g. \'Select the correct city\'')"
+                          variant="outlined"
+                          density="comfortable"
                         />
                       </VCol>
                     </VRow>
@@ -1004,7 +812,7 @@ watch(() => formData.value.type, newType => {
                   
                   <div>
                     <h6 class="mb-2">
-                      Options
+                      {{ t('questions.dialog.options', 'Options') }}
                     </h6>
                     <VRadioGroup
                       v-model="blank.correctAnswer"
@@ -1013,7 +821,7 @@ watch(() => formData.value.type, newType => {
                       <VInput
                         :key="`blank-options-validation-${blankIndex}-${blank.options.length}`"
                         :model-value="blank.options"
-                        :rules="[v => v.length >= 2 || 'There must be at least 2 options.']"
+                        :rules="[v => v.length >= 2 || t('questions.validation.minOptions', 'There must be at least 2 options.')]"
                         class="mb-2"
                       />
                       <div
@@ -1030,9 +838,11 @@ watch(() => formData.value.type, newType => {
                         
                         <AppTextField
                           v-model="blank.options[optIndex]"
-                          :placeholder="`Option ${optIndex + 1}`"
+                          :placeholder="t('questions.dialog.optionPlaceholder', 'Option {num}', { num: optIndex + 1 })"
                           class="flex-grow-1"
                           hide-details
+                          variant="outlined"
+                          density="comfortable"
                         />
                         
                         <VBtn
@@ -1054,45 +864,43 @@ watch(() => formData.value.type, newType => {
                       class="mt-2"
                       @click="addBlankOption(blankIndex)"
                     >
-                      Add Option
+                      {{ t('questions.dialog.addOption', 'Add Option') }}
                     </VBtn>
                   </div>
                 </div>
 
-                <div v-if="formData.blanks.length < 1">
+                <div v-if="!localQuestion.blanks || localQuestion.blanks.length < 1">
                   <p class="text-medium-emphasis">
-                    No blanks detected. Please add blanks like <code>[blank1]</code> to the question text above.
+                    {{ t('questions.dialog.noBlanks', 'No blanks detected. Please add blanks like [blank1] to the question text above.') }}
                   </p>
                 </div>
               </div>
-            </VCol>
-            
-            <!-- Matching -->
-            <VCol
-              v-if="formData.type === 'matching'"
-              cols="12"
-            >
+            </div>
+
+            <div v-if="localQuestion.type === 'matching'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Matching Pairs</h4>
+                <h4>{{ t('questions.dialog.matchingPairs', 'Matching Pairs') }}</h4>
               </div>
               <VInput
-                :key="`matching-validation-${formData.matchingPairs.length}`"
-                :model-value="formData.matchingPairs"
-                :rules="[v => v.length >= 2 || 'Matching questions must have at least 2 pairs.']"
+                :key="`matching-validation-${localQuestion.matchingPairs.length}`"
+                :model-value="localQuestion.matchingPairs"
+                :rules="[v => v.length >= 2 || t('questions.validation.minPairs', 'Matching questions must have at least 2 pairs.')]"
                 class="mt-2"
               />
               
               <div class="mb-4">
                 <div 
-                  v-for="(pair, pairIndex) in formData.matchingPairs || []" 
+                  v-for="(pair, pairIndex) in localQuestion.matchingPairs || []" 
                   :key="pairIndex"
                   class="d-flex align-center mb-2"
                 >
                   <AppTextField
                     v-model="pair.left"
-                    placeholder="Left item"
+                    :placeholder="t('questions.dialog.leftItem', 'Left item')"
                     class="flex-grow-1 me-2"
                     hide-details
+                    variant="outlined"
+                    density="comfortable"
                   />
                   
                   <VIcon
@@ -1102,9 +910,11 @@ watch(() => formData.value.type, newType => {
                   
                   <AppTextField
                     v-model="pair.right"
-                    placeholder="Right item"
+                    :placeholder="t('questions.dialog.rightItem', 'Right item')"
                     class="flex-grow-1 me-2"
                     hide-details
+                    variant="outlined"
+                    density="comfortable"
                   />
                   
                   <VBtn
@@ -1119,13 +929,13 @@ watch(() => formData.value.type, newType => {
                 </div>
                 
                 <VBtn
-                  v-if="!formData.matchingPairs?.length"
+                  v-if="!localQuestion.matchingPairs?.length"
                   block
                   variant="outlined"
                   class="mt-2"
                   @click="addMatchingPair"
                 >
-                  Add First Pair
+                  {{ t('questions.dialog.addFirstPair', 'Add First Pair') }}
                 </VBtn>
                 <VBtn
                   v-else
@@ -1133,31 +943,27 @@ watch(() => formData.value.type, newType => {
                   class="mt-2"
                   @click="addMatchingPair"
                 >
-                  Add Pair
+                  {{ t('questions.dialog.addPair', 'Add Pair') }}
                 </VBtn>
               </div>
-            </VCol>
-            
-            <!-- Reordering -->
-            <VCol
-              v-if="formData.type === 'reordering'"
-              cols="12"
-            >
+            </div>
+
+            <div v-if="localQuestion.type === 'reordering'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Reordering Items</h4>
+                <h4>{{ t('questions.dialog.reorderingItems', 'Reordering Items') }}</h4>
                 <p class="text-caption">
-                  Add items in the correct order. They will be randomized for the student.
+                  {{ t('questions.dialog.reorderingInfo', 'Add items in the correct order. They will be randomized for the student.') }}
                 </p>
               </div>
               <VInput
-                :key="`reordering-validation-${formData.reorderingItems.length}`"
-                :model-value="formData.reorderingItems"
-                :rules="[v => v.length >= 2 || 'Reordering questions must have at least 2 items.']"
+                :key="`reordering-validation-${localQuestion.reorderingItems.length}`"
+                :model-value="localQuestion.reorderingItems"
+                :rules="[v => v.length >= 2 || t('questions.validation.minItems', 'Reordering questions must have at least 2 items.')]"
                 class="mt-2"
               />
               <div class="mb-4">
                 <div 
-                  v-for="(item, itemIndex) in formData.reorderingItems || []" 
+                  v-for="(item, itemIndex) in localQuestion.reorderingItems || []" 
                   :key="itemIndex"
                   class="d-flex align-center mb-2"
                 >
@@ -1166,10 +972,12 @@ watch(() => formData.value.type, newType => {
                   </div>
                   
                   <AppTextField
-                    v-model="formData.reorderingItems[itemIndex]"
-                    :placeholder="`Item ${itemIndex + 1}`"
+                    v-model="localQuestion.reorderingItems[itemIndex]"
+                    :placeholder="t('questions.dialog.itemPlaceholder', 'Item {num}', { num: itemIndex + 1 })"
                     class="flex-grow-1"
                     hide-details
+                    variant="outlined"
+                    density="comfortable"
                   />
                   
                   <div class="d-flex">
@@ -1190,7 +998,7 @@ watch(() => formData.value.type, newType => {
                       variant="text"
                       color="primary"
                       size="small"
-                      :disabled="itemIndex === formData.reorderingItems.length - 1"
+                      :disabled="itemIndex === localQuestion.reorderingItems.length - 1"
                       @click="moveReorderingItem(itemIndex, 'down')"
                     >
                       <VIcon icon="tabler-chevron-down" />
@@ -1213,18 +1021,14 @@ watch(() => formData.value.type, newType => {
                   class="mt-2"
                   @click="addReorderingItem"
                 >
-                  Add Item
+                  {{ t('questions.dialog.addItem', 'Add Item') }}
                 </VBtn>
               </div>
-            </VCol>
-            
-            <!-- Writing -->
-            <VCol
-              v-if="formData.type === 'writing'"
-              cols="12"
-            >
+            </div>
+
+            <div v-if="localQuestion.type === 'writing'">
               <div class="d-flex justify-space-between align-center mb-2">
-                <h4>Writing Question</h4>
+                <h4>{{ t('questions.dialog.writingQuestion', 'Writing Question') }}</h4>
               </div>
               
               <VAlert
@@ -1232,14 +1036,16 @@ watch(() => formData.value.type, newType => {
                 variant="tonal"
                 class="mb-4"
               >
-                Writing questions require manual grading. You can provide guidelines for grading below.
+                {{ t('questions.dialog.writingInfo', 'Writing questions require manual grading. You can provide guidelines for grading below.') }}
               </VAlert>
               
               <AppTextarea
-                v-model="formData.gradingGuidelines"
-                label="Grading Guidelines"
-                placeholder="Enter guidelines for grading this writing question"
+                v-model="localQuestion.gradingGuidelines"
+                :label="t('questions.dialog.gradingGuidelines', 'Grading Guidelines')"
+                :placeholder="t('questions.dialog.gradingGuidelinesPlaceholder', 'Enter guidelines for grading this writing question')"
                 rows="4"
+                variant="outlined"
+                density="comfortable"
               />
               
               <VRow class="mt-4">
@@ -1248,10 +1054,12 @@ watch(() => formData.value.type, newType => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="formData.minWords"
-                    label="Minimum Words"
+                    v-model="localQuestion.minWords"
+                    :label="t('questions.dialog.minWords', 'Minimum Words')"
                     type="number"
                     min="0"
+                    variant="outlined"
+                    density="comfortable"
                   />
                 </VCol>
                 
@@ -1260,36 +1068,121 @@ watch(() => formData.value.type, newType => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="formData.maxWords"
-                    label="Maximum Words"
+                    v-model="localQuestion.maxWords"
+                    :label="t('questions.dialog.maxWords', 'Maximum Words')"
                     type="number"
                     min="0"
+                    variant="outlined"
+                    density="comfortable"
                   />
                 </VCol>
               </VRow>
-            </VCol>
-          </VRow>
+            </div>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <div class="mb-4">
+            <p class="text-overline text-primary mb-3">
+              {{ t('questions.dialog.feedbackAndTags', 'Feedback & Tags') }}
+            </p>
+            <VRow>
+              <VCol cols="12">
+                <AppTextarea
+                  v-model="localQuestion.correctFeedback"
+                  :label="t('questions.dialog.correctFeedback', 'Correct Feedback (Optional)')"
+                  :placeholder="t('questions.dialog.correctFeedbackPlaceholder', 'Message to show when the user answers correctly')"
+                  rows="2"
+                  :error-messages="formErrors.correctFeedback"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+              
+              <VCol cols="12">
+                <AppTextarea
+                  v-model="localQuestion.incorrectFeedback"
+                  :label="t('questions.dialog.incorrectFeedback', 'Incorrect Feedback (Optional)')"
+                  :placeholder="t('questions.dialog.incorrectFeedbackPlaceholder', 'Message to show when the user answers incorrectly')"
+                  rows="2"
+                  :error-messages="formErrors.incorrectFeedback"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+              
+              <VCol cols="12">
+                <VRow no-gutters>
+                  <VCol cols="9">
+                    <AppTextField
+                      v-model="newTag"
+                      :label="t('questions.dialog.tags', 'Tags')"
+                      class="me-2"
+                      :placeholder="t('questions.dialog.tagsPlaceholder', 'Add tags (press Enter)')"
+                      variant="outlined"
+                      density="comfortable"
+                      @keyup.enter="addTag"
+                    />
+                  </VCol>
+                  <VCol cols="3">
+                    <VBtn
+                      width="100%"
+                      color="primary"
+                      class="mt-6"
+                      @click="addTag"
+                    >
+                      {{ t('questions.dialog.addTag', 'Add Tag') }}
+                    </VBtn>
+                  </VCol>
+                </VRow>
+                
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <VChip
+                    v-for="(tag, index) in localQuestion.tags"
+                    :key="index"
+                    closable
+                    @click:close="removeTag(tag)"
+                  >
+                    {{ tag }}
+                  </VChip>
+                </div>
+              </VCol>
+            </VRow>
+          </div>
         </VForm>
       </VCardText>
       
-      <VCardText class="d-flex justify-end flex-wrap gap-3">
+      <VDivider />
+
+      <VCardActions class="pa-6 pt-4">
+        <VSpacer />
         <VBtn
-          variant="tonal"
+          variant="outlined"
           color="secondary"
+          size="large"
           :disabled="isSubmitting"
           @click="closeDialog"
         >
-          Cancel
+          {{ t('common.cancel', 'Cancel') }}
         </VBtn>
-        
         <VBtn
           color="primary"
+          variant="elevated"
+          size="large"
           :loading="isSubmitting"
+          :disabled="!isFormValid"
           @click="submitForm"
         >
-          {{ formData.id ? 'Update' : 'Create' }}
+          <VIcon
+            start
+            icon="tabler-check"
+          />
+          {{ props.dialogMode === 'add' 
+            ? t('questions.dialog.create', 'Create') 
+            : t('questions.dialog.update', 'Update') 
+          }}
         </VBtn>
-      </VCardText>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

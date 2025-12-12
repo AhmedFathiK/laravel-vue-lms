@@ -35,7 +35,12 @@ class CamelCaseResponse
 
             foreach ($data as $key => $value) {
                 $newKey = is_string($key) ? Str::camel($key) : $key;
-                $new[$newKey] = $this->toCamel($value);
+                if ($newKey === "triggerType") {
+                    $newValue = is_string($value) ? Str::camel($value) : $value;
+                    $new[$newKey] = $this->toCamel($newValue);
+                } else {
+                    $new[$newKey] = $this->toCamel($value);
+                }
             }
 
             return $new;

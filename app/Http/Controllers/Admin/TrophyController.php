@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTrophyRequest;
+use App\Http\Requests\UpdateTrophyRequest;
 use App\Http\Resources\TrophyResource;
 use App\Models\Trophy;
 use App\Services\TrophyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +21,11 @@ class TrophyController extends Controller
     public function __construct(TrophyService $trophyService)
     {
         $this->trophyService = $trophyService;
+
+        $this->middleware('permission:view.trophies')->only('index');
+        $this->middleware('permission:create.trophies')->only('store');
+        $this->middleware('permission:edit.trophies')->only('update');
+        $this->middleware('permission:delete.trophies')->only('destroy');
     }
 
     /**
@@ -29,30 +35,30 @@ class TrophyController extends Controller
     {
         $query = Trophy::query();
 
-        // Filter by course if specified
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-        }
+        // Apply filters
+        $filters = [
+            'course_id',
+            'trigger_type',
+            'rarity',
+            'is_active' => fn($query, $value) => $query->where('is_active', filter_var($value, FILTER_VALIDATE_BOOLEAN)),
+        ];
 
-        // Filter by trigger type if specified
-        if ($request->has('trigger_type')) {
-            $query->where('trigger_type', $request->trigger_type);
-        }
-
-        // Filter by rarity if specified
-        if ($request->has('rarity')) {
-            $query->where('rarity', $request->rarity);
-        }
-
-        // Filter by active status if specified
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
+        foreach ($filters as $key => $filter) {
+            if ($request->has(is_int($key) ? $filter : $key)) {
+                $param = is_int($key) ? $filter : $key;
+                $value = $request->input($param);
+                if (is_callable($filter)) {
+                    $filter($query, $value);
+                } else {
+                    $query->where($param, $value);
+                }
+            }
         }
 
         // Order by specified field or default to id
-        $orderBy = $request->input('order_by', 'id');
-        $orderDir = $request->input('order_dir', 'asc');
-        $query->orderBy($orderBy, $orderDir);
+        $sortBy = $request->input('sort_by', 'id');
+        $orderBy = $request->input('order_by', 'asc');
+        $query->orderBy($sortBy, $orderBy);
 
         $trophies = $query->paginate($request->input('per_page', 15));
 
@@ -62,86 +68,47 @@ class TrophyController extends Controller
             $trophy->recipients_count = $stats['awarded_count'];
             return $trophy;
         });
-        return response()->json([
-            'items' => TrophyResource::collection($trophies->items()),
-            'total_items' => $trophies->total(),
-            'current_page' => $trophies->currentPage(),
-            'per_page' => $trophies->perPage(),
-            'last_page' => $trophies->lastPage(),
-        ]);
-        return response()->json($trophies);
+
+        return TrophyResource::collection($trophies)->response();
     }
 
     /**
      * Store a newly created trophy.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTrophyRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'icon' => 'nullable|image|max:2048', // Accept image upload
-            'course_id' => 'nullable|exists:courses,id',
-            'trigger_type' => [
-                'required',
-                'string',
-                Rule::in([
-                    'completed_lesson',
-                    'quiz_score',
-                    'level_completed',
-                    'course_completed',
-                    'term_mastered',
-                    'streak',
-                    'custom'
-                ])
-            ],
-            'trigger_repeat_count' => 'required|integer|min:1',
-            'points' => 'integer|min:0',
-            'points_threshold' => 'nullable|integer|min:0',
-            'rarity' => [
-                'string',
-                Rule::in(['common', 'uncommon', 'rare', 'epic', 'legendary'])
-            ],
-            'is_hidden' => 'boolean',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $validatedData = $request->validated();
 
         // Handle icon upload if provided
         $iconUrl = null;
         if ($request->hasFile('icon')) {
-            $file = $request->file('icon');
-            $path = $file->store('trophies', 'public');
-            $iconUrl = Storage::url($path);
+            $iconUrl = $this->trophyService->handleIconUpload($request->file('icon'));
         }
 
         // Prepare data for trophy creation
         $data = [
             'name' => [
-                app()->getLocale() => $request->input('name')
+                app()->getLocale() => $validatedData['name']
             ],
-            'description' => $request->has('description') ? [
-                app()->getLocale() => $request->input('description')
+            'description' => isset($validatedData['description']) ? [
+                app()->getLocale() => $validatedData['description']
             ] : null,
             'icon_url' => $iconUrl,
-            'course_id' => $request->input('course_id'),
-            'trigger_type' => $request->input('trigger_type'),
-            'trigger_repeat_count' => $request->input('trigger_repeat_count', 1),
-            'points' => $request->input('points', 0),
-            'points_threshold' => $request->input('points_threshold'),
-            'rarity' => $request->input('rarity', 'common'),
-            'is_hidden' => $request->boolean('is_hidden', false),
-            'is_active' => $request->boolean('is_active', true),
+            'course_id' => $validatedData['course_id'] ?? null,
+            'trigger_type' => $validatedData['trigger_type'],
+            'trigger_repeat_count' => $validatedData['trigger_repeat_count'],
+            'points' => $validatedData['points'] ?? 0,
+            'points_threshold' => $validatedData['points_threshold'] ?? null,
+            'rarity' => $validatedData['rarity'] ?? 'common',
+            'is_hidden' => $validatedData['is_hidden'] ?? false,
+            'is_active' => $validatedData['is_active'] ?? true,
         ];
 
         $trophy = Trophy::create($data);
 
         return response()->json([
             'message' => 'Trophy created successfully',
-            'trophy' => $trophy
+            'trophy' => new TrophyResource($trophy)
         ], 201);
     }
 
@@ -155,109 +122,41 @@ class TrophyController extends Controller
         $trophy->recipients_count = $stats['awarded_count'];
         $trophy->recipients_percentage = $stats['percentage'];
 
-        return response()->json($trophy);
+        return (new TrophyResource($trophy))->response();
     }
 
     /**
      * Update the specified trophy.
      */
-    public function update(Request $request, Trophy $trophy): JsonResponse
+    public function update(UpdateTrophyRequest $request, Trophy $trophy): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'icon' => 'nullable|image|max:2048', // Accept image upload
-            'course_id' => 'nullable|exists:courses,id',
-            'trigger_type' => [
-                'sometimes',
-                'required',
-                'string',
-                Rule::in([
-                    'completed_lesson',
-                    'quiz_score',
-                    'level_completed',
-                    'course_completed',
-                    'term_mastered',
-                    'streak',
-                    'custom'
-                ])
-            ],
-            'trigger_repeat_count' => 'sometimes|required|integer|min:1',
-            'points' => 'sometimes|required|integer|min:0',
-            'points_threshold' => 'nullable|integer|min:0',
-            'rarity' => [
-                'sometimes',
-                'required',
-                'string',
-                Rule::in(['common', 'uncommon', 'rare', 'epic', 'legendary'])
-            ],
-            'is_hidden' => 'sometimes|required|boolean',
-            'is_active' => 'sometimes|required|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $validatedData = $request->validated();
 
         // Handle icon upload if provided
         if ($request->hasFile('icon')) {
             // Delete old icon if exists
-            if ($trophy->icon_url && Storage::disk('public')->exists(str_replace('/storage/', '', $trophy->icon_url))) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $trophy->icon_url));
-            }
+            $this->trophyService->deleteIcon($trophy);
 
-            $file = $request->file('icon');
-            $path = $file->store('trophies', 'public');
-            $trophy->icon_url = Storage::url($path);
+            $trophy->icon_url = $this->trophyService->handleIconUpload($request->file('icon'));
         }
 
         // Update translatable fields
-        if ($request->has('name')) {
-            $trophy->setTranslation('name', app()->getLocale(), $request->input('name'));
+        if (isset($validatedData['name'])) {
+            $trophy->setTranslation('name', app()->getLocale(), $validatedData['name']);
         }
 
-        if ($request->has('description')) {
-            $trophy->setTranslation('description', app()->getLocale(), $request->input('description'));
+        if (isset($validatedData['description'])) {
+            $trophy->setTranslation('description', app()->getLocale(), $validatedData['description']);
         }
 
-        // Update other fields
-        if ($request->has('course_id')) {
-            $trophy->course_id = $request->input('course_id');
-        }
-
-        if ($request->has('trigger_type')) {
-            $trophy->trigger_type = $request->input('trigger_type');
-        }
-
-        if ($request->has('trigger_repeat_count')) {
-            $trophy->trigger_repeat_count = $request->input('trigger_repeat_count');
-        }
-
-        if ($request->has('points')) {
-            $trophy->points = $request->input('points');
-        }
-
-        if ($request->has('points_threshold')) {
-            $trophy->points_threshold = $request->input('points_threshold');
-        }
-
-        if ($request->has('rarity')) {
-            $trophy->rarity = $request->input('rarity');
-        }
-
-        if ($request->has('is_hidden')) {
-            $trophy->is_hidden = $request->boolean('is_hidden');
-        }
-
-        if ($request->has('is_active')) {
-            $trophy->is_active = $request->boolean('is_active');
-        }
+        // Update other fields from validated data
+        $trophy->fill(collect($validatedData)->except(['name', 'description', 'icon'])->all());
 
         $trophy->save();
 
         return response()->json([
             'message' => 'Trophy updated successfully',
-            'trophy' => $trophy
+            'trophy' => new TrophyResource($trophy)
         ]);
     }
 
@@ -267,25 +166,19 @@ class TrophyController extends Controller
     public function destroy(Trophy $trophy): JsonResponse
     {
         // Check if the trophy has been awarded to users
-        $userCount = $trophy->userTrophies()->count();
-
-        if ($userCount > 0) {
+        if ($trophy->userTrophies()->exists()) {
             return response()->json([
-                'message' => 'Cannot delete trophy that has been awarded to users',
-                'user_count' => $userCount
+                'message' => 'Cannot delete trophy that has been awarded to users.',
+                'user_count' => $trophy->userTrophies()->count(),
             ], 422);
         }
 
         // Delete icon if exists
-        if ($trophy->icon_url && Storage::disk('public')->exists(str_replace('/storage/', '', $trophy->icon_url))) {
-            Storage::disk('public')->delete(str_replace('/storage/', '', $trophy->icon_url));
-        }
+        $this->trophyService->deleteIcon($trophy);
 
         $trophy->delete();
 
-        return response()->json([
-            'message' => 'Trophy deleted successfully'
-        ]);
+        return response()->json(null, 204);
     }
 
     /**

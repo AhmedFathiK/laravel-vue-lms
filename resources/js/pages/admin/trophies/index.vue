@@ -1,38 +1,32 @@
 <script setup>
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { can } from '@layouts/plugins/casl'
 import api from '@/utils/api'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import TrophyEditDialog from '@/components/dialogs/TrophyEditDialog.vue'
+
+const { t } = useI18n()
   
 const trophies = ref([])
 const loading = ref(true)
-const dialog = ref(false)
+const isDialogOpen = ref(false)
 const deleteDialog = ref(false) 
 const deleting = ref(false)
-const editedIndex = ref(-1)
+const dialogMode = ref('add')
 
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
-const orderBy = ref('createdAt')
-const orderDir = ref('desc')
+const sortBy = ref('id')
+const orderBy = ref('asc')
 
-// These are now handled in the TrophyEditDialog component
+// Trigger types for display
 const triggerTypes = ref([])
   
-const editedTrophy = ref({
-  id: null,
-  name: '',
-  description: '',
-  iconUrl: null,
-  triggerType: 'completed_lesson',
-  triggerRepeatCount: 1,
-  courseId: null,
-  points: 0,
-  rarity: 'common',
-  isHidden: false,
-  isActive: true,
-})
+const editedTrophy = ref({})
+
+const totalTrophies = computed(() => trophies.value.length)
 
 const defaultTrophy = {
   id: null,
@@ -48,31 +42,41 @@ const defaultTrophy = {
   isActive: true,
 }
 
-// Form validation is now handled in the TrophyEditDialog component
-
-const rules = {
-  required: value => !!value || 'Required.',
-  number: value => !isNaN(Number(value)) || 'Must be a number.',
-  minValue: min => value => Number(value) >= min || `Must be at least ${min}.`,
-}
-
-const headers = [
-  { title: 'Icon', key: 'icon', sortable: false, width: '80px' },
-  { title: 'Name', key: 'name' },
-  { title: 'Trigger Type', key: 'trigger', sortable: false },
-  { title: 'Recipients', key: 'recipients', sortable: false },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
+const headers = ref([
+  { 
+    title: t('trophies.table.icon', 'Icon'), 
+    key: 'icon', 
+    sortable: false, 
+    width: '80px', 
+  },
+  { 
+    title: t('trophies.table.name', 'Name'), 
+    key: 'name', 
+  },
+  { 
+    title: t('trophies.table.triggerType', 'Trigger Type'), 
+    key: 'trigger', 
+    sortable: false, 
+  },
+  { 
+    title: t('trophies.table.recipients', 'Recipients'), 
+    key: 'recipients', 
+    sortable: false, 
+  },
+  { 
+    title: t('trophies.table.actions', 'Actions'), 
+    key: 'actions', 
+    sortable: false, 
+  },
+])
 
 const updateOptions = options => {
   if (options.sortBy?.length) {
     orderBy.value = options.sortBy[0]?.key
-    orderDir.value = options.sortBy[0]?.order
+    orderBy.value = options.sortBy[0]?.order
   }
   fetchTrophies()
 }
-
-// Dialog title is now handled in the TrophyEditDialog component
 
 // Get trigger type label from value
 const getTriggerTypeLabel = triggerType => {
@@ -84,16 +88,17 @@ const getTriggerTypeLabel = triggerType => {
 // Get color for trigger type chip
 const getTriggerTypeColor = triggerType => {
   const colorMap = {
-    'completed_lesson': 'green',
-    'quiz_score': 'blue',
-    'level_completed': 'purple',
-    'course_completed': 'indigo',
-    'term_mastered': 'cyan',
-    'streak': 'amber',
-    'custom': 'grey',
+    'completed_lesson': 'success',
+    'quiz_score': 'info',
+    'level_completed': 'secondary',
+    'course_completed': 'primary',
+    'term_mastered': 'warning',
+    'streak': 'error',
+    'custom': 'default',
   }
+
   
-  return colorMap[triggerType] || 'grey'
+  return colorMap[triggerType] || 'default'
 }
 
 // Fetch trigger types from API for the data table display
@@ -116,13 +121,13 @@ const fetchTrophies = async () => {
     const params = {
       page: page.value,
       perPage: itemsPerPage.value,
+      sortBy: sortBy.value,
       orderBy: orderBy.value,
-      orderDir: orderDir.value,
     }
 
     const response = await api.get('/admin/trophies', { params })
 
-    trophies.value = response.items || []
+    trophies.value = response.data || []
   } catch (error) {
     console.error('Error fetching trophies:', error)
   } finally {
@@ -131,7 +136,7 @@ const fetchTrophies = async () => {
 }
 
 // Watch for changes to trigger refetch
-watch([ page, itemsPerPage], () => {
+watch([page, itemsPerPage], () => {
   fetchTrophies()
 })
 
@@ -141,28 +146,20 @@ onMounted(() => {
 })
 
 const openCreateDialog = () => {
-  editedIndex.value = -1
-  editedTrophy.value = Object.assign({}, defaultTrophy)
-  dialog.value = true
+  dialogMode.value = 'add'
+  editedTrophy.value = { ...defaultTrophy }
+  isDialogOpen.value = true
 }
 
 const openEditDialog = item => {
-  editedIndex.value = trophies.value.indexOf(item)
-  editedTrophy.value = Object.assign({}, item)
-  dialog.value = true
+  dialogMode.value = 'edit'
+  editedTrophy.value = { ...item }
+  isDialogOpen.value = true
 }
 
 const openDeleteDialog = item => {
   editedTrophy.value = { ...item }
   deleteDialog.value = true
-}
-
-const closeDialog = () => {
-  dialog.value = false
-  nextTick(() => {
-    editedTrophy.value = Object.assign({}, defaultTrophy)
-    editedIndex.value = -1
-  })
 }
 
 const deleteTrophyConfirm = async () => {
@@ -172,7 +169,7 @@ const deleteTrophyConfirm = async () => {
     fetchTrophies()
     deleteDialog.value = false
     setTimeout(() => {
-      editedTrophy.value = Object.assign({}, defaultTrophy)
+      editedTrophy.value = { ...defaultTrophy }
     }, 300)
   } catch (error) {
     console.error('Error deleting trophy:', error)
@@ -187,8 +184,8 @@ const deleteTrophyConfirm = async () => {
     <!-- Breadcrumb Navigation -->
     <VBreadcrumbs
       :items="[
-        { title: 'Admin', disabled: true },
-        { title: 'Trophies', disabled: true }
+        { title: t('trophies.breadcrumb.admin', 'Admin'), disabled: true },
+        { title: t('trophies.breadcrumb.trophies', 'Trophies'), disabled: true }
       ]"
       class="mb-4"
     />
@@ -198,13 +195,17 @@ const deleteTrophyConfirm = async () => {
         <VCol cols="12">
           <VCard>
             <VCardItem class="pb-4">
-              <VCardTitle>Trophies Management</VCardTitle>
+              <VCardTitle>
+                {{ t('trophies.page.title', 'Trophies Management') }}
+              </VCardTitle>
               <template #append>
                 <VBtn
+                  v-if="can('create', 'trophies')"
+                  color="primary"
                   prepend-icon="tabler-plus"
                   @click="openCreateDialog"
                 >
-                  Add Trophy
+                  {{ t('trophies.page.addTrophy', 'Add Trophy') }}
                 </VBtn>
               </template>
             </VCardItem>
@@ -215,6 +216,7 @@ const deleteTrophyConfirm = async () => {
                 :headers="headers"
                 :items="trophies"
                 :loading="loading"
+                :items-length="totalTrophies"
                 @update:options="updateOptions"
               >
                 <!-- Icon column -->
@@ -226,7 +228,7 @@ const deleteTrophyConfirm = async () => {
                     <VImg
                       v-if="item.iconUrl"
                       :src="item.iconUrl"
-                      alt="Trophy icon"
+                      :alt="t('trophies.table.trophyIconAlt', 'Trophy icon')"
                     />
                     <VIcon v-else>
                       tabler-trophy
@@ -246,18 +248,38 @@ const deleteTrophyConfirm = async () => {
               
                 <!-- Recipients column -->
                 <template #[`item.recipients`]="{ item }">
-                  {{ item.recipientsCount || 0 }} users awarded
+                  {{ t('trophies.table.usersAwarded', { count: item.recipientsCount || 0 }) }}
                 </template>
               
                 <!-- Actions column -->
                 <template #[`item.actions`]="{ item }">
-                  <IconBtn @click="openDeleteDialog(item)">
-                    <VIcon icon="tabler-trash" />
-                  </IconBtn>
-
-                  <IconBtn @click="openEditDialog(item)">
-                    <VIcon icon="tabler-pencil" />
-                  </IconBtn>
+                  <div class="d-flex gap-1">
+                    <IconBtn
+                      v-if="can('edit', 'trophies')"
+                      @click="openEditDialog(item)"
+                    >
+                      <VIcon icon="tabler-edit" />
+                      <VTooltip
+                        activator="parent"
+                        location="top"
+                      >
+                        {{ t('common.edit', 'Edit') }}
+                      </VTooltip>
+                    </IconBtn>
+                    
+                    <IconBtn
+                      v-if="can('delete', 'trophies')"
+                      @click="openDeleteDialog(item)"
+                    >
+                      <VIcon icon="tabler-trash" />
+                      <VTooltip
+                        activator="parent"
+                        location="top"
+                      >
+                        {{ t('common.delete', 'Delete') }}
+                      </VTooltip>
+                    </IconBtn>
+                  </div>
                 </template>
               </VDataTableServer>
             </VCardText>
@@ -267,8 +289,8 @@ const deleteTrophyConfirm = async () => {
   
       <!-- Trophy Edit Dialog -->
       <TrophyEditDialog
-        v-model:is-dialog-visible="dialog"
-        :dialog-mode="editedIndex === -1 ? 'add' : 'edit'"
+        v-model:is-dialog-visible="isDialogOpen"
+        :dialog-mode="dialogMode"
         :trophy="editedTrophy"
         @trophy-saved="fetchTrophies"
       />
@@ -276,7 +298,7 @@ const deleteTrophyConfirm = async () => {
       <!-- Delete Confirmation Dialog -->
       <DeletionConfirmDialog
         :is-dialog-visible="deleteDialog"
-        confirmation-question="Are you sure you want to delete this trophy?"
+        :confirmation-question="t('trophies.delete.confirmQuestion', 'Are you sure you want to delete this trophy?')"
         @update:is-dialog-visible="deleteDialog = $event"
         @confirm="deleteTrophyConfirm"
       />

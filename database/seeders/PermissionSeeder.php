@@ -98,8 +98,9 @@ class PermissionSeeder extends Seeder
 
             // Gamification
             'view.trophies',
-            'manage.trophies',
-            'assign.trophies',
+            'create.trophies',
+            'edit.trophies',
+            'delete.trophies',
 
             // Analytics & Stats
             'view.user_stats',

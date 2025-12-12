@@ -4,7 +4,7 @@ import QuestionEditDialog from '@/components/dialogs/QuestionEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
 definePage({
@@ -14,9 +14,8 @@ definePage({
   },
 })
 
+const { t } = useI18n()
 const toast = useToast()
-const { locale } = useI18n()
-const router = useRouter()
 const route = useRoute()
 
 // Get course ID from route parameter
@@ -32,7 +31,6 @@ const course = ref(null)
 const page = ref(1)
 const itemsPerPage = ref(10)
 const sortBy = ref([{ key: 'createdAt', order: 'desc' }])
-const selectedRows = ref([])
 
 const questionsData = ref({
   data: [],
@@ -45,65 +43,77 @@ const questionsData = ref({
 const availableTags = ref([])
 
 // Edit and delete dialogs
-const isEditDialogVisible = ref(false)
+const isDialogOpen = ref(false)
+const dialogMode = ref('add')
 const isDeleteDialogVisible = ref(false)
 const editQuestion = ref({})
 const questionToDelete = ref(null)
 
-// Question types mapping
-const questionTypes = [
-  { title: 'Multiple Choice', value: 'mcq' },
-  { title: 'Matching', value: 'matching' },
-  { title: 'Fill in the Blank', value: 'fill_blank' },
-  { title: 'Fill in the Blank with Choices', value: 'fill_blank_choices' },
-  { title: 'Reordering', value: 'reordering' },
-  { title: 'Writing', value: 'writing' },
-]
-
-// Difficulty levels
-const difficultyLevels = [
-  { title: 'Easy', value: 'easy' },
-  { title: 'Medium', value: 'medium' },
-  { title: 'Hard', value: 'hard' },
-]
-
-// Data table headers
-const headers = [
-  { title: 'ID', key: 'id' },
-  { title: 'Question', key: 'questionText' },
-  { title: 'Type', key: 'type' },
-  { title: 'Difficulty', key: 'difficulty' },
-  { title: 'Points', key: 'points' },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
-
-// Stats for widget cards
-const widgetData = ref([
-  {
-    title: 'Total Questions',
-    value: '0',
-    icon: 'tabler-list',
-    iconColor: 'primary',
-  },
-  {
-    title: 'Multiple Choice',
-    value: '0',
-    icon: 'tabler-checkbox',
-    iconColor: 'success',
-  },
-  {
-    title: 'Fill in the Blank',
-    value: '0',
-    icon: 'tabler-input',
-    iconColor: 'warning',
-  },
-  {
-    title: 'Writing',
-    value: '0',
-    icon: 'tabler-pencil',
-    iconColor: 'info',
-  },
+// Question types mapping (reactive for i18n)
+const questionTypes = computed(() => [
+  { title: t('questions.types.multipleChoice', 'Multiple Choice'), value: 'mcq' },
+  { title: t('questions.types.matching', 'Matching'), value: 'matching' },
+  { title: t('questions.types.fillBlank', 'Fill in the Blank'), value: 'fill_blank' },
+  { title: t('questions.types.fillBlankChoices', 'Fill in the Blank with Choices'), value: 'fill_blank_choices' },
+  { title: t('questions.types.reordering', 'Reordering'), value: 'reordering' },
+  { title: t('questions.types.writing', 'Writing'), value: 'writing' },
 ])
+
+// Difficulty levels (reactive for i18n)
+const difficultyLevels = computed(() => [
+  { title: t('questions.difficulty.easy', 'Easy'), value: 'easy' },
+  { title: t('questions.difficulty.medium', 'Medium'), value: 'medium' },
+  { title: t('questions.difficulty.hard', 'Hard'), value: 'hard' },
+])
+
+// Data table headers (reactive for i18n)
+const headers = computed(() => [
+  { title: t('questions.table.id', 'ID'), key: 'id' },
+  { title: t('questions.table.question', 'Question'), key: 'questionText' },
+  { title: t('questions.table.type', 'Type'), key: 'type' },
+  { title: t('questions.table.difficulty', 'Difficulty'), key: 'difficulty' },
+  { title: t('questions.table.points', 'Points'), key: 'points' },
+  { title: t('questions.table.actions', 'Actions'), key: 'actions', sortable: false },
+])
+
+// Computed total for data table
+const totalQuestions = computed(() => questionsData.value.total || 0)
+
+// Stats for widget cards (reactive for i18n)
+const widgetData = computed(() => {
+  const questions = questionsData.value.data || []
+  const totalCount = questionsData.value.total || 0
+  const mcqCount = questions.filter(q => q.type === 'mcq').length
+  const fillBlankCount = questions.filter(q => q.type === 'fill_blank' || q.type === 'fill_blank_choices').length
+  const writingCount = questions.filter(q => q.type === 'writing').length
+
+  return [
+    {
+      title: t('questions.widgets.totalQuestions', 'Total Questions'),
+      value: totalCount.toString(),
+      icon: 'tabler-list',
+      iconColor: 'primary',
+    },
+    {
+      title: t('questions.widgets.multipleChoice', 'Multiple Choice'),
+      value: mcqCount.toString(),
+      icon: 'tabler-checkbox',
+      iconColor: 'success',
+    },
+    {
+      title: t('questions.widgets.fillInBlank', 'Fill in the Blank'),
+      value: fillBlankCount.toString(),
+      icon: 'tabler-forms',
+      iconColor: 'warning',
+    },
+    {
+      title: t('questions.widgets.writing', 'Writing'),
+      value: writingCount.toString(),
+      icon: 'tabler-pencil',
+      iconColor: 'info',
+    },
+  ]
+})
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -117,7 +127,7 @@ const fetchCourse = async () => {
     course.value = response.course || response
   } catch (error) {
     console.error('Error fetching course:', error)
-    toast.error('Failed to load course details')
+    toast.error(t('questions.errors.failedToLoadCourse', 'Failed to load course details'))
   } finally {
     isLoading.value = false
   }
@@ -143,44 +153,23 @@ const fetchQuestions = async () => {
     
     if (response && typeof response === 'object') {
       questionsData.value = response
-      updateWidgetCounts()
       extractTags(response.data || [])
     } else {
-      console.warn('Unexpected API response format:', response)
       questionsData.value = { data: [], total: 0 }
     }
   } catch (error) {
     console.error('Error fetching questions:', error)
-    toast.error('Failed to load questions')
+    toast.error(t('questions.errors.failedToLoadQuestions', 'Failed to load questions'))
     questionsData.value = { data: [], total: 0 }
   } finally {
     isLoading.value = false
   }
 }
 
-// Update widget stats
-const updateWidgetCounts = () => {
-  if (!questionsData.value || !questionsData.value.data) return
-  
-  const questions = questionsData.value.data
-  const totalCount = questionsData.value.total || questions.length
-  
-  // Count by type
-  const mcqCount = questions.filter(q => q.type === 'mcq').length
-  const fillBlankCount = questions.filter(q => q.type === 'fill_blank' || q.type === 'fill_blank_choices').length
-  const writingCount = questions.filter(q => q.type === 'writing').length
-  
-  // Update widget values
-  widgetData.value[0].value = totalCount.toString()
-  widgetData.value[1].value = mcqCount.toString()
-  widgetData.value[2].value = fillBlankCount.toString()
-  widgetData.value[3].value = writingCount.toString()
-}
-
 // Extract unique tags from questions
 const extractTags = questions => {
   const tags = new Set()
-  
+
   questions.forEach(question => {
     if (question.tags && Array.isArray(question.tags)) {
       question.tags.forEach(tag => {
@@ -188,7 +177,6 @@ const extractTags = questions => {
       })
     }
   })
-  
   availableTags.value = Array.from(tags).map(tag => ({ title: tag, value: tag }))
 }
 
@@ -202,26 +190,16 @@ const updateOptions = options => {
 
 // Add new question
 const addNewQuestion = () => {
-  editQuestion.value = {
-    courseId: courseId.value,
-    type: 'mcq',
-    difficulty: 'medium',
-    points: 1,
-    questionText: '',
-    options: [],
-    correctAnswer: [],
-    tags: [],
-
-  }
-  isEditDialogVisible.value = true
+  dialogMode.value = 'add'
+  editQuestion.value = {}
+  isDialogOpen.value = true
 }
 
 // Edit question
 const onEditQuestion = question => {
+  dialogMode.value = 'edit'
   editQuestion.value = JSON.parse(JSON.stringify(question))
-  console.log(editQuestion.value)
-  
-  isEditDialogVisible.value = true
+  isDialogOpen.value = true
 }
 
 // Delete question
@@ -230,26 +208,22 @@ const confirmDelete = question => {
   isDeleteDialogVisible.value = true
 }
 
-const deleteQuestion = async result => {
-  if (!result.confirmed || !questionToDelete.value){
-    questionToDelete.value = null
-    
-    return
-  } 
+const deleteQuestion = async () => {
+  if (!questionToDelete.value) return
   
   try {
     await api.delete(`/admin/courses/${courseId.value}/questions/${questionToDelete.value.id}`)
-    toast.success('Question deleted successfully')
+    toast.success(t('questions.success.questionDeleted', 'Question deleted successfully'))
     fetchQuestions()
   } catch (error) {
     console.error('Error deleting question:', error)
-    toast.error(error.response?.data?.message || 'Failed to delete question')
+    toast.error(error.response?.data?.message || t('questions.errors.failedToDelete', 'Failed to delete question'))
   }
 }
 
 // Get question type display name
 const getQuestionTypeLabel = type => {
-  const typeObj = questionTypes.find(t => t.value === type)
+  const typeObj = questionTypes.value.find(t => t.value === type)
   
   return typeObj ? typeObj.title : type
 }
@@ -264,11 +238,6 @@ onMounted(() => {
 watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPerPage], () => {
   fetchQuestions()
 })
-
-// Watch locale change
-watch(() => locale.value, () => {
-  fetchQuestions()
-})
 </script>
 
 <template>
@@ -276,10 +245,10 @@ watch(() => locale.value, () => {
     <!-- Breadcrumb Navigation -->
     <VBreadcrumbs
       :items="[
-        { title: 'Admin', disabled: true },
-        { title: 'Courses', to: '/admin/courses' },
-        { title: course ? course.title : 'Course', disabled: true },
-        { title: 'Questions', disabled: true }
+        { title: t('questions.breadcrumb.admin', 'Admin'), disabled: true },
+        { title: t('questions.breadcrumb.courses', 'Courses'), to: '/admin/courses' },
+        { title: course ? course.title : t('questions.breadcrumb.course', 'Course'), disabled: true },
+        { title: t('questions.breadcrumb.questions', 'Questions'), disabled: true }
       ]"
       class="mb-4"
     />
@@ -307,10 +276,6 @@ watch(() => locale.value, () => {
               </VAvatar>
             </template>
             
-            <VCardSubtitle class="pt-1">
-              {{ widget.subtitle }}
-            </VCardSubtitle>
-            
             <div class="d-flex align-center mt-2">
               <h3 class="text-h3">
                 {{ widget.value }}
@@ -332,11 +297,11 @@ watch(() => locale.value, () => {
             <AppTextField
               v-model="searchQuery"
               density="compact"
-              placeholder="Search Questions"
+              :placeholder="t('questions.filters.searchPlaceholder', 'Search Questions')"
               prepend-inner-icon="tabler-search"
               single-line
               hide-details
-              class="mb-2"
+              variant="outlined"
             />
           </VCol>
           
@@ -348,36 +313,39 @@ watch(() => locale.value, () => {
             <VSelect
               v-model="selectedType"
               density="compact"
-              label="Question Type"
+              :label="t('questions.filters.questionType', 'Question Type')"
               :items="questionTypes"
               item-title="title"
               item-value="value"
               clearable
               hide-details
+              variant="outlined"
               class="flex-grow-1"
             />
             
             <VSelect
               v-model="selectedDifficulty"
               density="compact"
-              label="Difficulty"
+              :label="t('questions.filters.difficulty', 'Difficulty')"
               :items="difficultyLevels"
               item-title="title"
               item-value="value"
               clearable
               hide-details
+              variant="outlined"
               class="flex-grow-1"
             />
             
             <VSelect
               v-model="selectedTag"
               density="compact"
-              label="Tag"
+              :label="t('questions.filters.tag', 'Tag')"
               :items="availableTags"
               item-title="title"
               item-value="value"
               clearable
               hide-details
+              variant="outlined"
               class="flex-grow-1"
             />
           </VCol>
@@ -389,34 +357,39 @@ watch(() => locale.value, () => {
     <VCard>
       <VCardText class="d-flex flex-wrap py-4">
         <VBtn
+          color="primary"
           prepend-icon="tabler-plus"
           class="ms-auto"
           @click="addNewQuestion"
         >
-          Add New Question
+          {{ t('questions.page.addNewQuestion', 'Add New Question') }}
         </VBtn>
       </VCardText>
 
       <VDivider />
+      
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
         v-model:sort-by="sortBy"
-        v-model:selected="selectedRows"
         :headers="headers"
         :items="questionsData.data"
-        :items-length="questionsData.total"
+        :items-length="totalQuestions"
         :loading="isLoading"
         @update:options="updateOptions"
       >
         <!-- Question text column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.questionText="{ item }">
-          <div v-if="item.type == 'mcq'">
-            {{ item.questionText }}
+        <template #[`item.questionText`]="{ item }">
+          <div class="py-2">
+            <div class="font-weight-medium mb-1">
+              {{ item.questionText }}
+            </div>
+            
+            <!-- MCQ -->
             <ol
+              v-if="item.type === 'mcq'"
               type="a"
-              class="ms-5"
+              class="ms-5 text-caption"
             >
               <li
                 v-for="(option, index) in item.options"
@@ -425,48 +398,38 @@ watch(() => locale.value, () => {
                 {{ option }}
               </li>
             </ol>
-          </div>
-          <div v-else-if="item.type == 'fill_blank'">
-            {{ item.questionText }}
-          </div>
-          <div v-else-if="item.type == 'matching'">
-            {{ item.questionText }}
-            <ul class="ms-5">
+            
+            <!-- Matching -->
+            <ul
+              v-else-if="item.type === 'matching'"
+              class="ms-5 text-caption"
+            >
               <li
                 v-for="(pair, index) in item.options"
                 :key="index"
               >
-                Left: {{ pair.left }} | Right: {{ pair.right }}
+                {{ pair.left }} → {{ pair.right }}
               </li>
             </ul>
-          </div>
-          <div v-else-if="item.type == 'fill_blank_choices'">
-            {{ item.questionText }}
-            <ul class="ms-5">
+            
+            <!-- Fill blank with choices -->
+            <ul
+              v-else-if="item.type === 'fill_blank_choices'"
+              class="ms-5 text-caption"
+            >
               <li
                 v-for="(option, index) in item.options"
                 :key="index"
               >
-                blank {{ index + 1 }}:<br>
-                <ul class="ms-2">
-                  <li>
-                    Placeholder: {{ option.placeholder }}
-                  </li>
-                  <li>
-                    Choices: {{ option.options.join(', ') }}
-                  </li>
-                  <li>
-                    Correct Choice: {{ option.options[option.correctAnswer] }}
-                  </li>
-                </ul>
+                Blank {{ index + 1 }}: {{ option.options.join(', ') }}
               </li>
             </ul>
-          </div>
-          <div v-else-if="item.type == 'reordering'">
-            {{ item.questionText }}
+            
+            <!-- Reordering -->
             <ol
+              v-else-if="item.type === 'reordering'"
               type="1"
-              class="ms-5"
+              class="ms-5 text-caption"
             >
               <li
                 v-for="(option, index) in item.options"
@@ -476,26 +439,20 @@ watch(() => locale.value, () => {
               </li>
             </ol>
           </div>
-          <div v-else>
-            {{ item.questionText }}
-          </div>
         </template>
 
         <!-- Type column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.type="{ item }">
+        <template #[`item.type`]="{ item }">
           <VChip
             :color="item.type === 'mcq' ? 'success' : item.type === 'writing' ? 'info' : 'warning'"
             size="small"
-            class="text-capitalize"
           >
             {{ getQuestionTypeLabel(item.type) }}
           </VChip>
         </template>
 
         <!-- Difficulty column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.difficulty="{ item }">
+        <template #[`item.difficulty`]="{ item }">
           <VChip
             :color="item.difficulty === 'easy' ? 'success' : item.difficulty === 'medium' ? 'warning' : 'error'"
             size="small"
@@ -506,28 +463,27 @@ watch(() => locale.value, () => {
         </template>
 
         <!-- Actions column -->
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template #item.actions="{ item }">
+        <template #[`item.actions`]="{ item }">
           <div class="d-flex gap-1">
-            <VBtn
-              icon
-              variant="text"
-              size="small"
-              color="medium-emphasis"
-              @click="onEditQuestion(item)"
-            >
+            <IconBtn @click="onEditQuestion(item)">
               <VIcon icon="tabler-edit" />
-            </VBtn>
+              <VTooltip
+                activator="parent"
+                location="top"
+              >
+                {{ t('common.edit', 'Edit') }}
+              </VTooltip>
+            </IconBtn>
             
-            <VBtn
-              icon
-              variant="text"
-              size="small"
-              color="medium-emphasis"
-              @click="confirmDelete(item)"
-            >
+            <IconBtn @click="confirmDelete(item)">
               <VIcon icon="tabler-trash" />
-            </VBtn>
+              <VTooltip
+                activator="parent"
+                location="top"
+              >
+                {{ t('common.delete', 'Delete') }}
+              </VTooltip>
+            </IconBtn>
           </div>
         </template>
 
@@ -535,16 +491,17 @@ watch(() => locale.value, () => {
         <template #no-data>
           <div class="text-center pa-6">
             <h4 class="text-h4 mb-2">
-              No questions found
+              {{ t('questions.table.noQuestions', 'No questions found') }}
             </h4>
             <p class="mb-4">
-              Add new questions to create a question bank for this course.
+              {{ t('questions.table.noQuestionsDesc', 'Add new questions to create a question bank for this course') }}
             </p>
             <VBtn
+              color="primary"
               prepend-icon="tabler-plus"
               @click="addNewQuestion"
             >
-              Add New Question
+              {{ t('questions.page.addNewQuestion', 'Add New Question') }}
             </VBtn>
           </div>
         </template>
@@ -552,29 +509,30 @@ watch(() => locale.value, () => {
 
       <VDivider />
 
-      <!-- Pagination (if needed in addition to the built-in pagination) -->
       <VCardText class="d-flex flex-wrap justify-space-between">
-        <div>{{ questionsData.data?.length || 0 }} of {{ questionsData.total || 0 }} questions</div>
+        <div>
+          {{ t('questions.table.showing', '{count} of {total} questions', {
+            count: questionsData.data?.length || 0,
+            total: totalQuestions
+          }) }}
+        </div>
       </VCardText>
     </VCard>
 
     <!-- Question Edit Dialog -->
-    
     <QuestionEditDialog
-      v-model:is-dialog-visible="isEditDialogVisible"
+      v-model:is-dialog-visible="isDialogOpen"
+      :dialog-mode="dialogMode"
       :question="editQuestion"
       :course-id="courseId"
       @refresh="fetchQuestions"
-    /> 
-   
+    />
 
     <!-- Delete Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
-      confirmation-question="Are you sure you want to delete this question? This action cannot be undone."
-      confirm-title="Question Deleted"
-      confirm-msg="The question has been deleted successfully."
+      :confirmation-question="t('questions.delete.confirmQuestion', 'Are you sure you want to delete this question? This action cannot be undone.')"
       @confirm="deleteQuestion"
     />
   </section>
-</template> 
+</template>

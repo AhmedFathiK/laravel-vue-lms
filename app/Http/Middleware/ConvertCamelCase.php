@@ -35,6 +35,12 @@ class ConvertCamelCase
             ]);
         }
 
+        if ($request->has('trigger_type')) {
+            $request->merge([
+                'trigger_type' => \Illuminate\Support\Str::snake($request->trigger_type)
+            ]);
+        }
+
 
         return $next($request);
     }
