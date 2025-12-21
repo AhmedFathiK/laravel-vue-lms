@@ -1,4 +1,3 @@
-// composables/useApi.js
 import { useAuthStore } from '@/stores/auth'
 import { themeConfig } from '@themeConfig'
 import axios from 'axios'
