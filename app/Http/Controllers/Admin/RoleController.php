@@ -144,15 +144,6 @@ class RoleController extends Controller
      */
     public function destroy(DestroyRoleRequest $request, Role $role): JsonResponse
     {
-        // Check if role is in use
-        $userCount = User::role($role->name)->count();
-        if ($userCount > 0) {
-            return response()->json([
-                'message' => 'Cannot delete role that is assigned to users',
-                'user_count' => $userCount,
-            ], 422);
-        }
-
         $role->delete();
 
         return response()->json([

@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class TermController extends Controller
 {
@@ -89,7 +90,28 @@ class TermController extends Controller
         try {
             DB::beginTransaction();
 
-            $term = Term::create($request->validated());
+            $data = $request->validated();
+
+            // Handle file uploads
+            if ($request->hasFile('media_file')) {
+                $path = $request->file('media_file')->store('terms/media', 'public');
+                $data['media_url'] = Storage::url($path);
+                unset($data['media_file']);
+            }
+
+            if ($request->hasFile('audio_file')) {
+                $path = $request->file('audio_file')->store('terms/audio', 'public');
+                $data['audio_url'] = Storage::url($path);
+                unset($data['audio_file']);
+            }
+
+            if ($request->hasFile('example_audio_file')) {
+                $path = $request->file('example_audio_file')->store('terms/audio', 'public');
+                $data['example_audio_url'] = Storage::url($path);
+                unset($data['example_audio_file']);
+            }
+
+            $term = Term::create($data);
 
             DB::commit();
 
@@ -121,7 +143,40 @@ class TermController extends Controller
         try {
             DB::beginTransaction();
 
-            $term->update($request->validated());
+            $data = $request->validated();
+
+            // Handle file uploads
+            if ($request->hasFile('media_file')) {
+                // Delete old file
+                if ($term->media_url && Storage::disk('public')->exists(str_replace('/storage/', '', $term->media_url))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $term->media_url));
+                }
+                $path = $request->file('media_file')->store('terms/media', 'public');
+                $data['media_url'] = Storage::url($path);
+                unset($data['media_file']);
+            }
+
+            if ($request->hasFile('audio_file')) {
+                // Delete old file
+                if ($term->audio_url && Storage::disk('public')->exists(str_replace('/storage/', '', $term->audio_url))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $term->audio_url));
+                }
+                $path = $request->file('audio_file')->store('terms/audio', 'public');
+                $data['audio_url'] = Storage::url($path);
+                unset($data['audio_file']);
+            }
+
+            if ($request->hasFile('example_audio_file')) {
+                // Delete old file
+                if ($term->example_audio_url && Storage::disk('public')->exists(str_replace('/storage/', '', $term->example_audio_url))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $term->example_audio_url));
+                }
+                $path = $request->file('example_audio_file')->store('terms/audio', 'public');
+                $data['example_audio_url'] = Storage::url($path);
+                unset($data['example_audio_file']);
+            }
+
+            $term->update($data);
 
             DB::commit();
 
