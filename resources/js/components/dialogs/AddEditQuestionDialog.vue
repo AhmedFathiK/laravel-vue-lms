@@ -1,10 +1,10 @@
 <script setup>
+import { integerValidator, requiredValidator } from '@/@core/utils/validators'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
-import api from '@/utils/api'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { requiredValidator, integerValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
   isDialogVisible: {
@@ -32,8 +32,6 @@ const { t } = useI18n()
 const toast = useToast()
 const formRef = ref(null)
 const isFormValid = ref(true)
-const isSubmitting = ref(false)
-const formErrors = ref({})
 
 // Local question state
 const localQuestion = ref({})
@@ -105,7 +103,7 @@ const detectedBlanks = computed(() => {
     return []
 
   const regex = /\[blank\d+\]/g
-  const matches = localQuestion.value.questionText.match(regex) || []
+  const matches = localQuestion.value.questionText?.match(regex) || []
   const uniqueMatches = [...new Set(matches)]
 
   uniqueMatches.sort((a, b) => {
@@ -123,7 +121,11 @@ watch(
   () => props.isDialogVisible,
   newValue => {
     if (newValue) {
-      formErrors.value = {}
+      // formErrors reset handled by useCrudSubmit automatically on submit, but we can't access it here easily unless we extract it
+      // actually validationErrors is exposed from useCrudSubmit, we can reset it if needed, but it resets on submit.
+      // To reset on open, we might need to expose a reset function or just let it be.
+      // useCrudSubmit doesn't expose reset.
+      
       newTag.value = ''
       mediaFile.value = null
       
@@ -259,76 +261,45 @@ const closeDialog = () => {
   emit('update:isDialogVisible', false)
 }
 
-// Helper function to append form data recursively
-function appendFormData(formData, key, value) {
-  if (value === null || value === undefined) return
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      appendFormData(formData, `${key}[${index}]`, item)
-    })
-    
-    return
+// Prepare extra data for useCrudSubmit
+const extraData = computed(() => {
+  const data = {}
+  
+  if (
+    mediaFile.value &&
+    (localQuestion.value.mediaType === 'image' || localQuestion.value.mediaType === 'image_with_audio')
+  ) {
+    data.media = mediaFile.value
   }
+  
+  // courseId is already in localQuestion if not edited, but let's ensure it for add mode if missing?
+  // Actually getDefaultQuestion sets it.
+  
+  return data
+})
 
-  if (typeof value === "object") {
-    Object.entries(value).forEach(([childKey, childValue]) => {
-      appendFormData(formData, `${key}[${childKey}]`, childValue)
-    })
-    
-    return
-  }
-
-  formData.append(key, value)
-}
-
-// Submit form
-const submitForm = async () => {
-  const { valid } = await formRef.value.validate()
-  if (!valid) return
-
-  isSubmitting.value = true
-  formErrors.value = {}
-
-  try {
-    const formDataObj = new FormData()
-
-    Object.entries(localQuestion.value).forEach(([key, value]) => {
-      if (key !== "mediaFile") {
-        appendFormData(formDataObj, key, value)
-      }
-    })
-
-    if (
-      mediaFile.value &&
-      (localQuestion.value.mediaType === 'image' || localQuestion.value.mediaType === 'image_with_audio')
-    ) {
-      formDataObj.append('media', mediaFile.value)
-    }
-
-    if (props.dialogMode === 'edit') {
-      formDataObj.append('_method', 'PUT')
-      await api.post(`/admin/courses/${props.courseId}/questions/${localQuestion.value.id}`, formDataObj)
-      toast.success(t('questions.success.questionUpdated', 'Question updated successfully'))
-    } else {
-      formDataObj.append('courseId', props.courseId)
-      await api.post(`/admin/courses/${props.courseId}/questions`, formDataObj)
-      toast.success(t('questions.success.questionCreated', 'Question created successfully'))
-    }
-
-    emit('refresh')
-    closeDialog()
-  } catch (error) {
-    if (error.response?.status === 422) {
-      formErrors.value = error.response.data.errors || {}
-      toast.error(t('validation.correctErrors', 'Please correct the validation errors'))
-    } else {
-      toast.error(error.response?.data?.message || t('questions.errors.failedToSave', 'Failed to save question'))
-    }
-  } finally {
-    isSubmitting.value = false
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
+  } else {
+    emit(event, ...args)
   }
 }
+
+const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitForm } = useCrudSubmit({
+  formRef: formRef,
+  form: localQuestion,
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
+    ? `/admin/courses/${props.courseId}/questions/${localQuestion.value.id}`
+    : `/admin/courses/${props.courseId}/questions`),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
+  emit: customEmit,
+  extraData,
+  isFormData: true,
+  successMessage: computed(() => props.dialogMode === 'edit' 
+    ? t('questions.success.questionUpdated', 'Question updated successfully')
+    : t('questions.success.questionCreated', 'Question created successfully')),
+})
 
 // MCQ functions
 const addOption = () => {

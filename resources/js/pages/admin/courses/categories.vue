@@ -20,6 +20,10 @@ const editingCategory = ref(null)
 const isDialogOpen = ref(false)
 const dialogMode = ref('add') // 'add' or 'edit'
 
+const isConfirmDialogVisible = ref(false)
+const categoryToDelete = ref(null)
+const isDeleting = ref(false)
+
 // Headers for data table
 const headers = [
   { title: 'ID', key: 'id' },
@@ -45,17 +49,34 @@ const fetchCategories = async () => {
   }
 }
 
-// Delete category
-const deleteCategory = async id => {
-  if (!confirm('Are you sure you want to delete this category?')) return
-  
+// Open delete confirmation
+const deleteCategory = id => {
+  categoryToDelete.value = id
+  isConfirmDialogVisible.value = true
+}
+
+// Confirm delete
+const onConfirmDelete = async confirmed => {
+  if (!confirmed) {
+    isConfirmDialogVisible.value = false
+    categoryToDelete.value = null
+    
+    return
+  }
+
+  isDeleting.value = true
   try {
-    await api.delete(`/admin/course-categories/${id}`)
-    fetchCategories()
+    await api.delete(`/admin/course-categories/${categoryToDelete.value}`)
+    
     toast.success('Category deleted successfully')
+    isConfirmDialogVisible.value = false
+    categoryToDelete.value = null
+    await fetchCategories()
   } catch (error) {
     console.error('Error deleting category:', error)
-    toast.error('Failed to delete category')
+    toast.error(error.response?.data?.message || 'Failed to delete category')
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -147,6 +168,14 @@ onMounted(() => {
       :dialog-mode="dialogMode"
       :category="editingCategory"
       @category-saved="fetchCategories"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isConfirmDialogVisible"
+      confirmation-question="Are you sure you want to delete this category?"
+      confirm-msg="Category deleted successfully"
+      :loading="isDeleting"
+      @confirm="onConfirmDelete"
     />
   </section>
 </template> 

@@ -1,6 +1,7 @@
 <script setup>
-import { requiredValidator } from '@/@core/utils/validators'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import api from '@/utils/api'
+import { requiredValidator } from '@core/utils/validators'
 import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -25,19 +26,26 @@ const toast = useToast()
 const formRef = ref(null)
 
 // Form fields
-const user = ref(null)
-const course = ref(null)
-const planId = ref(null)
-const amount = ref(0)
-const paymentMethod = ref({ title: 'Manual', value: 'Manual' })
-const paymentDate = ref('')
-const receiptNumber = ref('')
-const notes = ref('')
-const currency = ref('USD')
-const autoGeneratePdf = ref(true)
-const notifyUser = ref(true)
-const createSubscription = ref(true)
-const isSubmitting = ref(false)
+const form = ref({
+  userId: null,
+  courseId: null,
+  planId: null,
+  amount: 0,
+  paymentMethod: 'manual',
+  paymentDate: '',
+  receiptNumber: '',
+  notes: '',
+  currency: 'USD',
+  autoGeneratePdf: true,
+  notifyUser: true,
+  createSubscription: true,
+})
+
+// UI state for autocompletes
+const selectedUser = ref(null)
+const selectedCourse = ref(null)
+const selectedPlan = ref(null)
+
 const plans = ref([])
 const loadingPlans = ref(false)
 
@@ -46,8 +54,8 @@ const isSystemGenerated = ref(false)
 const isLinkedToSubscription = ref(false)
 
 const validationRules = {
-  user: [requiredValidator],
-  course: [requiredValidator],
+  userId: [requiredValidator],
+  courseId: [requiredValidator],
   planId: [requiredValidator],
   amount: [
     requiredValidator,
@@ -68,20 +76,69 @@ const paymentMethods = [
 const dialogTitle = computed(() => props.dialogMode === 'add' ? 'Add New Receipt' : 'Edit Receipt')
 
 const resetFormData = () => {
-  user.value = null
-  course.value = null
-  planId.value = null
-  amount.value = 0
-  paymentMethod.value = 'manual'
-  paymentDate.value = new Date().toISOString().split('T')[0]
-  receiptNumber.value = ''
-  notes.value = ''
-  currency.value = 'USD'
-  autoGeneratePdf.value = true
-  notifyUser.value = true
-  createSubscription.value = true
+  form.value = {
+    userId: null,
+    courseId: null,
+    planId: null,
+    amount: 0,
+    paymentMethod: 'manual',
+    paymentDate: new Date().toISOString().split('T')[0],
+    receiptNumber: '',
+    notes: '',
+    currency: 'USD',
+    autoGeneratePdf: true,
+    notifyUser: true,
+    createSubscription: true,
+  }
+  selectedUser.value = null
+  selectedCourse.value = null
+  selectedPlan.value = null
   isSystemGenerated.value = false
   isLinkedToSubscription.value = false
+}
+
+// Watchers to sync IDs
+watch(selectedUser, val => {
+  form.value.userId = val?.id || val
+})
+
+watch(selectedCourse, val => {
+  form.value.courseId = val?.id || val
+  if (val) {
+    fetchCoursePlans()
+  }
+})
+
+watch(selectedPlan, val => {
+  form.value.planId = val?.id || val
+  updateAmountFromPlan()
+})
+
+// Custom emit to map 'saved' to 'submitSuccess'
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('submitSuccess', ...args)
+  } else {
+    emit(event, ...args)
+  }
+}
+
+const fetchCoursePlans = async () => {
+  const courseId = form.value.courseId
+  if (!courseId) return
+  
+  loadingPlans.value = true
+  try {
+    console.log(`Fetching subscription plans for course ID: ${courseId}`)
+
+    const response = await api.get(`/admin/courses/${courseId}/subscription-plans`)
+
+    plans.value = response.items || []
+  } catch (error) {
+    toast.error('Failed to load subscription plans.')
+  } finally {
+    loadingPlans.value = false
+  }
 }
 
 watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([isVisible, receipt, mode]) => {
@@ -90,40 +147,44 @@ watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([is
       isSystemGenerated.value = receipt.sourceType !== 'manual'
       isLinkedToSubscription.value = receipt.isLinkedToSubscription
 
-      user.value = {
+      selectedUser.value = {
         id: receipt.user.id,
         fullName: receipt.user.fullName,
       }
-
+      
       if (receipt.itemType == 'course') {
-        course.value = {
+        selectedCourse.value = {
           id: receipt.course.id,
           title: receipt.course.title,
         }
-      } else if (receipt.itemType == 'subscriptionPlan') {
-        planId.value = {
+        selectedPlan.value = null
+      } else if (receipt.itemType == 'subscriptionPlan' && receipt.subscriptionPlan.course) {
+        selectedCourse.value = {
+          id: receipt.subscriptionPlan.course.id,
+          title: receipt.subscriptionPlan.course.title,
+        }
+        selectedPlan.value = {
           id: receipt.subscriptionPlan.id,
           name: receipt.subscriptionPlan.name,
         }
-        if (receipt.subscriptionPlan.course) {
-          course.value = {
-            id: receipt.subscriptionPlan.course.id,
-            title: receipt.subscriptionPlan.course.title,
-          }
-        }
       }
-      
-      amount.value = receipt.amount
-      paymentMethod.value = receipt.payment?.paymentMethod || 'manual'
-      paymentDate.value = receipt.payment?.paymentDetails?.paymentDate || new Date(receipt.createdAt).toISOString().split('T')[0]
-      receiptNumber.value = receipt.receiptNumber
-      notes.value = receipt.payment?.paymentDetails?.notes || ''
-      currency.value = receipt.currency || 'USD'
-      autoGeneratePdf.value = true
-      notifyUser.value = true
-      createSubscription.value = isLinkedToSubscription.value
 
-      if (course.value) {
+      form.value = {
+        userId: receipt.user.id,
+        courseId: selectedCourse.value?.id,
+        planId: selectedPlan.value?.id,
+        amount: receipt.amount,
+        paymentMethod: receipt.payment?.paymentMethod || 'manual',
+        paymentDate: receipt.payment?.paymentDetails?.paymentDate || new Date(receipt.createdAt).toISOString().split('T')[0],
+        receiptNumber: receipt.receiptNumber,
+        notes: receipt.payment?.paymentDetails?.notes || '',
+        currency: receipt.currency || 'USD',
+        autoGeneratePdf: true,
+        notifyUser: true,
+        createSubscription: isLinkedToSubscription.value,
+      }
+
+      if (form.value.courseId) {
         await fetchCoursePlans()
       }
     } else {
@@ -135,73 +196,24 @@ watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([is
   }
 }, { immediate: true })
 
-const fetchCoursePlans = async () => {
-  if (!course.value) return
-  loadingPlans.value = true
-  try {
-    console.log(`Fetching subscription plans for course ID: ${course.value}`)
-
-    const courseId = course.value.id || course.value // Handle both object and primitive ID
-    const response = await api.get(`/admin/courses/${courseId}/subscription-plans`)
-
-    plans.value = response.items || []
-  } catch (error) {
-    toast.error('Failed to load subscription plans.')
-  } finally {
-    loadingPlans.value = false
-  }
-}
-
 const updateAmountFromPlan = () => {
-  const selectedPlan = plans.value.find(p => p.id === planId.value)
-  if (selectedPlan) {
-    amount.value = selectedPlan.price
-  }
-}
-
-const submitForm = async () => {
-  if (isSystemGenerated.value) return
-  const { valid } = await formRef.value.validate()
-  if (!valid) return
-
-  isSubmitting.value = true
+  const planId = form.value.planId
+  const plan = plans.value.find(p => p.id === planId)
   
-  const baseData = {
-    "paymentMethod": paymentMethod.value,
-    "paymentDate": paymentDate.value,
-    notes: notes.value,
-    "notifyUser": notifyUser.value,
-    "autoGeneratePdf": autoGeneratePdf.value,
-    "receiptNumber": receiptNumber.value,
-  }
-
-  const editableData = isLinkedToSubscription.value ? {} : {
-    "userId": user.value?.id,
-    "courseId": course.value?.id,
-    "planId": planId.value?.id,
-    amount: amount.value,
-    "createSubscription": createSubscription.value,
-  }
-
-  const receiptData = { ...baseData, ...editableData }
-
-  try {
-    let response
-    if (props.dialogMode === 'add') {
-      response = await api.post('/admin/receipts', receiptData)
-      toast.success('Receipt created successfully.')
-    } else {
-      response = await api.put(`/admin/receipts/${props.receipt.id}`, receiptData)
-      toast.success('Receipt updated successfully.')
-    }
-    emit('submitSuccess')
-    onDialogVisibleUpdate(false)
-  } catch (error) {
-    toast.error(error.response?.data?.message || 'Failed to save receipt.')
-  } finally {
-    isSubmitting.value = false
+  if (plan) {
+    form.value.amount = plan.price
   }
 }
+
+const { isLoading: isSubmitting, onSubmit, validationErrors } = useCrudSubmit({
+  formRef,
+  form,
+  apiEndpoint: computed(() => props.dialogMode === 'add' ? '/admin/receipts' : `/admin/receipts/${props.receipt.id}`),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
+  emit: customEmit,
+  isFormData: false,
+  successMessage: computed(() => props.dialogMode === 'add' ? 'Receipt created successfully.' : 'Receipt updated successfully.'),
+})
 
 const onDialogVisibleUpdate = val => {
   emit('update:isDialogVisible', val)
@@ -240,7 +252,7 @@ const onDialogVisibleUpdate = val => {
         <VForm
           ref="formRef"
           :disabled="isSystemGenerated"
-          @submit.prevent="submitForm"
+          @submit.prevent="onSubmit"
         >
           <VRow>
             <VCol
@@ -249,20 +261,21 @@ const onDialogVisibleUpdate = val => {
             >
               <AppTextField
                 v-if="isLinkedToSubscription || isSystemGenerated"
-                :model-value="user.fullName"
+                :model-value="selectedUser?.fullName"
                 label="User"
                 readonly
                 disabled
               />
               <AppServerSideAutocomplete
                 v-else
-                v-model="user"
+                v-model="selectedUser"
                 label="User"
                 placeholder="Select a user"
                 api-link="/admin/users/select-fields"
                 item-title="fullName"
                 item-value="id"
-                :rules="validationRules.user"
+                :rules="validationRules.userId"
+                :error-messages="validationErrors.userId"
               />
             </VCol>
             <VCol
@@ -271,21 +284,21 @@ const onDialogVisibleUpdate = val => {
             >
               <AppTextField
                 v-if="isLinkedToSubscription || isSystemGenerated"
-                :model-value="course.title"
+                :model-value="selectedCourse?.title"
                 label="Course"
                 readonly
                 disabled
               />
               <AppServerSideAutocomplete
                 v-else
-                v-model="course"
+                v-model="selectedCourse"
                 label="Course"
                 placeholder="Select a course"
                 api-link="/admin/courses/select-fields"
                 item-title="title"
                 item-value="id"
-                :rules="validationRules.course"
-                @update:model-value="fetchCoursePlans"
+                :rules="validationRules.courseId"
+                :error-messages="validationErrors.courseId"
               />
             </VCol>
             <VCol
@@ -294,23 +307,23 @@ const onDialogVisibleUpdate = val => {
             >
               <AppTextField
                 v-if="isLinkedToSubscription || isSystemGenerated"
-                :model-value="planId.name"
+                :model-value="selectedPlan?.name"
                 label="Subscription Plan"
                 readonly
                 disabled
               />
               <AppAutocomplete
                 v-else
-                v-model="planId"
+                v-model="selectedPlan"
                 label="Subscription Plan"
                 placeholder="Select a plan"
                 :items="plans"
                 item-title="name"
                 item-value="id"
                 :loading="loadingPlans"
-                :disabled="!course"
+                :disabled="!selectedCourse"
                 :rules="validationRules.planId"
-                @update:model-value="updateAmountFromPlan"
+                :error-messages="validationErrors.planId"
               />
             </VCol>
             <VCol
@@ -319,20 +332,21 @@ const onDialogVisibleUpdate = val => {
             >
               <AppTextField
                 v-if="isLinkedToSubscription || isSystemGenerated"
-                :model-value="amount"
+                :model-value="form.amount"
                 label="Amount"
                 readonly
                 disabled
               />
               <AppTextField
                 v-else
-                v-model.number="amount"
+                v-model.number="form.amount"
                 label="Amount"
                 type="number"
                 min="0"
                 step="0.01"
                 :disabled="isLinkedToSubscription || isSystemGenerated"
                 :rules="validationRules.amount"
+                :error-messages="validationErrors.amount"
               />
             </VCol>
             <VCol
@@ -348,10 +362,11 @@ const onDialogVisibleUpdate = val => {
               />
               <AppSelect
                 v-else
-                v-model="paymentMethod"
+                v-model="form.paymentMethod"
                 label="Payment Method"
                 :items="paymentMethods"
                 :rules="validationRules.paymentMethod"
+                :error-messages="validationErrors.paymentMethod"
               />
             </VCol>
             <VCol
@@ -359,10 +374,11 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppDateTimePicker
-                v-model="paymentDate"
+                v-model="form.paymentDate"
                 label="Payment Date"
                 :rules="validationRules.paymentDate"
                 :disabled="isSystemGenerated"
+                :error-messages="validationErrors.paymentDate"
               />
             </VCol>
             <VCol
@@ -370,7 +386,7 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                :model-value="receiptNumber"
+                :model-value="form.receiptNumber"
                 label="Receipt Number"
                 readonly
                 disabled
@@ -378,10 +394,11 @@ const onDialogVisibleUpdate = val => {
             </VCol>
             <VCol cols="12">
               <AppTextarea
-                v-model="notes"
+                v-model="form.notes"
                 label="Notes"
                 rows="3"
                 :disabled="isSystemGenerated"
+                :error-messages="validationErrors.notes"
               />
             </VCol>
             <VCol cols="12">
@@ -395,7 +412,7 @@ const onDialogVisibleUpdate = val => {
                   md="4"
                 >
                   <VCheckbox
-                    v-model="autoGeneratePdf"
+                    v-model="form.autoGeneratePdf"
                     label="Auto-generate PDF"
                     :disabled="isSystemGenerated"
                   />
@@ -405,7 +422,7 @@ const onDialogVisibleUpdate = val => {
                   md="4"
                 >
                   <VCheckbox
-                    v-model="notifyUser"
+                    v-model="form.notifyUser"
                     label="Notify User"
                     :disabled="isSystemGenerated"
                   />
@@ -416,7 +433,7 @@ const onDialogVisibleUpdate = val => {
                   md="4"
                 >
                   <VCheckbox
-                    v-model="createSubscription"
+                    v-model="form.createSubscription"
                     label="Create Subscription"
                     :disabled="isLinkedToSubscription || isSystemGenerated"
                   />
@@ -438,7 +455,7 @@ const onDialogVisibleUpdate = val => {
           color="primary"
           :loading="isSubmitting"
           :disabled="isSystemGenerated"
-          @click="submitForm"
+          @click="onSubmit"
         >
           {{ props.dialogMode === 'add' ? 'Create' : 'Update' }}
         </VBtn>

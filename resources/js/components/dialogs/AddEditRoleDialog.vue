@@ -1,8 +1,10 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import api from '@/utils/api'
-import { computed, onMounted, ref, watch } from 'vue'
+import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+import { requiredValidator } from '@core/utils/validators'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
-import { VForm } from 'vuetify/components/VForm'
 
 const props = defineProps({
   rolePermissions: {
@@ -21,54 +23,43 @@ const props = defineProps({
 
 const emit = defineEmits([
   'update:isDialogVisible',
-  'update:rolePermissions',
-  'submit',
+  'refresh',
 ])
 
 const toast = useToast()
-
-// Define permission subjects with their available actions
 const permissionGroups = ref([])
-
 const isSelectAll = ref(false)
-const role = ref('')
-const refPermissionForm = ref()
-const isLoading = ref(false)
+const refForm = ref(null)
+const isLoadingPermissions = ref(false)
+
+const form = ref({
+  name: '',
+})
 
 // Fetch available permissions from the API
 const fetchPermissions = async () => {
-  isLoading.value = true
+  isLoadingPermissions.value = true
   try {
     const response = await api.get('/admin/permissions')
     
-    // Check if we have a valid response with permissions
     if (response && response.permissions) {
-      // The API now returns a flat list of permissions
       const permissionsList = response.permissions
-      
-      // Group permissions by subject (second part after the dot)
       const groupedPermissions = {}
       
       permissionsList.forEach(permission => {
-        // Get the permission name
         const permName = permission.name
-        
-        // Determine the subject and action
         let subject = 'Other'
         let action = permName
         
         if (permName.includes('.')) {
-          // Handle dot notation (e.g., "view.users")
           const parts = permName.split('.')
 
-          action = parts[0] // First part is the action
-          subject = parts[1] // Second part is the subject
+          action = parts[0]
+          subject = parts[1]
           
-          // Replace underscores with spaces and capitalize subject for display
           subject = subject.replace(/_/g, ' ')
           subject = subject.charAt(0).toUpperCase() + subject.slice(1)
           
-          // Add "Management" suffix for consistency
           if (!subject.includes('Management') && 
               subject !== 'Other' && 
               !['trash', 'admin panel', 'settings', 'translations', 'localization', 'pricing'].includes(subject.toLowerCase())) {
@@ -76,10 +67,7 @@ const fetchPermissions = async () => {
           }
         }
         
-        // Format action label
         let actionLabel
-        
-        // Clean up and capitalize the action
         switch(action.toLowerCase()) {
         case 'view':
         case 'create':
@@ -94,34 +82,31 @@ const fetchPermissions = async () => {
         case 'access':
           actionLabel = action.charAt(0).toUpperCase() + action.slice(1)
           break
-        case 'assign_role':
+        case 'assignRole':
           actionLabel = 'Assign Role'
           break
-        case 'assign_permission':
+        case 'assignPermission':
           actionLabel = 'Assign Permission'
           break
-        case 'configure_revision':
+        case 'configureRevision':
           actionLabel = 'Configure Revision'
           break
-        case 'add_video':
+        case 'addVideo':
           actionLabel = 'Add Video'
           break
-        case 'analyze_weakness':
+        case 'analyzeWeakness':
           actionLabel = 'Analyze Weakness'
           break
         default:
-          // Convert snake_case to Title Case
           actionLabel = action.split('_')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ')
         }
         
-        // Create the subject group if it doesn't exist
         if (!groupedPermissions[subject]) {
           groupedPermissions[subject] = []
         }
         
-        // Add permission to the appropriate subject group
         groupedPermissions[subject].push({
           name: permName,
           selected: false,
@@ -129,19 +114,14 @@ const fetchPermissions = async () => {
         })
       })
       
-      // Convert to array format for the UI
       const newPermissionGroups = Object.keys(groupedPermissions).map(subject => ({
         subject,
         actions: groupedPermissions[subject],
       }))
       
-      // Sort groups alphabetically
       newPermissionGroups.sort((a, b) => a.subject.localeCompare(b.subject))
-      
-      // Update the permission groups
       permissionGroups.value = newPermissionGroups
       
-      // Apply any existing selected permissions
       if (props.rolePermissions && props.rolePermissions.permissions) {
         applySelectedPermissions(props.rolePermissions.permissions)
       }
@@ -150,25 +130,24 @@ const fetchPermissions = async () => {
     console.error('Error fetching permissions:', error)
     toast.error('Failed to fetch permissions')
   } finally {
-    isLoading.value = false
+    isLoadingPermissions.value = false
   }
 }
 
-// Apply selected permissions to the UI
 const applySelectedPermissions = permissions => {
   if (!permissions || !Array.isArray(permissions)) return
   
+  const permissionNames = permissions.map(p => typeof p === 'string' ? p : p.name)
+  
   permissionGroups.value.forEach(group => {
     group.actions.forEach(action => {
-      action.selected = permissions.includes(action.name)
+      action.selected = permissionNames.includes(action.name)
     })
   })
 }
 
-// Calculate total number of selected actions
 const selectedActionsCount = computed(() => {
   let count = 0
-   
   permissionGroups.value.forEach(group => {
     group.actions.forEach(action => {
       if (action.selected) count++
@@ -178,10 +157,8 @@ const selectedActionsCount = computed(() => {
   return count
 })
 
-// Calculate total number of possible actions
 const totalActionsCount = computed(() => {
   let count = 0
-   
   permissionGroups.value.forEach(group => {
     count += group.actions.length
   })
@@ -189,12 +166,10 @@ const totalActionsCount = computed(() => {
   return count
 })
 
-// Determine if indeterminate state for select all checkbox
 const isIndeterminate = computed(() => {
   return selectedActionsCount.value > 0 && selectedActionsCount.value < totalActionsCount.value
 })
 
-// Toggle select all permissions
 watch(isSelectAll, val => {
   permissionGroups.value.forEach(group => {
     group.actions.forEach(action => {
@@ -203,7 +178,6 @@ watch(isSelectAll, val => {
   })
 })
 
-// Update select all state based on selected permissions
 watch(() => selectedActionsCount.value, () => {
   if (selectedActionsCount.value === 0) {
     isSelectAll.value = false
@@ -212,36 +186,39 @@ watch(() => selectedActionsCount.value, () => {
   }
 })
 
-// Map backend permissions to UI format when editing a role
-watch(() => props.rolePermissions, newVal => {
-  console.log('AddEditRoleDialog received props.rolePermissions:', newVal)
-  
-  if (newVal && newVal.name) {
-    role.value = newVal.name
-    
-    // Apply selected permissions if permissions are already loaded
-    if (permissionGroups.value.length > 0) {
-      // Reset all permissions first
-      permissionGroups.value.forEach(group => {
-        group.actions.forEach(action => {
-          action.selected = false
-        })
-      })
+watch(() => props.isDialogVisible, isVisible => {
+  if (isVisible) {
+    if (props.rolePermissions) {
+      form.value.name = props.rolePermissions.name || ''
       
-      // Apply selected permissions
-      if (newVal.permissions && Array.isArray(newVal.permissions)) {
-        applySelectedPermissions(newVal.permissions)
-      }
-    }
-  }
-}, { deep: true, immediate: true })
+      if (permissionGroups.value.length > 0) {
+        // Reset permissions
+        permissionGroups.value.forEach(group => {
+          group.actions.forEach(action => {
+            action.selected = false
+          })
+        })
 
-// Submit form with updated permissions
-const onSubmit = () => {
-  // Convert UI permissions format to backend format
+        // Apply permissions
+        if (props.rolePermissions.permissions) {
+          applySelectedPermissions(props.rolePermissions.permissions)
+        }
+      }
+    } else {
+      form.value.name = ''
+      isSelectAll.value = false
+    }
+    
+    nextTick(() => {
+      refForm.value?.resetValidation()
+    })
+  }
+})
+
+// Compute extra data for useCrudSubmit
+const extraData = computed(() => {
   const selectedPermissions = []
-  
-  // Collect all selected permissions by their exact name
+
   permissionGroups.value.forEach(group => {
     group.actions.forEach(action => {
       if (action.selected) {
@@ -250,57 +227,45 @@ const onSubmit = () => {
     })
   })
   
-  // Debug the permissions being sent back
-  console.log('Submitting permissions:', selectedPermissions)
-  
-  const roleData = {
-    id: props.rolePermissions.id,
-    name: role.value,
-    permissions: selectedPermissions,
+  return { permissions: selectedPermissions }
+})
+
+// Custom emit for refresh
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
+  } else {
+    emit(event, ...args)
   }
-
-  // Debug the role data being sent back
-  console.log('Submitting role data:', roleData)
-
-  // Update the parent component's data
-  emit('update:rolePermissions', roleData)
-  
-  // Submit the data to the parent for API handling
-  emit('submit', roleData)
-  
-  // Close the dialog
-  emit('update:isDialogVisible', false)
-  
-  // Reset the form
-  isSelectAll.value = false
-  refPermissionForm.value?.reset()
 }
 
-// Reset form and close dialog
-const onReset = () => {
-  emit('update:isDialogVisible', false)
-  isSelectAll.value = false
-  refPermissionForm.value?.reset()
-}
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
+  formRef: refForm,
+  form: form,
+  apiEndpoint: computed(() => props.rolePermissions?.id 
+    ? `/admin/roles/${props.rolePermissions.id}` 
+    : '/admin/roles'),
+  isUpdate: computed(() => !!props.rolePermissions?.id),
+  extraData,
+  isFormData: false,
+  emit: customEmit,
+  successMessage: computed(() => props.rolePermissions?.id ? 'Role updated successfully' : 'Role created successfully'),
+})
 
-// Toggle all actions for a specific subject
 const toggleSubjectActions = (group, value) => {
   group.actions.forEach(action => {
     action.selected = value
   })
 }
 
-// Check if all actions in a subject are selected
 const isAllSubjectActionsSelected = group => {
   return group.actions.every(action => action.selected)
 }
 
-// Check if some actions in a subject are selected
 const isSomeSubjectActionsSelected = group => {
   return group.actions.some(action => action.selected) && !isAllSubjectActionsSelected(group)
 }
 
-// Fetch permissions when component is mounted
 onMounted(fetchPermissions)
 </script>
 
@@ -308,51 +273,54 @@ onMounted(fetchPermissions)
   <VDialog
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
-    @update:model-value="onReset"
+    @update:model-value="val => $emit('update:isDialogVisible', val)"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="onReset" />
+    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
     <VCard class="pa-sm-10 pa-2">
       <VCardText>
-        <!-- 👉 Title -->
         <h4 class="text-h4 text-center mb-2">
-          {{ props.rolePermissions.name ? 'Edit' : 'Add New' }} Role
+          {{ props.rolePermissions?.id ? 'Edit' : 'Add New' }} Role
         </h4>
         <p class="text-body-1 text-center mb-6">
           Set Role Permissions
         </p>
 
-        <!-- 👉 Form -->
         <VForm
-          ref="refPermissionForm"
+          ref="refForm"
           @submit.prevent="onSubmit"
         >
-          <!-- 👉 Role name -->
           <AppTextField
-            v-model="role"
+            v-model="form.name"
             label="Role Name"
             placeholder="Enter Role Name"
-            :rules="[v => !!v || 'Role name is required']"
+            :rules="[requiredValidator]"
+            :error-messages="validationErrors.name"
           />
 
-          <h5 class="text-h5 my-6">
-            Role Permissions
-          </h5>
+          <div class="d-flex align-center justify-space-between my-6">
+            <h5 class="text-h5 mb-0">
+              Role Permissions
+            </h5>
+            <div
+              v-if="validationErrors.permissions"
+              class="text-error text-sm"
+            >
+              {{ validationErrors.permissions[0] }}
+            </div>
+          </div>
 
           <div
-            v-if="isLoading"
+            v-if="isLoadingPermissions"
             class="d-flex justify-center my-4"
           >
             <VProgressCircular indeterminate />
           </div>
 
-          <!-- 👉 Role Permissions -->
           <VTable
             v-else
             class="permission-table text-no-wrap mb-6"
           >
-            <!-- 👉 Select All -->
             <tr>
               <td>
                 <h6 class="text-h6">
@@ -370,7 +338,6 @@ onMounted(fetchPermissions)
               </td>
             </tr>
 
-            <!-- 👉 Permission groups with actions -->
             <template
               v-for="(group, groupIndex) in permissionGroups"
               :key="groupIndex"
@@ -407,18 +374,21 @@ onMounted(fetchPermissions)
             </template>
           </VTable>
 
-          <!-- 👉 Actions button -->
           <div class="d-flex align-center justify-center gap-4">
-            <VBtn type="submit">
-              Submit
-            </VBtn>
-
             <VBtn
               color="secondary"
               variant="tonal"
-              @click="onReset"
+              :disabled="isLoading"
+              @click="$emit('update:isDialogVisible', false)"
             >
               Cancel
+            </VBtn>
+            
+            <VBtn
+              type="submit"
+              :loading="isLoading"
+            >
+              Submit
             </VBtn>
           </div>
         </VForm>

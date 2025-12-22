@@ -1,7 +1,8 @@
 <script setup>
-import api from '@/utils/api'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
-import { ref, watch } from 'vue'
+import { requiredValidator } from '@core/utils/validators'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
@@ -23,60 +24,56 @@ const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
 const toast = useToast()
 const refVForm = ref(null)
-const isSubmitting = ref(false)
-const isFormValid = ref(true)
 
-// Form data
-const title = ref('')
-const description = ref('')
-const categoryId = ref(null)
+// Default form factory
+const createDefaultForm = () => ({
+  title: '',
+  description: '',
+  courseCategoryId: null,
+  isFree: false,
+  leaderboardResetFrequency: 'monthly',
+  prerequisites: [],
+  status: 'draft',
+})
+
+const form = ref(createDefaultForm())
 const thumbnail = ref(null)
 const thumbnailPreview = ref(null) // For image preview
-const isFree = ref(props.courseData?.isFree || false)
-const leaderboardResetFrequency = ref('monthly') // never, weekly, monthly
-const prerequisites = ref([])
 const prerequisiteInput = ref('')
-const status = ref('draft') // Default status is draft
 const deleteThumbnail = ref(false) // Flag to delete thumbnail
 
 // Reset form values
 const resetFormValues = () => {
-  title.value = ''
-  description.value = ''
-  categoryId.value = null
+  form.value = createDefaultForm()
   thumbnail.value = null
   thumbnailPreview.value = null
-  isFree.value = false
-  leaderboardResetFrequency.value = 'monthly'
-  prerequisites.value = []
   prerequisiteInput.value = ''
-  status.value = 'draft'
-  isFormValid.value = true
   deleteThumbnail.value = false
 }
 
 // Watch for changes in courseData prop
-watch(() => props.courseData, () => {
-  if (props.courseData) {
-    title.value = props.courseData.title || ''
-    description.value = props.courseData.description || ''
-    categoryId.value = props.courseData.courseCategoryId || props.courseData.categoryId || null
-    isFree.value = props.courseData.isFree || false
-    leaderboardResetFrequency.value = props.courseData.leaderboardResetFrequency || 'monthly'
-    prerequisites.value = props.courseData.prerequisites || []
-    status.value = props.courseData.status || 'draft'
-  } else {
-    resetFormValues()
+watch(() => props.isDialogVisible, isVisible => {
+  if (isVisible) {
+    if (props.courseData) {
+      form.value = {
+        title: props.courseData.title || '',
+        description: props.courseData.description || '',
+        courseCategoryId: props.courseData.courseCategoryId || props.courseData.categoryId || null,
+        isFree: props.courseData.isFree || false,
+        leaderboardResetFrequency: props.courseData.leaderboardResetFrequency || 'monthly',
+        prerequisites: props.courseData.prerequisites || [],
+        status: props.courseData.status || 'draft',
+      }
+      
+      // Reset thumbnail state
+      thumbnail.value = null
+      thumbnailPreview.value = null
+      deleteThumbnail.value = false
+    } else {
+      resetFormValues()
+    }
   }
-}, { immediate: true })
-
-// Handle dialog visibility
-const onDialogVisibleUpdate = val => {
-  emit('update:isDialogVisible', val)
-  if (!val) {
-    resetFormValues()
-  }
-}
+})
 
 // Handle image upload
 const handleImageUpload = file => {
@@ -117,92 +114,53 @@ const handleImageUpload = file => {
 const addPrerequisite = () => {
   if (!prerequisiteInput.value.trim()) return
   
-  prerequisites.value.push(prerequisiteInput.value.trim())
+  form.value.prerequisites.push(prerequisiteInput.value.trim())
   prerequisiteInput.value = ''
 }
 
 // Remove prerequisite
 const removePrerequisite = index => {
-  prerequisites.value.splice(index, 1)
+  form.value.prerequisites.splice(index, 1)
 }
 
-// Submit form
-const onSubmit = async () => {
-  isFormValid.value = (await refVForm.value.validate()).valid
-  
-  if (!isFormValid.value) {
-    return
-  }
-
-  // Create form data for image upload
-  const formData = new FormData()
-
-  formData.append('title', title.value)
-  formData.append('description', description.value)
-  formData.append('courseCategoryId', categoryId.value)
-  formData.append('isFree', isFree.value ? '1' : '0')
-  formData.append('leaderboardResetFrequency', leaderboardResetFrequency.value)
-  formData.append('status', status.value)
-  
-  // Add prerequisites as JSON
-  formData.append('prerequisites', JSON.stringify(prerequisites.value))
+// Compute extra data for useCrudSubmit
+const extraData = computed(() => {
+  const data = {}
   
   // Add thumbnail only if a new file is selected
   if (thumbnail.value instanceof File) {
-    formData.append('thumbnail', thumbnail.value)
+    data.thumbnail = thumbnail.value
   }
   
   // Handle thumbnail deletion
   if (deleteThumbnail.value) {
-    formData.append('deleteThumbnail', '1')
+    data.deleteThumbnail = true
   }
+  
+  return data
+})
 
-  try {
-    isSubmitting.value = true
-    
-    // If editing, add course ID and update, otherwise create
-    if (props.courseData?.id) {
-      formData.append('_method', 'PUT')
-      
-      // Use custom axios config for FormData with file uploads
-      await api.post(`/admin/courses/${props.courseData.id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      toast.success('Course updated successfully')
-    } else {
-      // Use custom axios config for FormData with file uploads
-      await api.post('/admin/courses', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      toast.success('Course created successfully')
-    }
-    
-    // Close dialog and emit refresh event
-    onDialogVisibleUpdate(false)
-    emit('refresh')
-  } catch (error) {
-    console.error('Error saving course:', error)
-    
-    // Show all error messages if there are multiple
-    if (error.response?.data?.errors) {
-      // Get all error messages as an array of strings
-      const errorMessages = Object.values(error.response.data.errors).flat()
-      
-      // Show each error as a separate toast
-      errorMessages.forEach(message => {
-        toast.error(message)
-      })
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to save course')
-    }
-  } finally {
-    isSubmitting.value = false
+// Custom emit for refresh
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
+  } else {
+    emit(event, ...args)
   }
 }
+
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
+  formRef: refVForm,
+  form: form,
+  apiEndpoint: computed(() => props.courseData?.id 
+    ? `/admin/courses/${props.courseData.id}` 
+    : '/admin/courses'),
+  isUpdate: computed(() => !!props.courseData?.id),
+  emit: customEmit,
+  extraData,
+  isFormData: true,
+  successMessage: computed(() => props.courseData?.id ? 'Course updated successfully' : 'Course created successfully'),
+})
 
 // Subscription options
 const subscriptionOptions = [
@@ -230,10 +188,10 @@ const statusOptions = [
     :model-value="isDialogVisible"
     max-width="700px"
     persistent
-    @update:model-value="onDialogVisibleUpdate"
+    @update:model-value="val => $emit('update:isDialogVisible', val)"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="onDialogVisibleUpdate(false)" />
+    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
     <!-- Dialog Content -->
     <VCard :title="courseData ? 'Edit Course' : 'Add New Course'">
@@ -246,11 +204,12 @@ const statusOptions = [
             <!-- Course Title -->
             <VCol cols="12">
               <VTextField
-                v-model="title"
+                v-model="form.title"
                 label="Title"
                 placeholder="Enter course title"
                 variant="outlined"
-                :rules="[v => !!v || 'Title is required']"
+                :rules="[requiredValidator]"
+                :error-messages="validationErrors.title"
                 required
               />
             </VCol>
@@ -258,14 +217,15 @@ const statusOptions = [
             <!-- Course Category -->
             <VCol cols="12">
               <VSelect
-                v-model="categoryId"
+                v-model="form.courseCategoryId"
                 :items="categories"
                 item-title="name"
                 item-value="id"
                 label="Category"
                 placeholder="Select category"
                 variant="outlined"
-                :rules="[v => !!v || 'Category is required']"
+                :rules="[requiredValidator]"
+                :error-messages="validationErrors.courseCategoryId"
                 required
               />
             </VCol>
@@ -273,12 +233,13 @@ const statusOptions = [
             <!-- Course Description -->
             <VCol cols="12">
               <VTextarea
-                v-model="description"
+                v-model="form.description"
                 label="Description"
                 placeholder="Enter course description"
                 variant="outlined"
                 rows="4"
-                :rules="[v => !!v || 'Description is required']"
+                :rules="[requiredValidator]"
+                :error-messages="validationErrors.description"
                 required
               />
             </VCol>
@@ -289,12 +250,13 @@ const statusOptions = [
               md="6"
             >
               <VSelect
-                v-model="status"
+                v-model="form.status"
                 :items="statusOptions"
                 item-title="title"
                 item-value="value"
                 label="Status"
                 variant="outlined"
+                :error-messages="validationErrors.status"
               />
             </VCol>
 
@@ -304,7 +266,7 @@ const statusOptions = [
               md="6"
             >
               <VSwitch
-                v-model="isFree"
+                v-model="form.isFree"
                 label="Free Course"
                 color="primary"
                 hide-details
@@ -314,12 +276,13 @@ const statusOptions = [
             <!-- Leaderboard Reset Frequency -->
             <VCol cols="12">
               <VSelect
-                v-model="leaderboardResetFrequency"
+                v-model="form.leaderboardResetFrequency"
                 :items="resetFrequencyOptions"
                 item-title="title"
                 item-value="value"
                 label="Leaderboard Reset Frequency"
                 variant="outlined"
+                :error-messages="validationErrors.leaderboardResetFrequency"
               />
             </VCol>
 
@@ -332,6 +295,7 @@ const statusOptions = [
                 label="Select Image"
                 variant="outlined"
                 prepend-icon="tabler-upload"
+                :error-messages="validationErrors.thumbnail"
                 @update:model-value="handleImageUpload"
               />
               
@@ -424,7 +388,7 @@ const statusOptions = [
               <!-- Prerequisites List -->
               <div class="mt-2">
                 <VChip
-                  v-for="(prereq, index) in prerequisites"
+                  v-for="(prereq, index) in form.prerequisites"
                   :key="index"
                   class="ma-1"
                   closable
@@ -442,14 +406,14 @@ const statusOptions = [
         <VBtn
           variant="tonal"
           color="secondary"
-          :disabled="isSubmitting"
-          @click="onDialogVisibleUpdate(false)"
+          :disabled="isLoading"
+          @click="$emit('update:isDialogVisible', false)"
         >
           Cancel
         </VBtn>
         <VBtn
           color="primary"
-          :loading="isSubmitting"
+          :loading="isLoading"
           @click="onSubmit"
         >
           {{ courseData ? 'Update' : 'Create' }}

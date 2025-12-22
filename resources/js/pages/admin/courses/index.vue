@@ -1,5 +1,4 @@
 <script setup>
-import CourseEditDialog from '@/components/dialogs/CourseEditDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import api from '@/utils/api'
 import { avatarText } from "@core/utils/formatters"
@@ -330,28 +329,6 @@ const handlePasswordConfirm = async result => {
   }
 }
 
-// Delete course
-const deleteCourse = async id => {
-  if (!confirm('Are you sure you want to delete this course?')) return
-
-  try {
-    const response = await api.delete(`/admin/courses/${id}`)
-
-    toast.success('Course deleted successfully')
-    
-    // Delete from selectedRows
-    const index = selectedRows.value.findIndex(row => row === id)
-    if (index !== -1)
-      selectedRows.value.splice(index, 1)
-    
-    // Refetch courses
-    fetchCourses()
-  } catch (error) {
-    console.error('Error deleting course:', error)
-    toast.error(error.response?.data?.message || 'Failed to delete course')
-  }
-}
-
 // Navigation functions for subscription plans and levels
 const navigateToSubscriptionPlans = courseId => {
   router.push(`/admin/courses/${courseId}/subscription-plans`)
@@ -670,7 +647,7 @@ onMounted(() => {
     </VCard>
     
     <!-- 👉 Course Form Dialog -->
-    <CourseEditDialog
+    <AddEditCourseDialog
       v-model:is-dialog-visible="isAddNewCourseDialogVisible"
       :course-data="editCourse"
       :categories="categories"
@@ -680,7 +657,7 @@ onMounted(() => {
     <!-- 👉 Password Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
-      :confirmation-question="deleteCourse ? 'Are you sure you want to delete this course? This action cannot be undone.' : 'Are you sure you want to delete this subscription plan? This action cannot be undone.'"
+      confirmation-question="Are you sure you want to delete this course? This action cannot be undone."
       @confirm="handlePasswordConfirm"
     />
   </section>

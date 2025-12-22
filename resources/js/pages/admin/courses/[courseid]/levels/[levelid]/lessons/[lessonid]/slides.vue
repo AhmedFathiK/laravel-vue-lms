@@ -1,11 +1,11 @@
 <script setup>
 import api from '@/utils/api'
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useToast } from 'vue-toastification'
-import { SlickItem, SlickList } from 'vue-slicksort'
 import LessonSlideCard from '@/views/lessons/LessonSlideCard.vue'
 import { v4 as uuidv4 } from 'uuid'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { SlickItem, SlickList } from 'vue-slicksort'
+import { useToast } from 'vue-toastification'
 
 definePage({
   meta: {
@@ -397,8 +397,8 @@ onMounted(refreshData)
         </div>
       </VCardText>
     </VCard>
-    <!-- Use SlideEditDialog component -->
-    <SlideEditDialog
+    <!-- Use AddEditSlideDialog component -->
+    <AddEditSlideDialog
       v-model:is-dialog-visible="isSlideEditDialogVisible"
       :slide-data="editedItem"
       :lesson-id="lessonId"

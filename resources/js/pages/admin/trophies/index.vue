@@ -1,10 +1,10 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { can } from '@layouts/plugins/casl'
-import api from '@/utils/api'
+import AddEditTrophyDialog from '@/components/dialogs/AddEditTrophyDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import TrophyEditDialog from '@/components/dialogs/TrophyEditDialog.vue'
+import api from '@/utils/api'
+import { can } from '@layouts/plugins/casl'
+import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
   
@@ -288,11 +288,11 @@ const deleteTrophyConfirm = async () => {
       </VRow>
   
       <!-- Trophy Edit Dialog -->
-      <TrophyEditDialog
+      <AddEditTrophyDialog
         v-model:is-dialog-visible="isDialogOpen"
         :dialog-mode="dialogMode"
-        :trophy="editedTrophy"
-        @trophy-saved="fetchTrophies"
+        :trophy-data="editedTrophy"
+        @saved="fetchTrophies"
       />
   
       <!-- Delete Confirmation Dialog -->

@@ -1,6 +1,6 @@
 <script setup>
+import AddEditLevelDialog from '@/components/dialogs/AddEditLevelDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import LevelEditDialog from '@/components/dialogs/LevelEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -368,7 +368,7 @@ onMounted(() => {
     </VCard>
 
     <!-- Level Edit Dialog -->
-    <LevelEditDialog
+    <AddEditLevelDialog
       v-model:is-dialog-visible="isDialogVisible"
       :level-data="editingLevel"
       :course-id="courseId"

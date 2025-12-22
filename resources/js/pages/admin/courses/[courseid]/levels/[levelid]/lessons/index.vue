@@ -1,6 +1,6 @@
 <script setup>
+import AddEditLessonDialog from '@/components/dialogs/AddEditLessonDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import LessonEditDialog from '@/components/dialogs/LessonEditDialog.vue'
 import api from '@/utils/api'
 import { avatarText } from "@core/utils/formatters"
 import { computed, onMounted, ref } from 'vue'
@@ -480,7 +480,7 @@ onMounted(() => {
     </VCard>
 
     <!-- Dialogs -->
-    <LessonEditDialog
+    <AddEditLessonDialog
       v-model:is-dialog-visible="isDialogVisible"
       :lesson-data="editingLesson"
       :level-id="levelId"

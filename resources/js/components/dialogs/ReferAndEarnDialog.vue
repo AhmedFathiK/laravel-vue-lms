@@ -1,4 +1,5 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import keyboard from '@images/svg/keyboard.svg'
 import paper from '@images/svg/paper-send.svg'
 import rocket from '@images/svg/rocket.svg'
@@ -9,9 +10,18 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  apiEndpoint: {
+    type: String,
+    required: false,
+    default: '/api/invite',
+  },
 })
 
-const emit = defineEmits(['update:isDialogVisible'])
+const emit = defineEmits([
+  'update:isDialogVisible',
+  'submit',
+  'refresh',
+])
 
 const dialogVisibleUpdate = val => {
   emit('update:isDialogVisible', val)
@@ -34,6 +44,23 @@ const referAndEarnSteps = [
     subtitle: 'Your friend will get 30 days free trial',
   },
 ]
+
+const form = ref({
+  email: '',
+})
+
+const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
+  form,
+  apiEndpoint: computed(() => props.apiEndpoint),
+  isUpdate: computed(() => false),
+  emit,
+  successMessage: 'Invitation sent successfully',
+})
+
+const copyLink = () => {
+  // TODO: Implement copy to clipboard
+  navigator.clipboard.writeText('http://pixinvent.link')
+}
 </script>
 
 <template>
@@ -88,16 +115,19 @@ const referAndEarnSteps = [
 
         <VForm
           class="d-flex align-center flex-wrap gap-4"
-          @submit.prevent="() => {}"
+          @submit.prevent="onSubmit"
         >
           <AppTextField
+            v-model="form.email"
             placeholder="johnDoe@gmail.com"
             label="Enter your friend's email address and invite them to join Vuexy 😍"
+            :error-messages="validationErrors.email"
           />
 
           <VBtn
             class="align-self-end"
             type="submit"
+            :loading="isLoading"
           >
             Send
           </VBtn>
@@ -117,7 +147,10 @@ const referAndEarnSteps = [
             class="refer-link-input"
           >
             <template #append-inner>
-              <VBtn variant="text">
+              <VBtn
+                variant="text"
+                @click="copyLink"
+              >
                 Copy link
               </VBtn>
             </template>

@@ -1,9 +1,7 @@
 <script setup>
-import api from '@/utils/api'
-import { computed, ref, watch } from 'vue'
-import { useToast } from 'vue-toastification'
-
 import { requiredValidator } from '@/@core/utils/validators'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
+import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
   isDialogOpen: {
@@ -31,11 +29,23 @@ const props = defineProps({
 
 const emit = defineEmits(['update:isDialogOpen', 'submitSuccess'])
 
-const toast = useToast()
-const form = ref(null)
-const isSubmitting = ref(false)
+const formRef = ref(null)
 
-const localPlan = ref({})
+const defaultForm = () => ({
+  name: '',
+  description: '',
+  price: 0,
+  currency: 'USD',
+  billingCycle: 'one-time',
+  planType: 'one-time',
+  isFree: false,
+  durationDays: null,
+  isActive: true,
+  courseId: props.courseId,
+  accessibleLevels: [],
+})
+
+const localPlan = ref(defaultForm())
 
 const dialogTitle = computed(() => (props.dialogMode === 'add' ? 'Add New Plan' : 'Edit Plan'))
 
@@ -46,24 +56,14 @@ watch(
       if (props.dialogMode === 'edit' && props.plan) {
         localPlan.value = JSON.parse(JSON.stringify(props.plan))
       } else {
-        // Initialize with camelCase keys for a new plan
-        localPlan.value = {
-          name: '',
-          description: '',
-          price: 0,
-          currency: 'USD',
-          billingCycle: 'one-time',
-          planType: 'one-time',
-          isFree: false,
-          durationDays: null,
-          isActive: true,
-          courseId: props.courseId,
-          accessibleLevels: [],
-        }
+        localPlan.value = defaultForm()
       }
+      
+      nextTick(() => {
+        formRef.value?.resetValidation()
+      })
     } else {
-      // Reset when dialog closes
-      localPlan.value = {}
+      localPlan.value = defaultForm()
     }
   },
   { immediate: true },
@@ -74,57 +74,35 @@ watch(() => localPlan.value.planType, newPlanType => {
   if (newPlanType === 'one-time') {
     localPlan.value.billingCycle = 'one-time'
   }
+  if (newPlanType === 'free') {
+    localPlan.value.price = 0
+    localPlan.value.isFree = true
+  }
 })
 
 const closeDialog = () => {
   emit('update:isDialogOpen', false)
 }
 
-const submitForm = async () => {
-  const { valid } = await form.value.validate()
-  if (!valid) {
-    return
-  }
-
-  isSubmitting.value = true
-
-  // If it's a free plan, set price to 0
-  if (localPlan.value.isFree || localPlan.value.planType === 'free') {
-    localPlan.value.price = 0
-    localPlan.value.isFree = true
-    localPlan.value.planType = 'free'
-  }
-
-  // If plan type is one-time, set billing cycle to one-time
-  if (localPlan.value.planType === 'one-time') {
-    localPlan.value.billingCycle = 'one-time'
-  }
-
-  const payload = localPlan.value
-
-  try {
-    if (props.dialogMode === 'add') {
-      await api.post(`/admin/courses/${props.courseId}/subscription-plans`, payload)
-      toast.success('Subscription plan created successfully')
+const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useCrudSubmit({
+  formRef,
+  form: localPlan,
+  apiEndpoint: computed(() => props.dialogMode === 'add'
+    ? `/admin/courses/${props.courseId}/subscription-plans`
+    : `/admin/courses/${props.courseId}/subscription-plans/${localPlan.value.id}`),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
+  isFormData: false, // JSON payload
+  emit: (event, ...args) => {
+    if (event === 'saved') {
+      emit('submitSuccess', ...args)
     } else {
-      await api.put(`/admin/courses/${props.courseId}/subscription-plans/${localPlan.value.id}`, payload)
-      toast.success('Subscription plan updated successfully')
+      emit(event, ...args)
     }
-    emit('submitSuccess')
-    closeDialog()
-  } catch (error) {
-    console.error('Error saving subscription plan:', error)
-
-    const errorMessages = error.response?.data?.errors
-    if (errorMessages) {
-      Object.values(errorMessages).forEach(msg => toast.error(msg[0]))
-    } else {
-      toast.error('Failed to save subscription plan')
-    }
-  } finally {
-    isSubmitting.value = false
-  }
-}
+  },
+  successMessage: computed(() => props.dialogMode === 'add' 
+    ? 'Subscription plan created successfully' 
+    : 'Subscription plan updated successfully'),
+})
 </script>
 
 <template>
@@ -145,7 +123,7 @@ const submitForm = async () => {
 
       <VCardText class="pa-6">
         <VForm
-          ref="form"
+          ref="formRef"
           @submit.prevent="submitForm"
         >
           <!-- Section 1: Basic Information -->
@@ -162,6 +140,7 @@ const submitForm = async () => {
                   :rules="[requiredValidator]"
                   variant="outlined"
                   density="comfortable"
+                  :error-messages="validationErrors.name"
                 />
               </VCol>
 
@@ -173,6 +152,7 @@ const submitForm = async () => {
                   rows="3"
                   variant="outlined"
                   density="comfortable"
+                  :error-messages="validationErrors.description"
                 />
               </VCol>
             </VRow>
@@ -200,6 +180,7 @@ const submitForm = async () => {
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-tag-outline"
+                  :error-messages="validationErrors.planType"
                 />
               </VCol>
 
@@ -221,6 +202,7 @@ const submitForm = async () => {
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-calendar-sync"
+                  :error-messages="validationErrors.billingCycle"
                 />
               </VCol>
 
@@ -238,6 +220,7 @@ const submitForm = async () => {
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-clock-outline"
+                  :error-messages="validationErrors.durationDays"
                 />
               </VCol>
 
@@ -256,6 +239,7 @@ const submitForm = async () => {
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-currency-usd"
+                  :error-messages="validationErrors.price"
                 />
               </VCol>
 
@@ -271,6 +255,7 @@ const submitForm = async () => {
                   variant="outlined"
                   density="comfortable"
                   prepend-inner-icon="mdi-cash"
+                  :error-messages="validationErrors.currency"
                 />
               </VCol>
             </VRow>
@@ -344,6 +329,12 @@ const submitForm = async () => {
                     No levels available
                   </div>
                 </VCard>
+                <div
+                  v-if="validationErrors.accessibleLevels"
+                  class="v-messages v-messages__message text-error mt-1"
+                >
+                  {{ validationErrors.accessibleLevels[0] || validationErrors.accessibleLevels }}
+                </div>
               </VCol>
             </VRow>
           </div>
@@ -372,24 +363,6 @@ const submitForm = async () => {
           {{ props.plan ? 'Update' : 'Create' }}
         </VBtn>
       </VCardActions>
-      <VCardText class="d-flex justify-end flex-wrap gap-3">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          :disabled="isSubmitting"
-          @click="closeDialog"
-        >
-          Cancel
-        </VBtn>
-        
-        <VBtn
-          color="primary"
-          :loading="isSubmitting"
-          @click="submitForm"
-        >
-          {{ formData.id ? 'Update' : 'Create' }}
-        </VBtn>
-      </VCardText>
     </VCard>
   </VDialog>
 </template>

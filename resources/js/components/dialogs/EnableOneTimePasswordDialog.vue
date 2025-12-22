@@ -1,33 +1,44 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
+
 const props = defineProps({
   mobileNumber: {
     type: String,
     required: false,
+    default: '',
   },
   isDialogVisible: {
     type: Boolean,
     required: true,
+  },
+  apiEndpoint: {
+    type: String,
+    required: false,
+    default: '/api/user/two-factor-authentication',
   },
 })
 
 const emit = defineEmits([
   'update:isDialogVisible',
   'submit',
+  'refresh',
 ])
 
-const phoneNumber = ref(structuredClone(toRaw(props.mobileNumber)))
+const form = ref({
+  mobile: props.mobileNumber,
+})
 
-const formSubmit = () => {
-  if (phoneNumber.value) {
-    emit('submit', phoneNumber.value)
-    emit('update:isDialogVisible', false)
-  }
-}
+watch(() => props.mobileNumber, (val) => {
+  form.value.mobile = val
+})
 
-const resetPhoneNumber = () => {
-  phoneNumber.value = structuredClone(toRaw(props.mobileNumber))
-  emit('update:isDialogVisible', false)
-}
+const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
+  form,
+  apiEndpoint: computed(() => props.apiEndpoint),
+  isUpdate: computed(() => false),
+  emit,
+  successMessage: 'Mobile number verified successfully',
+})
 
 const dialogModelValueUpdate = val => {
   emit('update:isDialogVisible', val)
@@ -53,27 +64,28 @@ const dialogModelValueUpdate = val => {
           Enter your mobile phone number with country code and  we will send you a verification code.
         </p>
 
-        <VForm @submit.prevent="() => {}">
+        <VForm @submit.prevent="onSubmit">
           <AppTextField
-            v-model="phoneNumber"
+            v-model="form.mobile"
             name="mobile"
             label="Phone Number"
             placeholder="+1 123 456 7890"
             type="number"
             class="mb-6"
+            :error-messages="validationErrors.mobile"
           />
 
           <div class="d-flex flex-wrap justify-end gap-4">
             <VBtn
               color="secondary"
               variant="tonal"
-              @click="resetPhoneNumber"
+              @click="dialogModelValueUpdate(false)"
             >
               Cancel
             </VBtn>
             <VBtn
               type="submit"
-              @click="formSubmit"
+              :loading="isLoading"
             >
               continue
               <VIcon

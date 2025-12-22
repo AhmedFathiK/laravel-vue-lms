@@ -1,7 +1,7 @@
 <script setup>
 import AppServerSideAutocomplete from '@/@core/components/app-form-elements/AppServerSideAutocomplete.vue'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
-import api from '@/utils/api'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -27,16 +27,15 @@ const props = defineProps({
 
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const toast = useToast()
-const isSubmitting = ref(false)
-const formErrors = ref({})
 const selectedQuestion = ref(null)
 const selectedTerm = ref(null)
+const refForm = ref(null)
 
-const formData = ref({
+const createDefaultForm = () => ({
   id: null,
-  lessonId: null,
+  lessonId: parseInt(props.lessonId),
   type: 'explanation',
   title: '',
   questionId: null,
@@ -45,57 +44,51 @@ const formData = ref({
   sortOrder: 0,
 })
 
-watch(() => props.slideData, newSlideData => {
-  if (newSlideData) {
-    formErrors.value = {}
-    selectedQuestion.value = null
-    selectedTerm.value = null
-    formData.value = JSON.parse(JSON.stringify(newSlideData))
-    selectedQuestion.value = newSlideData.questionId ? newSlideData.question : null
-    selectedTerm.value = newSlideData.termId ? newSlideData.term : null
-    if (!formData.value.content) formData.value.content = ''
-    if (!formData.value.title) formData.value.title = ''
-    if (!formData.value.lessonId) formData.value.lessonId = parseInt(props.lessonId)
+const formData = ref(createDefaultForm())
+
+watch(() => props.isDialogVisible, isVisible => {
+  if (isVisible) {
+    if (props.slideData && props.slideData.id) {
+      formData.value = JSON.parse(JSON.stringify(props.slideData))
+      selectedQuestion.value = props.slideData.questionId ? props.slideData.question : null
+      selectedTerm.value = props.slideData.termId ? props.slideData.term : null
+      
+      if (!formData.value.content) formData.value.content = ''
+      if (!formData.value.title) formData.value.title = ''
+      if (!formData.value.lessonId) formData.value.lessonId = parseInt(props.lessonId)
+    } else {
+      formData.value = createDefaultForm()
+      selectedQuestion.value = null
+      selectedTerm.value = null
+    }
   }
-}, { immediate: true, deep: true })
+})
 
 const closeDialog = () => {
   emit('update:isDialogVisible', false)
-  formErrors.value = {}
   selectedQuestion.value = null
   selectedTerm.value = null
 }
 
-const submitForm = async () => {
-  isSubmitting.value = true
-  formErrors.value = {}
-
-  try {
-    const slideData = JSON.parse(JSON.stringify(formData.value))
-
-    if (slideData.id) {
-      // Update existing slide
-      await api.put(`/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides/${slideData.id}`, slideData)
-      toast.success('Slide updated successfully')
-    } else {
-      // Create new slide
-      await api.post(`/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides`, slideData)
-      toast.success('Slide created successfully')
-    }
-    
-    emit('refresh')
-    closeDialog()
-  } catch (error) {
-    console.error('Error saving slide:', error)
-    if (error.response?.data?.errors) {
-      formErrors.value = error.response.data.errors
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to save slide')
-    }
-  } finally {
-    isSubmitting.value = false
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
+  } else {
+    emit(event, ...args)
   }
 }
+
+const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitForm } = useCrudSubmit({
+  formRef: refForm,
+  form: formData,
+  apiEndpoint: computed(() => formData.value.id
+    ? `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides/${formData.value.id}`
+    : `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides`),
+  isUpdate: computed(() => !!formData.value.id),
+  emit: customEmit,
+  isFormData: false,
+  successMessage: computed(() => formData.value.id ? 'Slide updated successfully' : 'Slide created successfully'),
+})
 
 const dialogTitle = computed(() => formData.value.id ? 'Edit Slide' : 'New Slide')
 const getSlideTypeLabel = type => props.slideTypes.find(t => t.value === type)?.label || type
@@ -109,6 +102,16 @@ const isQuestionType = computed(() => {
 watch(selectedQuestion, newQuestion => {
   if (newQuestion) {
     formData.value.questionId = newQuestion.id
+  } else {
+    formData.value.questionId = null
+  }
+})
+
+watch(selectedTerm, newTerm => {
+  if (newTerm) {
+    formData.value.termId = newTerm.id
+  } else {
+    formData.value.termId = null
   }
 })
 
@@ -133,7 +136,10 @@ const isTermType = computed(() => formData.value.type === 'term')
         >
           {{ formErrors.general }}
         </VAlert>
-        <VForm @submit.prevent="submitForm">
+        <VForm 
+          ref="refForm"
+          @submit.prevent="submitForm"
+        >
           <VRow>
             <VCol cols="12">
               <AppTextField
@@ -206,7 +212,7 @@ const isTermType = computed(() => formData.value.type === 'term')
                           v-for="(answer, index) in item.raw.options"
                           :key="index"
                         >
-                          {{ index + 1 }}. {{ answer }} | correct: {{ item.raw.correct_answer[index] == 0 ? 'No' : 'Yes' }}
+                          {{ index + 1 }}. {{ answer }} | correct: {{ item.raw.correctAnswer[index] == 0 ? 'No' : 'Yes' }}
                         </li>
                       </ul>
                     </template>

@@ -1,6 +1,6 @@
 <script setup>
+import AddEditQuestionDialog from '@/components/dialogs/AddEditQuestionDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import QuestionEditDialog from '@/components/dialogs/QuestionEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -520,7 +520,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
     </VCard>
 
     <!-- Question Edit Dialog -->
-    <QuestionEditDialog
+    <AddEditQuestionDialog
       v-model:is-dialog-visible="isDialogOpen"
       :dialog-mode="dialogMode"
       :question="editQuestion"

@@ -1,6 +1,6 @@
 <script setup>
+import AddEditTermDialog from '@/components/dialogs/AddEditTermDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import TermEditDialog from '@/components/dialogs/TermEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -136,11 +136,11 @@ const confirmDelete = term => {
 }
 
 // Confirm term deletion
-const deleteTerm = async () => {
-  if (!result.confirmed || !questionToDelete.value) return
+const deleteTerm = async result => {
+  if (!result.confirmed || !termToDelete.value) return
   
   try {
-    await api.delete(`/admin/terms/${termToDelete.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/terms/${termToDelete.value.id}`)
     toast.success('Term deleted successfully')
     fetchTerms()
   } catch (error) {
@@ -362,11 +362,11 @@ onMounted(() => {
     </VCard>
 
     <!-- Term Edit Dialog -->
-    <TermEditDialog
+    <AddEditTermDialog
       v-model:is-dialog-visible="isDialogVisible"
-      :term="editingTerm"
+      :term-data="editingTerm"
       :course-id="courseId"
-      @term-saved="handleTermSaved"
+      @saved="handleTermSaved"
     />
 
     <!-- Deletion Confirmation Dialog -->
@@ -375,7 +375,7 @@ onMounted(() => {
       confirmation-question="Are you sure you want to delete this term?"
       confirm-title="Term Deleted"
       confirm-msg="The term has been deleted successfully."
-      @confirm="deleteQuestion"
+      @confirm="deleteTerm"
     />
   </section>
 </template>

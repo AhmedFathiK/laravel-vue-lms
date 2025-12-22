@@ -1,6 +1,5 @@
 <script setup>
 import { formatCurrency, formatDate } from '@/@core/utils/formatters'
-import ReceiptDialog from '@/components/dialogs/ReceiptDialog.vue'
 import ReceiptViewDialog from '@/components/dialogs/ReceiptViewDialog.vue'
 import api from '@/utils/api'
 import { can } from '@layouts/plugins/casl'
@@ -590,7 +589,7 @@ const onReceiptSubmitSuccess = () => {
     </VCard>
     
     <!-- 👉 Add/Edit Receipt Dialog -->
-    <ReceiptDialog
+    <AddEditReceiptDialog
       :is-dialog-visible="isAddReceiptDialogVisible"
       :dialog-mode="selectedReceipt ? 'edit' : 'add'"
       :receipt="selectedReceipt"

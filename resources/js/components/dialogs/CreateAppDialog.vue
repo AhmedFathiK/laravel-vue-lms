@@ -1,5 +1,7 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import laptopGirl from '@images/illustrations/laptop-girl.png'
+import { requiredValidator } from '@validators'
 
 const props = defineProps({
   isDialogVisible: {
@@ -14,6 +16,7 @@ const emit = defineEmits([
 ])
 
 const currentStep = ref(0)
+const formRef = ref()
 
 const createApp = [
   {
@@ -123,8 +126,10 @@ const databases = [
 ]
 
 const createAppData = ref({
+  name: '',
   category: 'crm-application',
   framework: 'js-framework',
+  databaseName: '',
   database: 'firebase-database',
   cardNumber: null,
   cardName: '',
@@ -138,17 +143,28 @@ const dialogVisibleUpdate = val => {
   currentStep.value = 0
 }
 
+// Custom emit to map 'saved' to 'updatedData'
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('updatedData', ...args)
+  } else {
+    emit(event, ...args)
+  }
+}
+
 watch(() => props, () => {
   if (!props.isDialogVisible)
     currentStep.value = 0
 })
 
-const onSubmit = () => {
-
-  // eslint-disable-next-line no-alert
-  alert('submitted...!!')
-  emit('updatedData', createAppData.value)
-}
+const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
+  form: createAppData,
+  apiEndpoint: computed(() => '/admin/apps'),
+  isUpdate: computed(() => false),
+  emit: customEmit,
+  isFormData: false,
+  successMessage: 'App created successfully',
+})
 </script>
 
 <template>
@@ -198,152 +214,173 @@ const onSubmit = () => {
             md="8"
             lg="9"
           >
-            <VWindow
-              v-model="currentStep"
-              class="disable-tab-transition stepper-content"
+            <VForm
+              ref="formRef"
+              @submit.prevent="onSubmit"
             >
-              <!-- 👉 category -->
-              <VWindowItem>
-                <AppTextField
-                  label="Application Name"
-                  placeholder="Application Name"
-                />
+              <VWindow
+                v-model="currentStep"
+                class="disable-tab-transition stepper-content"
+              >
+                <!-- 👉 category -->
+                <VWindowItem>
+                  <AppTextField
+                    v-model="createAppData.name"
+                    label="Application Name"
+                    placeholder="Application Name"
+                    :rules="[requiredValidator]"
+                    :error-messages="validationErrors.name"
+                  />
 
-                <h5 class="text-h5 mt-6 mb-4">
-                  Category
-                </h5>
-                <VRadioGroup v-model="createAppData.category">
-                  <VList class="card-list">
-                    <VListItem
-                      v-for="category in categories"
-                      :key="category.title"
-                      @click="createAppData.category = category.slug"
-                    >
-                      <template #prepend>
-                        <VAvatar
-                          size="46"
-                          rounded
-                          variant="tonal"
-                          :color="category.color"
-                        >
-                          <VIcon
-                            :icon="category.icon"
-                            size="30"
-                          />
-                        </VAvatar>
-                      </template>
+                  <h5 class="text-h5 mt-6 mb-4">
+                    Category
+                  </h5>
+                  <VRadioGroup
+                    v-model="createAppData.category"
+                    :rules="[requiredValidator]"
+                    :error-messages="validationErrors.category"
+                  >
+                    <VList class="card-list">
+                      <VListItem
+                        v-for="category in categories"
+                        :key="category.title"
+                        @click="createAppData.category = category.slug"
+                      >
+                        <template #prepend>
+                          <VAvatar
+                            size="46"
+                            rounded
+                            variant="tonal"
+                            :color="category.color"
+                          >
+                            <VIcon
+                              :icon="category.icon"
+                              size="30"
+                            />
+                          </VAvatar>
+                        </template>
 
-                      <VListItemTitle>
-                        <h6 class="text-h6 mb-1">
-                          {{ category.title }}
-                        </h6>
-                      </VListItemTitle>
-                      <VListItemSubtitle>
-                        {{ category.subtitle }}
-                      </VListItemSubtitle>
+                        <VListItemTitle>
+                          <h6 class="text-h6 mb-1">
+                            {{ category.title }}
+                          </h6>
+                        </VListItemTitle>
+                        <VListItemSubtitle>
+                          {{ category.subtitle }}
+                        </VListItemSubtitle>
 
-                      <template #append>
-                        <VRadio :value="category.slug" />
-                      </template>
-                    </VListItem>
-                  </VList>
-                </VRadioGroup>
-              </VWindowItem>
+                        <template #append>
+                          <VRadio :value="category.slug" />
+                        </template>
+                      </VListItem>
+                    </VList>
+                  </VRadioGroup>
+                </VWindowItem>
 
-              <!-- 👉 Frameworks -->
-              <VWindowItem>
-                <h5 class="text-h5 mb-4">
-                  Select Framework
-                </h5>
-                <VRadioGroup v-model="createAppData.framework">
-                  <VList class="card-list">
-                    <VListItem
-                      v-for="framework in frameworks"
-                      :key="framework.title"
-                      @click="createAppData.framework = framework.slug"
-                    >
-                      <template #prepend>
-                        <VAvatar
-                          size="46"
-                          rounded
-                          variant="tonal"
-                          :color="framework.color"
-                        >
-                          <VIcon
-                            :icon="framework.icon"
-                            size="30"
-                          />
-                        </VAvatar>
-                      </template>
-                      <VListItemTitle>
-                        <h6 class="text-h6 mb-1">
-                          {{ framework.title }}
-                        </h6>
-                      </VListItemTitle>
-                      <VListItemSubtitle>
-                        {{ framework.subtitle }}
-                      </VListItemSubtitle>
-                      <template #append>
-                        <VRadio :value="framework.slug" />
-                      </template>
-                    </VListItem>
-                  </VList>
-                </VRadioGroup>
-              </VWindowItem>
+                <!-- 👉 Frameworks -->
+                <VWindowItem>
+                  <h5 class="text-h5 mb-4">
+                    Select Framework
+                  </h5>
+                  <VRadioGroup
+                    v-model="createAppData.framework"
+                    :rules="[requiredValidator]"
+                    :error-messages="validationErrors.framework"
+                  >
+                    <VList class="card-list">
+                      <VListItem
+                        v-for="framework in frameworks"
+                        :key="framework.title"
+                        @click="createAppData.framework = framework.slug"
+                      >
+                        <template #prepend>
+                          <VAvatar
+                            size="46"
+                            rounded
+                            variant="tonal"
+                            :color="framework.color"
+                          >
+                            <VIcon
+                              :icon="framework.icon"
+                              size="30"
+                            />
+                          </VAvatar>
+                        </template>
+                        <VListItemTitle>
+                          <h6 class="text-h6 mb-1">
+                            {{ framework.title }}
+                          </h6>
+                        </VListItemTitle>
+                        <VListItemSubtitle>
+                          {{ framework.subtitle }}
+                        </VListItemSubtitle>
+                        <template #append>
+                          <VRadio :value="framework.slug" />
+                        </template>
+                      </VListItem>
+                    </VList>
+                  </VRadioGroup>
+                </VWindowItem>
 
-              <!-- 👉 Database Engine -->
-              <VWindowItem>
-                <AppTextField
-                  label="Database Name"
-                  placeholder="UserDB"
-                />
+                <!-- 👉 Database Engine -->
+                <VWindowItem>
+                  <AppTextField
+                    v-model="createAppData.databaseName"
+                    label="Database Name"
+                    placeholder="UserDB"
+                    :rules="[requiredValidator]"
+                    :error-messages="validationErrors.databaseName"
+                  />
 
-                <h5 class="text-h5 mt-6 mb-4">
-                  Select Database Engine
-                </h5>
-                <VRadioGroup v-model="createAppData.database">
-                  <VList class="card-list">
-                    <VListItem
-                      v-for="database in databases"
-                      :key="database.title"
-                      @click="createAppData.database = database.slug"
-                    >
-                      <template #prepend>
-                        <VAvatar
-                          size="46"
-                          rounded
-                          variant="tonal"
-                          :color="database.color"
-                        >
-                          <VIcon
-                            :icon="database.icon"
-                            size="30"
-                          />
-                        </VAvatar>
-                      </template>
-                      <VListItemTitle>
-                        <h6 class="text-h6 mb-1">
-                          {{ database.title }}
-                        </h6>
-                      </VListItemTitle>
-                      <VListItemSubtitle>
-                        {{ database.subtitle }}
-                      </VListItemSubtitle>
-                      <template #append>
-                        <VRadio :value="database.slug" />
-                      </template>
-                    </VListItem>
-                  </VList>
-                </VRadioGroup>
-              </VWindowItem>
+                  <h5 class="text-h5 mt-6 mb-4">
+                    Select Database Engine
+                  </h5>
+                  <VRadioGroup
+                    v-model="createAppData.database"
+                    :rules="[requiredValidator]"
+                    :error-messages="validationErrors.database"
+                  >
+                    <VList class="card-list">
+                      <VListItem
+                        v-for="database in databases"
+                        :key="database.title"
+                        @click="createAppData.database = database.slug"
+                      >
+                        <template #prepend>
+                          <VAvatar
+                            size="46"
+                            rounded
+                            variant="tonal"
+                            :color="database.color"
+                          >
+                            <VIcon
+                              :icon="database.icon"
+                              size="30"
+                            />
+                          </VAvatar>
+                        </template>
+                        <VListItemTitle>
+                          <h6 class="text-h6 mb-1">
+                            {{ database.title }}
+                          </h6>
+                        </VListItemTitle>
+                        <VListItemSubtitle>
+                          {{ database.subtitle }}
+                        </VListItemSubtitle>
+                        <template #append>
+                          <VRadio :value="database.slug" />
+                        </template>
+                      </VListItem>
+                    </VList>
+                  </VRadioGroup>
+                </VWindowItem>
 
-              <!-- 👉 Billing form -->
-              <VWindowItem>
-                <h6 class="text-h6 mb-6">
-                  Payment Details
-                </h6>
+                <!-- 👉 Billing form -->
+                <VWindowItem>
+                  <h6 class="text-h6 mb-6">
+                    Payment Details
+                  </h6>
 
-                <VForm>
                   <VRow>
                     <VCol cols="12">
                       <AppTextField
@@ -351,6 +388,8 @@ const onSubmit = () => {
                         label="Card Number"
                         placeholder="1234 1234 1234 1234"
                         type="number"
+                        :rules="[requiredValidator]"
+                        :error-messages="validationErrors.cardNumber"
                       />
                     </VCol>
 
@@ -362,6 +401,8 @@ const onSubmit = () => {
                         v-model="createAppData.cardName"
                         label="Name on Card"
                         placeholder="John Doe"
+                        :rules="[requiredValidator]"
+                        :error-messages="validationErrors.cardName"
                       />
                     </VCol>
 
@@ -373,6 +414,8 @@ const onSubmit = () => {
                         v-model="createAppData.cardExpiry"
                         label="Expiry"
                         placeholder="MM/YY"
+                        :rules="[requiredValidator]"
+                        :error-messages="validationErrors.cardExpiry"
                       />
                     </VCol>
 
@@ -384,6 +427,8 @@ const onSubmit = () => {
                         v-model="createAppData.cardCvv"
                         label="CVV"
                         placeholder="123"
+                        :rules="[requiredValidator]"
+                        :error-messages="validationErrors.cardCvv"
                       />
                     </VCol>
 
@@ -394,24 +439,24 @@ const onSubmit = () => {
                       />
                     </VCol>
                   </VRow>
-                </VForm>
-              </VWindowItem>
+                </VWindowItem>
 
-              <VWindowItem class="text-center">
-                <h5 class="text-h5 mb-1">
-                  Submit
-                </h5>
-                <p class="text-sm mb-4">
-                  Submit to kickstart your project.
-                </p>
+                <VWindowItem class="text-center">
+                  <h5 class="text-h5 mb-1">
+                    Submit
+                  </h5>
+                  <p class="text-sm mb-4">
+                    Submit to kickstart your project.
+                  </p>
 
-                <VImg
-                  :src="laptopGirl"
-                  width="176"
-                  class="mx-auto"
-                />
-              </VWindowItem>
-            </VWindow>
+                  <VImg
+                    :src="laptopGirl"
+                    width="176"
+                    class="mx-auto"
+                  />
+                </VWindowItem>
+              </VWindow>
+            </VForm>
 
             <div class="d-flex justify-space-between mt-6">
               <VBtn

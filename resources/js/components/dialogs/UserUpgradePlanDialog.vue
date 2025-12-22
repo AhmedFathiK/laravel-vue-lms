@@ -1,4 +1,6 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
@@ -6,7 +8,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:isDialogVisible'])
+const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
 const selectedPlan = ref('standard')
 
@@ -38,6 +40,33 @@ const isConfirmDialogVisible = ref(false)
 const dialogModelValueUpdate = val => {
   emit('update:isDialogVisible', val)
 }
+
+const form = ref({
+  planId: selectedPlan.value,
+})
+
+watch(selectedPlan, val => {
+  form.value.planId = val
+})
+
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
+  form,
+  apiEndpoint: computed(() => '/api/learner/subscribe'),
+  isUpdate: computed(() => false), // Always a new subscription action? Or update?
+  emit,
+  successMessage: 'Plan upgraded successfully',
+})
+
+const handleCancelSubscription = confirmed => {
+  if (confirmed) {
+    // TODO: Implement cancel subscription API call
+    // axios.post('/api/learner/unsubscribe')
+    isConfirmDialogVisible.value = false
+    emit('refresh')
+  } else {
+    isConfirmDialogVisible.value = false
+  }
+}
 </script>
 
 <template>
@@ -66,10 +95,13 @@ const dialogModelValueUpdate = val => {
             :items="plansList"
             label="Choose a plan"
             placeholder="Basic"
+            :error-messages="validationErrors.planId"
           />
           <VBtn
             class="align-self-end"
             :block="$vuetify.display.xs"
+            :loading="isLoading"
+            @click="onSubmit"
           >
             Upgrade
           </VBtn>
@@ -108,6 +140,7 @@ const dialogModelValueUpdate = val => {
         confirm-msg="Your subscription cancelled successfully."
         confirmation-question="Are you sure to cancel your subscription?"
         cancel-msg="Unsubscription Cancelled!!"
+        @confirm="handleCancelSubscription"
       />
     </VCard>
   </VDialog>

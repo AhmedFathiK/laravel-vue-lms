@@ -1,4 +1,6 @@
 <script setup>
+import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+
 const props = defineProps({
   confirmationQuestion: {
     type: String,
@@ -10,19 +12,25 @@ const props = defineProps({
   },
   confirmTitle: {
     type: String,
-    required: true,
+    default: 'Confirmed',
   },
   confirmMsg: {
     type: String,
-    required: true,
+    default: 'Action completed successfully',
   },
   cancelTitle: {
     type: String,
-    required: true,
+    default: 'Cancelled',
   },
   cancelMsg: {
     type: String,
-    required: true,
+    default: 'Action cancelled',
+  },
+
+  // Allow parent to handle async confirmation
+  loading: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -31,33 +39,32 @@ const emit = defineEmits([
   'confirm',
 ])
 
-const unsubscribed = ref(false)
-const cancelled = ref(false)
-
 const updateModelValue = val => {
   emit('update:isDialogVisible', val)
 }
 
 const onConfirmation = () => {
   emit('confirm', true)
-  updateModelValue(false)
-  unsubscribed.value = true
+
+  // We don't close immediately here to allow parent to show loading state
+  // Parent should close dialog after async operation
 }
 
 const onCancel = () => {
   emit('confirm', false)
   emit('update:isDialogVisible', false)
-  cancelled.value = true
 }
 </script>
 
 <template>
-  <!-- 👉 Confirm Dialog -->
   <VDialog
     max-width="500"
     :model-value="props.isDialogVisible"
     @update:model-value="updateModelValue"
   >
+    <!-- Dialog close btn -->
+    <DialogCloseBtn @click="onCancel" />
+    
     <VCard class="text-center px-10 py-6">
       <VCardText>
         <VBtn
@@ -65,12 +72,12 @@ const onCancel = () => {
           variant="outlined"
           color="warning"
           class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
+          style="block-size: 88px; inline-size: 88px; pointer-events: none;"
         >
           <span class="text-5xl">!</span>
         </VBtn>
 
-        <h6 class="text-lg font-weight-medium">
+        <h6 class="text-h6 font-weight-medium">
           {{ props.confirmationQuestion }}
         </h6>
       </VCardText>
@@ -78,6 +85,7 @@ const onCancel = () => {
       <VCardText class="d-flex align-center justify-center gap-2">
         <VBtn
           variant="elevated"
+          :loading="props.loading"
           @click="onConfirmation"
         >
           Confirm
@@ -86,78 +94,10 @@ const onCancel = () => {
         <VBtn
           color="secondary"
           variant="tonal"
+          :disabled="props.loading"
           @click="onCancel"
         >
           Cancel
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- Unsubscribed -->
-  <VDialog
-    v-model="unsubscribed"
-    max-width="500"
-  >
-    <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
-          color="success"
-          class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
-        >
-          <VIcon
-            icon="tabler-check"
-            size="38"
-          />
-        </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.confirmTitle }}
-        </h1>
-
-        <p>{{ props.confirmMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="unsubscribed = false"
-        >
-          Ok
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- Cancelled -->
-  <VDialog
-    v-model="cancelled"
-    max-width="500"
-  >
-    <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
-          color="error"
-          class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
-        >
-          <span class="text-5xl font-weight-light">X</span>
-        </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.cancelTitle }}
-        </h1>
-
-        <p>{{ props.cancelMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="cancelled = false"
-        >
-          Ok
         </VBtn>
       </VCardText>
     </VCard>

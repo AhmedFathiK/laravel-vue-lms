@@ -3,6 +3,10 @@ import americanExpress from '@images/icons/payments/american-express.png'
 import mastercard from '@images/icons/payments/mastercard.png'
 import visa from '@images/icons/payments/visa.png'
 
+import AddEditAddressDialog from '@/components/dialogs/AddEditAddressDialog.vue'
+import AddEditCardDialog from '@/components/dialogs/AddEditCardDialog.vue'
+import UserUpgradePlanDialog from '@/components/dialogs/UserUpgradePlanDialog.vue'
+
 const isUpgradePlanDialogVisible = ref(false)
 const currentCardDetails = ref()
 const isCardEditDialogVisible = ref(false)
@@ -396,13 +400,13 @@ const currentBillingAddress = {
   </VRow>
 
   <!-- 👉 Edit Card Dialog -->
-  <CardAddEditDialog
+  <AddEditCardDialog
     v-model:is-dialog-visible="isCardEditDialogVisible"
     :card-details="currentCardDetails"
   />
 
   <!-- 👉 Add Card Dialog -->
-  <CardAddEditDialog v-model:is-dialog-visible="isCardAddDialogVisible" />
+  <AddEditCardDialog v-model:is-dialog-visible="isCardAddDialogVisible" />
 
   <!-- 👉 Edit Address dialog -->
   <AddEditAddressDialog

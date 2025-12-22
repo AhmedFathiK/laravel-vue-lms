@@ -121,11 +121,11 @@ const onCancel = () => {
         />
       </VCardText>
 
-      <VCardText class="d-flex align-center justify-center gap-2 pb-6">
+      <VCardText class="d-flex align-center justify-center gap-2 mt-4">
         <VBtn
-          variant="elevated"
           color="error"
-          :loading="isSubmitting"
+          variant="elevated"
+          :loading="props.loading"
           @click="onConfirmation"
         >
           Delete
@@ -134,78 +134,10 @@ const onCancel = () => {
         <VBtn
           color="secondary"
           variant="tonal"
+          :disabled="props.loading"
           @click="onCancel"
         >
           Cancel
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- Confirmed -->
-  <VDialog
-    v-model="unsubscribed"
-    max-width="500"
-  >
-    <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
-          color="success"
-          class="my-4"
-          style="block-size: 88px;inline-size: 88px; pointer-events: none;"
-        >
-          <VIcon
-            icon="tabler-check"
-            size="38"
-          />
-        </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.confirmTitle }}
-        </h1>
-
-        <p>{{ props.confirmMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="unsubscribed = false"
-        >
-          Ok
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- Cancelled -->
-  <VDialog
-    v-model="cancelled"
-    max-width="500"
-  >
-    <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
-          color="error"
-          class="my-4"
-          style="block-size: 88px;inline-size: 88px; pointer-events: none;"
-        >
-          <span class="text-5xl font-weight-light">X</span>
-        </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.cancelTitle }}
-        </h1>
-
-        <p>{{ props.cancelMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="cancelled = false"
-        >
-          Ok
         </VBtn>
       </VCardText>
     </VCard>

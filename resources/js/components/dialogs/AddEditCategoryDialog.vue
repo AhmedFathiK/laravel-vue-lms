@@ -1,212 +1,147 @@
 <script setup>
-import api from '@/utils/api'
-import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
+import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+import { requiredValidator } from '@core/utils/validators'
+import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
-  isDialogOpen: {
+  isDialogVisible: {
     type: Boolean,
     required: true,
   },
-  dialogMode: {
-    type: String,
-    default: 'add',
-    validator: value => ['add', 'edit'].includes(value),
-  },
-  category: {
+  categoryData: {
     type: Object,
-    default: () => ({}),
+    default: () => null,
   },
 })
 
-const emit = defineEmits(['update:is-dialog-open', 'categorySaved'])
+const emit = defineEmits(['update:isDialogVisible', 'saved'])
 
-const toast = useToast()
-const { locale } = useI18n()
+const refForm = ref(null)
 
-// Form data - initialize with empty values
-const categoryName = ref('')
-const categoryDescription = ref('')
-const formErrors = ref({})
-const isSubmitting = ref(false)
+const defaultForm = () => ({
+  name: '',
+  description: '',
+  isActive: true,
+  sortOrder: 0,
+})
 
-// Form validation rules
-const nameRules = [
-  value => !!value || 'Category name is required',
-]
+const form = ref(defaultForm())
 
 // Watch for changes in the category prop
 watch(
-  () => props.category,
-  newCategory => {
-    if (newCategory) {
-      // For editing, extract values from the multilingual object if needed
-      const name = newCategory.name
+  () => props.isDialogVisible,
+  isVisible => {
+    if (isVisible) {
+      if (props.categoryData) {
+        form.value = {
+          name: props.categoryData.name || '',
+          description: props.categoryData.description || '',
+          isActive: props.categoryData.isActive ?? true,
+          sortOrder: props.categoryData.sortOrder ?? 0,
+        }
+      } else {
+        form.value = defaultForm()
+      }
       
-      categoryName.value = name && typeof name === 'object' 
-        ? (name[locale.value] || name.en || '') 
-        : (name || '')
-      
-      const description = newCategory.description
-      
-      categoryDescription.value = description && typeof description === 'object' 
-        ? (description[locale.value] || description.en || '') 
-        : (description || '')
-    } else {
-      // Reset form when category is null
-      categoryName.value = ''
-      categoryDescription.value = ''
+      nextTick(() => {
+        refForm.value?.resetValidation()
+      })
     }
-    
-    // Reset form errors when dialog opens
-    formErrors.value = {}
   },
-  { deep: true, immediate: true },
 )
 
-// Validate form
-const validateForm = () => {
-  formErrors.value = {}
-  
-  // Validate name
-  if (!categoryName.value) {
-    formErrors.value.name = 'Category name is required'
-    
-    return false
-  }
-  
-  return true
-}
-
-// Create new category
-const createCategory = async () => {
-  if (!validateForm()) return
-  
-  isSubmitting.value = true
-  
-  try {
-    // Prepare data for the current locale
-    const categoryData = {
-      name: categoryName.value,
-      description: categoryDescription.value,
-    }
-
-    const response = await api.post('/admin/course-categories', categoryData)
-    
-    toast.success('Category created successfully')
-    emit('categorySaved')
-    closeDialog()
-  } catch (error) {
-    console.error('Error creating category:', error)
-    toast.error('Failed to create category')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Update category
-const updateCategory = async () => {
-  if (!validateForm()) return
-  
-  // Check if category exists and has an id
-  if (!props.category || !props.category.id) {
-    toast.error('Category ID is missing')
-    
-    return
-  }
-  
-  isSubmitting.value = true
-  
-  try {
-    // Prepare data for the current locale
-    const categoryData = {
-      name: categoryName.value,
-      description: categoryDescription.value,
-    }
-
-    const response = await api.put(`/admin/course-categories/${props.category.id}`, categoryData)
-    
-    toast.success('Category updated successfully')
-    emit('categorySaved')
-    closeDialog()
-  } catch (error) {
-    console.error('Error updating category:', error)
-    toast.error('Failed to update category')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Save category (create or update)
-const saveCategory = () => {
-  if (props.dialogMode === 'add') {
-    createCategory()
-  } else {
-    updateCategory()
-  }
-}
-
-// Close dialog and reset form
-const closeDialog = () => {
-  emit('update:is-dialog-open', false)
-  categoryName.value = ''
-  categoryDescription.value = ''
-  formErrors.value = {}
-}
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
+  formRef: refForm,
+  form: form,
+  apiEndpoint: computed(() => props.categoryData?.id 
+    ? `/admin/course-categories/${props.categoryData.id}` 
+    : '/admin/course-categories'),
+  isUpdate: computed(() => !!props.categoryData?.id),
+  emit,
+})
 </script>
 
 <template>
   <VDialog
-    :model-value="isDialogOpen"
-    max-width="500"
-    @update:model-value="emit('update:is-dialog-open', $event)"
+    :model-value="props.isDialogVisible"
+    max-width="600"
+    @update:model-value="val => $emit('update:isDialogVisible', val)"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closeDialog" />
+    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <!-- Dialog Content -->
-    <VCard :title="dialogMode === 'add' ? 'Add New Category' : 'Edit Category'">
+    <VCard :title="props.categoryData ? 'Edit Category' : 'Add Category'">
       <VCardText>
-        <VForm @submit.prevent="saveCategory">
+        <VForm
+          ref="refForm"
+          @submit.prevent="onSubmit"
+        >
           <VRow>
+            <!-- Name -->
             <VCol cols="12">
               <AppTextField
-                v-model="categoryName"
-                label="Category Name"
+                v-model="form.name"
+                label="Name"
+                :rules="[requiredValidator]"
                 placeholder="Enter category name"
-                :rules="nameRules"
-                :error-messages="formErrors.name"
+                :error-messages="validationErrors.name"
               />
             </VCol>
+
+            <!-- Description -->
             <VCol cols="12">
               <AppTextarea
-                v-model="categoryDescription"
+                v-model="form.description"
                 label="Description"
-                placeholder="Enter category description (optional)"
+                placeholder="Enter category description"
                 rows="3"
+                :error-messages="validationErrors.description"
               />
+            </VCol>
+
+            <!-- Sort Order -->
+            <VCol cols="12">
+              <AppTextField
+                v-model="form.sortOrder"
+                label="Sort Order"
+                type="number"
+                placeholder="0"
+                :error-messages="validationErrors.sortOrder"
+              />
+            </VCol>
+
+            <!-- Is Active -->
+            <VCol cols="12">
+              <VCheckbox
+                v-model="form.isActive"
+                label="Is Active"
+              />
+            </VCol>
+
+            <!-- Actions -->
+            <VCol
+              cols="12"
+              class="d-flex justify-end gap-2"
+            >
+              <VBtn
+                color="secondary"
+                variant="tonal"
+                :disabled="isLoading"
+                @click="$emit('update:isDialogVisible', false)"
+              >
+                Cancel
+              </VBtn>
+              
+              <VBtn
+                type="submit"
+                :loading="isLoading"
+              >
+                {{ props.categoryData ? 'Update' : 'Create' }}
+              </VBtn>
             </VCol>
           </VRow>
         </VForm>
-      </VCardText>
-
-      <VCardText class="d-flex justify-end flex-wrap gap-3">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          :disabled="isSubmitting"
-          @click="closeDialog"
-        >
-          Cancel
-        </VBtn>
-        <VBtn
-          color="primary"
-          :loading="isSubmitting"
-          @click="saveCategory"
-        >
-          {{ dialogMode === 'add' ? 'Create' : 'Update' }}
-        </VBtn>
       </VCardText>
     </VCard>
   </VDialog>

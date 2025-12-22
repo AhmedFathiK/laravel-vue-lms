@@ -1,6 +1,6 @@
 <script setup>
+import AddEditSubscriptionPlanDialog from '@/components/dialogs/AddEditSubscriptionPlanDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import SubscriptionPlanDialog from '@/components/dialogs/SubscriptionPlanDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -302,7 +302,7 @@ onMounted(() => {
     </VCard>
 
     <!-- Add/Edit Plan Dialog -->
-    <SubscriptionPlanDialog
+    <AddEditSubscriptionPlanDialog
       v-model:is-dialog-open="isPlanDialogVisible"
       :dialog-mode="dialogMode"
       :plan="editingPlan"

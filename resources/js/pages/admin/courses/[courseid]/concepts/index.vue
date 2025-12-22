@@ -1,6 +1,6 @@
 <script setup>
+import AddEditConceptDialog from '@/components/dialogs/AddEditConceptDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
-import ConceptEditDialog from '@/components/dialogs/ConceptEditDialog.vue'
 import api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -344,7 +344,7 @@ onMounted(() => {
     </VCard>
 
     <!-- Concept Edit Dialog -->
-    <ConceptEditDialog
+    <AddEditConceptDialog
       v-model:is-dialog-visible="isDialogVisible"
       :concept="editingConcept"
       :course-id="courseId"

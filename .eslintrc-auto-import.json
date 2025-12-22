@@ -366,6 +366,10 @@
     "minLengthValidator": true,
     "formatCurrency": true,
     "formatFileSize": true,
-    "truncateString": true
+    "truncateString": true,
+    "parseApiError": true,
+    "setFormErrors": true,
+    "useCrudSubmit": true,
+    "handleApiError": true
   }
 }

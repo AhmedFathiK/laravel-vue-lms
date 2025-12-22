@@ -1,4 +1,5 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import home from '@images/svg/home.svg'
 import office from '@images/svg/office.svg'
 
@@ -24,26 +25,18 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  apiEndpoint: {
+    type: String,
+    required: false,
+    default: null,
+  },
 })
 
 const emit = defineEmits([
   'update:isDialogVisible',
   'submit',
+  'refresh',
 ])
-
-const billingAddress = ref(structuredClone(toRaw(props.billingAddress)))
-
-const resetForm = () => {
-  emit('update:isDialogVisible', false)
-  billingAddress.value = structuredClone(toRaw(props.billingAddress))
-}
-
-const onFormSubmit = () => {
-  emit('update:isDialogVisible', false)
-  emit('submit', billingAddress.value)
-}
-
-const selectedAddress = ref('Home')
 
 const addressTypes = [
   {
@@ -65,6 +58,60 @@ const addressTypes = [
     value: 'Office',
   },
 ]
+
+const selectedAddress = ref('Home')
+
+// Form factory
+const createDefaultForm = (data = {}) => ({
+  firstName: data.firstName || '',
+  lastName: data.lastName || '',
+  selectedCountry: data.selectedCountry || null,
+  addressLine1: data.addressLine1 || '',
+  addressLine2: data.addressLine2 || '',
+  landmark: data.landmark || '',
+  contact: data.contact || '',
+  country: data.country || null,
+  city: data.city || '',
+  state: data.state || '',
+  zipCode: data.zipCode || null,
+})
+
+const form = ref(createDefaultForm(props.billingAddress))
+const refForm = ref(null)
+
+// Watch for dialog visibility to reset form
+watch(() => props.isDialogVisible, (isVisible) => {
+  if (isVisible) {
+    form.value = createDefaultForm(props.billingAddress)
+  }
+})
+
+// Watch for prop changes
+watch(() => props.billingAddress, (newVal) => {
+  if (props.isDialogVisible) {
+    form.value = createDefaultForm(newVal)
+  }
+})
+
+// Custom emit to handle success
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
+    emit('submit', ...args) // Keep original emit for compatibility
+  } else {
+    emit(event, ...args)
+  }
+}
+
+const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
+  formRef: refForm,
+  form,
+  apiEndpoint: computed(() => props.apiEndpoint || '/api/addresses'), // Placeholder default
+  isUpdate: computed(() => !!props.billingAddress?.id), // Assuming id exists if editing
+  emit: customEmit,
+  isFormData: false,
+  successMessage: computed(() => props.billingAddress?.id ? 'Address updated successfully' : 'Address added successfully'),
+})
 </script>
 
 <template>
@@ -76,10 +123,7 @@ const addressTypes = [
     <!-- 👉 Dialog close btn -->
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard
-      v-if="props.billingAddress"
-      class="pa-sm-10 pa-2"
-    >
+    <VCard class="pa-sm-10 pa-2">
       <VCardText>
         <!-- 👉 Title -->
         <h4 class="text-h4 text-center mb-2">
@@ -98,7 +142,10 @@ const addressTypes = [
         </div>
 
         <!-- 👉 Form -->
-        <VForm @submit.prevent="onFormSubmit">
+        <VForm
+          ref="refForm"
+          @submit.prevent="onSubmit"
+        >
           <VRow>
             <!-- 👉 First Name -->
             <VCol
@@ -106,9 +153,10 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.firstName"
+                v-model="form.firstName"
                 label="First Name"
                 placeholder="John"
+                :error-messages="validationErrors.firstName"
               />
             </VCol>
 
@@ -118,37 +166,41 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.lastName"
+                v-model="form.lastName"
                 label="Last Name"
                 placeholder="Doe"
+                :error-messages="validationErrors.lastName"
               />
             </VCol>
 
             <!-- 👉 Select Country -->
             <VCol cols="12">
               <AppSelect
-                v-model="billingAddress.selectedCountry"
+                v-model="form.selectedCountry"
                 label="Select Country"
                 placeholder="Select Country"
                 :items="['USA', 'Aus', 'Canada', 'NZ']"
+                :error-messages="validationErrors.selectedCountry"
               />
             </VCol>
 
             <!-- 👉 Address Line 1 -->
             <VCol cols="12">
               <AppTextField
-                v-model="billingAddress.addressLine1"
+                v-model="form.addressLine1"
                 label="Address Line 1"
                 placeholder="12, Business Park"
+                :error-messages="validationErrors.addressLine1"
               />
             </VCol>
 
             <!-- 👉 Address Line 2 -->
             <VCol cols="12">
               <AppTextField
-                v-model="billingAddress.addressLine2"
+                v-model="form.addressLine2"
                 label="Address Line 2"
                 placeholder="Mall Road"
+                :error-messages="validationErrors.addressLine2"
               />
             </VCol>
 
@@ -158,9 +210,10 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.landmark"
+                v-model="form.landmark"
                 label="Landmark"
                 placeholder="Nr. Hard Rock Cafe"
+                :error-messages="validationErrors.landmark"
               />
             </VCol>
 
@@ -170,9 +223,10 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.city"
+                v-model="form.city"
                 label="City"
                 placeholder="Los Angeles"
+                :error-messages="validationErrors.city"
               />
             </VCol>
 
@@ -182,9 +236,10 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.state"
+                v-model="form.state"
                 label="State"
                 placeholder="California"
+                :error-messages="validationErrors.state"
               />
             </VCol>
 
@@ -194,10 +249,11 @@ const addressTypes = [
               md="6"
             >
               <AppTextField
-                v-model="billingAddress.zipCode"
+                v-model="form.zipCode"
                 label="Zip Code"
                 placeholder="99950"
                 type="number"
+                :error-messages="validationErrors.zipCode"
               />
             </VCol>
 
@@ -213,6 +269,7 @@ const addressTypes = [
               <VBtn
                 type="submit"
                 class="me-3"
+                :loading="isLoading"
               >
                 submit
               </VBtn>
@@ -220,7 +277,7 @@ const addressTypes = [
               <VBtn
                 variant="tonal"
                 color="secondary"
-                @click="resetForm"
+                @click="$emit('update:isDialogVisible', false)"
               >
                 Cancel
               </VBtn>

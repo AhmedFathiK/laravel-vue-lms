@@ -1,35 +1,45 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import themeselectionQr from '@images/pages/themeselection-qr.png'
 
 const props = defineProps({
   authCode: {
     type: String,
     required: false,
+    default: '',
   },
   isDialogVisible: {
     type: Boolean,
     required: true,
+  },
+  apiEndpoint: {
+    type: String,
+    required: false,
+    default: '/api/user/confirm-two-factor-authentication', // Standard Laravel Fortify endpoint
   },
 })
 
 const emit = defineEmits([
   'update:isDialogVisible',
   'submit',
+  'refresh',
 ])
 
-const authCode = ref(structuredClone(toRaw(props.authCode)))
+const form = ref({
+  code: props.authCode,
+})
 
-const formSubmit = () => {
-  if (authCode.value) {
-    emit('submit', authCode.value)
-    emit('update:isDialogVisible', false)
-  }
-}
+watch(() => props.authCode, val => {
+  form.value.code = val
+})
 
-const resetAuthCode = () => {
-  authCode.value = structuredClone(toRaw(props.authCode))
-  emit('update:isDialogVisible', false)
-}
+const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
+  form,
+  apiEndpoint: computed(() => props.apiEndpoint),
+  isUpdate: computed(() => false), // Always posting code
+  emit,
+  successMessage: 'Authenticator app verified successfully',
+})
 </script>
 
 <template>
@@ -69,27 +79,28 @@ const resetAuthCode = () => {
           variant="tonal"
           color="warning"
         />
-        <VForm @submit.prevent="() => {}">
+        <VForm @submit.prevent="onSubmit">
           <AppTextField
-            v-model="authCode"
+            v-model="form.code"
             name="auth-code"
             label="Enter Authentication Code"
             placeholder="123 456"
             class="mt-4 mb-6"
+            :error-messages="validationErrors.code"
           />
 
           <div class="d-flex justify-end flex-wrap gap-4">
             <VBtn
               color="secondary"
               variant="tonal"
-              @click="resetAuthCode"
+              @click="$emit('update:isDialogVisible', false)"
             >
               Cancel
             </VBtn>
 
             <VBtn
               type="submit"
-              @click="formSubmit"
+              :loading="isLoading"
             >
               Continue
               <VIcon

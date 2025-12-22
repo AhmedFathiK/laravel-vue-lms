@@ -1,7 +1,7 @@
 <script setup>
+import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import { confirmedValidator, emailValidator, maxLengthValidator, minLengthValidator, requiredValidator } from '@core/utils/validators'
 import { computed, nextTick, ref, watch } from 'vue'
-import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   userData: {
@@ -22,28 +22,25 @@ const props = defineProps({
 
 const emit = defineEmits([
   'submit',
+  'refresh',
   'update:isDialogVisible',
 ])
 
-const toast = useToast()
-
-// Default empty form
-const defaultForm = {
+// Default empty form factory
+const createDefaultForm = () => ({
   id: 0,
   firstName: '',
   lastName: '',
   email: '',
+  phoneNumber: '',
   password: '',
   passwordConfirmation: '',
   roles: [],
   verified: true,
-}
+})
 
-// Form data and validation
-const form = ref(JSON.parse(JSON.stringify(defaultForm)))
-const errors = ref({})
-const isFormValid = ref(false) // Start as false, will be updated by validation
-const isSubmitting = ref(false)
+// Form data
+const form = ref(createDefaultForm())
 const formRef = ref(null)
 
 // Form validation rules
@@ -61,6 +58,9 @@ const rules = {
     emailValidator,
     v => maxLengthValidator(v, 255),
   ],
+  phoneNumber: [
+    v => !v || maxLengthValidator(v, 20),
+  ],
   password: [
     // Password is only required for new users
     v => (props.userData ? true : requiredValidator(v)),
@@ -75,31 +75,14 @@ const rules = {
     // Must match password if provided
     v => (!form.value.password || confirmedValidator(v, form.value.password)),
   ],
+  roles: [
+    v => (v && v.length > 0) || 'At least one role must be selected',
+  ],
 }
-
-// Check form validity manually (solves issue with submit button)
-const validateForm = async () => {
-  if (!formRef.value) return false
-  
-  const { valid } = await formRef.value.validate()
-
-  isFormValid.value = valid
-  
-  return valid
-}
-
-// Watch for userData changes (removed form reset logic as it's now handled by isDialogVisible watcher)
-watch(() => props.userData, () => {
-  // This watcher is kept for reactivity, but form reset is now handled by isDialogVisible watcher
-}, { immediate: true })
-
-// No need to track touched fields or validate on change
-// Validation will happen only on submit
 
 // Reset form when dialog visibility changes
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    // Reset form when dialog opens
     if (props.userData) {
       // Split name into first and last name if firstName is not available
       let firstName = props.userData.firstName || ''
@@ -117,104 +100,55 @@ watch(() => props.isDialogVisible, isVisible => {
         firstName: firstName,
         lastName: lastName,
         email: props.userData.email || '',
+        phoneNumber: props.userData.phoneNumber || '',
         password: '',
         passwordConfirmation: '',
         roles: props.userData.roleNames || [],
         verified: props.userData.emailVerifiedAt ? true : false,
       }
     } else {
-      // Ensure form is completely reset for new user
-      form.value = JSON.parse(JSON.stringify(defaultForm))
+      form.value = createDefaultForm()
     }
     
-    errors.value = {}
-    
-    // Reset form validation without validating initially
+    // Reset validation
+    validationErrors.value = {}
     nextTick(() => {
       if (formRef.value) {
         formRef.value.resetValidation()
-        isFormValid.value = true // Allow form submission until validation on submit
       }
     })
   }
-}, { immediate: true })
+})
 
 const isEditMode = computed(() => !!props.userData)
 
+// Custom emit for refresh to handle legacy submit listeners if any
+const customEmit = (event, ...args) => {
+  if (event === 'saved') {
+    emit('refresh', ...args)
 
-// Form submission handler
-const submitForm = async () => {
-  const valid = await validateForm()
-  
-  if (!valid) return
-  
-  isSubmitting.value = true
-  
-  try {
-    
-    const { password, passwordConfirmation, ...rest } = form.value
-  
-    const formData = {
-      ...rest,
-    }
-  
-    // Only include password fields if password is provided
-    if (password) {
-      formData.password = password
-      formData['passwordConfirmation'] = passwordConfirmation
-    }
-    
-    await emit('submit', formData)
-
-    // Success - close dialog only on success
-    emit('update:isDialogVisible', false)
-    isSubmitting.value = false
-  } catch (error) {
-    // Error handling - keep dialog open
-    isSubmitting.value = false
-    
-    // Handle validation errors from the API
-    if (error.response?.data?.errors) {
-      const apiErrors = error.response.data.errors
-      
-      
-      // Process all errors
-      Object.entries(apiErrors).forEach(([key, messages]) => {
-        errors.value[key] = messages
-      })
-      
-      // Show all error messages in toasts
-      Object.values(apiErrors).forEach(fieldErrors => {
-        fieldErrors.forEach(errorMessage => {
-          toast.error(errorMessage)
-        })
-      })
-    }
+    // Also emit submit for backward compatibility if needed, but we should refactor parent
+    // emit('submit', ...args) 
+  } else {
+    emit(event, ...args)
   }
 }
+
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
+  formRef,
+  form,
+  apiEndpoint: computed(() => props.userData?.id 
+    ? `/admin/users/${props.userData.id}` 
+    : '/admin/users'),
+  isUpdate: computed(() => !!props.userData?.id),
+  emit: customEmit,
+  isFormData: false, // User data usually sent as JSON unless avatar is involved
+  successMessage: computed(() => props.userData?.id ? 'User updated successfully' : 'User created successfully'),
+})
 
 const onFormReset = () => {
-  if (formRef.value) {
-    formRef.value.reset()
-  }
-  form.value = props.userData ? {
-    id: props.userData.id || 0,
-    firstName: props.userData.firstName || '',
-    lastName: props.userData.lastName || '',
-    email: props.userData.email || '',
-    password: '',
-    passwordConfirmation: '',
-    roles: props.userData.roleNames || [],
-    verified: props.userData.emailVerifiedAt ? true : false,
-  } : JSON.parse(JSON.stringify(defaultForm))
-  errors.value = {}
+  form.value = createDefaultForm()
   emit('update:isDialogVisible', false)
-}
-
-const dialogModelValueUpdate = val => {
-  if (!val && !isSubmitting.value) {
-    emit('update:isDialogVisible', val)
-  }
 }
 </script>
 
@@ -222,11 +156,11 @@ const dialogModelValueUpdate = val => {
   <VDialog
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
-    :persistent="isSubmitting"
-    @update:model-value="dialogModelValueUpdate"
+    :persistent="isLoading"
+    @update:model-value="val => !isLoading && emit('update:isDialogVisible', val)"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
+    <DialogCloseBtn @click="!isLoading && emit('update:isDialogVisible', false)" />
 
     <VCard class="pa-sm-10 pa-2">
       <VCardText>
@@ -241,10 +175,8 @@ const dialogModelValueUpdate = val => {
         <!-- 👉 Form -->
         <VForm
           ref="formRef"
-          v-model="isFormValid"
           class="mt-6"
-          validate-on="submit"
-          @submit.prevent="submitForm"
+          @submit.prevent="onSubmit"
         >
           <VRow>
             <!-- 👉 First Name -->
@@ -256,7 +188,7 @@ const dialogModelValueUpdate = val => {
                 v-model="form.firstName"
                 label="First Name"
                 placeholder="John"
-                :error-messages="errors.firstName"
+                :error-messages="validationErrors.firstName"
                 :rules="rules.firstName"
                 required
               />
@@ -271,7 +203,7 @@ const dialogModelValueUpdate = val => {
                 v-model="form.lastName"
                 label="Last Name"
                 placeholder="Doe"
-                :error-messages="errors.lastName"
+                :error-messages="validationErrors.lastName"
                 :rules="rules.lastName"
                 required
               />
@@ -286,10 +218,24 @@ const dialogModelValueUpdate = val => {
                 v-model="form.email"
                 label="Email"
                 placeholder="johndoe@example.com"
-                :error-messages="errors.email"
+                :error-messages="validationErrors.email"
                 :rules="rules.email"
                 type="email"
                 required
+              />
+            </VCol>
+
+            <!-- 👉 Phone Number -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="form.phoneNumber"
+                label="Phone Number"
+                placeholder="+1 123 456 7890"
+                :error-messages="validationErrors.phoneNumber"
+                :rules="rules.phoneNumber"
               />
             </VCol>
 
@@ -302,7 +248,7 @@ const dialogModelValueUpdate = val => {
                 v-model="form.verified"
                 color="success"
                 label="Email Verified"
-                :error-messages="errors.verified"
+                :error-messages="validationErrors.verified"
                 hide-details
               />
             </VCol>
@@ -316,7 +262,7 @@ const dialogModelValueUpdate = val => {
                 v-model="form.password"
                 label="Password"
                 placeholder="************"
-                :error-messages="errors.password"
+                :error-messages="validationErrors.password"
                 :rules="rules.password"
                 type="password"
                 :required="!isEditMode"
@@ -332,7 +278,7 @@ const dialogModelValueUpdate = val => {
                 v-model="form.passwordConfirmation"
                 label="Confirm Password"
                 placeholder="************"
-                :error-messages="errors.passwordConfirmation"
+                :error-messages="validationErrors.passwordConfirmation"
                 :rules="rules.passwordConfirmation"
                 type="password"
                 :required="!isEditMode"
@@ -348,7 +294,8 @@ const dialogModelValueUpdate = val => {
                 :items="roles"
                 item-title="name"
                 item-value="name"
-                :error-messages="errors.roles"
+                :error-messages="validationErrors.roles"
+                :rules="rules.roles"
                 multiple
                 chips
                 closable-chips
@@ -362,8 +309,7 @@ const dialogModelValueUpdate = val => {
             >
               <VBtn 
                 type="submit"
-                :loading="isSubmitting"
-                :disabled="isSubmitting"
+                :loading="isLoading"
               >
                 {{ isEditMode ? 'Update' : 'Submit' }}
               </VBtn>
@@ -371,7 +317,7 @@ const dialogModelValueUpdate = val => {
               <VBtn
                 color="secondary"
                 variant="tonal"
-                :disabled="isSubmitting"
+                :disabled="isLoading"
                 @click="onFormReset"
               >
                 Cancel

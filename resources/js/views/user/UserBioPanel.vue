@@ -347,7 +347,7 @@ const resolveUserRoleVariant = role => {
   </VRow>
 
   <!-- 👉 Edit user info dialog -->
-  <UserInfoEditDialog
+  <AddEditUserDialog
     v-model:is-dialog-visible="isUserInfoEditDialogVisible"
     :user-data="props.userData"
   />

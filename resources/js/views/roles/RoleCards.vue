@@ -20,6 +20,9 @@ const isLoading = ref(true)
 const isRoleDialogVisible = ref(false)
 const roleDetail = ref()
 const isAddRoleDialogVisible = ref(false)
+const isConfirmDialogVisible = ref(false)
+const roleToDelete = ref(null)
+const isDeleting = ref(false)
 const selectedRole = ref(null)
 const avatarImages = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8, avatar9, avatar10]
 
@@ -33,24 +36,19 @@ const fetchRoles = async () => {
     
     roles.value = data.roles.map(role => {
       // Assign random avatars for display purposes
-      const userCount = role.user_count
+      const userCount = role.userCount
       const userAvatars = []
       for (let i = 0; i < Math.min(userCount, 10); i++) {
         userAvatars.push(avatarImages[i % avatarImages.length])
       }
       
       return {
-        id: role.id,
-        role: role.name,
+        ...role,
         users: userAvatars,
-        userCount: role.user_count,
-        permissions: role.permissions || [], // Store permissions directly
-        isProtected: role.is_protected,
       }
     })
   } catch (error) {
-    console.error('Error fetching roles:', error)
-    toast.error('Failed to load roles')
+    handleApiError(error, toast, 'Failed to load roles')
   } finally {
     isLoading.value = false
   }
@@ -62,66 +60,51 @@ const editPermission = value => {
   isRoleDialogVisible.value = true
   
   // Create a properly formatted roleDetail object for the dialog
-  roleDetail.value = {
-    id: value.id,
-    name: value.role,
-    permissions: value.permissions || [],
-  }
+  roleDetail.value = { ...value }
   
   // Debug
   console.log('Sending to dialog:', roleDetail.value)
 }
 
-// Handle role update from dialog
-const handleRoleUpdate = async updatedRole => {
-  try {
-    // Debug the updated role data
-    console.log('Updated role from dialog:', updatedRole)
-    
-    await api.put(`/admin/roles/${updatedRole.id}`, {
-      name: updatedRole.name,
-      permissions: updatedRole.permissions, // Use the new permissions format
-    })
-    
-    toast.success('Role updated successfully')
-    await fetchRoles()
-  } catch (error) {
-    console.error('Error updating role:', error)
-    toast.error(error.response?.data?.message || 'Failed to update role')
+// Copy role permissions to a new role
+const copyRole = value => {
+  roleDetail.value = { 
+    ...value, 
+    id: null,
+    name: `${value.name} (Copy)`,
   }
+  isRoleDialogVisible.value = true
 }
 
-// Handle role creation from dialog
-const handleRoleCreate = async newRole => {
-  try {
-    // Debug the new role data
-    console.log('New role from dialog:', newRole)
-    
-    await api.post('/admin/roles', {
-      name: newRole.name,
-      permissions: newRole.permissions || [], // Use the permissions from the dialog
-    })
-    
-    toast.success('Role created successfully')
-    await fetchRoles()
-  } catch (error) {
-    console.error('Error creating role:', error)
-    toast.error(error.response?.data?.message || 'Failed to create role')
-  }
+// Open delete confirmation
+const deleteRole = id => {
+  roleToDelete.value = id
+  isConfirmDialogVisible.value = true
 }
 
-// Delete role
-const deleteRole = async roleId => {
-  if (!confirm('Are you sure you want to delete this role?')) return
-  
+// Confirm delete
+const onConfirmDelete = async confirmed => {
+  if (!confirmed) {
+    isConfirmDialogVisible.value = false
+    roleToDelete.value = null
+    
+    return
+  }
+
+  isDeleting.value = true
   try {
-    await api.delete(`/admin/roles/${roleId}`)
+    await api.post(`/admin/roles/${roleToDelete.value}`, {
+      _method: 'DELETE',
+    })
     
     toast.success('Role deleted successfully')
+    isConfirmDialogVisible.value = false
+    roleToDelete.value = null
     await fetchRoles()
   } catch (error) {
-    console.error('Error deleting role:', error)
-    toast.error(error.response?.data?.message || 'Failed to delete role')
+    handleApiError(error, toast, 'Failed to delete role')
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -148,7 +131,7 @@ onMounted(fetchRoles)
     <VCol
       v-for="item in roles"
       v-else
-      :key="item.role"
+      :key="item.name"
       cols="12"
       sm="6"
       lg="4"
@@ -193,7 +176,7 @@ onMounted(fetchRoles)
           <div class="d-flex justify-space-between align-center">
             <div>
               <h5 class="text-h5">
-                {{ item.role }}
+                {{ item.name }}
               </h5>
               <div class="d-flex align-center gap-2">
                 <a
@@ -202,6 +185,7 @@ onMounted(fetchRoles)
                 >
                   Edit Role
                 </a>
+                
                 <span v-if="item.userCount === 0 && !item.isProtected">
                   |
                   <a
@@ -214,7 +198,7 @@ onMounted(fetchRoles)
                 </span>
               </div>
             </div>
-            <IconBtn>
+            <IconBtn @click="copyRole(item)">
               <VIcon
                 icon="tabler-copy"
                 class="text-high-emphasis"
@@ -231,10 +215,7 @@ onMounted(fetchRoles)
       sm="6"
       lg="4"
     >
-      <VCard
-        class="h-100"
-        :ripple="false"
-      >
+      <VCard :ripple="false">
         <VRow
           no-gutters
           class="h-100"
@@ -244,7 +225,7 @@ onMounted(fetchRoles)
             class="d-flex flex-column justify-end align-center mt-5"
           >
             <img
-              width="85"
+              width="80"
               :src="girlUsingMobile"
             >
           </VCol>
@@ -267,14 +248,22 @@ onMounted(fetchRoles)
       <AddEditRoleDialog 
         v-model:is-dialog-visible="isAddRoleDialogVisible" 
         :role-permissions="{ id: null, name: '', permissions: [] }"
-        @submit="handleRoleCreate"
+        @refresh="fetchRoles"
       />
     </VCol>
   </VRow>
 
   <AddEditRoleDialog
     v-model:is-dialog-visible="isRoleDialogVisible"
-    v-model:role-permissions="roleDetail"
-    @submit="handleRoleUpdate"
+    :role-permissions="roleDetail"
+    @refresh="fetchRoles"
+  />
+
+  <ConfirmDialog
+    v-model:is-dialog-visible="isConfirmDialogVisible"
+    confirmation-question="Are you sure you want to delete this role?"
+    confirm-msg="Role deleted successfully"
+    :loading="isDeleting"
+    @confirm="onConfirmDelete"
   />
 </template>

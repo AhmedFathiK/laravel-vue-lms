@@ -1,6 +1,6 @@
 <script setup>
-import UserInfoEditDialog from '@/components/dialogs/UserInfoEditDialog.vue'
 import api from '@/utils/api'
+import { handleApiError } from '@/utils/apiErrorHandlers'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -27,6 +27,34 @@ const sortBy = ref('createdAt')
 const orderBy = ref('desc')
 const selectedRows = ref([])
 const availableRoles = ref([])
+
+// User statistics widgets
+const widgetData = ref([
+  {
+    title: 'Total Users',
+    value: '0',
+    icon: 'tabler-users',
+    iconColor: 'primary',
+  },
+  {
+    title: 'Verified Users',
+    value: '0',
+    icon: 'tabler-user-check',
+    iconColor: 'success',
+  },
+  {
+    title: 'Pending Users',
+    value: '0',
+    icon: 'tabler-user-exclamation',
+    iconColor: 'warning',
+  },
+  {
+    title: 'Admin Users',
+    value: '0',
+    icon: 'tabler-user-shield',
+    iconColor: 'secondary',
+  },
+])
 
 // Fetch users
 const usersData = ref({
@@ -95,8 +123,7 @@ const fetchUsers = async () => {
     // Update widget data with counts
     updateWidgetCounts()
   } catch (error) {
-    console.error('Error fetching users:', error)
-    toast.error('Failed to load users')
+    handleApiError(error, toast, 'Failed to load users')
   } finally {
     isLoading.value = false
   }
@@ -138,8 +165,7 @@ const fetchRoles = async () => {
 
     availableRoles.value = response.roles
   } catch (error) {
-    console.error('Error fetching roles:', error)
-    toast.error('Failed to load roles')
+    handleApiError(error, toast, 'Failed to load roles')
   }
 }
 
@@ -206,142 +232,59 @@ const resolveUserStatusVariant = stat => {
 }
 
 const isAddNewUserDrawerVisible = ref(false)
+const isConfirmDialogVisible = ref(false)
+const userToDelete = ref(null)
+const isDeleting = ref(false)
 
-// Add new user
-const addNewUser = async userData => {
-  try {
-    const response = await api.post('/admin/users', userData)
-    
-    toast.success('User created successfully')
-    fetchUsers()
-    
-    return response
-  } catch (error) {
-    console.error('Error creating user:', error)
-    
-    // Show all error messages if there are multiple
-    if (error.response?.data?.errors) {
-      // Get all error messages as an array of strings
-      const errorMessages = Object.values(error.response.data.errors).flat()
-      
-      // Show each error as a separate toast
-      errorMessages.forEach(message => {
-        toast.error(message)
-      })
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to create user')
-    }
-    
-    throw error // Re-throw to handle in the form component
-  }
-}
-
-// Edit user
-const editUserData = async userData => {
-  try {
-    const response = await api.put(`/admin/users/${editUser.value.id}`, userData)
-    
-    toast.success('User updated successfully')
-    fetchUsers()
-    editUser.value = null
-    
-    return response
-  } catch (error) {
-    console.error('Error updating user:', error)
-    
-    // Show all error messages if there are multiple
-    if (error.response?.data?.errors) {
-      // Get all error messages as an array of strings
-      const errorMessages = Object.values(error.response.data.errors).flat()
-      
-      // Show each error as a separate toast
-      errorMessages.forEach(message => {
-        toast.error(message)
-      })
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to update user')
-    }
-    
-    throw error // Re-throw to handle in the form component
-  }
+// Show edit user drawer
+const showEditUserDrawer = user => {
+  editUser.value = user
+  isAddNewUserDrawerVisible.value = true
 }
 
 // Delete user
-const deleteUser = async id => {
-  if (!confirm('Are you sure you want to delete this user?')) return
+const deleteUser = id => {
+  userToDelete.value = id
+  isConfirmDialogVisible.value = true
+}
 
+// Confirm delete user
+const onConfirmDelete = async confirmed => {
+  if (!confirmed) {
+    isConfirmDialogVisible.value = false
+    userToDelete.value = null
+    
+    return
+  }
+
+  isDeleting.value = true
   try {
-    const response = await api.delete(`/admin/users/${id}`)
-
+    await api.post(`/admin/users/${userToDelete.value}`, {
+      _method: 'DELETE',
+    })
+    
     toast.success('User deleted successfully')
-    
-    // Delete from selectedRows
-    const index = selectedRows.value.findIndex(row => row === id)
-    if (index !== -1)
-      selectedRows.value.splice(index, 1)
-    
-    // Refetch users
+    isConfirmDialogVisible.value = false
+    userToDelete.value = null
     fetchUsers()
   } catch (error) {
-    console.error('Error deleting user:', error)
-    toast.error(error.response?.data?.message || 'Failed to delete user')
+    handleApiError(error, toast, 'Failed to delete user')
+  } finally {
+    isDeleting.value = false
   }
 }
 
 // Toggle user status
 const toggleUserStatus = async user => {
   try {
-    const response = await api.post(`/admin/users/${user.id}/toggle-status`)
-
-    toast.success(`User status ${user.emailVerifiedAt ? 'unverified' : 'verified'} successfully`)
+    await api.post(`/admin/users/${user.id}/toggle-status`, {
+      isActive: !user.emailVerifiedAt,
+    })
+    toast.success('User status updated successfully')
     fetchUsers()
   } catch (error) {
-    console.error('Error toggling user status:', error)
-    toast.error(error.response?.data?.message || 'Failed to update user status')
+    handleApiError(error, toast, 'Failed to update user status')
   }
-}
-
-// Combine user count stats
-const widgetData = ref([
-  {
-    title: 'Total Users',
-    value: '0',
-    icon: 'tabler-users',
-    iconColor: 'primary',
-  },
-  {
-    title: 'Verified Users',
-    value: '0',
-    icon: 'tabler-user-check',
-    iconColor: 'success',
-  },
-  {
-    title: 'Unverified Users',
-    value: '0',
-    icon: 'tabler-user-exclamation',
-    iconColor: 'warning',
-  },
-  {
-    title: 'Admin Users',
-    value: '0',
-    icon: 'tabler-user-shield',
-    iconColor: 'error',
-  },
-])
-
-// Handle user form submission
-const handleUserFormSubmit = userData => {
-  if (editUser.value) {
-    editUserData(userData)
-  } else {
-    addNewUser(userData)
-  }
-}
-
-// Show edit user drawer
-const showEditUserDrawer = user => {
-  editUser.value = user
-  isAddNewUserDrawerVisible.value = true
 }
 
 // Fetch data on component mount
@@ -569,11 +512,27 @@ onMounted(() => {
     </VCard>
     
     <!-- 👉 User Form Dialog -->
-    <UserInfoEditDialog
+    <AddEditUserDialog
       v-model:is-dialog-visible="isAddNewUserDrawerVisible"
       :user-data="editUser"
       :roles="roles"
-      @submit="handleUserFormSubmit"
+      @refresh="fetchUsers"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isConfirmDialogVisible"
+      confirmation-question="Are you sure you want to delete this user?"
+      confirm-msg="User deleted successfully"
+      :loading="isDeleting"
+      @confirm="onConfirmDelete"
     />
   </section>
+
+  <ConfirmDialog
+    v-model:is-dialog-visible="isConfirmDialogVisible"
+    confirmation-question="Are you sure you want to delete this user?"
+    confirm-msg="User deleted successfully"
+    :loading="isDeleting"
+    @confirm="onConfirmDelete"
+  />
 </template>
