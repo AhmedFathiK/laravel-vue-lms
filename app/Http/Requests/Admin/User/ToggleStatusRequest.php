@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\User;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -40,16 +41,14 @@ class ToggleStatusRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $user = $this->route('user');
+            // Get super admin role name
+            $superAdminRoleName = Role::findOrFail(1)->name;
 
             // Protect only Super Admin users from status changes
-            if ($user->hasRole('Super Admin')) {
+            if ($user->hasRole($superAdminRoleName)) {
                 $validator->errors()->add('user', "Users with the Super Admin role cannot be banned or have their status changed.");
             }
         });
     }
 
-    protected function failedValidation(ValidationValidator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

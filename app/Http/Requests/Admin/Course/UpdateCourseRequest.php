@@ -31,27 +31,9 @@ class UpdateCourseRequest extends FormRequest
             'level_id' => 'nullable|exists:levels,id',
             'status' => 'sometimes|required|in:draft,published,archived',
             'is_featured' => 'boolean',
-            'image' => [
-                'nullable',
-                'mimetypes:image/jpeg,image/png,image/webp',  // Most secure MIME checking
-                'max:2048',
-                'dimensions:max_width=2048,max_height=2048',
-                function ($attribute, $value, $fail) {
-                    if (!$value) return;
-
-                    // Add getimagesize() validation that 'image' rule provides
-                    $imageInfo = getimagesize($value->getPathname());
-                    if (!$imageInfo) {
-                        $fail('Invalid image file structure.');
-                        return;
-                    }
-
-                    // Verify MIME consistency
-                    if ($imageInfo['mime'] !== $value->getMimeType()) {
-                        $fail('Image file inconsistency detected.');
-                    }
-                }
-            ],
+            'is_free' => 'required|boolean',
+            'leaderboard_reset_frequency' => 'required|in:never,daily,weekly,monthly,yearly',
+            'image' => 'nullable|image|mimes:jpeg,png,webp|max:2048|dimensions:max_width=2048,max_height=2048',
             'video_url' => 'nullable|url',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -61,21 +43,5 @@ class UpdateCourseRequest extends FormRequest
         ];
 
         return $rules;
-    }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('prerequisites') && is_string($this->get('prerequisites'))) {
-            $prerequisites = json_decode($this->get('prerequisites'), true);
-            $this->merge(['prerequisites' => $prerequisites]);
-        }
-    }
-
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
     }
 }

@@ -103,8 +103,4 @@ class TokenRequest extends FormRequest
         return $this->has('expires_at') ? new \DateTime($this->expires_at) : null;
     }
 
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

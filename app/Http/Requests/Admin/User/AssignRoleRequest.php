@@ -62,8 +62,4 @@ class AssignRoleRequest extends FormRequest
         ];
     }
 
-    protected function failedValidation(ValidationValidator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

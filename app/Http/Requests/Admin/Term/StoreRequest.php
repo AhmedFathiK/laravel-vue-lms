@@ -26,11 +26,14 @@ class StoreRequest extends FormRequest
             'term' => ['required', 'string', 'max:255'],
             'definition' => ['required', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
+            'media_file' => ['nullable', 'file', 'max:10240', 'mimes:jpeg,png,jpg,gif,svg,mp4,webm,ogg,mp3,wav'],
             'media_type' => ['nullable', 'string', 'in:image,image_with_audio,video'],
             'audio_url' => ['nullable', 'string', 'max:255'],
+            'audio_file' => ['nullable', 'file', 'max:10240', 'mimes:mp3,wav,ogg'],
             'example' => ['nullable', 'string'],
             'example_translation' => ['nullable', 'string'],
             'example_audio_url' => ['nullable', 'string', 'max:255'],
+            'example_audio_file' => ['nullable', 'file', 'max:10240', 'mimes:mp3,wav,ogg'],
         ];
 
         return $rules;

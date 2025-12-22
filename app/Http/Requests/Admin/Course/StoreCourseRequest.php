@@ -31,6 +31,8 @@ class StoreCourseRequest extends FormRequest
             'level_id' => 'nullable|exists:levels,id',
             'status' => 'required|in:draft,published,archived',
             'is_featured' => 'boolean',
+            'is_free' => 'required|boolean',
+            'leaderboard_reset_frequency' => 'in:never,daily,weekly,monthly,yearly',
             'image' => 'nullable|image|max:2048',
             'video_url' => 'nullable|url',
             'start_date' => 'nullable|date',
@@ -62,8 +64,4 @@ class StoreCourseRequest extends FormRequest
         }
     }
 
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

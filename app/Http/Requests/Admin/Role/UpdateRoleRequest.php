@@ -13,7 +13,7 @@ class UpdateRoleRequest extends FormRequest
     // Define constants for role types based on IDs
     // These will be more stable than names which can change
     private const SUPER_ADMIN_ID = 1; // From seeder
-    private const STUDENT_ID = 8;     // From seeder (8th role created)
+    private const STUDENT_ID = 2;     // From seeder (2nd role created)
 
     /**
      * Determine if the user is authorized to make this request.
@@ -90,8 +90,4 @@ class UpdateRoleRequest extends FormRequest
         });
     }
 
-    protected function failedValidation(ValidationValidator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

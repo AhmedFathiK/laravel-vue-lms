@@ -192,8 +192,4 @@ class UpdateQuestionRequest extends FormRequest
         return $oldMediaType !== 'image_with_audio' && $newMediaType === 'image_with_audio';
     }
 
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

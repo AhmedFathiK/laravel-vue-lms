@@ -29,6 +29,12 @@ class ConvertCamelCase
             $request->request->replace($snakeBody);
         }
 
+        // Convert files
+        if ($request->files->count()) {
+            $snakeFiles = $this->convertToSnakeCase($request->files->all());
+            $request->files->replace($snakeFiles);
+        }
+
         if ($request->has('sort_by')) {
             $request->merge([
                 'sort_by' => \Illuminate\Support\Str::snake($request->sort_by)

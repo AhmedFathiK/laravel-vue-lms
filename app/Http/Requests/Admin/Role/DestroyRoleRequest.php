@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Role;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Illuminate\Contracts\Validation\Validator as ValidationValidator;
@@ -9,9 +10,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class DestroyRoleRequest extends FormRequest
 {
-    // Define constants for role IDs
-    private const SUPER_ADMIN_ID = 1; // From seeder
-    private const STUDENT_ID = 8;     // From seeder (8th role created)
 
     /**
      * Determine if the user is authorized to make this request.
@@ -48,15 +46,12 @@ class DestroyRoleRequest extends FormRequest
                 return;
             }
 
-            // Additional check for student role by ID
-            if ($role->id === self::STUDENT_ID) {
-                $validator->errors()->add('role', "The student role cannot be deleted as it is a protected system role.");
+            // Check if role is in use
+            $userCount = User::role($role->name)->count();
+            if ($userCount > 0) {
+                $validator->errors()->add('role', "The {$role->name} role cannot be deleted as it is assigned to {$userCount} user(s).");
             }
         });
     }
 
-    protected function failedValidation(ValidationValidator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }

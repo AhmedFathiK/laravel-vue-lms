@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone_number' => ['nullable', 'string', 'max:20'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed', Password::defaults()],
-            'roles' => ['nullable', 'array'],
+            'roles' => ['array', 'min:1'],
             'roles.*' => ['string', 'exists:roles,name'],
             'verified' => ['nullable', 'boolean'],
         ];
@@ -86,8 +86,4 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
-    protected function failedValidation(ValidationValidator $validator)
-    {
-        throw new HttpResponseException(response()->json($validator->errors(), 422));
-    }
 }
