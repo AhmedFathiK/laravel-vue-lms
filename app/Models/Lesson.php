@@ -24,6 +24,7 @@ class Lesson extends Model
         'reshow_incorrect_slides',
         'reshow_count',
         'require_correct_answers',
+        'thumbnail',
     ];
 
     public array $translatable = [

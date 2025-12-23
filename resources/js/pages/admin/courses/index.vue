@@ -1,7 +1,6 @@
 <script setup>
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import api from '@/utils/api'
-import { avatarText } from "@core/utils/formatters"
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -72,6 +71,12 @@ const coursesData = ref({
 
 // Headers for data table
 const headers = [
+  {
+    title: 'Image',
+    key: 'thumbnail',
+    sortable: false,
+    width: '100px',
+  },
   {
     title: 'Course',
     key: 'title',
@@ -507,31 +512,38 @@ onMounted(() => {
         class="text-no-wrap"
         @update:options="updateOptions"
       >
-        <!-- Course -->
-        <template #[`item.title`]="{ item }">
-          <div class="d-flex align-center gap-x-4">
+        <!-- Image -->
+        <template #[`item.thumbnail`]="{ item }">
+          <div class="py-2">
             <VAvatar
-              size="32"
+              size="40"
               :color="item.thumbnail ? '' : 'primary'"
-              :class="item.thumbnail ? '' : 'v-avatar-light-bg primary--text'
-              "
-              :variant="!item.avatar ? 'tonal' : undefined"
+              :variant="!item.thumbnail ? 'tonal' : undefined"
             >
               <VImg
                 v-if="item.thumbnail"
                 :src="item.thumbnail"
+                cover
               />
-              <span v-else>{{ avatarText(item.title) }}</span>
+              <VIcon
+                v-else
+                icon="tabler-camera-off"
+                size="20"
+              />
             </VAvatar>
-            <div class="d-flex flex-column">
-              <h6 class="text-base">
-                {{ item.title }}
-              </h6>
-              <div class="text-sm text-medium-emphasis">
-                {{ item.category?.name || 
-                  (item.course_category_id && availableCategories.find(c => c.id === item.course_category_id)?.name) || 
-                  'No Category' }}
-              </div>
+          </div>
+        </template>
+
+        <!-- Course -->
+        <template #[`item.title`]="{ item }">
+          <div class="d-flex flex-column">
+            <h6 class="text-base font-weight-medium">
+              {{ item.title }}
+            </h6>
+            <div class="text-sm text-medium-emphasis">
+              {{ item.category?.name || 
+                (item.course_category_id && availableCategories.find(c => c.id === item.course_category_id)?.name) || 
+                'No Category' }}
             </div>
           </div>
         </template>

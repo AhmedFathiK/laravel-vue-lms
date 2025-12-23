@@ -2,7 +2,6 @@
 import AddEditLessonDialog from '@/components/dialogs/AddEditLessonDialog.vue'
 import DeletionConfirmDialog from '@/components/dialogs/DeletionConfirmDialog.vue'
 import api from '@/utils/api'
-import { avatarText } from "@core/utils/formatters"
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -44,6 +43,7 @@ const orderBy = ref('asc')
 // Headers for data table
 const headers = [
   { title: 'ID', key: 'id', width: '80px' },
+  { title: 'Image', key: 'thumbnail', sortable: false, width: '100px' },
   { title: 'Title', key: 'title' },
   { title: 'Video', key: 'video', sortable: false, width: '80px' },
   { title: 'Slides', key: 'slidesCount', width: '80px' },
@@ -347,24 +347,48 @@ onMounted(() => {
         <VDataTable
           :headers="headers"
           :items="lessons"
-          :items-per-page="itemsPerPage"
-          :page="page"
-          :items-length="totalItems"
-          class="elevation-1"
-          @update:options="handleOptionsChange"
+          :loading="pageState === 'loading'"
+          class="text-no-wrap"
         >
-          <!-- Title Column -->
-          <template #[`item.title`]="{ item }">
-            <div class="d-flex align-center">
+          <!-- Thumbnail -->
+          <template #[`item.thumbnail`]="{ item }">
+            <div class="py-2">
               <VAvatar
-                size="32"
-                color="primary"
-                class="v-avatar-light-bg primary--text me-3"
-                variant="tonal"
+                size="40"
+                :color="item.thumbnail ? '' : 'primary'"
+                :variant="!item.thumbnail ? 'tonal' : undefined"
               >
-                <span>{{ item.title && typeof item.title === 'string' ? avatarText(item.title) : '' }}</span>
+                <VImg
+                  v-if="item.thumbnail"
+                  :src="item.thumbnail"
+                  cover
+                />
+                <VIcon
+                  v-else
+                  icon="tabler-camera-off"
+                  size="20"
+                />
               </VAvatar>
-              {{ item.title }}
+            </div>
+          </template>
+
+          <!-- Title -->
+          <template #[`item.title`]="{ item }">
+            <div class="d-flex align-center gap-x-2">
+              <h6 class="text-h6 font-weight-medium">
+                <RouterLink
+                  :to="{ 
+                    name: 'admin-courses-courseid-levels-levelid-lessons-lessonid-slides', 
+                    params: { courseid: courseId, levelid: levelId, lessonid: item.id }
+                  }"
+                  class="text-primary text-decoration-none"
+                >
+                  {{ item.title }}
+                </RouterLink>
+              </h6>
+            </div>
+            <div class="text-body-2 text-medium-emphasis text-truncate">
+              {{ item.description }}
             </div>
           </template>
           

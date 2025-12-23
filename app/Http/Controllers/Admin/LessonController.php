@@ -11,7 +11,10 @@ use App\Models\Level;
 use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
@@ -60,22 +63,47 @@ class LessonController extends Controller
      */
     public function store(StoreRequest $request, Course $course, Level $level): JsonResponse
     {
-        // Compute next sort order for this level
-        $nextSortOrder = $level->lessons()->max('sort_order') + 1;
+        try {
+            return DB::transaction(function () use ($request, $level) {
+                // Compute next sort order for this level
+                $nextSortOrder = $level->lessons()->max('sort_order') + 1;
 
-        // Merge it into validated data
-        $data = array_merge(
-            $request->validated(),
-            ['sort_order' => $nextSortOrder]
-        );
+                // Merge it into validated data
+                $data = array_merge(
+                    $request->validated(),
+                    ['sort_order' => $nextSortOrder]
+                );
 
-        // Create lesson
-        $lesson = Lesson::create($data);
+                $uploadedPath = null;
 
-        return response()->json(
-            new LessonResource($lesson),
-            201
-        );
+                // Handle thumbnail upload
+                if ($request->hasFile('thumbnail')) {
+                    $file = $request->file('thumbnail');
+                    $uploadedPath = $file->store('lesson-thumbnails', 'public');
+                    $data['thumbnail'] = Storage::url($uploadedPath);
+                }
+
+                // Create lesson
+                $lesson = Lesson::create($data);
+
+                return response()->json(
+                    new LessonResource($lesson),
+                    201
+                );
+            });
+        } catch (\Exception $e) {
+            // If we uploaded a file but the DB transaction failed, delete the file
+            if (isset($uploadedPath) && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Failed to store lesson: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'An error occurred while creating the lesson. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     /**
@@ -96,23 +124,58 @@ class LessonController extends Controller
      */
     public function update(UpdateRequest $request, Course $course, Level $level, Lesson $lesson): JsonResponse
     {
-        $lesson->update($request->validated());
+        try {
+            return DB::transaction(function () use ($request, $lesson) {
+                $data = $request->validated();
+                $uploadedPath = null;
+                $oldThumbnailPath = $lesson->thumbnail ? str_replace('/storage/', '', $lesson->thumbnail) : null;
 
-        return response()->json([
-            'id' => $lesson->id,
-            'level_id' => $lesson->level_id,
-            'title' => $lesson->title,
-            'description' => $lesson->description,
-            'sort_order' => $lesson->sort_order,
-            'status' => $lesson->status,
-            'is_free' => $lesson->is_free,
-            'video_url' => $lesson->video_url,
-            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
-            'reshow_count' => $lesson->reshow_count,
-            'require_correct_answers' => $lesson->require_correct_answers,
-            'created_at' => $lesson->created_at,
-            'updated_at' => $lesson->updated_at,
-        ]);
+                // Handle thumbnail deletion
+                if ($request->has('delete_thumbnail') && $request->boolean('delete_thumbnail')) {
+                    $data['thumbnail'] = null;
+                }
+                // Handle thumbnail upload
+                else if ($request->hasFile('thumbnail')) {
+                    $file = $request->file('thumbnail');
+                    $uploadedPath = $file->store('lesson-thumbnails', 'public');
+                    $data['thumbnail'] = Storage::url($uploadedPath);
+                } else {
+                    // If no new thumbnail is provided, remove it from the data array
+                    // to prevent overwriting the existing thumbnail with null
+                    unset($data['thumbnail']);
+                }
+
+                $lesson->update($data);
+
+                // If update was successful:
+                // 1. If we deleted the thumbnail, remove old file
+                if ($request->has('delete_thumbnail') && $request->boolean('delete_thumbnail')) {
+                    if ($oldThumbnailPath && Storage::disk('public')->exists($oldThumbnailPath)) {
+                        Storage::disk('public')->delete($oldThumbnailPath);
+                    }
+                }
+                // 2. If we uploaded a new thumbnail, remove old file
+                else if ($uploadedPath && $oldThumbnailPath) {
+                    if (Storage::disk('public')->exists($oldThumbnailPath)) {
+                        Storage::disk('public')->delete($oldThumbnailPath);
+                    }
+                }
+
+                return response()->json(new LessonResource($lesson));
+            });
+        } catch (\Exception $e) {
+            // Cleanup: if we uploaded a new file but the DB update failed, delete it
+            if (isset($uploadedPath) && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Failed to update lesson: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'An error occurred while updating the lesson. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     /**

@@ -365,6 +365,23 @@ const statusOptions = [
                   </VBtn>
                 </VAlert>
               </div>
+
+              <!-- Placeholder when no image -->
+              <div
+                v-else
+                class="mt-2"
+              >
+                <VAvatar
+                  size="100"
+                  color="primary"
+                  variant="tonal"
+                >
+                  <VIcon
+                    icon="tabler-camera-off"
+                    size="32"
+                  />
+                </VAvatar>
+              </div>
             </VCol>
 
             <!-- Prerequisites -->

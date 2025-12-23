@@ -27,6 +27,7 @@ class LessonResource extends JsonResource
             'reshow_incorrect_slides' => $this->reshow_incorrect_slides,
             'reshow_count' => $this->reshow_count,
             'require_correct_answers' => $this->require_correct_answers,
+            'thumbnail' => $this->thumbnail,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'slides' => SlideResource::collection($this->whenLoaded('slides')),

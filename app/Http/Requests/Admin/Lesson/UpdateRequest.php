@@ -25,19 +25,19 @@ class UpdateRequest extends FormRequest
     {
         $rules = [
             'level_id' => ['sometimes', 'integer', 'exists:levels,id'],
-            'title' => ['sometimes', 'array'],
-            'title.*' => ['string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.*' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
             'status' => ['sometimes', 'string', 'in:draft,published,archived'],
+            'is_free' => ['nullable', 'boolean'],
             'video_url' => ['nullable', 'string', 'max:255'],
             'reshow_incorrect_slides' => ['nullable', 'boolean'],
             'reshow_count' => ['nullable', 'integer', 'min:1', 'max:10'],
             'require_correct_answers' => ['nullable', 'boolean'],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'delete_thumbnail' => ['nullable', 'boolean'],
         ];
 
         return $rules;
     }
-
 }

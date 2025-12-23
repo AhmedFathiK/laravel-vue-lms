@@ -25,19 +25,18 @@ class StoreRequest extends FormRequest
     {
         $rules = [
             'level_id' => ['required', 'integer', 'exists:levels,id'],
-            'title' => ['required', 'array'],
-            'title.en' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
+            'is_free' => ['nullable', 'boolean'],
             'video_url' => ['nullable', 'string', 'max:255'],
             'reshow_incorrect_slides' => ['nullable', 'boolean'],
             'reshow_count' => ['nullable', 'integer', 'min:1', 'max:10'],
             'require_correct_answers' => ['nullable', 'boolean'],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ];
 
         return $rules;
     }
-
 }
