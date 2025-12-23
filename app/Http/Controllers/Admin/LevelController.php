@@ -127,7 +127,7 @@ class LevelController extends Controller
      */
     public function updateOrder(Request $request, Course $course): JsonResponse
     {
-        if (!Gate::allows('reorder.slides')) {
+        if (!Gate::allows('reorder.levels')) {
             abort(403);
         }
 

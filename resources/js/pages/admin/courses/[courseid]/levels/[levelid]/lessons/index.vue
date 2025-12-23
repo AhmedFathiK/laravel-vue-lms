@@ -32,6 +32,8 @@ const isDialogVisible = ref(false)
 const editingLesson = ref(null)
 const isPasswordDialogVisible = ref(false)
 const lessonToDelete = ref(null)
+const isReorderMode = ref(false)
+const isSavingOrder = ref(false)
 
 // Pagination & sorting
 const itemsPerPage = ref(10)
@@ -41,17 +43,25 @@ const sortBy = ref('id')
 const orderBy = ref('asc')
 
 // Headers for data table
-const headers = [
-  { title: 'ID', key: 'id', width: '80px' },
-  { title: 'Image', key: 'thumbnail', sortable: false, width: '100px' },
-  { title: 'Title', key: 'title' },
-  { title: 'Video', key: 'video', sortable: false, width: '80px' },
-  { title: 'Slides', key: 'slidesCount', width: '80px' },
-  { title: 'Order', key: 'sortOrder', width: '80px' },
-  { title: 'Free Access', key: 'isFree', width: '100px' },
-  { title: 'Status', key: 'status', width: '100px' },
-  { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
-]
+const headers = computed(() => {
+  const h = [
+    { title: 'ID', key: 'id', width: '80px' },
+    { title: 'Image', key: 'thumbnail', sortable: false, width: '100px' },
+    { title: 'Title', key: 'title' },
+    { title: 'Video', key: 'video', sortable: false, width: '80px' },
+    { title: 'Slides', key: 'slidesCount', width: '80px' },
+    { title: 'Order', key: 'sortOrder', width: '80px' },
+    { title: 'Free Access', key: 'isFree', width: '100px' },
+    { title: 'Status', key: 'status', width: '100px' },
+    { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
+  ]
+
+  if (isReorderMode.value) {
+    h.unshift({ title: 'Move', key: 'move', sortable: false, width: '50px' })
+  }
+
+  return h
+})
 
 // Load all data at once
 const loadData = async () => {
@@ -262,6 +272,58 @@ const navigateToSlides = lessonId => {
   router.push(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId}/slides`)
 }
 
+// Reordering logic
+const toggleReorderMode = async () => {
+  if (isReorderMode.value) {
+    isReorderMode.value = false
+    refreshLessons()
+  } else {
+    // When entering reorder mode, load all lessons without pagination
+    try {
+      pageState.value = 'loading'
+
+      const response = await api.get(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons`, {
+        params: {
+          sortBy: 'sort_order',
+          orderBy: 'asc',
+          perPage: 1000, // Load all
+        },
+      })
+      
+      if (Array.isArray(response)) {
+        lessons.value = response
+      } else if (response && response.data) {
+        lessons.value = response.data
+      }
+      
+      isReorderMode.value = true
+      pageState.value = 'ready'
+    } catch (error) {
+      console.error('Error entering reorder mode:', error)
+      toast.error('Failed to load lessons for reordering')
+      pageState.value = 'ready'
+    }
+  }
+}
+
+const saveOrder = async () => {
+  isSavingOrder.value = true
+  try {
+    await api.post(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/order`, {
+      order: lessons.value.map(l => l.id),
+    })
+    
+    toast.success('Lessons order updated successfully')
+    isReorderMode.value = false
+    refreshLessons()
+  } catch (error) {
+    console.error('Error saving order:', error)
+    toast.error('Failed to update lessons order')
+  } finally {
+    isSavingOrder.value = false
+  }
+}
+
 // Initialize on mount - with slight delay to prevent rendering loops
 onMounted(() => {
   setTimeout(() => {
@@ -277,7 +339,7 @@ onMounted(() => {
       :items="[
         { title: 'Admin', disabled: true },
         { title: 'Courses', to: '/admin/courses' },
-        { title: course ? course.title : 'Course', to: `/admin/courses/${courseId}/levels` },
+        { title: course ? course.title : 'Course', disabled: true },
         { title: level ? level.title : 'Level', to: `/admin/courses/${courseId}/levels` },
         { title: 'Lessons', disabled: true }
       ]"
@@ -332,18 +394,99 @@ onMounted(() => {
     
     <!-- Success State -->
     <VCard v-else-if="pageState === 'ready' && level">
-      <VCardText class="d-flex justify-space-between align-center">
+      <VCardText class="d-flex justify-space-between align-center flex-wrap gap-4">
         <h2>Lessons for {{ level.title }}</h2>
-        <VBtn 
-          color="primary" 
-          prepend-icon="tabler-plus"
-          @click="openAddDialog"
-        >
-          Add Lesson
-        </VBtn>
+        <div class="d-flex gap-2">
+          <template v-if="isReorderMode">
+            <VBtn
+              color="success"
+              :loading="isSavingOrder"
+              @click="saveOrder"
+            >
+              Save Order
+            </VBtn>
+            <VBtn
+              variant="outlined"
+              color="secondary"
+              @click="toggleReorderMode"
+            >
+              Cancel
+            </VBtn>
+          </template>
+          <template v-else>
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="tabler-arrows-sort"
+              @click="toggleReorderMode"
+            >
+              Reorder
+            </VBtn>
+            <VBtn 
+              color="primary" 
+              prepend-icon="tabler-plus"
+              @click="openAddDialog"
+            >
+              Add Lesson
+            </VBtn>
+          </template>
+        </div>
       </VCardText>
 
-      <VCardText>
+      <VCardText v-if="isReorderMode">
+        <div class="reorder-list-container border rounded">
+          <SlickList
+            v-model:list="lessons"
+            use-drag-handle
+            axis="y"
+            class="list-group"
+            helper-class="slick-helper"
+          >
+            <SlickItem
+              v-for="(lesson, index) in lessons"
+              :key="lesson.id"
+              :index="index"
+              class="list-group-item d-flex align-center pa-4 border-bottom"
+            >
+              <DragHandle class="me-4" />
+              <VAvatar
+                size="40"
+                class="me-4"
+                :color="lesson.thumbnail ? '' : 'primary'"
+                :variant="!lesson.thumbnail ? 'tonal' : undefined"
+              >
+                <VImg
+                  v-if="lesson.thumbnail"
+                  :src="lesson.thumbnail"
+                  cover
+                />
+                <VIcon
+                  v-else
+                  icon="tabler-camera-off"
+                  size="20"
+                />
+              </VAvatar>
+              <div class="flex-grow-1">
+                <div class="text-h6">
+                  {{ lesson.title }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ lesson.description }}
+                </div>
+              </div>
+              <VChip
+                size="small"
+                label
+                class="ms-4"
+              >
+                Order: {{ index + 1 }}
+              </VChip>
+            </SlickItem>
+          </SlickList>
+        </div>
+      </VCardText>
+
+      <VCardText v-else>
         <VDataTable
           :headers="headers"
           :items="lessons"
@@ -522,4 +665,41 @@ onMounted(() => {
       @confirm="handlePasswordConfirm"
     />
   </section>
-</template> 
+</template>
+
+<style scoped>
+.reorder-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.list-group {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.list-group-item {
+  background-color: rgb(var(--v-theme-surface));
+  transition: background-color 0.2s;
+}
+
+.list-group-item:last-child {
+  border-bottom: none !important;
+}
+
+.list-group-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.slick-helper {
+  z-index: 9999;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  background-color: rgb(var(--v-theme-surface));
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 4px;
+}
+</style> 

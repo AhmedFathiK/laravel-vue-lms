@@ -56,9 +56,13 @@ export default defineConfig({
       dts: true,
       resolvers: [
         componentName => {
-        // Auto import `VueApexCharts`
+          // Auto import `VueApexCharts`
           if (componentName === 'VueApexCharts')
             return { name: 'default', from: 'vue3-apexcharts', as: 'VueApexCharts' }
+
+          // Auto import `vue-slicksort` components
+          if (componentName === 'SlickList' || componentName === 'SlickItem')
+            return { name: componentName, from: 'vue-slicksort' }
         },
       ],
     }), // Docs: https://github.com/antfu/unplugin-auto-import#unplugin-auto-import

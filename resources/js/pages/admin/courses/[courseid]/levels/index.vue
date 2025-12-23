@@ -23,6 +23,8 @@ const course = ref(null)
 const levels = ref([])
 const isDialogVisible = ref(false)
 const editingLevel = ref(null)
+const isReorderMode = ref(false)
+const isSavingOrder = ref(false)
 
 // Password confirmation dialog
 const isPasswordDialogVisible = ref(false)
@@ -39,15 +41,23 @@ const orderBy = ref('asc')
 const courseId = computed(() => route.params.courseid)
 
 // Headers for data table
-const headers = [
-  { title: 'ID', key: 'id', width: '80px' },
-  { title: 'Title', key: 'title' },
-  { title: 'Description', key: 'description', sortable: false },
-  { title: 'Order', key: 'sortOrder', width: '80px' },
-  { title: 'Free Access', key: 'isFree', width: '120px' },
-  { title: 'Status', key: 'status', width: '120px' },
-  { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
-]
+const headers = computed(() => {
+  const h = [
+    { title: 'ID', key: 'id', width: '80px' },
+    { title: 'Title', key: 'title' },
+    { title: 'Description', key: 'description', sortable: false },
+    { title: 'Order', key: 'sortOrder', width: '80px' },
+    { title: 'Free Access', key: 'isFree', width: '120px' },
+    { title: 'Status', key: 'status', width: '120px' },
+    { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
+  ]
+
+  if (isReorderMode.value) {
+    h.unshift({ title: 'Move', key: 'move', sortable: false, width: '50px' })
+  }
+
+  return h
+})
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -195,6 +205,57 @@ const refreshData = () => {
   fetchLevels()
 }
 
+// Reordering logic
+const toggleReorderMode = async () => {
+  if (isReorderMode.value) {
+    isReorderMode.value = false
+    fetchLevels()
+  } else {
+    // When entering reorder mode, load all levels without pagination
+    isLoading.value = true
+    try {
+      const response = await api.get(`/admin/courses/${courseId.value}/levels`, {
+        params: {
+          sortBy: 'sort_order',
+          orderBy: 'asc',
+          perPage: 1000, // Load all
+        },
+      })
+      
+      if (Array.isArray(response)) {
+        levels.value = response
+      } else if (response && response.data) {
+        levels.value = response.data
+      }
+      
+      isReorderMode.value = true
+    } catch (error) {
+      console.error('Error entering reorder mode:', error)
+      toast.error('Failed to load levels for reordering')
+    } finally {
+      isLoading.value = false
+    }
+  }
+}
+
+const saveOrder = async () => {
+  isSavingOrder.value = true
+  try {
+    await api.post(`/admin/courses/${courseId.value}/levels/order`, {
+      order: levels.value.map(l => l.id),
+    })
+    
+    toast.success('Levels order updated successfully')
+    isReorderMode.value = false
+    fetchLevels()
+  } catch (error) {
+    console.error('Error saving order:', error)
+    toast.error('Failed to update levels order')
+  } finally {
+    isSavingOrder.value = false
+  }
+}
+
 // Watch for locale changes and refresh data
 watch(() => locale.value, () => {
   fetchCourse()
@@ -220,18 +281,82 @@ onMounted(() => {
     />
     
     <VCard v-if="course">
-      <VCardText class="d-flex justify-space-between align-center">
+      <VCardText class="d-flex justify-space-between align-center flex-wrap gap-4">
         <h2>Levels for {{ course.title }}</h2>
-        <VBtn 
-          color="primary" 
-          prepend-icon="tabler-plus"
-          @click="openAddDialog"
-        >
-          Add Level
-        </VBtn>
+        <div class="d-flex gap-2">
+          <template v-if="isReorderMode">
+            <VBtn
+              color="success"
+              :loading="isSavingOrder"
+              @click="saveOrder"
+            >
+              Save Order
+            </VBtn>
+            <VBtn
+              variant="outlined"
+              color="secondary"
+              @click="toggleReorderMode"
+            >
+              Cancel
+            </VBtn>
+          </template>
+          <template v-else>
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="tabler-arrows-sort"
+              @click="toggleReorderMode"
+            >
+              Reorder
+            </VBtn>
+            <VBtn 
+              color="primary" 
+              prepend-icon="tabler-plus"
+              @click="openAddDialog"
+            >
+              Add Level
+            </VBtn>
+          </template>
+        </div>
       </VCardText>
 
-      <VCardText>
+      <VCardText v-if="isReorderMode">
+        <div class="reorder-list-container border rounded">
+          <SlickList
+            v-model:list="levels"
+            use-drag-handle
+            axis="y"
+            class="list-group"
+            helper-class="slick-helper"
+          >
+            <SlickItem
+              v-for="(level, index) in levels"
+              :key="level.id"
+              :index="index"
+              class="list-group-item d-flex align-center pa-4 border-bottom"
+            >
+              <DragHandle class="me-4" />
+              <div class="flex-grow-1">
+                <div class="text-h6">
+                  {{ level.title }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ level.description }}
+                </div>
+              </div>
+              <VChip
+                size="small"
+                label
+                class="ms-4"
+              >
+                Order: {{ index + 1 }}
+              </VChip>
+            </SlickItem>
+          </SlickList>
+        </div>
+      </VCardText>
+
+      <VCardText v-else>
         <VDataTable
           :headers="headers"
           :items="levels"
@@ -387,3 +512,40 @@ onMounted(() => {
     />
   </section>
 </template>
+
+<style scoped>
+.reorder-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.list-group {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.list-group-item {
+  background-color: rgb(var(--v-theme-surface));
+  transition: background-color 0.2s;
+}
+
+.list-group-item:last-child {
+  border-bottom: none !important;
+}
+
+.list-group-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.slick-helper {
+  z-index: 9999;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  background-color: rgb(var(--v-theme-surface));
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 4px;
+}
+</style>

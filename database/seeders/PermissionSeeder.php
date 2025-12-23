@@ -50,6 +50,7 @@ class PermissionSeeder extends Seeder
             'edit.levels',
             'delete.levels',
             'unlock.levels',
+            'reorder.levels',
 
             // Lesson Management
             'view.lessons',
@@ -57,6 +58,7 @@ class PermissionSeeder extends Seeder
             'edit.lessons',
             'delete.lessons',
             'add_video.lessons',
+            'reorder.lessons',
 
             // Slide Management
             'view.slides',

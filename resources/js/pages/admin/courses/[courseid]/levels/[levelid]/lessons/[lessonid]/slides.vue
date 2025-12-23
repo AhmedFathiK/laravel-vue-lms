@@ -259,9 +259,9 @@ onMounted(refreshData)
         { title: 'Admin', disabled: true },
         { title: 'Courses', to: '/admin/courses' },
         { title: course ? course.title : 'Course', disabled: true },
-        { title: level ? level.title : 'Level', to: `/admin/courses/${courseId}/levels/${levelId}` },
-        { title: 'Lessons', to: `/admin/courses/${courseId}/levels/${levelId}/lessons` },
-        { title: lesson ? lesson.title : 'Slides', disabled: true }
+        { title: level ? level.title : 'Level', to: `/admin/courses/${courseId}/levels` },
+        { title: lesson ? lesson.title : 'Lesson', to: `/admin/courses/${courseId}/levels/${levelId}/lessons` },
+        { title: lesson ? 'Slides' : '', disabled: true }
       ]"
       class="mb-4"
     />
@@ -305,7 +305,7 @@ onMounted(refreshData)
             v-else
             color="secondary" 
             class="me-2"
-            prepend-icon="tabler-sort"
+            prepend-icon="tabler-arrows-sort"
             @click="toggleReorderMode"
           >
             Reorder

@@ -66,7 +66,7 @@ class LessonController extends Controller
         try {
             return DB::transaction(function () use ($request, $level) {
                 // Compute next sort order for this level
-                $nextSortOrder = $level->lessons()->max('sort_order') + 1;
+                $nextSortOrder = ($level->lessons()->max('sort_order') ?? 0) + 1;
 
                 // Merge it into validated data
                 $data = array_merge(
@@ -197,7 +197,7 @@ class LessonController extends Controller
      */
     public function updateOrder(Request $request, Course $course, Level $level): JsonResponse
     {
-        if (!Gate::allows('reorder.slides')) {
+        if (!Gate::allows('reorder.lessons')) {
             abort(403);
         }
 
