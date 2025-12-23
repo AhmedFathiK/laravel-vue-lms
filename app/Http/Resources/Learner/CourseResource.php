@@ -19,12 +19,14 @@ class CourseResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'thumbnail' => $this->thumbnail,
+            'video_url' => $this->video_url ?? null,
             'is_free' => $this->is_free,
             'is_featured' => $this->is_featured,
             'category' => new CourseCategoryResource($this->whenLoaded('category')),
-            'levels' => $this->whenLoaded('levels', function () {
-                return $this->levels;
-            }),
+            'levels' => LevelResource::collection($this->whenLoaded('levels')),
+            'subscription_plans' => SubscriptionPlanResource::collection($this->whenLoaded('subscriptionPlans')),
+            'total_students' => $this->enrollments_count ?? 0,
+            'total_lectures' => $this->lessons_count ?? 0,
         ];
     }
 }

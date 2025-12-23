@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\Receipt;
+use App\Models\SubscriptionPlan;
+use App\Models\UserSubscription;
 use App\Services\MyFatoorahService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -24,6 +28,8 @@ class MyFatoorahController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:0.1',
             'currency' => 'nullable|string|size:3',
+            'plan_id' => 'nullable|exists:subscription_plans,id',
+            'course_id' => 'nullable|exists:courses,id',
         ]);
 
         $user = $request->user();
@@ -38,6 +44,10 @@ class MyFatoorahController extends Controller
             'status' => 'pending',
             'payment_method' => 'myfatoorah',
             'payment_provider' => 'myfatoorah',
+            'payment_details' => [
+                'plan_id' => $request->plan_id,
+                'course_id' => $request->course_id,
+            ],
         ]);
 
         try {
@@ -64,7 +74,6 @@ class MyFatoorahController extends Controller
                 'payment_url' => $response['PaymentURL'],
                 'payment_id' => $payment->id,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Payment Initiation Failed: ' . $e->getMessage());
             return response()->json([
@@ -94,28 +103,76 @@ class MyFatoorahController extends Controller
             $payment = Payment::find($localPaymentId);
 
             if ($payment) {
+                $existingDetails = $payment->payment_details ?? [];
+                $mergedDetails = array_merge($existingDetails, $data);
+
                 if ($status === 'Paid') {
                     $payment->update([
                         'status' => 'completed',
-                        'payment_details' => $data,
-                        'transaction_id' => $data['InvoiceId'], // Update with actual invoice ID if needed
+                        'payment_details' => $mergedDetails,
+                        'transaction_id' => $data['InvoiceId'],
                     ]);
-                    
+
+                    // Handle Subscription Creation
+                    if (isset($existingDetails['plan_id'])) {
+                        $plan = SubscriptionPlan::find($existingDetails['plan_id']);
+                        if ($plan && $payment->user_id) {
+                            $endsAt = null;
+                            if ($plan->plan_type === 'monthly') {
+                                $endsAt = Carbon::now()->addMonth();
+                            } elseif ($plan->plan_type === 'annual') {
+                                $endsAt = Carbon::now()->addYear();
+                            } elseif ($plan->duration_days) {
+                                $endsAt = Carbon::now()->addDays($plan->duration_days);
+                            }
+
+                            UserSubscription::create([
+                                'user_id' => $payment->user_id,
+                                'subscription_plan_id' => $plan->id,
+                                'payment_id' => $payment->id,
+                                'starts_at' => Carbon::now(),
+                                'ends_at' => $endsAt,
+                                'status' => 'active',
+                                'auto_renew' => $plan->plan_type !== 'one-time',
+                            ]);
+
+                            // Generate Receipt
+                            Receipt::create([
+                                'user_id' => $payment->user_id,
+                                'payment_id' => $payment->id,
+                                'receipt_number' => Receipt::generateUniqueReceiptNumber(),
+                                'item_type' => 'subscription_plan',
+                                'item_id' => $plan->id,
+                                'item_name' => $plan->name,
+                                'amount' => $payment->amount,
+                                'currency' => $payment->currency,
+                            ]);
+                        }
+                    }
+
                     // Redirect to frontend success page
-                    // Replace with your actual frontend URL
-                    return redirect('/?payment=success&id=' . $payment->id);
+                    $redirectUrl = '/?payment=success&id=' . $payment->id;
+                    if (isset($existingDetails['course_id'])) {
+                        $redirectUrl = '/courses/' . $existingDetails['course_id'] . '?payment=success';
+                    }
+
+                    return redirect($redirectUrl);
                 } else {
                     $payment->update([
                         'status' => 'failed',
-                        'payment_details' => $data,
+                        'payment_details' => $mergedDetails,
                     ]);
-                    
-                    return redirect('/?payment=failed&id=' . $payment->id);
+
+                    $redirectUrl = '/?payment=failed&id=' . $payment->id;
+                    if (isset($existingDetails['course_id'])) {
+                        $redirectUrl = '/courses/' . $existingDetails['course_id'] . '?payment=failed';
+                    }
+
+                    return redirect($redirectUrl);
                 }
             }
 
             return response()->json(['success' => false, 'message' => 'Payment record not found']);
-
         } catch (\Exception $e) {
             Log::error('Payment Callback Failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Payment verification failed'], 500);
@@ -128,11 +185,11 @@ class MyFatoorahController extends Controller
     public function error(Request $request)
     {
         $paymentId = $request->query('paymentId');
-        
+
         Log::error('Payment Failed Callback for PaymentId: ' . $paymentId);
-        
+
         // You might want to update the local payment status here as well if you can retrieve it
-        
+
         return redirect('/?payment=error');
     }
 }

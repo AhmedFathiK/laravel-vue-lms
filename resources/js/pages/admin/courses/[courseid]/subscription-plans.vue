@@ -20,7 +20,6 @@ const course = ref(null)
 const plans = ref([])
 const totalPlans = ref(0)
 const options = ref({})
-const availableLevels = ref([])
 
 // Dialog states
 const isPlanDialogVisible = ref(false)
@@ -77,19 +76,6 @@ const fetchPlans = async () => {
     toast.error('Failed to load subscription plans')
   } finally {
     isLoading.value = false
-  }
-}
-
-// Fetch levels for the course (for level-based access)
-const fetchLevels = async () => {
-  if (!courseId.value) return
-  try {
-    const response = await api.get(`/admin/courses/${courseId.value}/levels`)
-
-    availableLevels.value = response
-  } catch (error) {
-    console.error('Error fetching levels:', error)
-    toast.error('Failed to load levels')
   }
 }
 
@@ -182,7 +168,6 @@ const formatBillingCycle = cycle => {
 // --- Lifecycle --- //
 onMounted(() => {
   fetchCourse()
-  fetchLevels()
 })
 </script>
 
@@ -307,7 +292,6 @@ onMounted(() => {
       :dialog-mode="dialogMode"
       :plan="editingPlan"
       :course-id="courseId"
-      :available-levels="availableLevels"
       @submit-success="onFormSubmitSuccess"
     />
 

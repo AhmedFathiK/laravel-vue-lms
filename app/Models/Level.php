@@ -87,7 +87,7 @@ class Level extends Model
         }
 
         // Check if user has any active subscription for this course
-        $hasActiveSubscription = $user->subscriptions()
+        return $user->subscriptions()
             ->whereHas('plan', function ($query) {
                 $query->where('course_id', $this->course_id)
                     ->where('is_active', true);
@@ -100,30 +100,6 @@ class Level extends Model
                     });
             })
             ->exists();
-
-        if (!$hasActiveSubscription) {
-            return false;
-        }
-
-        // Check if the user's subscription plan grants access to this level
-        $subscription = $user->subscriptions()
-            ->whereHas('plan', function ($query) {
-                $query->where('course_id', $this->course_id)
-                    ->where('is_active', true);
-            })
-            ->where('status', 'active')
-            ->where(function ($query) {
-                $query->whereNull('ends_at')
-                    ->orWhere('ends_at', '>', now());
-            })
-            ->with('plan')
-            ->first();
-
-        if (!$subscription) {
-            return false;
-        }
-
-        return $subscription->plan->hasAccessToLevel($this->id);
     }
 
     /**

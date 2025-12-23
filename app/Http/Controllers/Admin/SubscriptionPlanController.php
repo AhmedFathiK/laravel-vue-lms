@@ -82,20 +82,6 @@ class SubscriptionPlanController extends Controller
      */
     public function store(StoreSubscriptionPlanRequest $request, Course $course): JsonResponse
     {
-        // Verify that all accessible_levels belong to the specified course
-        if ($request->has('accessible_levels') && !empty($request->accessible_levels)) {
-            $course = Course::findOrFail($request->course_id);
-            $courseLevelIds = $course->levels()->pluck('id')->toArray();
-
-            foreach ($request->accessible_levels as $levelId) {
-                if (!in_array($levelId, $courseLevelIds)) {
-                    return response()->json([
-                        'message' => 'One or more levels do not belong to the specified course',
-                    ], 422);
-                }
-            }
-        }
-
         $validatedData = $request->validated();
 
         // Enforce one-time billing cycle for one-time plans
@@ -127,21 +113,6 @@ class SubscriptionPlanController extends Controller
      */
     public function update(UpdateSubscriptionPlanRequest $request, Course $course, SubscriptionPlan $subscriptionPlan): JsonResponse
     {
-        // Verify that all accessible_levels belong to the specified course
-        if ($request->has('accessible_levels') && !empty($request->accessible_levels)) {
-            $courseId = $request->has('course_id') ? $request->course_id : $subscriptionPlan->course_id;
-            $course = Course::findOrFail($courseId);
-            $courseLevelIds = $course->levels()->pluck('id')->toArray();
-
-            foreach ($request->accessible_levels as $levelId) {
-                if (!in_array($levelId, $courseLevelIds)) {
-                    return response()->json([
-                        'message' => 'One or more levels do not belong to the specified course',
-                    ], 422);
-                }
-            }
-        }
-
         $validatedData = $request->validated();
 
         // Enforce one-time billing cycle for one-time plans

@@ -162,7 +162,7 @@ onMounted(fetchEnrollments)
           <VBtn
             rounded="lg"
             class="ma-4"
-            :to="isSubscriptionActive(enrollment) ? `/my-courses/${enrollment.course.id}` : null"
+            :to="isSubscriptionActive(enrollment) ? `/courses/${enrollment.course.id}` : null"
             :disabled="!isSubscriptionActive(enrollment)"
             :color="isSubscriptionActive(enrollment) ? 'primary' : 'secondary'"
           >

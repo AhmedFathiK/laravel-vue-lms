@@ -90,12 +90,6 @@ class UserSubscription extends Model
      */
     public function hasAccessToLevel(int $levelId): bool
     {
-        // If the plan is free, it grants access to all levels
-        if ($this->plan->is_free) {
-            return true;
-        }
-
-        // Check if the plan has specific level access restrictions
-        return $this->plan->hasAccessToLevel($levelId);
+        return true;
     }
 }

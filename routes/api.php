@@ -217,11 +217,14 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
+// Public Learner Routes
+Route::prefix('learner')->group(function () {
     // Courses Browsing
     Route::get('courses', [LearnerCourseController::class, 'index']);
     Route::get('courses/{course}', [LearnerCourseController::class, 'show']);
+});
 
+Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
     Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);

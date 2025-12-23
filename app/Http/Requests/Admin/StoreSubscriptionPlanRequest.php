@@ -31,8 +31,6 @@ class StoreSubscriptionPlanRequest extends FormRequest
             'billing_cycle' => 'required|string|in:monthly,quarterly,yearly,one-time',
             'plan_type' => 'required|string|in:recurring,one-time,free',
             'is_free' => 'boolean',
-            'accessible_levels' => 'nullable|array',
-            'accessible_levels.*' => 'exists:levels,id',
             'duration_days' => 'nullable|integer|min:1',
             'is_active' => 'boolean',
         ];

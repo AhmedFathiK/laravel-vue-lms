@@ -38,6 +38,7 @@ declare module 'vue-router/auto-routes' {
     'admin-users-id': RouteRecordInfo<'admin-users-id', '/admin/users/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'browse-courses': RouteRecordInfo<'browse-courses', '/browse-courses', Record<never, never>, Record<never, never>>,
     'checkout': RouteRecordInfo<'checkout', '/checkout', Record<never, never>, Record<never, never>>,
+    'courses-id': RouteRecordInfo<'courses-id', '/courses/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'dashboard': RouteRecordInfo<'dashboard', '/dashboard', Record<never, never>, Record<never, never>>,
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'help-center': RouteRecordInfo<'help-center', '/help-center', Record<never, never>, Record<never, never>>,

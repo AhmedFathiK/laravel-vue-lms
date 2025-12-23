@@ -21,10 +21,6 @@ const props = defineProps({
     type: Number,
     required: true,
   },
-  availableLevels: {
-    type: Array,
-    default: () => [],
-  },
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'submitSuccess'])
@@ -42,7 +38,6 @@ const defaultForm = () => ({
   durationDays: null,
   isActive: true,
   courseId: props.courseId,
-  accessibleLevels: [],
 })
 
 const localPlan = ref(defaultForm())
@@ -285,56 +280,6 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
                     </span>
                   </template>
                 </VSwitch>
-              </VCol>
-
-              <VCol cols="12">
-                <div class="d-flex align-center justify-space-between mb-3">
-                  <p class="text-body-1 font-weight-medium mb-0">
-                    Accessible Levels
-                  </p>
-                  <VChip
-                    size="small"
-                    color="primary"
-                    variant="tonal"
-                  >
-                    {{ localPlan.accessibleLevels?.length || 0 }} selected
-                  </VChip>
-                </div>
-              
-                <VCard
-                  variant="outlined"
-                  class="pa-4"
-                >
-                  <VRow v-if="availableLevels?.length">
-                    <VCol
-                      v-for="level in availableLevels"
-                      :key="level.id"
-                      cols="12"
-                      sm="6"
-                    >
-                      <VCheckbox
-                        v-model="localPlan.accessibleLevels"
-                        :label="level.title"
-                        :value="level.id"
-                        hide-details
-                        density="comfortable"
-                        color="primary"
-                      />
-                    </VCol>
-                  </VRow>
-                  <div
-                    v-else
-                    class="text-center text-medium-emphasis py-4"
-                  >
-                    No levels available
-                  </div>
-                </VCard>
-                <div
-                  v-if="validationErrors.accessibleLevels"
-                  class="v-messages v-messages__message text-error mt-1"
-                >
-                  {{ validationErrors.accessibleLevels[0] || validationErrors.accessibleLevels }}
-                </div>
               </VCol>
             </VRow>
           </div>

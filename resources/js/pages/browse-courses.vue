@@ -1,6 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
+import api from '@/utils/api'
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -41,9 +41,9 @@ const selectedPlan = ref(null)
 
 const fetchCategories = async () => {
   try {
-    const response = await axios.get('/api/admin/course-categories')
+    const response = await api.get('/admin/course-categories')
 
-    categories.value = response.data.categories.map(cat => ({
+    categories.value = response.categories.map(cat => ({
       title: cat.name,
       value: cat.id,
     }))
@@ -66,17 +66,17 @@ const fetchCourses = async () => {
       order: sortOrder,
     }
 
-    const response = await axios.get('/api/learner/courses', { params })
+    const response = await api.get('/learner/courses', { params })
 
-    courses.value = response.data.data
-    totalCourses.value = response.data.total
+    courses.value = response.data
+    totalCourses.value = response.total
   } catch (error) {
     console.error('Error fetching courses:', error)
   }
 }
 
 const viewCourseDetails = courseId => {
-  router.push({ name: 'course-details', params: { id: courseId } })
+  router.push(`/courses/${courseId}`)
 }
 
 const handleSubscribeClick = async course => {
@@ -90,7 +90,7 @@ const handleSubscribeClick = async course => {
 
   if (course.isFree) {
     try {
-      await axios.post(`/api/learner/courses/${course.id}/enroll`)
+      await api.post(`/learner/courses/${course.id}/enroll`)
       alert(`Successfully enrolled in ${course.title}`)
     } catch (error) {
       console.error('Error enrolling in free course:', error)
@@ -98,9 +98,9 @@ const handleSubscribeClick = async course => {
     }
   } else {
     try {
-      const response = await axios.get(`/api/learner/courses/${course.id}/subscription-plans`)
+      const response = await api.get(`/learner/courses/${course.id}/subscription-plans`)
 
-      subscriptionPlans.value = response.data.plans
+      subscriptionPlans.value = response.plans
       isSubscribeDialogVisible.value = true
     } catch (error) {
       console.error('Error fetching subscription plans:', error)
@@ -117,7 +117,7 @@ const confirmSubscription = async () => {
   }
 
   try {
-    await axios.post('/api/learner/subscribe', { planId: selectedPlan.value.id })
+    await api.post('/learner/subscribe', { planId: selectedPlan.value.id })
     alert(`Successfully subscribed to ${selectedCourseForSubscription.value.title} - ${selectedPlan.value.name}`)
     isSubscribeDialogVisible.value = false
   } catch (error) {
@@ -383,6 +383,7 @@ onMounted(() => {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3; /* Limit to 3 lines */
+  line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
 }

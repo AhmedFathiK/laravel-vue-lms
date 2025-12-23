@@ -68,10 +68,22 @@ class LearnerCourseController extends Controller
             return response()->json(['error' => 'Course not available'], 404);
         }
 
+        $course->loadCount(['enrollments']);
+
+        // Count total published lessons across all published levels
+        $course->lessons_count = \App\Models\Lesson::whereHas('level', function ($query) use ($course) {
+            $query->where('course_id', $course->id)
+                ->where('status', 'published');
+        })->where('status', 'published')->count();
+
         $course->load(['levels' => function ($query) {
             $query->where('status', 'published')
-                ->where('is_unlocked', true)
                 ->orderBy('sort_order');
+        }, 'levels.lessons' => function ($query) {
+            $query->where('status', 'published')
+                ->orderBy('sort_order');
+        }, 'subscriptionPlans' => function ($query) {
+            $query->where('is_active', true);
         }]);
 
         return response()->json(new CourseResource($course));

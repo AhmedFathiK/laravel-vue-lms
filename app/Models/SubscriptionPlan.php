@@ -20,7 +20,6 @@ class SubscriptionPlan extends Model
         'billing_cycle',
         'plan_type',
         'is_free',
-        'accessible_levels',
         'duration_days',
         'is_active',
     ];
@@ -30,7 +29,6 @@ class SubscriptionPlan extends Model
         'is_active' => 'boolean',
         'is_free' => 'boolean',
         'duration_days' => 'integer',
-        'accessible_levels' => 'array',
     ];
 
     /**
@@ -70,14 +68,6 @@ class SubscriptionPlan extends Model
      */
     public function hasAccessToLevel(int $levelId): bool
     {
-        if ($this->is_free) {
-            return true;
-        }
-
-        if (empty($this->accessible_levels)) {
-            return true; // If no specific levels are set, assume full access
-        }
-
-        return in_array($levelId, $this->accessible_levels);
+        return true;
     }
 }
