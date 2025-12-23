@@ -56,7 +56,6 @@ class PermissionSeeder extends Seeder
             'create.lessons',
             'edit.lessons',
             'delete.lessons',
-            'configure.lessons',
             'add_video.lessons',
 
             // Slide Management

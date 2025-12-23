@@ -215,38 +215,4 @@ class LessonController extends Controller
 
         return response()->json(['message' => 'Order updated successfully']);
     }
-
-    /**
-     * Configure lesson settings.
-     */
-    public function configure(Request $request, Course $course, Level $level, Lesson $lesson): JsonResponse
-    {
-        if (!Gate::allows('configure.lessons')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'reshow_incorrect_slides' => ['required', 'boolean'],
-            'reshow_count' => ['required', 'integer', 'min:1', 'max:10'],
-            'require_correct_answers' => ['required', 'boolean'],
-        ]);
-
-        $lesson->update($validated);
-
-        return response()->json([
-            'id' => $lesson->id,
-            'level_id' => $lesson->level_id,
-            'title' => $lesson->title,
-            'description' => $lesson->description,
-            'sort_order' => $lesson->sort_order,
-            'status' => $lesson->status,
-            'is_free' => $lesson->is_free,
-            'video_url' => $lesson->video_url,
-            'reshow_incorrect_slides' => $lesson->reshow_incorrect_slides,
-            'reshow_count' => $lesson->reshow_count,
-            'require_correct_answers' => $lesson->require_correct_answers,
-            'created_at' => $lesson->created_at,
-            'updated_at' => $lesson->updated_at,
-        ]);
-    }
 }
