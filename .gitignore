@@ -43,10 +43,7 @@ dist-ssr
 
 # Editor directories and files
 .trae
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/*.code-snippets
-!.vscode/tours
+
 .idea
 *.suo
 *.ntvs*
