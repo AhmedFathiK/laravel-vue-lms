@@ -63,6 +63,12 @@ export const useCrudSubmit = options => {
       return
     }
 
+    if (typeof value === "boolean") {
+      formData.append(key, value ? '1' : '0')
+
+      return
+    }
+
     formData.append(key, value)
   }
 
