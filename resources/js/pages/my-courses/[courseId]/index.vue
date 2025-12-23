@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
+import api from '@/utils/api'
+import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 definePage({
   meta: {
@@ -7,45 +9,29 @@ definePage({
   },
 })
 
-const courseData = ref({
-  title: 'Interactive Learning Path',
-  levels: [
-    {
-      id: 1,
-      name: 'Level 1: The Basics',
-      items: [
-        { id: 1, type: 'lesson', title: 'Introduction to the Course', description: 'A brief overview of what you will learn.', icon: 'tabler-book', completed: true, locked: false },
-        { id: 2, type: 'lesson', title: 'Setting Up Your Environment', description: 'Step-by-step guide to get your tools ready.', icon: 'tabler-tools', completed: true, locked: false },
-        { id: 3, type: 'lesson', title: 'Hello World!', description: 'Your first simple program.', icon: 'tabler-code', completed: true, locked: false },
-        { id: 4, type: 'lesson', title: 'Understanding Variables', description: 'Learn about data types and variables.', icon: 'tabler-variable', completed: true, locked: true },
-        { id: 5, type: 'exam', title: 'Level 1 Exam', description: 'Test your knowledge on the basics.', icon: 'tabler-clipboard-check', completed: false, locked: true },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Level 2: Core Concepts',
-      items: [
-        { id: 6, type: 'lesson', title: 'Functions and Methods', description: 'Diving into reusable code blocks.', icon: 'tabler-function', completed: false, locked: true },
-        { id: 7, type: 'lesson', title: 'Control Flow', description: 'Mastering loops and conditionals.', icon: 'tabler-arrows-random', completed: false, locked: true },
-        { id: 8, type: 'lesson', title: 'Data Structures', description: 'Working with arrays and objects.', icon: 'tabler-brackets-contain', completed: false, locked: true },
-        { id: 9, type: 'exam', title: 'Level 2 Exam', description: 'Test your knowledge on core concepts.', icon: 'tabler-clipboard-check', completed: false, locked: true },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Level 3: Advanced Topics',
-      items: [
-        { id: 10, type: 'lesson', title: 'Asynchronous Programming', description: 'Understanding promises and async/await.', icon: 'tabler-clock-hour-3', completed: false, locked: true },
-        { id: 11, type: 'lesson', title: 'Working with APIs', description: 'Fetching data from external sources.', icon: 'tabler-api', completed: false, locked: true },
-        { id: 12, type: 'exam', title: 'Level 3 Exam', description: 'Test your knowledge on advanced topics.', icon: 'tabler-clipboard-check', completed: false, locked: true },
-      ],
-    },
-  ],
-
-})
-
+const route = useRoute()
+const courseData = ref(null)
+const loading = ref(true)
+const error = ref(null)
 const selectedItem = ref(null)
 const isModalVisible = ref(false)
+
+const fetchCourseContent = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const response = await api.get(`/learner/my-courses/${route.params.courseId}`)
+
+    courseData.value = response
+  } catch (err) {
+    console.error(err)
+    error.value = "Failed to load course content. Please try again later."
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchCourseContent)
 
 const openModal = item => {
   if (!item.locked) {
@@ -60,28 +46,8 @@ const closeModal = () => {
 }
 
 const completeItem = itemToComplete => {
-  let level
-  let itemIndex = -1
-
-  for (const l of courseData.value.levels) {
-    const index = l.items.findIndex(i => i.id === itemToComplete.id)
-    if (index !== -1) {
-      level = l
-      itemIndex = index
-      break
-    }
-  }
-
-  if (level && itemIndex !== -1) {
-    // Mark current item as complete
-    level.items[itemIndex].completed = true
-
-    // Unlock next item
-    if (itemIndex + 1 < level.items.length) {
-      level.items[itemIndex + 1].locked = false
-    }
-  }
-
+  // This is a placeholder for completion logic.
+  // In a real scenario, this would trigger an API call or navigation to the actual lesson content.
   closeModal()
 }
 
@@ -89,15 +55,11 @@ const getItemStatus = (item, level) => {
   if (item.completed) {
     return 'completed'
   }
-  if (!item.locked) {
-    const firstIncompleteIndex = level.items.findIndex(i => !i.completed)
-    const currentItemIndex = level.items.findIndex(i => i.id === item.id)
-    if (currentItemIndex === firstIncompleteIndex) {
-      return 'current'
-    }
+  if (item.locked) {
+    return 'locked'
   }
   
-  return 'locked'
+  return 'current'
 }
 
 const getStatusClasses = (item, level) => {
@@ -113,68 +75,100 @@ const getStatusClasses = (item, level) => {
 
 <template>
   <VContainer class="course-timeline">
-    <h1 class="text-h3 mb-10 text-center">
-      {{ courseData.title }}
-    </h1>
-
     <div
-      v-for="(level) in courseData.levels"
-      :key="level.id"
-      class="level-section mb-12"
+      v-if="loading"
+      class="d-flex justify-center align-center"
+      style="min-height: 300px"
     >
-      <h2 class="text-h4 mb-8">
-        {{ level.name }}
-      </h2>
-      <div class="timeline-wrapper">
-        <div
-          v-for="(item, itemIndex) in level.items"
-          :key="item.id"
-          class="timeline-item"
-          :class="getStatusClasses(item, level)"
+      <VProgressCircular
+        indeterminate
+        color="primary"
+        size="64"
+      />
+    </div>
+
+    <VAlert
+      v-else-if="error"
+      type="error"
+      class="mb-4"
+    >
+      {{ error }}
+      <div class="mt-2">
+        <VBtn
+          color="error"
+          variant="outlined"
+          size="small"
+          @click="fetchCourseContent"
         >
+          Retry
+        </VBtn>
+      </div>
+    </VAlert>
+
+    <template v-else-if="courseData">
+      <h1 class="text-h3 mb-10 text-center">
+        {{ courseData.title }}
+      </h1>
+
+      <div
+        v-for="(level) in courseData.levels"
+        :key="level.id"
+        class="level-section mb-12"
+      >
+        <h2 class="text-h4 mb-8">
+          {{ level.title }}
+        </h2>
+        <div class="timeline-wrapper">
           <div
-            v-if="itemIndex < level.items.length - 2"
-            class="timeline-connector"
-          />
-          <div class="timeline-avatar-wrapper">
-            <VAvatar
-              size="100"
-              class="timeline-avatar"
-              :style="{ cursor: item.locked ? 'not-allowed' : 'pointer' }"
+            v-for="(item, itemIndex) in level.items"
+            :key="item.id + '-' + item.type"
+            class="timeline-item"
+            :class="getStatusClasses(item, level)"
+          >
+            <div
+              v-if="itemIndex < level.items.length - 1"
+              class="timeline-connector"
+            />
+            <div class="timeline-avatar-wrapper">
+              <VAvatar
+                size="100"
+                class="timeline-avatar"
+                :style="{ cursor: item.locked ? 'not-allowed' : 'pointer' }"
+                @click="openModal(item)"
+              >
+                <VIcon size="x-large">
+                  {{ item.icon }}
+                </VIcon>
+              </VAvatar>
+            </div>
+            <VCard
+              class="timeline-card ms-4"
+              :disabled="item.locked"
               @click="openModal(item)"
             >
-              <VIcon size="x-large">
-                {{ item.icon }}
-              </VIcon>
-            </VAvatar>
+              <VCardText>
+                <div class="d-flex justify-space-between align-center">
+                  <h3 class="text-h6">
+                    {{ item.title }}
+                  </h3>
+                  <VChip
+                    v-if="item.type === 'exam'"
+                    color="amber"
+                    text-color="white"
+                    size="small"
+                  >
+                    Exam
+                  </VChip>
+                </div>
+                <p class="text-body-1 mt-2">
+                  {{ item.description }}
+                </p>
+              </VCardText>
+            </VCard>
           </div>
-          <VCard
-            class="timeline-card ms-4"
-            :disabled="item.locked"
-            @click="openModal(item)"
-          >
-            <VCardText>
-              <div class="d-flex justify-space-between align-center">
-                <h3 class="text-h6">
-                  {{ item.title }}
-                </h3>
-                <VChip
-                  v-if="item.type === 'exam'"
-                  color="amber"
-                  text-color="white"
-                  small
-                >
-                  Exam
-                </VChip>
-              </div>
-              <p class="text-body-1 mt-2">
-                {{ item.description }}
-              </p>
-            </VCardText>
-          </VCard>
         </div>
       </div>
-    </div>
+    </template>
 
     <VDialog
       v-model="isModalVisible"
@@ -191,7 +185,7 @@ const getStatusClasses = (item, level) => {
           <VSpacer />
           <VBtn
             color="grey"
-            text
+            variant="text"
             @click="closeModal"
           >
             Close
@@ -251,14 +245,19 @@ const getStatusClasses = (item, level) => {
 
 .timeline-connector {
   position: absolute;
-  left: 50px; /* Center of 56px avatar */
+  left: 50px; /* Center of 100px avatar */
   top: 0;
   height: 100%;
   width: 2px;
   background-color: #9E9E9E; /* Default gray line */
   z-index: 1;
-  margin-top: 8px;
+  margin-top: 58px; /* Offset to start below avatar center? No, usually top: 0 and z-index below avatar */
 }
+/* Adjust connector logic */
+/* In original: left: 50px. Avatar size 100. Center is 50px. */
+/* margin-top: 8px on avatar wrapper. */
+/* The connector should probably start from the center of the avatar and go down. */
+/* But here it seems to run full height. */
 
 /* States */
 .status-completed .timeline-avatar {

@@ -223,7 +223,7 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
 
     // Course Content
     Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
-    Route::get('my-courses/{enrollment}', [CoursesContentController::class, 'show']);
+    Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
 
 
     // Progress Tracking

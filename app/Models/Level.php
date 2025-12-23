@@ -63,6 +63,11 @@ class Level extends Model
         return $this->hasMany(Lesson::class)->orderBy('sort_order');
     }
 
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class);
+    }
+
     /**
      * Get all free lessons in this level.
      */
