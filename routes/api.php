@@ -27,6 +27,7 @@ use App\Http\Controllers\Learner\LearnerReceiptController;
 use App\Http\Controllers\Admin\CourseAccessController;
 use App\Http\Controllers\Learner\CoursesContentController;
 use App\Http\Controllers\Learner\LearnerSubscriptionController;
+use App\Http\Controllers\MyFatoorahController;
 
 /*
 |--------------------------------------------------------------------------
@@ -287,3 +288,17 @@ Route::middleware('auth:sanctum')->prefix('gamification')->group(function () {
     Route::get('leaderboards/{leaderboard}', [GamificationController::class, 'viewLeaderboard']);
     Route::get('rankings', [GamificationController::class, 'getUserLeaderboardRankings']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| MyFatoorah Payment Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('myfatoorah/checkout', [MyFatoorahController::class, 'checkout']);
+});
+
+Route::get('myfatoorah/callback', [MyFatoorahController::class, 'callback'])->name('myfatoorah.callback');
+Route::get('myfatoorah/error', [MyFatoorahController::class, 'error'])->name('myfatoorah.error');
+

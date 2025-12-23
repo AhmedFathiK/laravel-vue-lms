@@ -73,7 +73,8 @@
         },
         "audit": {
             "abandoned": "report"
-        }
+        },
+        "secure-http": false
     },
     "minimum-stability": "stable",
     "prefer-stable": true
