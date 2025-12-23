@@ -25,7 +25,7 @@ const fetchCourseContent = async () => {
     courseData.value = response
   } catch (err) {
     console.error(err)
-    error.value = "Failed to load course content. Please try again later."
+    error.value = err.response?.data?.error || "Failed to load course content. Please try again later."
   } finally {
     loading.value = false
   }
@@ -89,15 +89,19 @@ const getStatusClasses = (item, level) => {
 
     <VAlert
       v-else-if="error"
-      type="error"
+      color="error"
+      variant="tonal"
+      density="compact"
       class="mb-4"
+      icon="tabler-alert-circle"
     >
-      {{ error }}
-      <div class="mt-2">
+      <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+        <span>{{ error }}</span>
         <VBtn
           color="error"
-          variant="outlined"
+          variant="text"
           size="small"
+          prepend-icon="tabler-refresh"
           @click="fetchCourseContent"
         >
           Retry

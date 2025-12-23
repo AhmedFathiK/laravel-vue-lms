@@ -19,10 +19,20 @@ class CoursesContentController extends Controller
         // Check if user is enrolled
         $enrollment = CourseEnrollment::where('user_id', Auth::id())
             ->where('course_id', $course->id)
+            ->with('userSubscription')
             ->first();
 
         if (!$enrollment) {
             return response()->json(["error" => "You are not enrolled in this course."], 403);
+        }
+
+        // Check if subscription is active
+        if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
+            return response()->json([
+                "error" => "Your subscription for this course has expired.",
+                "expired" => true,
+                "ends_at" => $enrollment->userSubscription->ends_at
+            ], 403);
         }
 
         $course->load([

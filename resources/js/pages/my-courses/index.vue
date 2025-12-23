@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from "vue"
 import api from "@/utils/api"
+import { onMounted, ref } from "vue"
 
 definePage({
   meta: {
@@ -18,11 +18,20 @@ const fetchEnrollments = async () => {
 
     enrollments.value = response
   } catch (err) {
-    error.value = "Failed to fetch enrollments."
+    error.value = err.response?.data?.error || "Failed to fetch enrollments."
     console.error(err)
   } finally {
     loading.value = false
   }
+}
+
+const isSubscriptionActive = enrollment => {
+  if (!enrollment.userSubscription) return true
+  
+  const isStatusActive = enrollment.userSubscription.status === 'active'
+  const isNotExpired = !enrollment.userSubscription.endsAt || new Date(enrollment.userSubscription.endsAt) > new Date()
+  
+  return isStatusActive && isNotExpired
 }
 
 onMounted(fetchEnrollments)
@@ -47,10 +56,24 @@ onMounted(fetchEnrollments)
 
     <VAlert
       v-if="error"
-      type="error"
+      color="error"
+      variant="tonal"
+      density="compact"
       class="mb-4"
+      icon="tabler-alert-circle"
     >
-      {{ error }}
+      <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+        <span>{{ error }}</span>
+        <VBtn
+          color="error"
+          variant="text"
+          size="small"
+          prepend-icon="tabler-refresh"
+          @click="fetchEnrollments"
+        >
+          Retry
+        </VBtn>
+      </div>
     </VAlert>
 
     <VRow v-if="!loading && !error">
@@ -77,27 +100,37 @@ onMounted(fetchEnrollments)
 
           <VCardText class="flex-grow-1">
             <div class="d-flex justify-space-between align-center mb-2">
-              <VChip
-                v-if="
-                  enrollment.userSubscription &&
+              <div class="d-flex gap-2">
+                <VChip
+                  v-if="
+                    enrollment.userSubscription &&
+                      enrollment.userSubscription
+                        .subscriptionPlan
+                  "
+                  color="info"
+                  size="small"
+                >
+                  {{
                     enrollment.userSubscription
-                      .subscriptionPlan
-                "
-                color="info"
-                size="small"
-              >
-                {{
-                  enrollment.userSubscription
-                    .subscriptionPlan.name
-                }}
-              </VChip>
-              <VChip
-                v-else
-                color="success"
-                size="small"
-              >
-                Enrolled
-              </VChip>
+                      .subscriptionPlan.name
+                  }}
+                </VChip>
+                <VChip
+                  v-else
+                  color="success"
+                  size="small"
+                >
+                  Enrolled
+                </VChip>
+
+                <VChip
+                  v-if="!isSubscriptionActive(enrollment)"
+                  color="error"
+                  size="small"
+                >
+                  Expired
+                </VChip>
+              </div>
             </div>
             <h5 class="text-h5 font-weight-bold mb-2">
               {{ enrollment.course.title }}
@@ -129,9 +162,11 @@ onMounted(fetchEnrollments)
           <VBtn
             rounded="lg"
             class="ma-4"
-            :to="`/my-courses/${enrollment.course.id}`"
+            :to="isSubscriptionActive(enrollment) ? `/my-courses/${enrollment.course.id}` : null"
+            :disabled="!isSubscriptionActive(enrollment)"
+            :color="isSubscriptionActive(enrollment) ? 'primary' : 'secondary'"
           >
-            Continue Learning
+            {{ isSubscriptionActive(enrollment) ? 'Continue Learning' : 'Subscription Expired' }}
           </VBtn>
         </VCard>
       </VCol>
