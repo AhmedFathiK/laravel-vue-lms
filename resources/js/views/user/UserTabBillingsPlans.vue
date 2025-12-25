@@ -404,7 +404,7 @@ const currentBillingAddress = {
   <!-- 👉 Edit Card Dialog -->
   <AddEditCardDialog
     v-model:is-dialog-visible="isCardEditDialogVisible"
-    :card-details="currentCardDetails"
+    :data="currentCardDetails"
     dialog-mode="edit"
   />
 
@@ -417,7 +417,7 @@ const currentBillingAddress = {
   <!-- 👉 Edit Address dialog -->
   <AddEditAddressDialog
     v-model:is-dialog-visible="isEditAddressDialogVisible"
-    :billing-address="currentBillingAddress"
+    :data="currentBillingAddress"
     dialog-mode="edit"
   />
 

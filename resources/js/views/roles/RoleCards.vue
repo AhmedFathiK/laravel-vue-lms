@@ -256,7 +256,7 @@ onMounted(fetchRoles)
 
   <AddEditRoleDialog
     v-model:is-dialog-visible="isRoleDialogVisible"
-    :role-permissions="roleDetail"
+    :data="roleDetail"
     dialog-mode="edit"
     @refresh="fetchRoles"
   />

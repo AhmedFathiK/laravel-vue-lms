@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  categoryData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -38,12 +38,12 @@ watch(
   () => props.isDialogVisible,
   isVisible => {
     if (isVisible) {
-      if (props.categoryData) {
+      if (props.data) {
         form.value = {
-          name: props.categoryData.name || '',
-          description: props.categoryData.description || '',
-          isActive: props.categoryData.isActive ?? true,
-          sortOrder: props.categoryData.sortOrder ?? 0,
+          name: props.data.name || '',
+          description: props.data.description || '',
+          isActive: props.data.isActive ?? true,
+          sortOrder: props.data.sortOrder ?? 0,
         }
       } else {
         form.value = defaultForm()
@@ -60,7 +60,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit' 
-    ? `/admin/course-categories/${props.categoryData.id}` 
+    ? `/admin/course-categories/${props.data.id}` 
     : '/admin/course-categories'),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   emit,

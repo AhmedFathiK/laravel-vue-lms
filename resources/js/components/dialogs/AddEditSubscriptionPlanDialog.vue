@@ -13,7 +13,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  plan: {
+  data: {
     type: Object,
     default: null,
   },
@@ -58,8 +58,8 @@ watch(
   () => props.isDialogVisible,
   newValue => {
     if (newValue) {
-      if (props.dialogMode === 'edit' && props.plan) {
-        localPlan.value = JSON.parse(JSON.stringify(props.plan))
+      if (props.dialogMode === 'edit' && props.data) {
+        localPlan.value = JSON.parse(JSON.stringify(props.data))
       } else {
         localPlan.value = defaultForm()
       }

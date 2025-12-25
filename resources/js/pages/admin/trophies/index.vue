@@ -291,7 +291,7 @@ const deleteTrophyConfirm = async () => {
       <AddEditTrophyDialog
         v-model:is-dialog-visible="isDialogOpen"
         :dialog-mode="dialogMode"
-        :trophy-data="editedTrophy"
+        :data="editedTrophy"
         @saved="fetchTrophies"
       />
   

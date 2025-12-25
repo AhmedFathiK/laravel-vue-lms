@@ -87,7 +87,7 @@ const refForm = ref(null)
 // Watch for dialog visibility to reset form
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    form.value = createDefaultForm(props.billingAddress)
+    form.value = createDefaultForm(props.data)
   }
 })
 

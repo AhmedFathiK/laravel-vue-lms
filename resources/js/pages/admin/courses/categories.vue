@@ -166,7 +166,7 @@ onMounted(() => {
     <AddEditCategoryDialog
       v-model:is-dialog-visible="isDialogOpen"
       :dialog-mode="dialogMode"
-      :category-data="editingCategory"
+      :data="editingCategory"
       @saved="fetchCategories"
     />
 

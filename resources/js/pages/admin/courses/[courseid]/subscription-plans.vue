@@ -290,7 +290,7 @@ onMounted(() => {
     <AddEditSubscriptionPlanDialog
       v-model:is-dialog-visible="isPlanDialogVisible"
       :dialog-mode="dialogMode"
-      :plan="editingPlan"
+      :data="editingPlan"
       :course-id="courseId"
       @submit-success="onFormSubmitSuccess"
     />

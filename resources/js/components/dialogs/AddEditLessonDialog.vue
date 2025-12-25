@@ -10,7 +10,12 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
-  lessonData: {
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
+  data: {
     type: Object,
     default: () => null,
   },
@@ -55,16 +60,10 @@ const deleteThumbnail = ref(false)
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.lessonData) {
+    if (props.data) {
       form.value = {
-        title: props.lessonData.title || '',
-        description: props.lessonData.description || '',
-        videoUrl: props.lessonData.videoUrl || '',
-        isFree: !!props.lessonData.isFree,
-        status: props.lessonData.status || 'draft',
-        reshowIncorrectSlides: !!props.lessonData.reshowIncorrectSlides,
-        reshowCount: props.lessonData.reshowCount || 1,
-        requireCorrectAnswers: !!props.lessonData.requireCorrectAnswers,
+        ...defaultForm(),
+        ...props.data,
         levelId: props.levelId,
         courseId: props.courseId,
       }
@@ -149,10 +148,10 @@ const customEmit = (event, ...args) => {
 const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.lessonData?.id 
-    ? `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonData.id}` 
+  apiEndpoint: computed(() => props.dialogMode === 'edit' 
+    ? `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.data.id}` 
     : `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons`),
-  isUpdate: computed(() => !!props.lessonData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   isFormData: true,
   extraData,
   emit: customEmit,
@@ -167,7 +166,7 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
   >
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.lessonData ? 'Edit Lesson' : 'Add New Lesson'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Lesson' : 'Add New Lesson'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -263,11 +262,11 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
               
               <!-- Current image from server -->
               <div
-                v-else-if="props.lessonData?.thumbnail && !deleteThumbnail"
+                v-else-if="props.data?.thumbnail && !deleteThumbnail"
                 class="mt-2"
               >
                 <VImg
-                  :src="props.lessonData.thumbnail"
+                  :src="props.data.thumbnail"
                   height="150"
                   cover
                   class="bg-grey-lighten-2 rounded mt-2"

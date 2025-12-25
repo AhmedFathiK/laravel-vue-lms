@@ -16,7 +16,7 @@ const props = defineProps({
     default: 'add',
     validator: value => ['add', 'edit'].includes(value),
   },
-  question: {
+  data: {
     type: Object,
     default: () => ({}),
   },
@@ -129,8 +129,8 @@ watch(
       newTag.value = ''
       mediaFile.value = null
       
-      if (props.dialogMode === 'edit' && props.question && Object.keys(props.question).length > 0) {
-        localQuestion.value = JSON.parse(JSON.stringify(props.question))
+      if (props.dialogMode === 'edit' && props.data && Object.keys(props.data).length > 0) {
+        localQuestion.value = JSON.parse(JSON.stringify(props.data))
         initializeQuestionTypeData()
       } else {
         localQuestion.value = getDefaultQuestion()
@@ -290,7 +290,7 @@ const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitF
   formRef: formRef,
   form: localQuestion,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/courses/${props.courseId}/questions/${localQuestion.value.id}`
+    ? `/admin/courses/${props.courseId}/questions/${props.data.id}`
     : `/admin/courses/${props.courseId}/questions`),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   emit: customEmit,
@@ -299,6 +299,10 @@ const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitF
   successMessage: computed(() => props.dialogMode === 'edit' 
     ? t('questions.success.questionUpdated', 'Question updated successfully')
     : t('questions.success.questionCreated', 'Question created successfully')),
+  onSuccess: () => {
+    emit('update:isDialogVisible', false)
+    emit('refresh')
+  },
 })
 
 // MCQ functions

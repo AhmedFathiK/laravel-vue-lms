@@ -649,8 +649,8 @@ onMounted(() => {
     <!-- Dialogs -->
     <AddEditLessonDialog
       v-model:is-dialog-visible="isDialogVisible"
-      :lesson-data="editingLesson"
       :dialog-mode="editingLesson ? 'edit' : 'add'"
+      :data="editingLesson"
       :level-id="levelId"
       :course-id="courseId"
       @refresh="refreshLessons"

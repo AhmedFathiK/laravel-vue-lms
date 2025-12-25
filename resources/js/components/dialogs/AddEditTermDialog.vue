@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  termData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -57,19 +57,11 @@ const exampleAudioFile = ref(null)
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.termData) {
+    if (props.data) {
       form.value = {
+        ...defaultForm(),
+        ...props.data,
         courseId: props.courseId,
-        term: props.termData.term || '',
-        definition: props.termData.definition || '',
-
-        // Keep existing URLs, but if file is uploaded, backend handles it
-        mediaUrl: props.termData.mediaUrl || '',
-        mediaType: props.termData.mediaType || '',
-        audioUrl: props.termData.audioUrl || '',
-        example: props.termData.example || '',
-        exampleTranslation: props.termData.exampleTranslation || '',
-        exampleAudioUrl: props.termData.exampleAudioUrl || '',
       }
     } else {
       form.value = defaultForm()

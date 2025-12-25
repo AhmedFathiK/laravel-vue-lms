@@ -523,7 +523,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
     <AddEditQuestionDialog
       v-model:is-dialog-visible="isDialogOpen"
       :dialog-mode="dialogMode"
-      :question="editQuestion"
+      :data="editQuestion"
       :course-id="courseId"
       @refresh="fetchQuestions"
     />

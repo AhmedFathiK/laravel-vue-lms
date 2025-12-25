@@ -18,7 +18,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  trophyData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -96,20 +96,12 @@ onMounted(() => {
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.trophyData) {
+    if (props.data) {
       form.value = {
-        name: props.trophyData.name || '',
-        description: props.trophyData.description || '',
-        triggerType: props.trophyData.triggerType || 'completedLesson',
-        triggerRepeatCount: props.trophyData.triggerRepeatCount || 1,
-        courseId: props.trophyData.courseId || null,
-        points: props.trophyData.points || 0,
-        rarity: props.trophyData.rarity || 'common',
-        isHidden: props.trophyData.isHidden || false,
-        isActive: props.trophyData.isActive !== undefined ? props.trophyData.isActive : true,
-        iconUrl: props.trophyData.iconUrl || null,
+        ...defaultForm(),
+        ...props.data,
       }
-      iconPreview.value = props.trophyData.iconUrl
+      iconPreview.value = props.data.iconUrl
     } else {
       form.value = defaultForm()
       iconPreview.value = null
@@ -155,7 +147,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/trophies/${props.trophyData.id}` 
+    ? `/admin/trophies/${props.data.id}` 
     : '/admin/trophies'),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   extraData: extraData,

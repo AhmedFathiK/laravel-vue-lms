@@ -4,7 +4,7 @@ import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
-  cardDetails: {
+  data: {
     type: Object,
     required: false,
     default: () => ({
@@ -20,6 +20,11 @@ const props = defineProps({
   isDialogVisible: {
     type: Boolean,
     required: true,
+  },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
   },
 })
 
@@ -45,8 +50,8 @@ const formData = ref(createDefaultForm())
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.cardDetails && (props.cardDetails.number || props.cardDetails.name)) {
-      formData.value = JSON.parse(JSON.stringify(props.cardDetails))
+    if (props.dialogMode === 'edit') {
+      formData.value = JSON.parse(JSON.stringify(props.data))
     } else {
       formData.value = createDefaultForm()
     }
@@ -167,7 +172,7 @@ const closeDialog = () => {
                 type="submit"
                 :loading="isLoading"
               >
-                Submit
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Submit' }}
               </VBtn>
               <VBtn
                 color="secondary"

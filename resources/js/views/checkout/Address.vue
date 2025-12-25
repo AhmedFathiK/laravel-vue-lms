@@ -282,6 +282,7 @@ watch(() => props.currentStep, updateAddressData)
   </VRow>
   <AddEditAddressDialog
     v-model:is-dialog-visible="isEditAddressDialogVisible"
+    :data="props.addressData"
     dialog-mode="add"
   />
 </template>

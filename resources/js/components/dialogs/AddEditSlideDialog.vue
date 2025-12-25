@@ -13,7 +13,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  slideData: {
+  data: {
     type: Object,
     default: () => ({
       id: null,
@@ -53,10 +53,10 @@ const formData = ref(createDefaultForm())
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.slideData && props.slideData.id) {
-      formData.value = JSON.parse(JSON.stringify(props.slideData))
-      selectedQuestion.value = props.slideData.questionId ? props.slideData.question : null
-      selectedTerm.value = props.slideData.termId ? props.slideData.term : null
+    if (props.data && props.data.id) {
+      formData.value = JSON.parse(JSON.stringify(props.data))
+      selectedQuestion.value = props.data.questionId ? props.data.question : null
+      selectedTerm.value = props.data.termId ? props.data.term : null
       
       if (!formData.value.content) formData.value.content = ''
       if (!formData.value.title) formData.value.title = ''

@@ -15,7 +15,7 @@ const props = defineProps({
     default: 'add',
     validator: value => ['add', 'edit'].includes(value),
   },
-  receipt: {
+  data: {
     type: Object,
     default: () => ({}),
   },
@@ -141,7 +141,7 @@ const fetchCoursePlans = async () => {
   }
 }
 
-watch(() => [props.isDialogVisible, props.receipt, props.dialogMode], async ([isVisible, receipt, mode]) => {
+watch(() => [props.isDialogVisible, props.data, props.dialogMode], async ([isVisible, receipt, mode]) => {
   if (isVisible) {
     if (mode === 'edit' && receipt && receipt.id) {
       isSystemGenerated.value = receipt.sourceType !== 'manual'
@@ -208,7 +208,7 @@ const updateAmountFromPlan = () => {
 const { isLoading: isSubmitting, onSubmit, validationErrors } = useCrudSubmit({
   formRef,
   form,
-  apiEndpoint: computed(() => props.dialogMode === 'add' ? '/admin/receipts' : `/admin/receipts/${props.receipt.id}`),
+  apiEndpoint: computed(() => props.dialogMode === 'add' ? '/admin/receipts' : `/admin/receipts/${props.data.id}`),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   emit: customEmit,
   isFormData: false,

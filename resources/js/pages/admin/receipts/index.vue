@@ -592,7 +592,7 @@ const onReceiptSubmitSuccess = () => {
     <AddEditReceiptDialog
       :is-dialog-visible="isAddReceiptDialogVisible"
       :dialog-mode="selectedReceipt ? 'edit' : 'add'"
-      :receipt="selectedReceipt"
+      :data="selectedReceipt"
       @update:is-dialog-visible="isAddReceiptDialogVisible = $event; selectedReceipt = null"
       @submit-success="onReceiptSubmitSuccess"
     />

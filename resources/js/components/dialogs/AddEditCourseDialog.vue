@@ -15,7 +15,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  courseData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -55,17 +55,17 @@ const resetFormValues = () => {
   deleteThumbnail.value = false
 }
 
-// Watch for changes in courseData prop
+// Watch for changes in data prop
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.courseData) {
+    if (props.data) {
       form.value = {
-        title: props.courseData.title || '',
-        description: props.courseData.description || '',
-        courseCategoryId: props.courseData.courseCategoryId || props.courseData.categoryId || null,
-        leaderboardResetFrequency: props.courseData.leaderboardResetFrequency || 'monthly',
-        prerequisites: props.courseData.prerequisites || [],
-        status: props.courseData.status || 'draft',
+        title: props.data.title || '',
+        description: props.data.description || '',
+        courseCategoryId: props.data.courseCategoryId || props.data.categoryId || null,
+        leaderboardResetFrequency: props.data.leaderboardResetFrequency || 'monthly',
+        prerequisites: props.data.prerequisites || [],
+        status: props.data.status || 'draft',
       }
       
       // Reset thumbnail state
@@ -156,7 +156,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refVForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/courses/${props.courseData.id}` 
+    ? `/admin/courses/${props.data.id}` 
     : '/admin/courses'),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   emit: customEmit,
@@ -313,11 +313,11 @@ const statusOptions = [
               
               <!-- Current image from server -->
               <div
-                v-else-if="props.courseData?.thumbnail && !deleteThumbnail"
+                v-else-if="props.data?.thumbnail && !deleteThumbnail"
                 class="mt-2"
               >
                 <VImg
-                  :src="props.courseData.thumbnail"
+                  :src="props.data.thumbnail"
                   height="100"
                   contain
                   class="bg-grey-lighten-2 rounded mt-2"

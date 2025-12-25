@@ -7,7 +7,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
-  rolePermissions: {
+  data: {
     type: Object,
     required: false,
     default: () => ({
@@ -127,8 +127,8 @@ const fetchPermissions = async () => {
       newPermissionGroups.sort((a, b) => a.subject.localeCompare(b.subject))
       permissionGroups.value = newPermissionGroups
       
-      if (props.rolePermissions && props.rolePermissions.permissions) {
-        applySelectedPermissions(props.rolePermissions.permissions)
+      if (props.data && props.data.permissions) {
+        applySelectedPermissions(props.data.permissions)
       }
     }
   } catch (error) {
@@ -193,8 +193,8 @@ watch(() => selectedActionsCount.value, () => {
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.rolePermissions) {
-      form.value.name = props.rolePermissions.name || ''
+    if (props.data) {
+      form.value.name = props.data.name || ''
       
       if (permissionGroups.value.length > 0) {
         // Reset permissions
@@ -205,8 +205,8 @@ watch(() => props.isDialogVisible, isVisible => {
         })
 
         // Apply permissions
-        if (props.rolePermissions.permissions) {
-          applySelectedPermissions(props.rolePermissions.permissions)
+        if (props.data.permissions) {
+          applySelectedPermissions(props.data.permissions)
         }
       }
     } else {
@@ -248,7 +248,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/roles/${props.rolePermissions.id}` 
+    ? `/admin/roles/${props.data.id}` 
     : '/admin/roles'),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   extraData,

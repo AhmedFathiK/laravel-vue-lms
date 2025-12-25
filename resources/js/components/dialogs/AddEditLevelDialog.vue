@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  levelData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -40,12 +40,12 @@ const form = ref(defaultForm())
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.levelData) {
+    if (props.data) {
       form.value = {
-        title: props.levelData.title || '',
-        description: props.levelData.description || '',
-        isFree: !!props.levelData.isFree,
-        status: props.levelData.status || 'draft',
+        title: props.data.title || '',
+        description: props.data.description || '',
+        isFree: !!props.data.isFree,
+        status: props.data.status || 'draft',
         courseId: props.courseId,
       }
     } else {
@@ -71,7 +71,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/courses/${props.courseId}/levels/${props.levelData.id}` 
+    ? `/admin/courses/${props.courseId}/levels/${props.data.id}` 
     : `/admin/courses/${props.courseId}/levels`),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   isFormData: false, // JSON mode

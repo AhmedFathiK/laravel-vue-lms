@@ -346,7 +346,7 @@ onMounted(() => {
     <!-- Concept Edit Dialog -->
     <AddEditConceptDialog
       v-model:is-dialog-visible="isDialogVisible"
-      :concept-data="editingConcept"
+      :data="editingConcept"
       :dialog-mode="editingConcept ? 'edit' : 'add'"
       :course-id="courseId"
       @saved="handleConceptSaved"

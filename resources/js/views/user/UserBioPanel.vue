@@ -16,7 +16,7 @@ const standardPlan = {
   ],
 }
 
-const isUserInfoEditDialogVisible = ref(false)
+const isUserEditorVisible = ref(false)
 const isUpgradePlanDialogVisible = ref(false)
 
 const resolveUserRoleVariant = role => {
@@ -245,7 +245,7 @@ const resolveUserRoleVariant = role => {
         <VCardText class="d-flex justify-center gap-x-4">
           <VBtn
             variant="elevated"
-            @click="isUserInfoEditDialogVisible = true"
+            @click="isUserEditorVisible = true"
           >
             Edit
           </VBtn>
@@ -348,9 +348,10 @@ const resolveUserRoleVariant = role => {
 
   <!-- 👉 Edit user info dialog -->
   <AddEditUserDialog
-    v-model:is-dialog-visible="isUserInfoEditDialogVisible"
-    :user-data="props.userData"
+    v-model:is-dialog-visible="isUserEditorVisible"
+    :data="props.userData"
     dialog-mode="edit"
+    @refresh="$emit('refresh')"
   />
 
   <!-- 👉 Upgrade plan dialog -->

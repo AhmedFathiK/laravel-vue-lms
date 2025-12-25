@@ -364,7 +364,7 @@ onMounted(() => {
     <!-- Term Edit Dialog -->
     <AddEditTermDialog
       v-model:is-dialog-visible="isDialogVisible"
-      :term-data="editingTerm"
+      :data="editingTerm"
       :dialog-mode="editingTerm ? 'edit' : 'add'"
       :course-id="courseId"
       @saved="handleTermSaved"

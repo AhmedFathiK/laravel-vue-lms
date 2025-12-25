@@ -4,7 +4,7 @@ import { confirmedValidator, emailValidator, maxLengthValidator, minLengthValida
 import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
-  userData: {
+  data: {
     type: Object,
     required: false,
     default: () => null,
@@ -88,28 +88,10 @@ const rules = {
 // Reset form when dialog visibility changes
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.userData) {
-      // Split name into first and last name if firstName is not available
-      let firstName = props.userData.firstName || ''
-      let lastName = props.userData.lastName || ''
-      
-      if (!firstName && !lastName && props.userData.name) {
-        const nameParts = props.userData.name.split(' ')
-
-        firstName = nameParts[0] || ''
-        lastName = nameParts.slice(1).join(' ') || ''
-      }
-      
+    if (props.data) {
       form.value = {
-        id: props.userData.id || 0,
-        firstName: firstName,
-        lastName: lastName,
-        email: props.userData.email || '',
-        phoneNumber: props.userData.phoneNumber || '',
-        password: '',
-        passwordConfirmation: '',
-        roles: props.userData.roleNames || [],
-        verified: props.userData.emailVerifiedAt ? true : false,
+        ...createDefaultForm(),
+        ...props.data,
       }
     } else {
       form.value = createDefaultForm()
@@ -142,13 +124,13 @@ const customEmit = (event, ...args) => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef,
   form,
-  apiEndpoint: computed(() => props.userData?.id 
-    ? `/admin/users/${props.userData.id}` 
+  apiEndpoint: computed(() => props.data?.id 
+    ? `/admin/users/${props.data.id}` 
     : '/admin/users'),
-  isUpdate: computed(() => !!props.userData?.id),
+  isUpdate: computed(() => !!props.data?.id),
   emit: customEmit,
   isFormData: false, // User data usually sent as JSON unless avatar is involved
-  successMessage: computed(() => props.userData?.id ? 'User updated successfully' : 'User created successfully'),
+  successMessage: computed(() => props.data?.id ? 'User updated successfully' : 'User created successfully'),
 })
 
 const onFormReset = () => {

@@ -16,7 +16,7 @@ const props = defineProps({
     required: true,
     validator: value => ['add', 'edit'].includes(value),
   },
-  conceptData: {
+  data: {
     type: Object,
     default: () => null,
   },
@@ -61,12 +61,12 @@ onMounted(() => {
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
-    if (props.conceptData) {
+    if (props.data) {
       form.value = {
-        title: props.conceptData.title || '',
-        explanation: props.conceptData.explanation || '',
-        type: props.conceptData.type || '',
-        status: props.conceptData.status || 'active',
+        title: props.data.title || '',
+        explanation: props.data.explanation || '',
+        type: props.data.type || '',
+        status: props.data.status || 'active',
         courseId: props.courseId,
       }
     } else {
@@ -83,7 +83,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.dialogMode === 'edit'
-    ? `/admin/courses/${props.courseId}/concepts/${props.conceptData.id}` 
+    ? `/admin/courses/${props.courseId}/concepts/${props.data.id}` 
     : `/admin/courses/${props.courseId}/concepts`),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   emit,
