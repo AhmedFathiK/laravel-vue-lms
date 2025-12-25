@@ -4,7 +4,7 @@ import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
-  isDialogOpen: {
+  isDialogVisible: {
     type: Boolean,
     required: true,
   },
@@ -23,7 +23,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:isDialogOpen', 'submitSuccess'])
+const emit = defineEmits(['update:isDialogVisible', 'submitSuccess'])
 const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
 
 const currencyOptions = computed(() => {
@@ -55,7 +55,7 @@ const localPlan = ref(defaultForm())
 const dialogTitle = computed(() => (props.dialogMode === 'add' ? 'Add New Plan' : 'Edit Plan'))
 
 watch(
-  () => props.isDialogOpen,
+  () => props.isDialogVisible,
   newValue => {
     if (newValue) {
       if (props.dialogMode === 'edit' && props.plan) {
@@ -86,7 +86,7 @@ watch(() => localPlan.value.planType, newPlanType => {
 })
 
 const closeDialog = () => {
-  emit('update:isDialogOpen', false)
+  emit('update:isDialogVisible', false)
 }
 
 const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useCrudSubmit({
@@ -112,7 +112,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
 
 <template>
   <VDialog
-    :model-value="isDialogOpen"
+    :model-value="isDialogVisible"
     max-width="800px"
     persistent
     @update:model-value="closeDialog"

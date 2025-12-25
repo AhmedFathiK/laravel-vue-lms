@@ -127,7 +127,7 @@ const openDeleteDialog = plan => {
 }
 
 const handleDeleteConfirm = async result => {
-  if (!result.confirmed || !questionToDelete.value){
+  if (!result.confirmed || !planToDelete.value){
     planToDelete.value = null
     
     return
@@ -288,7 +288,7 @@ onMounted(() => {
 
     <!-- Add/Edit Plan Dialog -->
     <AddEditSubscriptionPlanDialog
-      v-model:is-dialog-open="isPlanDialogVisible"
+      v-model:is-dialog-visible="isPlanDialogVisible"
       :dialog-mode="dialogMode"
       :plan="editingPlan"
       :course-id="courseId"
