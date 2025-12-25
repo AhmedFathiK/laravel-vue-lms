@@ -30,7 +30,6 @@ const createDefaultForm = () => ({
   title: '',
   description: '',
   courseCategoryId: null,
-  isFree: false,
   leaderboardResetFrequency: 'monthly',
   prerequisites: [],
   status: 'draft',
@@ -59,7 +58,6 @@ watch(() => props.isDialogVisible, isVisible => {
         title: props.courseData.title || '',
         description: props.courseData.description || '',
         courseCategoryId: props.courseData.courseCategoryId || props.courseData.categoryId || null,
-        isFree: props.courseData.isFree || false,
         leaderboardResetFrequency: props.courseData.leaderboardResetFrequency || 'monthly',
         prerequisites: props.courseData.prerequisites || [],
         status: props.courseData.status || 'draft',
@@ -257,19 +255,6 @@ const statusOptions = [
                 label="Status"
                 variant="outlined"
                 :error-messages="validationErrors.status"
-              />
-            </VCol>
-
-            <!-- Subscription Type -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSwitch
-                v-model="form.isFree"
-                label="Free Course"
-                color="primary"
-                hide-details
               />
             </VCol>
 

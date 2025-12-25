@@ -8,8 +8,6 @@ use App\Http\Requests\Admin\Course\UpdateCourseRequest;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use App\Models\CourseCategory;
-use App\Models\SubscriptionPlan;
-use App\Services\Payment\Currency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -42,7 +40,16 @@ class CourseController extends Controller
         }
 
         if ($request->has('is_free')) {
-            $query->where('is_free', $request->boolean('is_free'));
+            $isFree = $request->boolean('is_free');
+            if ($isFree) {
+                $query->whereHas('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            } else {
+                $query->whereDoesntHave('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            }
         }
 
         // Apply search
@@ -102,7 +109,16 @@ class CourseController extends Controller
         }
 
         if ($request->has('is_free')) {
-            $query->where('is_free', $request->boolean('is_free'));
+            $isFree = $request->boolean('is_free');
+            if ($isFree) {
+                $query->whereHas('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            } else {
+                $query->whereDoesntHave('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            }
         }
 
         // Apply search
@@ -146,21 +162,6 @@ class CourseController extends Controller
         }
 
         $course = Course::create($data);
-
-        // If the course is marked as free, create a free subscription plan
-        if ($request->has('is_free') && $request->boolean('is_free')) {
-            SubscriptionPlan::create([
-                'course_id' => $course->id,
-                'name' => 'Free Access',
-                'description' => 'Free access to all content in this course',
-                'price' => 0,
-                'currency' => Currency::default(),
-                'billing_cycle' => 'one-time',
-                'plan_type' => 'free',
-                'is_free' => true,
-                'is_active' => true,
-            ]);
-        }
 
         return response()->json(new CourseResource($course), 201);
     }
@@ -218,28 +219,6 @@ class CourseController extends Controller
         }
 
         $course->update($data);
-
-        // If the course is marked as free and there's no free subscription plan yet, create one
-        if ($request->has('is_free') && $request->boolean('is_free')) {
-            $existingFreePlan = $course->subscriptionPlans()
-                ->where('is_free', true)
-                ->where('plan_type', 'free')
-                ->first();
-
-            if (!$existingFreePlan) {
-                SubscriptionPlan::create([
-                    'course_id' => $course->id,
-                    'name' => 'Free Access',
-                    'description' => 'Free access to all content in this course',
-                    'price' => 0,
-                    'currency' => Currency::default(),
-                    'billing_cycle' => 'one-time',
-                    'plan_type' => 'free',
-                    'is_free' => true,
-                    'is_active' => true,
-                ]);
-            }
-        }
 
         return response()->json(new CourseResource($course));
     }

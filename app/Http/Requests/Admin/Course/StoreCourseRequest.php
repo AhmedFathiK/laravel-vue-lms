@@ -31,7 +31,6 @@ class StoreCourseRequest extends FormRequest
             'level_id' => 'nullable|exists:levels,id',
             'status' => 'required|in:draft,published,archived',
             'is_featured' => 'boolean',
-            'is_free' => 'required|boolean',
             'leaderboard_reset_frequency' => 'in:never,daily,weekly,monthly,yearly',
             'image' => 'nullable|image|max:2048',
             'video_url' => 'nullable|url',

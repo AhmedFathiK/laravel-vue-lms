@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Level;
 use App\Models\Lesson;
+use App\Services\Payment\Currency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,9 +31,33 @@ class CourseAccessController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $course->update([
-            'is_free' => $request->is_free,
-        ]);
+        if ($request->is_free) {
+            // Ensure free plan exists and is active
+            $existingFreePlan = $course->subscriptionPlans()
+                ->where('is_free', true)
+                ->where('plan_type', 'free')
+                ->first();
+
+            if (!$existingFreePlan) {
+                $course->subscriptionPlans()->create([
+                    'name' => 'Free Access',
+                    'description' => 'Free access to all content in this course',
+                    'price' => 0,
+                    'currency' => Currency::default(),
+                    'billing_cycle' => 'one-time',
+                    'plan_type' => 'free',
+                    'is_free' => true,
+                    'is_active' => true,
+                ]);
+            } else {
+                $existingFreePlan->update(['is_active' => true]);
+            }
+        } else {
+            // Disable free plans
+            $course->subscriptionPlans()
+                ->where('is_free', true)
+                ->update(['is_active' => false]);
+        }
 
         // If the course is set to free, we could optionally set all levels and lessons as free too
         if ($request->is_free && $request->has('cascade_free_access') && $request->boolean('cascade_free_access')) {

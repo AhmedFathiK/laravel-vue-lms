@@ -31,7 +31,6 @@ class UpdateCourseRequest extends FormRequest
             'level_id' => 'nullable|exists:levels,id',
             'status' => 'sometimes|required|in:draft,published,archived',
             'is_featured' => 'boolean',
-            'is_free' => 'required|boolean',
             'leaderboard_reset_frequency' => 'required|in:never,daily,weekly,monthly,yearly',
             'image' => 'nullable|image|mimes:jpeg,png,webp|max:2048|dimensions:max_width=2048,max_height=2048',
             'video_url' => 'nullable|url',

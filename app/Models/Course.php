@@ -22,7 +22,6 @@ class Course extends Model
         'is_featured',
         'course_category_id',
         'main_locale',
-        'is_free',
         'leaderboard_reset_frequency',
         'prerequisites',
     ];
@@ -47,6 +46,10 @@ class Course extends Model
                 $attributes[$field] = $this->getTranslation($field, app()->getLocale());
             }
         }
+
+        // Append calculated attributes
+        $attributes['is_free'] = $this->is_free;
+        $attributes['subscription_type'] = $this->subscription_type;
 
         return $attributes;
     }

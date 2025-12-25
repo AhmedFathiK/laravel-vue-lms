@@ -33,7 +33,16 @@ class LearnerCourseController extends Controller
 
         // Filter by pricing
         if ($request->has('is_free')) {
-            $query->where('is_free', $request->boolean('is_free'));
+            $isFree = $request->boolean('is_free');
+            if ($isFree) {
+                $query->whereHas('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            } else {
+                $query->whereDoesntHave('subscriptionPlans', function ($q) {
+                    $q->where('is_free', true)->where('is_active', true);
+                });
+            }
         }
 
         // Apply sorting
