@@ -242,6 +242,7 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::get('subscriptions', [LearnerSubscriptionController::class, 'index']);
     Route::get('subscriptions/{subscription}', [LearnerSubscriptionController::class, 'show']);
     Route::post('subscribe', [LearnerSubscriptionController::class, 'subscribe']);
+    Route::post('courses/{course}/enroll', [LearnerSubscriptionController::class, 'enroll']);
     Route::post('subscriptions/{subscription}/cancel', [LearnerSubscriptionController::class, 'cancel']);
     Route::post('subscriptions/{subscription}/renew', [LearnerSubscriptionController::class, 'renew']);
     Route::get('courses/{course}/free-content', [LearnerSubscriptionController::class, 'getFreeCourseContent']);

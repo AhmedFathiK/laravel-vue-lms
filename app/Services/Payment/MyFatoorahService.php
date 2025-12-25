@@ -25,17 +25,14 @@ class MyFatoorahService implements PaymentServiceInterface
         $this->baseUrl = rtrim((string) config('services.myfatoorah.base_url', ''), '/');
         $this->apiKey = (string) config('services.myfatoorah.api_key', '');
 
-        if ($this->baseUrl === '') {
-            throw new InvalidArgumentException('MyFatoorah base URL is not configured.');
-        }
-
-        $authorization = $this->formatBearerAuthorizationHeader($this->apiKey);
-
         $this->headers = [
-            'Authorization' => $authorization,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
+
+        if ($this->apiKey) {
+            $this->headers['Authorization'] = $this->formatBearerAuthorizationHeader($this->apiKey);
+        }
 
         Log::info('MyFatoorah Config:', [
             'url' => $this->baseUrl,
@@ -107,6 +104,14 @@ class MyFatoorahService implements PaymentServiceInterface
      */
     protected function getRequest(): PendingRequest
     {
+        if (empty($this->apiKey)) {
+            throw new InvalidArgumentException('MyFatoorah API key is not configured.');
+        }
+
+        if (empty($this->baseUrl)) {
+            throw new InvalidArgumentException('MyFatoorah base URL is not configured.');
+        }
+
         $request = Http::withHeaders($this->headers);
 
         if (app()->isLocal()) {
@@ -124,8 +129,8 @@ class MyFatoorahService implements PaymentServiceInterface
     protected function handleResponse(Response $response): array
     {
         if (! $response->successful()) {
-            Log::error('MyFatoorah API Error: '.$response->body());
-            throw new \Exception('MyFatoorah Connection Error: '.$response->status());
+            Log::error('MyFatoorah API Error: ' . $response->body());
+            throw new \Exception('MyFatoorah Connection Error: ' . $response->status());
         }
 
         $body = $response->json();
@@ -148,7 +153,7 @@ class MyFatoorahService implements PaymentServiceInterface
      */
     protected function executePayment(array $data): array
     {
-        $response = $this->getRequest()->post($this->baseUrl.'/v2/ExecutePayment', $data);
+        $response = $this->getRequest()->post($this->baseUrl . '/v2/ExecutePayment', $data);
 
         return $this->handleResponse($response);
     }
@@ -160,7 +165,7 @@ class MyFatoorahService implements PaymentServiceInterface
      */
     protected function fetchPaymentStatus(string $paymentId): array
     {
-        $response = $this->getRequest()->post($this->baseUrl.'/v2/GetPaymentStatus', [
+        $response = $this->getRequest()->post($this->baseUrl . '/v2/GetPaymentStatus', [
             'Key' => $paymentId,
             'KeyType' => 'PaymentId',
         ]);
@@ -180,6 +185,6 @@ class MyFatoorahService implements PaymentServiceInterface
             $token = ltrim($token);
         }
 
-        return 'Bearer '.$token;
+        return 'Bearer ' . $token;
     }
 }

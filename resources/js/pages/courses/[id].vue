@@ -44,24 +44,42 @@ const resolvePlanTypeColor = type => {
 const handlePayment = async plan => {
   processingPlanId.value = plan.id
   try {
-    const response = await api.post('/payments/checkout', {
-      amount: plan.price,
-      currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
-      planId: plan.id,
-      courseId: courseDetails.value.id,
-    })
+    // If the plan is free, subscribe directly without payment gateway
+    if (parseFloat(plan.price) === 0) {
+      await api.post('/learner/subscribe', {
+        // eslint-disable-next-line camelcase
+        plan_id: plan.id,
+      })
+        
+      // Refresh course details to update UI state
+      await fetchCourseDetails()
 
-    if (response.success && response.paymentUrl) {
-      window.location.href = response.paymentUrl
+      // toast.success('Successfully subscribed to free plan')
+      
+      // Optional: Redirect or update UI to show content access
     } else {
-      console.error('Payment initiation failed', response)
+      // For paid plans, initiate payment checkout
+      const response = await api.post('/payments/checkout', {
+        amount: plan.price,
+        currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
+        // eslint-disable-next-line camelcase
+        plan_id: plan.id,
+        // eslint-disable-next-line camelcase
+        course_id: courseDetails.value.id,
+      })
 
-      // toast.error('Failed to initiate payment')
+      if (response.success && response.paymentUrl) {
+        window.location.href = response.paymentUrl
+      } else {
+        console.error('Payment initiation failed', response)
+
+        // toast.error('Failed to initiate payment')
+      }
     }
   } catch (err) {
-    console.error('Payment error', err)
+    console.error('Subscription error', err)
 
-    // toast.error(err.message || 'Payment failed')
+    // toast.error(err.message || 'Subscription failed')
   } finally {
     processingPlanId.value = null
   }
@@ -394,10 +412,6 @@ if (route.query.payment === 'success') {
 </template>
 
 <style lang="scss" scoped>
-.course-content {
-  /* Style for course content if needed */
-}
-
 .course-pricing {
   position: sticky;
   inset-block: 4rem 0;

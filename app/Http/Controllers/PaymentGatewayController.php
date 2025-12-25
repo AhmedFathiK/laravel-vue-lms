@@ -19,7 +19,10 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentGatewayController extends Controller
 {
-    public function __construct(private readonly PaymentServiceInterface $paymentGateway) {}
+    public function __construct(
+        private readonly PaymentServiceInterface $paymentGateway,
+        private readonly \App\Services\SubscriptionService $subscriptionService
+    ) {}
 
     /**
      * Initiate a payment checkout session.
@@ -170,24 +173,12 @@ class PaymentGatewayController extends Controller
             return;
         }
 
-        $endsAt = null;
-        if ($plan->plan_type === 'monthly') {
-            $endsAt = Carbon::now()->addMonth();
-        } elseif ($plan->plan_type === 'annual') {
-            $endsAt = Carbon::now()->addYear();
-        } elseif ($plan->duration_days) {
-            $endsAt = Carbon::now()->addDays($plan->duration_days);
+        $user = \App\Models\User::find($payment->user_id);
+        if (!$user) {
+            return;
         }
 
-        UserSubscription::create([
-            'user_id' => $payment->user_id,
-            'subscription_plan_id' => $plan->id,
-            'payment_id' => $payment->id,
-            'starts_at' => Carbon::now(),
-            'ends_at' => $endsAt,
-            'status' => 'active',
-            'auto_renew' => $plan->plan_type !== 'one-time',
-        ]);
+        $this->subscriptionService->createSubscription($user, $plan, $payment);
 
         Receipt::create([
             'user_id' => $payment->user_id,

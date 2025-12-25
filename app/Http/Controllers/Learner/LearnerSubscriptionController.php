@@ -9,9 +9,13 @@ use App\Models\Lesson;
 use App\Models\Level;
 use App\Models\SubscriptionPlan;
 use App\Models\UserSubscription;
+use App\Services\Payment\Currency;
+use App\Services\Payments\PaymentServiceInterface;
+use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class LearnerSubscriptionController extends Controller
@@ -77,17 +81,20 @@ class LearnerSubscriptionController extends Controller
     /**
      * Subscribe to a plan.
      */
-    public function subscribe(Request $request): JsonResponse
-    {
+    public function subscribe(
+        Request $request,
+        SubscriptionService $subscriptionService,
+        PaymentServiceInterface $paymentService
+    ): JsonResponse {
         $validator = Validator::make($request->all(), [
             'plan_id' => 'required|exists:subscription_plans,id',
-            'payment_id' => 'nullable|exists:payments,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $plan = SubscriptionPlan::findOrFail($request->plan_id);
 
@@ -117,49 +124,104 @@ class LearnerSubscriptionController extends Controller
             ], 422);
         }
 
-        // Create the subscription
-        $subscription = new UserSubscription();
-        $subscription->user_id = $user->id;
-        $subscription->subscription_plan_id = $plan->id;
-        $subscription->payment_id = $request->payment_id;
-        $subscription->starts_at = now();
-        $subscription->status = 'active';
+        // 1. Free Plan Logic
+        if ($plan->is_free || $plan->price <= 0) {
+            try {
+                return \Illuminate\Support\Facades\DB::transaction(function () use ($subscriptionService, $user, $plan) {
+                    $subscription = $subscriptionService->createSubscription($user, $plan);
 
-        // Set end date based on plan type
-        if ($plan->plan_type === 'recurring') {
-            // For recurring plans, set auto_renew to true
-            $subscription->auto_renew = true;
-
-            // Set the end date based on the billing cycle
-            switch ($plan->billing_cycle) {
-                case 'monthly':
-                    $subscription->ends_at = now()->addMonth();
-                    break;
-                case 'quarterly':
-                    $subscription->ends_at = now()->addMonths(3);
-                    break;
-                case 'yearly':
-                    $subscription->ends_at = now()->addYear();
-                    break;
-                default:
-                    $subscription->ends_at = now()->addMonth();
+                    return response()->json([
+                        'message' => 'Successfully subscribed to the plan',
+                        'subscription' => $subscription->load(['plan', 'plan.course']),
+                        'status' => 'enrolled',
+                    ], 201);
+                });
+            } catch (\Throwable $e) {
+                // If anything fails inside the transaction (including load()), everything rolls back
+                throw $e;
             }
-        } elseif ($plan->plan_type === 'one-time') {
-            // For one-time purchases, no end date (permanent access)
-            $subscription->auto_renew = false;
-            $subscription->ends_at = null;
-        } elseif ($plan->plan_type === 'free') {
-            // For free plans, no end date
-            $subscription->auto_renew = false;
-            $subscription->ends_at = null;
         }
 
-        $subscription->save();
+        // 2. Paid Plan Logic
+        try {
+            $currency = Currency::normalize($plan->currency ?? Currency::default());
+
+            // Create pending payment record
+            $payment = \App\Models\Payment::create([
+                'user_id' => $user->id,
+                'amount' => $plan->price,
+                'currency' => $currency,
+                'status' => 'pending',
+                'payment_method' => $paymentService->gatewayKey(),
+                'payment_provider' => $paymentService->gatewayKey(),
+                'payment_details' => [
+                    'plan_id' => $plan->id,
+                    'course_id' => $plan->course_id,
+                ],
+            ]);
+
+            // Initiate Checkout
+            $checkout = $paymentService->createCheckout(
+                amount: (float) $plan->price,
+                currency: $currency,
+                customer: [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+                metadata: [
+                    'customer_reference' => (string) $payment->id,
+                ],
+                callbackUrl: route('payments.callback'),
+                errorUrl: route('payments.error')
+            );
+
+            if (!empty($checkout['transaction_id'])) {
+                $payment->update(['transaction_id' => (string) $checkout['transaction_id']]);
+            }
+
+            return response()->json([
+                'message' => 'Payment initiated',
+                'payment_url' => $checkout['payment_url'] ?? null,
+                'payment_id' => $payment->id,
+                'status' => 'payment_initiated',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Subscription Payment Initiation Failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Payment initiation failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Enroll in a free course directly.
+     */
+    public function enroll(Course $course): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Check if already enrolled
+        if (CourseEnrollment::where('user_id', $user->id)->where('course_id', $course->id)->exists()) {
+            return response()->json(['message' => 'Already enrolled'], 422);
+        }
+
+        // Check if course is free
+        if (!$course->is_free) {
+            return response()->json(['message' => 'This course is not free'], 403);
+        }
+
+        // Create enrollment
+        $enrollment = CourseEnrollment::create([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+            'enrolled_at' => now(),
+            'last_accessed_at' => now(),
+        ]);
 
         return response()->json([
-            'message' => 'Successfully subscribed to the plan',
-            'subscription' => $subscription->load(['plan', 'plan.course']),
-        ], 201);
+            'message' => 'Successfully enrolled',
+            'enrollment' => $enrollment
+        ]);
     }
 
     /**
@@ -293,6 +355,7 @@ class LearnerSubscriptionController extends Controller
             ->get();
 
         // Check if the user already has an active subscription for this course
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $activeSubscription = $user->subscriptions()
             ->whereHas('plan', function ($query) use ($course) {
