@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\Payment\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
@@ -27,7 +28,7 @@ class StoreSubscriptionPlanRequest extends FormRequest
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
+            'currency' => Currency::validationRules(required: true),
             'billing_cycle' => 'required|string|in:monthly,quarterly,yearly,one-time',
             'plan_type' => 'required|string|in:recurring,one-time,free',
             'is_free' => 'boolean',
@@ -43,6 +44,12 @@ class StoreSubscriptionPlanRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
+        if (!$this->has('currency') || $this->input('currency') === null) {
+            $this->merge(['currency' => Currency::default()]);
+        } else {
+            $this->merge(['currency' => Currency::normalize((string) $this->input('currency'))]);
+        }
+
         if ($this->plan_type === 'free') {
             $this->merge([
                 'is_free' => true,

@@ -1,5 +1,8 @@
 <template>
-  <span class="drag-handle d-flex gap-1 justify-center align-center">
+  <span
+    ref="el"
+    class="drag-handle d-flex gap-1 justify-center align-center"
+  >
     <slot>
       <IconBtn variant="plain">
         <VIcon icon="tabler-menu-2" />
@@ -7,18 +10,22 @@
     </slot>
   </span>
 </template>
-  
-<script>
-// Makeshift handle because the directive doesnt work with vitepress
-export default {
-  mounted() {
-    this.$el.sortableHandle = true
-  },
-}
+
+<script setup>
+import { onMounted, ref } from 'vue'
+
+const el = ref(null)
+
+onMounted(() => {
+  if (!el.value)
+    return
+
+  el.value.sortableHandle = true
+})
 </script>
 
 <style>
 .drag-handle .v-btn {
-    cursor: grab;
+  cursor: grab;
 }
 </style>

@@ -1,4 +1,5 @@
 <script setup>
+import { formatCurrency } from '@/@core/utils/formatters'
 import americanExpress from '@images/icons/payments/american-express.png'
 import mastercard from '@images/icons/payments/mastercard.png'
 import visa from '@images/icons/payments/visa.png'
@@ -12,6 +13,7 @@ const currentCardDetails = ref()
 const isCardEditDialogVisible = ref(false)
 const isCardAddDialogVisible = ref(false)
 const isEditAddressDialogVisible = ref(false)
+const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
 
 const openEditCardDialog = cardDetails => {
   currentCardDetails.value = cardDetails
@@ -106,7 +108,7 @@ const currentBillingAddress = {
               </p>
 
               <h6 class="text-h6 mb-1">
-                <span class="d-inline-block me-2">$99 Per Month</span>
+                <span class="d-inline-block me-2">{{ `${formatCurrency(99, defaultCurrency)} Per Month` }}</span>
                 <VChip
                   color="primary"
                   size="small"

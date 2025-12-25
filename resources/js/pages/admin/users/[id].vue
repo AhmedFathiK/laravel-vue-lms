@@ -1,5 +1,5 @@
 <script setup>
-import { useApi } from '@/composables/useApi'
+import api from '@/utils/api'
 import UserBioPanel from '@/views/user/UserBioPanel.vue'
 import UserTabAccount from '@/views/user/UserTabAccount.vue'
 import UserTabBillingsPlans from '@/views/user/UserTabBillingsPlans.vue'

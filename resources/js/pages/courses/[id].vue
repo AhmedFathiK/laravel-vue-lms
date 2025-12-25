@@ -9,6 +9,7 @@ const route = useRoute()
 const courseDetails = ref(null)
 const panelStatus = ref(0)
 const isLoading = ref(false)
+const processingPlanId = ref(null)
 const error = ref(null)
 
 const fetchCourseDetails = async () => {
@@ -41,11 +42,11 @@ const resolvePlanTypeColor = type => {
 }
 
 const handlePayment = async plan => {
-  isLoading.value = true
+  processingPlanId.value = plan.id
   try {
-    const response = await api.post('/myfatoorah/checkout', {
+    const response = await api.post('/payments/checkout', {
       amount: plan.price,
-      currency: plan.currency || 'USD',
+      currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
       planId: plan.id,
       courseId: courseDetails.value.id,
     })
@@ -62,7 +63,7 @@ const handlePayment = async plan => {
 
     // toast.error(err.message || 'Payment failed')
   } finally {
-    isLoading.value = false
+    processingPlanId.value = null
   }
 }
 
@@ -251,7 +252,7 @@ if (route.query.payment === 'success') {
                       block 
                       :color="resolvePlanTypeColor(plan.planType)" 
                       variant="tonal"
-                      :loading="isLoading"
+                      :loading="processingPlanId === plan.id"
                       @click="handlePayment(plan)"
                     >
                       Subscribe Now

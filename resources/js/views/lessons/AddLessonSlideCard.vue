@@ -1,7 +1,5 @@
 <script setup>
-import addSlideImage from '@images/pages/pose-fs-9.png'
-import videoPlaceholder from '@images/pages/default-course-image.png'
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import addSlideImage from '@images/pages/boy-illustration.png'
 
 const emit = defineEmits([
   "click:add",

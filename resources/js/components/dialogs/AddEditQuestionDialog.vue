@@ -1141,7 +1141,7 @@ const removeTag = tag => {
           variant="elevated"
           size="large"
           :loading="isSubmitting"
-          :disabled="!isFormValid"
+          :disabled="isSubmitting"
           @click="submitForm"
         >
           <VIcon

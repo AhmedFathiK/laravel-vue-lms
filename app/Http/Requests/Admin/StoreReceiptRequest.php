@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\Payment\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreReceiptRequest extends FormRequest
@@ -26,6 +27,7 @@ class StoreReceiptRequest extends FormRequest
             'course_id' => 'required|exists:courses,id',
             'plan_id' => 'required|exists:subscription_plans,id',
             'amount' => 'required|numeric|min:0',
+            'currency' => Currency::validationRules(required: false),
             'payment_method' => 'required|string',
             'payment_date' => 'required|date',
             'notes' => 'nullable|string',

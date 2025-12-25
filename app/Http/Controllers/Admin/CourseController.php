@@ -7,7 +7,9 @@ use App\Http\Requests\Admin\Course\StoreCourseRequest;
 use App\Http\Requests\Admin\Course\UpdateCourseRequest;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
+use App\Models\CourseCategory;
 use App\Models\SubscriptionPlan;
+use App\Services\Payment\Currency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -152,7 +154,7 @@ class CourseController extends Controller
                 'name' => 'Free Access',
                 'description' => 'Free access to all content in this course',
                 'price' => 0,
-                'currency' => 'USD',
+                'currency' => Currency::default(),
                 'billing_cycle' => 'one-time',
                 'plan_type' => 'free',
                 'is_free' => true,
@@ -230,7 +232,7 @@ class CourseController extends Controller
                     'name' => 'Free Access',
                     'description' => 'Free access to all content in this course',
                     'price' => 0,
-                    'currency' => 'USD',
+                    'currency' => Currency::default(),
                     'billing_cycle' => 'one-time',
                     'plan_type' => 'free',
                     'is_free' => true,

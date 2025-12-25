@@ -14,23 +14,27 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create a default super admin user
-        $superAdmin = User::create([
-            'first_name' => 'Super',
-            'last_name' => 'Admin',
-            'email' => 'admin@demo.com',
-            'password' => Hash::make('admin'),
-            'email_verified_at' => now(),
-        ]);
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'admin@demo.com'],
+            [
+                'first_name' => 'Super',
+                'last_name' => 'Admin',
+                'password' => Hash::make('admin'),
+                'email_verified_at' => now(),
+            ]
+        );
         $superAdmin->assignRole('Super Admin');
 
         // Create a default student user
-        $student = User::create([
-            'first_name' => 'Demo',
-            'last_name' => 'Student',
-            'email' => 'student@demo.com',
-            'password' => Hash::make('student'),
-            'email_verified_at' => now(),
-        ]);
+        $student = User::firstOrCreate(
+            ['email' => 'student@demo.com'],
+            [
+                'first_name' => 'Demo',
+                'last_name' => 'Student',
+                'password' => Hash::make('student'),
+                'email_verified_at' => now(),
+            ]
+        );
         $student->assignRole('Student');
 
         $this->command->info('Users seeded successfully!');

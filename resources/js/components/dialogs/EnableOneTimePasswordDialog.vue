@@ -28,7 +28,7 @@ const form = ref({
   mobile: props.mobileNumber,
 })
 
-watch(() => props.mobileNumber, (val) => {
+watch(() => props.mobileNumber, val => {
   form.value.mobile = val
 })
 

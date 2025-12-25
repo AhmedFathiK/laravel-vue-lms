@@ -1,4 +1,7 @@
 <script setup>
+import { createUrl } from '@core/composable/createUrl'
+import { computed, ref } from 'vue'
+
 const searchQuery = ref('')
 const selectedStatus = ref()
 

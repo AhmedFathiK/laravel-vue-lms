@@ -133,6 +133,7 @@ console.log(props.data)
                           class="d-flex justify-center flex-column pt-0"
                         >
                           <div class="d-flex flex-column py-2">
+                            <!-- eslint-disable vue/no-v-html -->
                             <div
                               class="mb-2 pa-1"
                               v-html="data.content"

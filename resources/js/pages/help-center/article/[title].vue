@@ -42,7 +42,7 @@ const articleData = ref({
 
 /* 
 setTimeout(async () => {
-  const { data, error } = await useApi('/pages/help-center/article')
+  const { data, error } = await api.get('/pages/help-center/article')
   if (error.value)
     console.log(error.value)
   else

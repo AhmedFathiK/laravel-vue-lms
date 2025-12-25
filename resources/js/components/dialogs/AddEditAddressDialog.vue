@@ -80,14 +80,14 @@ const form = ref(createDefaultForm(props.billingAddress))
 const refForm = ref(null)
 
 // Watch for dialog visibility to reset form
-watch(() => props.isDialogVisible, (isVisible) => {
+watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
     form.value = createDefaultForm(props.billingAddress)
   }
 })
 
 // Watch for prop changes
-watch(() => props.billingAddress, (newVal) => {
+watch(() => props.billingAddress, newVal => {
   if (props.isDialogVisible) {
     form.value = createDefaultForm(newVal)
   }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\Payment\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -27,7 +28,7 @@ class PaymentRequest extends FormRequest
             'user_id' => ['required', 'exists:users,id'],
             'payment_method' => ['required', 'string', 'max:50'],
             'amount' => ['required', 'numeric', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
+            'currency' => Currency::validationRules(required: true),
             'status' => ['required', 'string', 'in:pending,completed,failed,refunded'],
             'transaction_id' => ['nullable', 'string', 'max:100'],
             'payment_provider' => ['nullable', 'string', 'max:50'],

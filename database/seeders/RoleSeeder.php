@@ -14,18 +14,20 @@ class RoleSeeder extends Seeder
     public function run(): void
     {
         // Create Super Admin role with all permissions
-        $superAdminRole = Role::create([
+        $superAdminRole = Role::firstOrCreate([
             'name' => 'Super Admin',
-            'is_protected' => true,
             'guard_name' => 'web',
+        ], [
+            'is_protected' => true,
         ]);
         $superAdminRole->givePermissionTo(Permission::all());
 
         // Create Student role with basic permissions
-        $studentRole = Role::create([
+        $studentRole = Role::firstOrCreate([
             'name' => 'Student',
-            'is_protected' => true,
             'guard_name' => 'web',
+        ], [
+            'is_protected' => true,
         ]);
         $studentRole->givePermissionTo([
             // Basic viewing permissions

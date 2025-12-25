@@ -47,7 +47,15 @@ export const prefixWithPlus = value => value > 0 ? `+${value}` : value
 
 
 // Format currency
-export const formatCurrency = (amount, currency = 'USD') => {
+export const formatCurrency = (amount, currency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP') => {
+  // Handle LE (Egyptian Pound) display
+  if (currency === 'LE' || currency === 'EGP') {
+    return `LE ${new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)}`
+  }
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

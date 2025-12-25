@@ -66,7 +66,7 @@ class UserSubscription extends Model
      */
     public function isOneTimePurchase(): bool
     {
-        return $this->plan->plan_type === 'one-time';
+        return $this->subscriptionPlan->plan_type === 'one-time';
     }
 
     /**
@@ -74,7 +74,7 @@ class UserSubscription extends Model
      */
     public function isRecurring(): bool
     {
-        return $this->plan->plan_type === 'recurring';
+        return $this->subscriptionPlan->plan_type === 'recurring';
     }
 
     /**
@@ -82,7 +82,7 @@ class UserSubscription extends Model
      */
     public function isFree(): bool
     {
-        return $this->plan->is_free;
+        return $this->subscriptionPlan->is_free;
     }
 
     /**

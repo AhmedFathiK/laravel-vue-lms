@@ -1,4 +1,5 @@
 <script setup>
+import { formatCurrency } from '@/@core/utils/formatters'
 import { useCrudSubmit } from '@/composables/useCrudSubmit'
 
 const props = defineProps({
@@ -11,25 +12,26 @@ const props = defineProps({
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
 const selectedPlan = ref('standard')
+const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
 
 const plansList = [
   {
-    desc: 'Standard - $99/month',
+    desc: `Standard - ${formatCurrency(99, defaultCurrency)}/month`,
     title: 'Standard',
     value: 'standard',
   },
   {
-    desc: 'Basic - $0/month',
+    desc: `Basic - ${formatCurrency(0, defaultCurrency)}/month`,
     title: 'Basic',
     value: 'basic',
   },
   {
-    desc: 'Enterprise - $499/month',
+    desc: `Enterprise - ${formatCurrency(499, defaultCurrency)}/month`,
     title: 'Enterprise',
     value: 'enterprice',
   },
   {
-    desc: 'Company - $999/month',
+    desc: `Company - ${formatCurrency(999, defaultCurrency)}/month`,
     title: 'Company',
     value: 'company',
   },
@@ -114,9 +116,8 @@ const handleCancelSubscription = confirmed => {
         </p>
         <div class="d-flex justify-space-between align-center flex-wrap">
           <div class="d-flex align-center gap-1 me-3">
-            <sup class="text-body-1 text-primary">$</sup>
             <h1 class="text-h1 text-primary">
-              99
+              {{ formatCurrency(99, defaultCurrency) }}
             </h1>
             <sub class="text-body-2 mt-5">
               / month

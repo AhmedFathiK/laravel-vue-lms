@@ -24,6 +24,16 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'submitSuccess'])
+const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
+
+const currencyOptions = computed(() => {
+  const raw = import.meta.env.VITE_SUPPORTED_CURRENCIES || defaultCurrency
+  
+  return raw
+    .split(',')
+    .map(c => c.trim().toUpperCase())
+    .filter(Boolean)
+})
 
 const formRef = ref(null)
 
@@ -31,7 +41,7 @@ const defaultForm = () => ({
   name: '',
   description: '',
   price: 0,
-  currency: 'USD',
+  currency: defaultCurrency,
   billingCycle: 'one-time',
   planType: 'one-time',
   isFree: false,
@@ -244,7 +254,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
               >
                 <VSelect
                   v-model="localPlan.currency"
-                  :items="['USD', 'EUR', 'GBP']"
+                  :items="currencyOptions"
                   label="Currency"
                   :disabled="localPlan.planType === 'free'"
                   variant="outlined"

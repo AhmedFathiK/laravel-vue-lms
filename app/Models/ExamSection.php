@@ -56,6 +56,6 @@ class ExamSection extends Model
     {
         return $this->belongsToMany(Question::class, 'exam_section_questions')
             ->withPivot('order')
-            ->orderBy('pivot_order');
+            ->orderByPivot('order');
     }
 }

@@ -42,6 +42,7 @@ onMounted(() => {
 
     <VCard class="term-media-wrapper mt-5">
       <div class="d-flex flex-column align-center justify-center pa-5">
+        <!-- eslint-disable vue/no-v-html -->
         <span
           class="term-text text-primary"
           v-html="currentSlide.text"

@@ -116,6 +116,7 @@ const test = ref()
             {{ drawerData.rightAnswerMeaning }}
           </span>
         </div> 
+        <!-- eslint-disable vue/no-v-html -->
         <div v-html="drawerData.answerState == 'right' ? drawerData.correctAnswerComment : drawerData.wrongAnswerComment" />
       </VCol>
       <VCol

@@ -89,7 +89,7 @@ class ExamController extends Controller
             $query->orderBy('order');
 
             $query->with(['questions' => function ($query) use ($exam) {
-                $query->orderBy('pivot_order');
+                $query->orderByPivot('order');
                 $query->select(
                     'questions.id',
                     'questions.question_text',

@@ -203,7 +203,7 @@ const pricingPlans = [
           <div class="position-relative">
             <div class="d-flex justify-center pt-5 pb-10">
               <div class="text-body-1 align-self-start font-weight-medium">
-                $
+                EGP
               </div>
               <h1 class="text-h1 font-weight-medium text-primary">
                 {{ annualMonthlyPlanPriceToggler ? Math.floor(Number(plan.yearlyPrice) / 12) : plan.monthlyPrice }}
@@ -218,7 +218,7 @@ const pricingPlans = [
               v-show="annualMonthlyPlanPriceToggler"
               class="annual-price-text position-absolute text-caption text-disabled pb-4"
             >
-              {{ plan.yearlyPrice === 0 ? 'free' : `USD ${plan.yearlyPrice}/Year` }}
+              {{ plan.yearlyPrice === 0 ? 'free' : `EGP ${plan.yearlyPrice}/Year` }}
             </span>
           </div>
 

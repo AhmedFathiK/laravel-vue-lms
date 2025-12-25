@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'payment' => [
+        'gateway' => env('PAYMENT_GATEWAY', 'myfatoorah'),
+        'default_currency' => env('PAYMENT_CURRENCY', 'EGP'),
+        'supported_currencies' => env('PAYMENT_SUPPORTED_CURRENCIES', 'EGP'),
+    ],
+
+    'myfatoorah' => [
+        'api_key' => env('PAYMENT_MYFATOORAH_API_KEY'),
+        'base_url' => env('PAYMENT_MYFATOORAH_BASE_URL', 'https://apitest.myfatoorah.com'),
+        'test_mode' => env('PAYMENT_MYFATOORAH_TEST_MODE', true),
+        'country_iso' => env('PAYMENT_MYFATOORAH_COUNTRY_ISO', 'EGY'),
+    ],
+
 ];

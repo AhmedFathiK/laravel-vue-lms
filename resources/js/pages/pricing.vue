@@ -1,10 +1,12 @@
 <script setup>
+import { formatCurrency } from '@/@core/utils/formatters'
 import Footer from '@/views/front-pages/front-page-footer.vue'
 import Navbar from '@/views/front-pages/front-page-navbar.vue'
 import { useConfigStore } from '@core/stores/config'
 import laptopGirl from '@images/illustrations/laptop-girl.png'
 
 const store = useConfigStore()
+const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
 
 store.skin = 'default'
 definePage({
@@ -187,8 +189,8 @@ const faqs = [
                 <th
                   v-for="{ plan, price } in [
                     { plan: 'Starter', price: 'Free' },
-                    { plan: 'Pro', price: '$7.5/Month' },
-                    { plan: 'Enterprise', price: '$16/Month' },
+                    { plan: 'Pro', price: `${formatCurrency(7.5, defaultCurrency)}/Month` },
+                    { plan: 'Enterprise', price: `${formatCurrency(16, defaultCurrency)}/Month` },
                   ]"
                   :key="plan"
                   scope="col"

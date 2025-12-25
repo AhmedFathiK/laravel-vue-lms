@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Course;
 use App\Models\SubscriptionPlan;
 use App\Models\UserSubscription;
+use App\Services\Payment\Currency;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -135,11 +136,12 @@ class ReceiptController extends Controller
 
         try {
             // Create payment record
+            $currency = Currency::normalize((string) ($validated['currency'] ?? Currency::default()));
             $payment = \App\Models\Payment::create([
                 'user_id' => $validated['user_id'],
                 'payment_method' => $validated['payment_method'],
                 'amount' => $validated['amount'],
-                'currency' => $request->currency ?? 'USD',
+                'currency' => $currency,
                 'status' => 'completed',
                 'transaction_id' => 'MANUAL-' . time(),
                 'payment_provider' => 'Manual',
@@ -164,7 +166,7 @@ class ReceiptController extends Controller
                 'item_id' => $plan->id,
                 'item_name' => $course->title . ' - ' . $plan->name,
                 'amount' => $validated['amount'],
-                'currency' => $request->currency ?? 'USD',
+                'currency' => $currency,
             ]);
 
             // Create subscription if requested

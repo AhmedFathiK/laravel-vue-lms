@@ -145,7 +145,7 @@ const searchResult = ref([])
 const fetchResults = async () => {
   isLoading.value = true
 
-  const { data } = await useApi(withQuery('/app-bar/search', { q: searchQuery.value }))
+  const { data } = await api.get(withQuery('/app-bar/search', { q: searchQuery.value }))
 
   searchResult.value = data.value
 

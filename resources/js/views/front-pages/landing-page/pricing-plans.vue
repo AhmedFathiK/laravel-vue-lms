@@ -1,10 +1,12 @@
 <script setup>
+import { formatCurrency } from '@/@core/utils/formatters'
 import paperPlane from '@images/front-pages/icons/paper-airplane.png'
 import plane from '@images/front-pages/icons/plane.png'
 import pricingPlanArrow from '@images/front-pages/icons/pricing-plans-arrow.png'
 import shuttleRocket from '@images/front-pages/icons/shuttle-rocket.png'
 
 const annualMonthlyPlanPriceToggler = ref(true)
+const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
 
 const pricingPlans = [
   {
@@ -149,7 +151,7 @@ const pricingPlans = [
                 <div class="d-flex justify-center mb-8 position-relative">
                   <div class="d-flex align-end">
                     <div class="pricing-title text-primary me-1">
-                      ${{ annualMonthlyPlanPriceToggler ? Math.floor(plan.yearlyPrice) / 12 : plan.monthlyPrice }}
+                      {{ formatCurrency(annualMonthlyPlanPriceToggler ? Math.floor(plan.yearlyPrice) / 12 : plan.monthlyPrice, defaultCurrency) }}
                     </div>
                     <span class="text-disabled mb-2">/mo</span>
                   </div>
@@ -159,7 +161,7 @@ const pricingPlans = [
                     v-show="annualMonthlyPlanPriceToggler"
                     class="annual-price-text position-absolute text-sm text-disabled"
                   >
-                    {{ plan.yearlyPrice === 0 ? 'free' : `USD ${plan.yearlyPrice}/Year` }}
+                    {{ plan.yearlyPrice === 0 ? 'free' : `${formatCurrency(plan.yearlyPrice, defaultCurrency)}/Year` }}
                   </span>
                 </div>
                 <VList class="card-list">

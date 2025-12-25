@@ -102,9 +102,9 @@ const filteredMenuItems = computed(() => {
     return {
       ...category,
       navItems: category.navItems.filter(item => {
-        if (item.showWhen === 'authenticated' && !isAuthenticated.value) return false
-        if (item.showWhen === 'unauthenticated' && isAuthenticated.value) return false
-        
+        if (item.showWhen === 'authenticated') return isAuthenticated.value
+        if (item.showWhen === 'unauthenticated') return !isAuthenticated.value
+
         return true
       }),
     }
