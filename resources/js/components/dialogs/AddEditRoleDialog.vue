@@ -19,6 +19,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
 })
 
 const emit = defineEmits([
@@ -242,14 +247,14 @@ const customEmit = (event, ...args) => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.rolePermissions?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/roles/${props.rolePermissions.id}` 
     : '/admin/roles'),
-  isUpdate: computed(() => !!props.rolePermissions?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   extraData,
   isFormData: false,
   emit: customEmit,
-  successMessage: computed(() => props.rolePermissions?.id ? 'Role updated successfully' : 'Role created successfully'),
+  successMessage: computed(() => props.dialogMode === 'edit' ? 'Role updated successfully' : 'Role created successfully'),
 })
 
 const toggleSubjectActions = (group, value) => {
@@ -280,7 +285,7 @@ onMounted(fetchPermissions)
     <VCard class="pa-sm-10 pa-2">
       <VCardText>
         <h4 class="text-h4 text-center mb-2">
-          {{ props.rolePermissions?.id ? 'Edit' : 'Add New' }} Role
+          {{ props.dialogMode === 'edit' ? 'Edit' : 'Add New' }} Role
         </h4>
         <p class="text-body-1 text-center mb-6">
           Set Role Permissions

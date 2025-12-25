@@ -515,6 +515,7 @@ onMounted(() => {
     <AddEditUserDialog
       v-model:is-dialog-visible="isAddNewUserDrawerVisible"
       :user-data="editUser"
+      :dialog-mode="editUser ? 'edit' : 'add'"
       :roles="roles"
       @refresh="fetchUsers"
     />

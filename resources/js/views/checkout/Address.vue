@@ -280,7 +280,10 @@ watch(() => props.currentStep, updateAddressData)
       </VBtn>
     </VCol>
   </VRow>
-  <AddEditAddressDialog v-model:is-dialog-visible="isEditAddressDialogVisible" />
+  <AddEditAddressDialog
+    v-model:is-dialog-visible="isEditAddressDialogVisible"
+    dialog-mode="add"
+  />
 </template>
 
 <style lang="scss" scoped>

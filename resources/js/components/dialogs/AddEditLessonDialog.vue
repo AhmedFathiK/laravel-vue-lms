@@ -379,7 +379,7 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
                 type="submit"
                 :loading="submitting"
               >
-                {{ props.lessonData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

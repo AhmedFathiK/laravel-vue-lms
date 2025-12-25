@@ -350,6 +350,7 @@ const resolveUserRoleVariant = role => {
   <AddEditUserDialog
     v-model:is-dialog-visible="isUserInfoEditDialogVisible"
     :user-data="props.userData"
+    dialog-mode="edit"
   />
 
   <!-- 👉 Upgrade plan dialog -->

@@ -25,6 +25,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   apiEndpoint: {
     type: String,
     required: false,
@@ -107,10 +112,10 @@ const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
   formRef: refForm,
   form,
   apiEndpoint: computed(() => props.apiEndpoint || '/api/addresses'), // Placeholder default
-  isUpdate: computed(() => !!props.billingAddress?.id), // Assuming id exists if editing
+  isUpdate: computed(() => props.dialogMode === 'edit'), // Assuming id exists if editing
   emit: customEmit,
   isFormData: false,
-  successMessage: computed(() => props.billingAddress?.id ? 'Address updated successfully' : 'Address added successfully'),
+  successMessage: computed(() => props.dialogMode === 'edit' ? 'Address updated successfully' : 'Address added successfully'),
 })
 </script>
 
@@ -127,7 +132,7 @@ const { isLoading, onSubmit, validationErrors } = useCrudSubmit({
       <VCardText>
         <!-- 👉 Title -->
         <h4 class="text-h4 text-center mb-2">
-          {{ (props.billingAddress.addressLine1 || props.billingAddress.addressLine2) ? 'Edit' : 'Add New' }} Address
+          {{ props.dialogMode === 'edit' ? 'Edit' : 'Add New' }} Address
         </h4>
         <p class="text-body-1 text-center mb-6">
           Add new address for express delivery

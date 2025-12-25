@@ -164,10 +164,10 @@ onMounted(() => {
 
     <!-- Category Dialog -->
     <AddEditCategoryDialog
-      v-model:is-dialog-open="isDialogOpen"
+      v-model:is-dialog-visible="isDialogOpen"
       :dialog-mode="dialogMode"
-      :category="editingCategory"
-      @category-saved="fetchCategories"
+      :category-data="editingCategory"
+      @saved="fetchCategories"
     />
 
     <ConfirmDialog

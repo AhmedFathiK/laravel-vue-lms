@@ -11,6 +11,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   conceptData: {
     type: Object,
     default: () => null,
@@ -77,10 +82,10 @@ watch(() => props.isDialogVisible, isVisible => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.conceptData?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/courses/${props.courseId}/concepts/${props.conceptData.id}` 
     : `/admin/courses/${props.courseId}/concepts`),
-  isUpdate: computed(() => !!props.conceptData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   emit,
 })
 </script>
@@ -93,7 +98,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   >
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.conceptData ? 'Edit Concept' : 'Add New Concept'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Concept' : 'Add New Concept'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -170,7 +175,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 type="submit"
                 :loading="isLoading"
               >
-                {{ props.conceptData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

@@ -9,6 +9,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   termData: {
     type: Object,
     default: () => null,
@@ -266,7 +271,7 @@ const { isLoading, onSubmit } = useCrudSubmit({
                 type="submit"
                 :loading="isLoading"
               >
-                {{ props.termData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

@@ -315,7 +315,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
           :loading="isSubmitting"
           @click="submitForm"
         >
-          {{ props.plan ? 'Update' : 'Create' }}
+          {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
         </VBtn>
       </VCardActions>
     </VCard>

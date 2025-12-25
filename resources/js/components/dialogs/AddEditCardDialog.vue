@@ -58,10 +58,10 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   form: formData,
 
   // Note: These endpoints are placeholders. Ensure backend routes exist.
-  apiEndpoint: computed(() => formData.value.id ? `/api/user/cards/${formData.value.id}` : '/api/user/cards'),
-  isUpdate: computed(() => !!formData.value.id),
+  apiEndpoint: computed(() => props.dialogMode === 'edit' ? `/api/user/cards/${formData.value.id}` : '/api/user/cards'),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   emit,
-  successMessage: computed(() => formData.value.id ? 'Card updated successfully' : 'Card added successfully'),
+  successMessage: computed(() => props.dialogMode === 'edit' ? 'Card updated successfully' : 'Card added successfully'),
 })
 
 const closeDialog = () => {
@@ -83,11 +83,11 @@ const closeDialog = () => {
       <VCardItem class="text-center">
         <VCardTitle>
           <h4 class="text-h4 mb-2">
-            {{ formData.id || formData.name ? 'Edit Card' : 'Add New Card' }}
+            {{ props.dialogMode === 'edit' ? 'Edit Card' : 'Add New Card' }}
           </h4>
         </VCardTitle>
         <p class="text-body-1 mb-0">
-          {{ formData.id || formData.name ? 'Edit your saved card details' : 'Add card for future billing' }}
+          {{ props.dialogMode === 'edit' ? 'Edit your saved card details' : 'Add card for future billing' }}
         </p>
       </VCardItem>
 

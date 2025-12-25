@@ -401,6 +401,7 @@ onMounted(refreshData)
     <AddEditSlideDialog
       v-model:is-dialog-visible="isSlideEditDialogVisible"
       :slide-data="editedItem"
+      :dialog-mode="editedItem.id ? 'edit' : 'add'"
       :lesson-id="lessonId"
       :course-id="courseId"
       :level-id="levelId"

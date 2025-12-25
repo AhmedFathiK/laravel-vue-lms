@@ -9,6 +9,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   levelData: {
     type: Object,
     default: () => null,
@@ -65,10 +70,10 @@ const customEmit = (event, ...args) => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.levelData?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/courses/${props.courseId}/levels/${props.levelData.id}` 
     : `/admin/courses/${props.courseId}/levels`),
-  isUpdate: computed(() => !!props.levelData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   isFormData: false, // JSON mode
   emit: customEmit,
 })
@@ -82,7 +87,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   >
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.levelData ? 'Edit Level' : 'Add New Level'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Level' : 'Add New Level'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -155,7 +160,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 type="submit"
                 :loading="isLoading"
               >
-                {{ props.levelData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

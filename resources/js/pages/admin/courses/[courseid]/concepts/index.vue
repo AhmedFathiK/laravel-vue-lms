@@ -346,9 +346,10 @@ onMounted(() => {
     <!-- Concept Edit Dialog -->
     <AddEditConceptDialog
       v-model:is-dialog-visible="isDialogVisible"
-      :concept="editingConcept"
+      :concept-data="editingConcept"
+      :dialog-mode="editingConcept ? 'edit' : 'add'"
       :course-id="courseId"
-      @concept-saved="handleConceptSaved"
+      @saved="handleConceptSaved"
     />
 
     <!-- Deletion Confirmation Dialog -->

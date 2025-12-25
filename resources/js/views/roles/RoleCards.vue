@@ -248,6 +248,7 @@ onMounted(fetchRoles)
       <AddEditRoleDialog 
         v-model:is-dialog-visible="isAddRoleDialogVisible" 
         :role-permissions="{ id: null, name: '', permissions: [] }"
+        dialog-mode="add"
         @refresh="fetchRoles"
       />
     </VCol>
@@ -256,6 +257,7 @@ onMounted(fetchRoles)
   <AddEditRoleDialog
     v-model:is-dialog-visible="isRoleDialogVisible"
     :role-permissions="roleDetail"
+    dialog-mode="edit"
     @refresh="fetchRoles"
   />
 

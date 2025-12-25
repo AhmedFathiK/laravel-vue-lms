@@ -13,6 +13,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   roles: {
     type: Array,
     required: false,
@@ -63,7 +68,7 @@ const rules = {
   ],
   password: [
     // Password is only required for new users
-    v => (props.userData ? true : requiredValidator(v)),
+    v => (props.dialogMode === 'edit' ? true : requiredValidator(v)),
 
     // If password is provided, it must be at least 8 characters
     v => (!v || minLengthValidator(v, 8)),
@@ -120,7 +125,7 @@ watch(() => props.isDialogVisible, isVisible => {
   }
 })
 
-const isEditMode = computed(() => !!props.userData)
+const isEditMode = computed(() => props.dialogMode === 'edit')
 
 // Custom emit for refresh to handle legacy submit listeners if any
 const customEmit = (event, ...args) => {

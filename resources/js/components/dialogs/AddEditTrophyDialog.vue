@@ -13,6 +13,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   trophyData: {
     type: Object,
     default: () => null,
@@ -149,10 +154,10 @@ const extraData = computed(() => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.trophyData?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/trophies/${props.trophyData.id}` 
     : '/admin/trophies'),
-  isUpdate: computed(() => !!props.trophyData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   extraData: extraData,
   isFormData: true, // Always use FormData for file upload compatibility
   emit,
@@ -167,7 +172,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   >
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.trophyData ? 'Edit Trophy' : 'Add New Trophy'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Trophy' : 'Add New Trophy'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -343,7 +348,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 type="submit"
                 :loading="isLoading"
               >
-                {{ props.trophyData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

@@ -9,6 +9,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   categoryData: {
     type: Object,
     default: () => null,
@@ -54,10 +59,10 @@ watch(
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.categoryData?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit' 
     ? `/admin/course-categories/${props.categoryData.id}` 
     : '/admin/course-categories'),
-  isUpdate: computed(() => !!props.categoryData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   emit,
 })
 </script>
@@ -71,7 +76,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
     <!-- Dialog close btn -->
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.categoryData ? 'Edit Category' : 'Add Category'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Category' : 'Add Category'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -137,7 +142,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 type="submit"
                 :loading="isLoading"
               >
-                {{ props.categoryData ? 'Update' : 'Create' }}
+                {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
               </VBtn>
             </VCol>
           </VRow>

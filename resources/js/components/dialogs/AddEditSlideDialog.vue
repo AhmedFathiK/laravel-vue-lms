@@ -8,6 +8,11 @@ import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   isDialogVisible: { type: Boolean, required: true },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   slideData: {
     type: Object,
     default: () => ({
@@ -81,16 +86,16 @@ const customEmit = (event, ...args) => {
 const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitForm } = useCrudSubmit({
   formRef: refForm,
   form: formData,
-  apiEndpoint: computed(() => formData.value.id
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides/${formData.value.id}`
     : `/admin/courses/${props.courseId}/levels/${props.levelId}/lessons/${props.lessonId}/slides`),
-  isUpdate: computed(() => !!formData.value.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   emit: customEmit,
   isFormData: false,
-  successMessage: computed(() => formData.value.id ? 'Slide updated successfully' : 'Slide created successfully'),
+  successMessage: computed(() => props.dialogMode === 'edit' ? 'Slide updated successfully' : 'Slide created successfully'),
 })
 
-const dialogTitle = computed(() => formData.value.id ? 'Edit Slide' : 'New Slide')
+const dialogTitle = computed(() => props.dialogMode === 'edit' ? 'Edit Slide' : 'New Slide')
 const getSlideTypeLabel = type => props.slideTypes.find(t => t.value === type)?.label || type
 
 const isQuestionType = computed(() => {
@@ -350,7 +355,7 @@ const isTermType = computed(() => formData.value.type === 'term')
           :loading="isSubmitting"
           @click="submitForm"
         >
-          {{ formData.id ? 'Update' : 'Create' }}
+          {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
         </VBtn>
       </VCardText>
     </VCard>

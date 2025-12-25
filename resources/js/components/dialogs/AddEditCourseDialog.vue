@@ -10,6 +10,11 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  dialogMode: {
+    type: String,
+    required: true,
+    validator: value => ['add', 'edit'].includes(value),
+  },
   courseData: {
     type: Object,
     default: () => null,
@@ -150,14 +155,14 @@ const customEmit = (event, ...args) => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refVForm,
   form: form,
-  apiEndpoint: computed(() => props.courseData?.id 
+  apiEndpoint: computed(() => props.dialogMode === 'edit'
     ? `/admin/courses/${props.courseData.id}` 
     : '/admin/courses'),
-  isUpdate: computed(() => !!props.courseData?.id),
+  isUpdate: computed(() => props.dialogMode === 'edit'),
   emit: customEmit,
   extraData,
   isFormData: true,
-  successMessage: computed(() => props.courseData?.id ? 'Course updated successfully' : 'Course created successfully'),
+  successMessage: computed(() => props.dialogMode === 'edit' ? 'Course updated successfully' : 'Course created successfully'),
 })
 
 // Subscription options
@@ -192,7 +197,7 @@ const statusOptions = [
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
     <!-- Dialog Content -->
-    <VCard :title="courseData ? 'Edit Course' : 'Add New Course'">
+    <VCard :title="props.dialogMode === 'edit' ? 'Edit Course' : 'Add New Course'">
       <VCardText>
         <VForm
           ref="refVForm"
@@ -418,7 +423,7 @@ const statusOptions = [
           :loading="isLoading"
           @click="onSubmit"
         >
-          {{ courseData ? 'Update' : 'Create' }}
+          {{ props.dialogMode === 'edit' ? 'Update' : 'Create' }}
         </VBtn>
       </VCardText>
     </VCard>

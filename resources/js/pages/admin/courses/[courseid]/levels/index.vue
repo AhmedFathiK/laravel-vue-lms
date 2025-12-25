@@ -496,6 +496,7 @@ onMounted(() => {
     <AddEditLevelDialog
       v-model:is-dialog-visible="isDialogVisible"
       :level-data="editingLevel"
+      :dialog-mode="editingLevel ? 'edit' : 'add'"
       :course-id="courseId"
       @refresh="refreshData"
     />

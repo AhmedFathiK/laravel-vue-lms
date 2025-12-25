@@ -662,6 +662,7 @@ onMounted(() => {
     <AddEditCourseDialog
       v-model:is-dialog-visible="isAddNewCourseDialogVisible"
       :course-data="editCourse"
+      :dialog-mode="editCourse ? 'edit' : 'add'"
       :categories="categories"
       @refresh="fetchCourses"
     />

@@ -405,15 +405,20 @@ const currentBillingAddress = {
   <AddEditCardDialog
     v-model:is-dialog-visible="isCardEditDialogVisible"
     :card-details="currentCardDetails"
+    dialog-mode="edit"
   />
 
   <!-- 👉 Add Card Dialog -->
-  <AddEditCardDialog v-model:is-dialog-visible="isCardAddDialogVisible" />
+  <AddEditCardDialog
+    v-model:is-dialog-visible="isCardAddDialogVisible"
+    dialog-mode="add"
+  />
 
   <!-- 👉 Edit Address dialog -->
   <AddEditAddressDialog
     v-model:is-dialog-visible="isEditAddressDialogVisible"
     :billing-address="currentBillingAddress"
+    dialog-mode="edit"
   />
 
   <!-- 👉 Upgrade plan dialog -->
