@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Services\Payment\Currency;
 use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -46,7 +47,8 @@ class MyFatoorahService implements PaymentServiceInterface
         array $customer,
         array $metadata,
         string $callbackUrl,
-        string $errorUrl
+        string $errorUrl,
+        ?string $paymentMethodId = null
     ): array {
         $currency = Currency::normalize($currency);
 
@@ -55,7 +57,7 @@ class MyFatoorahService implements PaymentServiceInterface
         $customerReference = (string) ($metadata['customer_reference'] ?? '');
 
         $payload = [
-            'PaymentMethodId' => '2',
+            'PaymentMethodId' => $paymentMethodId ?? '2',
             'InvoiceValue' => $amount,
             'DisplayCurrencyIso' => $currency,
             'CustomerName' => $customerName,
@@ -73,6 +75,21 @@ class MyFatoorahService implements PaymentServiceInterface
             'transaction_id' => (string) ($data['InvoiceId'] ?? ''),
             'gateway_data' => $data,
         ];
+    }
+
+    public function getPaymentMethods(float $amount, string $currency): array
+    {
+        $currency = Currency::normalize($currency);
+
+        $payload = [
+            'InvoiceAmount' => $amount,
+            'CurrencyIso' => $currency,
+        ];
+
+        $response = $this->getRequest()->post($this->baseUrl . '/v2/InitiatePayment', $payload);
+        $data = $this->handleResponse($response);
+
+        return $data['PaymentMethods'] ?? [];
     }
 
     public function getPaymentStatus(string $paymentId): array

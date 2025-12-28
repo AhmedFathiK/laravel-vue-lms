@@ -172,6 +172,16 @@ const updateWidgetCounts = () => {
     return
   }
 
+  // Use stats from API if available, otherwise fallback to current page counts
+  if (coursesData.value.stats) {
+    widgetData.value[0].value = (coursesData.value.stats.total || 0).toString()
+    widgetData.value[1].value = (coursesData.value.stats.active || 0).toString()
+    widgetData.value[2].value = (coursesData.value.stats.draft || 0).toString()
+    widgetData.value[3].value = (coursesData.value.stats.subscription || 0).toString()
+    
+    return
+  }
+
   // Set total courses - safely handle potential undefined values
   const totalCoursesCount = coursesData.value.totalItems || coursesData.value.total || 0
 
@@ -551,14 +561,14 @@ onMounted(() => {
         <!-- Levels -->
         <template #[`item.levels`]="{ item }">
           <div class="text-body-1 text-high-emphasis">
-            {{ item.levels?.length || 0 }}
+            {{ item.levelsCount || 0 }}
           </div>
         </template>
 
         <!-- Subscriptions -->
         <template #[`item.subscriptions`]="{ item }">
           <div class="text-body-1 text-high-emphasis">
-            {{ item.subscriptions_count || 0 }}
+            {{ item.subscriptionsCount || 0 }}
           </div>
         </template>
 

@@ -19,9 +19,9 @@ class LevelFactory extends Factory
     {
         return [
             'course_id' => Course::factory(),
-            'title' => 'Level ' . $this->faker->unique()->numberBetween(1, 50),
+            'title' => 'Level ' . $this->faker->numberBetween(1, 1000),
             'description' => $this->faker->sentence(),
-            'sort_order' => $this->faker->unique()->numberBetween(1, 50),
+            'sort_order' => $this->faker->numberBetween(1, 1000),
         ];
     }
 }

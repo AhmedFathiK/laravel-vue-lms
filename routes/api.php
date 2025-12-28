@@ -301,6 +301,7 @@ Route::middleware('auth:sanctum')->prefix('gamification')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('payments/checkout', [PaymentGatewayController::class, 'checkout']);
+    Route::get('payments/methods', [PaymentGatewayController::class, 'getPaymentMethods']);
 });
 
 Route::get('payments/callback', [PaymentGatewayController::class, 'callback'])->name('payments.callback');

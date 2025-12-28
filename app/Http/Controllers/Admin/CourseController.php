@@ -26,6 +26,9 @@ class CourseController extends Controller
 
         $query = Course::query();
 
+        // Include category relationship and counts
+        $query->with('category')->withCount(['levels', 'enrollments as subscriptions_count']);
+
         // Apply filters
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -66,10 +69,13 @@ class CourseController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $orderBy = $request->get('order_by', 'desc');
 
-        $query->orderBy($sortBy, $orderBy);
+        if ($sortBy === 'levels') {
+            $sortBy = 'levels_count';
+        } elseif ($sortBy === 'subscriptions') {
+            $sortBy = 'subscriptions_count';
+        }
 
-        // Include category relationship
-        $query->with('category');
+        $query->orderBy($sortBy, $orderBy);
 
         // Apply pagination
         $perPage = $request->get('per_page', 15);
@@ -81,6 +87,14 @@ class CourseController extends Controller
             'currentPage' => $courses->currentPage(),
             'perPage' => $courses->perPage(),
             'lastPage' => $courses->lastPage(),
+            'stats' => [
+                'total' => Course::count(),
+                'active' => Course::where('status', 'active')->count(),
+                'draft' => Course::where('status', 'draft')->count(),
+                'subscription' => Course::whereHas('subscriptionPlans', function ($q) {
+                    $q->where('plan_type', 'recurring');
+                })->count(),
+            ],
         ]);
     }
 
@@ -94,6 +108,9 @@ class CourseController extends Controller
         }
 
         $query = Course::query();
+
+        // Include category relationship and counts
+        $query->with('category')->withCount(['levels', 'enrollments as subscriptions_count']);
 
         // Apply filters
         if ($request->has('status')) {

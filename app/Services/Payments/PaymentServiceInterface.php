@@ -21,8 +21,14 @@ interface PaymentServiceInterface
         array $customer,
         array $metadata,
         string $callbackUrl,
-        string $errorUrl
+        string $errorUrl,
+        ?string $paymentMethodId = null
     ): array;
+
+    /**
+     * Retrieve available payment methods from the gateway.
+     */
+    public function getPaymentMethods(float $amount, string $currency): array;
 
     /**
      * Retrieve payment status from the gateway.

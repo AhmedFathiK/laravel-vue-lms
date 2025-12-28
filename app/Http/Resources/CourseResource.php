@@ -31,6 +31,8 @@ class CourseResource extends JsonResource
             'category' => new CourseCategoryResource($this->whenLoaded('category')),
             'levels' => $this->whenLoaded('levels'),
             'subscriptionPlans' => $this->whenLoaded('subscriptionPlans'),
+            'levelsCount' => $this->levels_count,
+            'subscriptionsCount' => $this->subscriptions_count,
         ];
     }
 }

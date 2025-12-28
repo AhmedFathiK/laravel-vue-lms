@@ -82,8 +82,10 @@ const fetchPlans = async () => {
 // Toggle plan status
 const togglePlanStatus = async plan => {
   try {
-    const updatedPlan = { ...plan, isActive: !plan.isActive }
-    const response = await api.put(`/admin/courses/${courseId.value}/subscription-plans/${plan.id}`, updatedPlan)
+    // Only send the field we want to update to avoid validation errors on other fields
+    // (e.g. if currency is invalid in DB but we are just toggling status)
+    const payload = { isActive: !plan.isActive }
+    const response = await api.put(`/admin/courses/${courseId.value}/subscription-plans/${plan.id}`, payload)
     const index = plans.value.findIndex(p => p.id === plan.id)
     if (index !== -1) {
       plans.value[index] = response

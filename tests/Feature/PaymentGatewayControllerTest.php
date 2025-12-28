@@ -7,11 +7,18 @@ use App\Models\User;
 use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PaymentGatewayControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Role::create(['name' => 'Student', 'guard_name' => 'web']);
+    }
 
     public function test_checkout_creates_payment_and_returns_payment_url(): void
     {
@@ -23,12 +30,18 @@ class PaymentGatewayControllerTest extends TestCase
                 array $customer,
                 array $metadata,
                 string $callbackUrl,
-                string $errorUrl
+                string $errorUrl,
+                ?string $paymentMethodId = null
             ): array {
                 return [
                     'payment_url' => 'https://pay.example/redirect',
                     'transaction_id' => 'tx-1',
                 ];
+            }
+
+            public function getPaymentMethods(float $amount, string $currency): array
+            {
+                return [];
             }
 
             public function getPaymentStatus(string $paymentId): array
@@ -90,8 +103,14 @@ class PaymentGatewayControllerTest extends TestCase
                 array $customer,
                 array $metadata,
                 string $callbackUrl,
-                string $errorUrl
+                string $errorUrl,
+                ?string $paymentMethodId = null
             ): array {
+                return [];
+            }
+
+            public function getPaymentMethods(float $amount, string $currency): array
+            {
                 return [];
             }
 
@@ -118,5 +137,43 @@ class PaymentGatewayControllerTest extends TestCase
         $payment->refresh();
         $this->assertSame('completed', $payment->status);
         $this->assertSame('gw-1', $payment->transaction_id);
+    }
+
+    public function test_get_payment_methods_returns_list_of_methods(): void
+    {
+        $this->app->instance(PaymentServiceInterface::class, new class implements PaymentServiceInterface
+        {
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array
+            {
+                return [];
+            }
+            public function getPaymentStatus(string $id): array
+            {
+                return [];
+            }
+            public function gatewayKey(): string
+            {
+                return 'fake';
+            }
+            public function getPaymentMethods(float $amount, string $currency): array
+            {
+                return [
+                    ['PaymentMethodId' => '1', 'PaymentMethodEn' => 'KNET'],
+                ];
+            }
+        });
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/payments/methods?amount=10&currency=EGP');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'data' => [
+                ['paymentMethodId' => '1', 'paymentMethodEn' => 'KNET'],
+            ],
+        ]);
     }
 }

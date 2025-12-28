@@ -27,6 +27,7 @@ class CourseResource extends JsonResource
             'subscription_plans' => SubscriptionPlanResource::collection($this->whenLoaded('subscriptionPlans')),
             'total_students' => $this->enrollments_count ?? 0,
             'total_lectures' => $this->lessons_count ?? 0,
+            'is_enrolled' => $request->user('sanctum') ? $this->enrollments()->where('user_id', $request->user('sanctum')->id)->exists() : false,
         ];
     }
 }

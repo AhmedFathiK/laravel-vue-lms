@@ -11,6 +11,7 @@ use App\Models\Slide;
 use App\Models\Term;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 
 class DevelopmentSeeder extends Seeder
 {
@@ -18,56 +19,93 @@ class DevelopmentSeeder extends Seeder
     {
         $this->command->info('Seeding development data...');
 
-        // Users
+        // Users: 10 to 15 students
         $this->command->info('Creating Users...');
-        User::factory()->count(10)->create();
+        $userCount = rand(10, 15);
+        User::factory()->count($userCount)->create();
 
-        // Course Categories
+        // Ensure categories exist
+        if (CourseCategory::count() === 0) {
+            $this->call(CourseCategorySeeder::class);
+        }
+        $categories = CourseCategory::all();
+
+        // Courses: 10 to 15
         $this->command->info('Creating Courses...');
-        $categories = CourseCategory::factory()->count(3)->create();
+        // Distribute 10-15 courses among categories
+        $coursesToCreate = rand(10, 15);
 
-        foreach ($categories as $category) {
-            // Courses
-            $courses = Course::factory()->count(2)->for($category, 'category')->create();
+        $courses = Course::factory()
+            ->count($coursesToCreate)
+            ->recycle($categories)
+            ->create();
 
-            foreach ($courses as $course) {
-                // Terms for this course
-                $terms = Term::factory()->count(10)->for($course)->create();
+        foreach ($courses as $course) {
+            // Terms and Questions pool for this course
+            $terms = Term::factory()->count(20)->for($course)->create();
+            $questions = Question::factory()->count(20)->for($course)->state(['type' => 'mcq'])->create();
 
-                // Questions for this course
-                $questions = Question::factory()->count(10)->for($course)->state(['type' => 'mcq'])->create();
+            // Levels: 5 to 15 per course, named Level 1, Level 2, etc.
+            $levelCount = rand(5, 15);
 
-                // Levels
-                $levels = Level::factory()->count(3)->for($course)->create();
+            $levels = Level::factory()
+                ->count($levelCount)
+                ->for($course)
+                ->sequence(fn(Sequence $sequence) => [
+                    'title' => 'Level ' . ($sequence->index + 1),
+                    'sort_order' => $sequence->index + 1,
+                ])
+                ->create();
 
-                foreach ($levels as $level) {
-                    // Lessons
-                    $lessons = Lesson::factory()->count(5)->for($level)->create();
+            foreach ($levels as $level) {
+                // Lessons: 10 to 15 lessons per level
+                $lessons = Lesson::factory()
+                    ->count(rand(10, 15))
+                    ->for($level)
+                    ->create();
 
-                    foreach ($lessons as $lesson) {
-                        // Slides
-                        // 1. Content Slide
-                        Slide::factory()->for($lesson)->create(['type' => 'explanation']);
+                foreach ($lessons as $lesson) {
+                    // Slides: Exactly 10 slides per lesson
+                    for ($i = 1; $i <= 10; $i++) {
+                        $type = 'explanation';
+                        $questionId = null;
+                        $termId = null;
+                        $content = json_encode(['en' => fake()->paragraph(3)]);
 
-                        // 2. MCQ Slide (pick one of the course questions)
-                        if ($questions->isNotEmpty()) {
+                        // Ensure we have at least one MCQ and one Term slide if possible
+                        if ($i === 2 && $questions->isNotEmpty()) {
+                            $type = 'mcq';
                             $q = $questions->random();
-                            Slide::factory()->for($lesson)->create([
-                                'type' => 'mcq',
-                                'question_id' => $q->id,
-                                'content' => json_encode([]),
-                            ]);
+                            $questionId = $q->id;
+                            $content = json_encode([]);
+                        } elseif ($i === 3 && $terms->isNotEmpty()) {
+                            $type = 'term';
+                            $t = $terms->random();
+                            $termId = $t->id;
+                            $content = json_encode([]);
+                        } elseif ($i > 3) {
+                            // Randomize the rest
+                            $rand = rand(1, 10);
+                            if ($rand <= 3 && $questions->isNotEmpty()) {
+                                $type = 'mcq';
+                                $q = $questions->random();
+                                $questionId = $q->id;
+                                $content = json_encode([]);
+                            } elseif ($rand <= 6 && $terms->isNotEmpty()) {
+                                $type = 'term';
+                                $t = $terms->random();
+                                $termId = $t->id;
+                                $content = json_encode([]);
+                            }
                         }
 
-                        // 3. Term Slide (pick one of the course terms)
-                        if ($terms->isNotEmpty()) {
-                            $t = $terms->random();
-                            Slide::factory()->for($lesson)->create([
-                                'type' => 'term',
-                                'term_id' => $t->id,
-                                'content' => json_encode([]),
-                            ]);
-                        }
+                        Slide::factory()->for($lesson)->create([
+                            'type' => $type,
+                            'sort_order' => $i,
+                            'question_id' => $questionId,
+                            'term_id' => $termId,
+                            'content' => $content,
+                        ]);
                     }
                 }
             }

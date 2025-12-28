@@ -24,11 +24,10 @@ class SubscriptionPlanController extends Controller
 
         $query = SubscriptionPlan::query();
 
-        // Apply filters
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-        }
+        // Ensure we only fetch plans for the specified course
+        $query->where('course_id', $course->id);
 
+        // Apply filters
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }

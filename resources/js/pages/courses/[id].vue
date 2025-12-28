@@ -3,14 +3,20 @@ import api from '@/utils/api'
 import { VideoPlayer } from '@videojs-player/vue'
 import 'video.js/dist/video-js.css'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const courseDetails = ref(null)
 const panelStatus = ref(0)
 const isLoading = ref(false)
 const processingPlanId = ref(null)
 const error = ref(null)
+const isPaymentErrorDialogVisible = ref(false)
+const isPaymentMethodDialogVisible = ref(false)
+const paymentMethods = ref([])
+const selectedPaymentMethod = ref(null)
+const selectedPlan = ref(null)
 
 const fetchCourseDetails = async () => {
   isLoading.value = true
@@ -27,8 +33,27 @@ const fetchCourseDetails = async () => {
   }
 }
 
-onMounted(() => {
-  fetchCourseDetails()
+onMounted(async () => {
+  await fetchCourseDetails()
+  
+  // Check for payment success and redirect if enrolled
+  if (route.query.payment === 'success' && courseDetails.value?.isEnrolled) {
+    // Optional: Show a toast here
+    router.push(`/my-courses/${courseDetails.value.id}`)
+  } else if (route.query.payment === 'failed') {
+    if (route.query.payment_id) {
+      error.value = 'Subscription payment failed. Please try again or contact support.'
+      isPaymentErrorDialogVisible.value = true
+    }
+
+    // Clean up URL without reload
+    const query = { ...route.query }
+
+    delete query.payment
+    delete query.id
+    delete query.payment_id
+    router.replace({ query })
+  }
 })
 
 const subscriptionPlans = computed(() => courseDetails.value?.subscriptionPlans || [])
@@ -43,6 +68,7 @@ const resolvePlanTypeColor = type => {
 
 const handlePayment = async plan => {
   processingPlanId.value = plan.id
+  selectedPlan.value = plan
   try {
     // If the plan is free, subscribe directly without payment gateway
     if (parseFloat(plan.price) === 0) {
@@ -54,46 +80,178 @@ const handlePayment = async plan => {
       // Refresh course details to update UI state
       await fetchCourseDetails()
 
-      // toast.success('Successfully subscribed to free plan')
-      
-      // Optional: Redirect or update UI to show content access
+      if (courseDetails.value?.isEnrolled) {
+        router.push(`/my-courses/${courseDetails.value.id}`)
+      }
     } else {
-      // For paid plans, initiate payment checkout
-      const response = await api.post('/payments/checkout', {
-        amount: plan.price,
-        currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
-        // eslint-disable-next-line camelcase
-        plan_id: plan.id,
-        // eslint-disable-next-line camelcase
-        course_id: courseDetails.value.id,
+      // For paid plans, fetch payment methods first
+      const response = await api.get('/payments/methods', {
+        params: {
+          amount: plan.price,
+          currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
+        },
       })
 
-      if (response.success && response.paymentUrl) {
-        window.location.href = response.paymentUrl
+      if (response.success) {
+        paymentMethods.value = response.data
+        isPaymentMethodDialogVisible.value = true
       } else {
-        console.error('Payment initiation failed', response)
-
-        // toast.error('Failed to initiate payment')
+        throw new Error('Failed to fetch payment methods')
       }
     }
   } catch (err) {
     console.error('Subscription error', err)
-
-    // toast.error(err.message || 'Subscription failed')
+    error.value = err.message || 'Subscription failed'
+    isPaymentErrorDialogVisible.value = true
   } finally {
     processingPlanId.value = null
+  }
+}
+
+const proceedToCheckout = async () => {
+  if (!selectedPlan.value || !selectedPaymentMethod.value) return
+
+  processingPlanId.value = selectedPlan.value.id
+  isPaymentMethodDialogVisible.value = false
+
+  try {
+    const response = await api.post('/payments/checkout', {
+      amount: selectedPlan.value.price,
+      currency: selectedPlan.value.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
+      // eslint-disable-next-line camelcase
+      plan_id: selectedPlan.value.id,
+      // eslint-disable-next-line camelcase
+      course_id: courseDetails.value.id,
+      // eslint-disable-next-line camelcase
+      payment_method_id: String(selectedPaymentMethod.value),
+    })
+
+    if (response.success && response.paymentUrl) {
+      window.location.href = response.paymentUrl
+    } else {
+      throw new Error('Payment initiation failed')
+    }
+  } catch (err) {
+    console.error('Checkout error', err)
+    error.value = err.message || 'Checkout failed'
+    isPaymentErrorDialogVisible.value = true
+  } finally {
+    processingPlanId.value = null
+    selectedPlan.value = null
+    selectedPaymentMethod.value = null
   }
 }
 
 // Check for payment status in query params
 if (route.query.payment === 'success') {
   console.log('Payment successful')
-} else if (route.query.payment === 'failed') {
-  console.log('Payment failed')
 }
 </script>
 
 <template>
+  <VDialog
+    v-model="isPaymentErrorDialogVisible"
+    max-width="500"
+  >
+    <VCard class="text-center pa-4">
+      <VCardText>
+        <VIcon
+          icon="tabler-alert-circle"
+          size="64"
+          color="error"
+          class="mb-4"
+        />
+        <h3 class="text-h5 font-weight-bold text-error mb-2">
+          Payment Failed
+        </h3>
+        <p class="text-body-1 mb-0">
+          {{ error }}
+        </p>
+      </VCardText>
+      <VCardActions class="justify-center">
+        <VBtn
+          color="primary"
+          variant="elevated"
+          @click="isPaymentErrorDialogVisible = false"
+        >
+          Close
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
+  <VDialog
+    v-model="isPaymentMethodDialogVisible"
+    max-width="600"
+  >
+    <VCard>
+      <VCardTitle class="d-flex justify-space-between align-center pa-4">
+        <span class="text-h5">Select Payment Method</span>
+        <VBtn
+          icon
+          variant="text"
+          color="default"
+          @click="isPaymentMethodDialogVisible = false"
+        >
+          <VIcon icon="tabler-x" />
+        </VBtn>
+      </VCardTitle>
+      
+      <VDivider />
+
+      <VCardText class="pa-4">
+        <VRow>
+          <VCol
+            v-for="method in paymentMethods"
+            :key="method.paymentMethodId"
+            cols="12"
+            sm="6"
+            md="4"
+          >
+            <VCard
+              border
+              :color="selectedPaymentMethod === method.paymentMethodId ? 'primary' : ''"
+              :variant="selectedPaymentMethod === method.paymentMethodId ? 'tonal' : 'outlined'"
+              class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
+              @click="selectedPaymentMethod = method.paymentMethodId"
+            >
+              <VImg
+                :src="method.imageUrl"
+                height="40"
+                width="60"
+                class="mb-2"
+                contain
+              />
+              <span class="text-subtitle-2 text-center">{{ method.paymentMethodEn }}</span>
+            </VCard>
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn
+          variant="outlined"
+          color="secondary"
+          @click="isPaymentMethodDialogVisible = false"
+        >
+          Cancel
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          :disabled="!selectedPaymentMethod"
+          :loading="!!processingPlanId"
+          @click="proceedToCheckout"
+        >
+          Proceed to Pay
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
   <VRow v-if="courseDetails">
     <VCol
       cols="12"
@@ -227,8 +385,25 @@ if (route.query.payment === 'success') {
                 Subscription Plans
               </h5>
               
+              <div v-if="courseDetails.isEnrolled">
+                <VAlert
+                  type="success"
+                  variant="tonal"
+                  class="mb-4"
+                >
+                  You are already enrolled in this course.
+                </VAlert>
+                <VBtn
+                  block
+                  color="success"
+                  :to="`/my-courses/${courseDetails.id}`"
+                >
+                  Continue Learning
+                </VBtn>
+              </div>
+
               <div
-                v-if="subscriptionPlans.length > 0"
+                v-else-if="subscriptionPlans.length > 0"
                 class="d-flex flex-wrap gap-4"
               >
                 <VCard 

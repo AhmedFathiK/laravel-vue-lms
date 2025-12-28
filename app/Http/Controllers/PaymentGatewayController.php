@@ -34,6 +34,7 @@ class PaymentGatewayController extends Controller
             'currency' => Currency::validationRules(required: false),
             'plan_id' => ['nullable', 'exists:subscription_plans,id'],
             'course_id' => ['nullable', 'exists:courses,id'],
+            'payment_method_id' => ['nullable', 'string'],
         ];
 
         $validated = $request->validate($rules);
@@ -52,6 +53,7 @@ class PaymentGatewayController extends Controller
             'payment_details' => [
                 'plan_id' => $validated['plan_id'] ?? null,
                 'course_id' => $validated['course_id'] ?? null,
+                'payment_method_id' => $validated['payment_method_id'] ?? null,
             ],
         ]);
 
@@ -67,7 +69,8 @@ class PaymentGatewayController extends Controller
                     'customer_reference' => (string) $payment->id,
                 ],
                 callbackUrl: route('payments.callback'),
-                errorUrl: route('payments.error')
+                errorUrl: route('payments.error'),
+                paymentMethodId: $validated['payment_method_id'] ?? null
             );
 
             if (!empty($checkout['transaction_id'])) {
@@ -85,6 +88,36 @@ class PaymentGatewayController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Payment initiation failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available payment methods.
+     */
+    public function getPaymentMethods(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.1'],
+            'currency' => Currency::validationRules(required: false),
+        ]);
+
+        $amount = (float) $validated['amount'];
+        $currency = Currency::normalize((string) ($validated['currency'] ?? Currency::default()));
+
+        try {
+            $methods = $this->paymentGateway->getPaymentMethods($amount, $currency);
+
+            return response()->json([
+                'success' => true,
+                'data' => $methods,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to fetch payment methods: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment methods',
             ], 500);
         }
     }
@@ -151,11 +184,51 @@ class PaymentGatewayController extends Controller
     /**
      * Handle gateway error callback.
      */
-    public function error(Request $request): RedirectResponse
+    public function error(Request $request): RedirectResponse|JsonResponse
     {
         $gatewayPaymentId = $request->query('payment_id') ?? $request->query('id') ?? $request->query('paymentId');
 
         Log::error('Payment Failed Callback for gateway payment id: ' . (string) $gatewayPaymentId);
+
+        if (!$gatewayPaymentId) {
+            return redirect('/?payment=error&reason=missing_id');
+        }
+
+        try {
+            $statusData = $this->paymentGateway->getPaymentStatus((string) $gatewayPaymentId);
+
+            $localPaymentId = $statusData['local_payment_id'] ?? null;
+            $normalizedStatus = (string) ($statusData['status'] ?? 'failed');
+
+            $gatewayError = 'Unknown gateway error';
+            if (isset($statusData['gateway_data']['InvoiceTransactions'][0]['Error'])) {
+                $gatewayError = $statusData['gateway_data']['InvoiceTransactions'][0]['Error'];
+            } elseif (isset($statusData['gateway_data']['Data']['Error'])) {
+                $gatewayError = $statusData['gateway_data']['Data']['Error'];
+            }
+
+            $payment = $localPaymentId ? Payment::find($localPaymentId) : null;
+
+            if ($payment) {
+                $existingDetails = $payment->payment_details ?? [];
+                $mergedDetails = array_merge($existingDetails, [
+                    'gateway' => $this->paymentGateway->gatewayKey(),
+                    'gateway_payment_id' => (string) $gatewayPaymentId,
+                    'gateway_status' => $normalizedStatus,
+                    'gateway_data' => $statusData['gateway_data'] ?? null,
+                    'failure_reason' => $gatewayError,
+                ]);
+
+                $payment->update([
+                    'status' => 'failed',
+                    'payment_details' => $mergedDetails,
+                ]);
+
+                return redirect($this->failedRedirectUrl($existingDetails, $payment->id));
+            }
+        } catch (\Throwable $e) {
+            Log::error('Payment Error Callback Processing Failed: ' . $e->getMessage());
+        }
 
         return redirect('/?payment=error');
     }
@@ -195,7 +268,7 @@ class PaymentGatewayController extends Controller
     private function successRedirectUrl(array $existingDetails, int $paymentId): string
     {
         if (isset($existingDetails['course_id'])) {
-            return '/courses/' . $existingDetails['course_id'] . '?payment=success';
+            return '/courses/' . $existingDetails['course_id'] . '?payment=success&payment_id=' . $paymentId;
         }
 
         return '/?payment=success&id=' . $paymentId;
@@ -204,7 +277,7 @@ class PaymentGatewayController extends Controller
     private function failedRedirectUrl(array $existingDetails, int $paymentId): string
     {
         if (isset($existingDetails['course_id'])) {
-            return '/courses/' . $existingDetails['course_id'] . '?payment=failed';
+            return '/courses/' . $existingDetails['course_id'] . '?payment=failed&payment_id=' . $paymentId;
         }
 
         return '/?payment=failed&id=' . $paymentId;

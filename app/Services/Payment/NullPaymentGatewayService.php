@@ -15,7 +15,8 @@ class NullPaymentGatewayService implements PaymentServiceInterface
         array $customer,
         array $metadata,
         string $callbackUrl,
-        string $errorUrl
+        string $errorUrl,
+        ?string $paymentMethodId = null
     ): array {
         $currency = Currency::normalize($currency);
         $reference = (string) ($metadata['customer_reference'] ?? '');
@@ -28,6 +29,33 @@ class NullPaymentGatewayService implements PaymentServiceInterface
                 'currency' => $currency,
                 'customer' => $customer,
                 'customer_reference' => $reference,
+                'payment_method_id' => $paymentMethodId,
+            ],
+        ];
+    }
+
+    public function getPaymentMethods(float $amount, string $currency): array
+    {
+        return [
+            [
+                'PaymentMethodId' => '1',
+                'PaymentMethodEn' => 'KNET',
+                'PaymentMethodAr' => 'KNET',
+                'ImageUrl' => 'https://portal.myfatoorah.com/imgs/payment-methods/knet.png',
+                'IsDirectPayment' => false,
+                'ServiceCharge' => 0.5,
+                'TotalAmount' => $amount + 0.5,
+                'CurrencyIso' => $currency,
+            ],
+            [
+                'PaymentMethodId' => '2',
+                'PaymentMethodEn' => 'VISA/MASTER',
+                'PaymentMethodAr' => 'VISA/MASTER',
+                'ImageUrl' => 'https://portal.myfatoorah.com/imgs/payment-methods/vm.png',
+                'IsDirectPayment' => true,
+                'ServiceCharge' => 1.0,
+                'TotalAmount' => $amount + 1.0,
+                'CurrencyIso' => $currency,
             ],
         ];
     }

@@ -19,28 +19,37 @@ class SlideFactory extends Factory
      */
     public function definition(): array
     {
-        $type = $this->faker->randomElement(['explanation', 'mcq', 'term']);
-        $content = ['en' => $this->faker->paragraph(3)];
-        $questionId = null;
-        $termId = null;
-
-        if ($type === 'mcq') {
-            $question = Question::factory()->create(['type' => 'mcq']);
-            $questionId = $question->id;
-            $content = []; // Content is stored in the question
-        } elseif ($type === 'term') {
-            $term = Term::factory()->create();
-            $termId = $term->id;
-            $content = []; // Content is stored in the term
-        }
-
         return [
             'lesson_id' => Lesson::factory(),
-            'type' => $type,
-            'content' => json_encode($content),
+            'type' => 'explanation',
+            'content' => json_encode(['en' => $this->faker->paragraph(3)]),
             'sort_order' => $this->faker->numberBetween(1, 100),
-            'question_id' => $questionId,
-            'term_id' => $termId,
+            'question_id' => null,
+            'term_id' => null,
         ];
+    }
+
+    public function mcq(): static
+    {
+        return $this->state(function (array $attributes) {
+            $question = Question::factory()->create(['type' => 'mcq']);
+            return [
+                'type' => 'mcq',
+                'question_id' => $question->id,
+                'content' => json_encode([]),
+            ];
+        });
+    }
+
+    public function term(): static
+    {
+        return $this->state(function (array $attributes) {
+            $term = Term::factory()->create();
+            return [
+                'type' => 'term',
+                'term_id' => $term->id,
+                'content' => json_encode([]),
+            ];
+        });
     }
 }
