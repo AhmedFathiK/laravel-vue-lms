@@ -33,11 +33,19 @@ const sortOptions = [
   { title: 'Alphabetical', value: 'title,asc' },
 ]
 
-// Subscription dialog
+// Subscription and Payment dialogs
 const isSubscribeDialogVisible = ref(false)
 const selectedCourseForSubscription = ref(null)
 const subscriptionPlans = ref([])
 const selectedPlan = ref(null)
+
+const isLoading = ref(false)
+const processingPlanId = ref(null)
+const error = ref(null)
+const isPaymentErrorDialogVisible = ref(false)
+const isPaymentMethodDialogVisible = ref(false)
+const paymentMethods = ref([])
+const selectedPaymentMethod = ref(null)
 
 const fetchCategories = async () => {
   try {
@@ -86,15 +94,27 @@ const handleSubscribeClick = async course => {
     return
   }
 
+  if (course.isEnrolled) {
+    router.push(`/my-courses/${course.id}`)
+    
+    return
+  }
+
   selectedCourseForSubscription.value = course
 
   if (course.isFree) {
     try {
       await api.post(`/learner/courses/${course.id}/enroll`)
-      alert(`Successfully enrolled in ${course.title}`)
-    } catch (error) {
-      console.error('Error enrolling in free course:', error)
-      alert('Failed to enroll in course.')
+      
+      // Refresh courses to update enrollment status
+      await fetchCourses()
+      
+      // Redirect to course details
+      router.push(`/my-courses/${course.id}`)
+    } catch (err) {
+      console.error('Error enrolling in free course:', err)
+      error.value = err.message || 'Failed to enroll in course.'
+      isPaymentErrorDialogVisible.value = true
     }
   } else {
     try {
@@ -102,28 +122,100 @@ const handleSubscribeClick = async course => {
 
       subscriptionPlans.value = response.plans
       isSubscribeDialogVisible.value = true
-    } catch (error) {
-      console.error('Error fetching subscription plans:', error)
-      alert('Failed to load subscription plans.')
+    } catch (err) {
+      console.error('Error fetching subscription plans:', err)
+      error.value = err.message || 'Failed to load subscription plans.'
+      isPaymentErrorDialogVisible.value = true
     }
+  }
+}
+
+const handlePayment = async plan => {
+  processingPlanId.value = plan.id
+  selectedPlan.value = plan
+  try {
+    // If the plan is free, subscribe directly without payment gateway
+    if (parseFloat(plan.price) === 0) {
+      await api.post('/learner/subscribe', {
+        // eslint-disable-next-line camelcase
+        plan_id: plan.id,
+      })
+        
+      isSubscribeDialogVisible.value = false
+      
+      // Refresh courses to update UI state
+      await fetchCourses()
+
+      router.push(`/my-courses/${selectedCourseForSubscription.value.id}`)
+    } else {
+      // For paid plans, fetch payment methods first
+      const response = await api.get('/payments/methods', {
+        params: {
+          amount: plan.price,
+          currency: plan.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
+        },
+      })
+
+      if (response.success) {
+        paymentMethods.value = response.data
+        isPaymentMethodDialogVisible.value = true
+        isSubscribeDialogVisible.value = false
+      } else {
+        throw new Error('Failed to fetch payment methods')
+      }
+    }
+  } catch (err) {
+    console.error('Subscription error', err)
+    error.value = err.message || 'Subscription failed'
+    isPaymentErrorDialogVisible.value = true
+  } finally {
+    processingPlanId.value = null
+  }
+}
+
+const proceedToCheckout = async () => {
+  if (!selectedPlan.value || !selectedPaymentMethod.value) return
+
+  processingPlanId.value = selectedPlan.value.id
+  isPaymentMethodDialogVisible.value = false
+
+  try {
+    const response = await api.post('/payments/checkout', {
+      amount: selectedPlan.value.price,
+      currency: selectedPlan.value.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
+      // eslint-disable-next-line camelcase
+      plan_id: selectedPlan.value.id,
+      // eslint-disable-next-line camelcase
+      course_id: selectedCourseForSubscription.value.id,
+      // eslint-disable-next-line camelcase
+      payment_method_id: String(selectedPaymentMethod.value),
+    })
+
+    if (response.success && response.paymentUrl) {
+      window.location.href = response.paymentUrl
+    } else {
+      throw new Error('Payment initiation failed')
+    }
+  } catch (err) {
+    console.error('Checkout error', err)
+    error.value = err.message || 'Checkout failed'
+    isPaymentErrorDialogVisible.value = true
+  } finally {
+    processingPlanId.value = null
+    selectedPlan.value = null
+    selectedPaymentMethod.value = null
   }
 }
 
 const confirmSubscription = async () => {
   if (!selectedPlan.value) {
-    alert('Please select a plan.')
+    error.value = 'Please select a plan.'
+    isPaymentErrorDialogVisible.value = true
     
     return
   }
 
-  try {
-    await api.post('/learner/subscribe', { planId: selectedPlan.value.id })
-    alert(`Successfully subscribed to ${selectedCourseForSubscription.value.title} - ${selectedPlan.value.name}`)
-    isSubscribeDialogVisible.value = false
-  } catch (error) {
-    console.error('Error subscribing:', error)
-    alert('Failed to subscribe.')
-  }
+  await handlePayment(selectedPlan.value)
 }
 
 watch([searchQuery, selectedCategory, selectedPricing, sortBy, currentPage], fetchCourses, { deep: true })
@@ -145,21 +237,25 @@ onMounted(() => {
 
       <!-- Search and Filter Bar -->
       <VCol cols="12">
-        <VCard class="pa-4 mb-6">
-          <VRow>
+        <VCard class="pa-6 mb-8 filter-card">
+          <VRow align="center">
             <VCol
               cols="12"
-              md="5"
+              md="4"
             >
               <VTextField
                 v-model="searchQuery"
                 label="Search courses..."
                 prepend-inner-icon="tabler-search"
+                variant="outlined"
+                hide-details
                 clearable
+                rounded="lg"
               />
             </VCol>
             <VCol
               cols="12"
+              sm="6"
               md="3"
             >
               <VSelect
@@ -168,23 +264,30 @@ onMounted(() => {
                 :items="categories"
                 item-title="title"
                 item-value="value"
+                variant="outlined"
+                hide-details
                 clearable
+                rounded="lg"
               />
             </VCol>
             <VCol
               cols="12"
+              sm="3"
               md="2"
             >
               <VSelect
                 v-model="selectedPricing"
                 label="Pricing"
                 :items="pricingOptions"
-                clearable
+                variant="outlined"
+                hide-details
+                rounded="lg"
               />
             </VCol>
             <VCol
               cols="12"
-              md="2"
+              sm="3"
+              md="3"
             >
               <VSelect
                 v-model="sortBy"
@@ -192,6 +295,9 @@ onMounted(() => {
                 :items="sortOptions"
                 item-title="title"
                 item-value="value"
+                variant="outlined"
+                hide-details
+                rounded="lg"
               />
             </VCol>
           </VRow>
@@ -209,79 +315,105 @@ onMounted(() => {
             md="4"
           >
             <VCard
-              class="d-flex flex-column h-100"
-              rounded="lg"
-              :elevation="course.isFeatured ? 8 : 2"
+              class="course-card d-flex flex-column h-100"
+              :elevation="course.isFeatured ? 4 : 1"
             >
-              <div class="position-relative">
+              <div
+                class="position-relative overflow-hidden cursor-pointer"
+                @click="viewCourseDetails(course.id)"
+              >
                 <VImg
                   :src="course.thumbnail || 'https://placehold.co/600x400/EEE/31343C'"
-                  height="200px"
-                  max-height="200px"
+                  height="220px"
                   cover
-                  class="rounded-t-lg"
+                  class="course-thumbnail transition-all"
                   :aspect-ratio="16/9"
                 />
-                <VChip
-                  v-if="course.isFeatured"
-                  color="warning"
-                  size="small"
-                  class="position-absolute top-0 start-0 ma-2 font-weight-bold"
-                  style="z-index: 1;"
+                
+                <!-- Overlay Badges -->
+                <div
+                  class="position-absolute top-0 start-0 w-100 pa-3 d-flex justify-space-between align-start"
+                  style="z-index: 2;"
                 >
-                  Featured
-                </VChip>
-              </div>
-
-              <VCardText class="flex-grow-1">
-                <div class="d-flex justify-space-between align-center mb-2">
+                  <div class="d-flex flex-column gap-2">
+                    <VChip
+                      v-if="course.isFeatured"
+                      color="warning"
+                      size="x-small"
+                      variant="elevated"
+                      class="font-weight-bold px-2"
+                    >
+                      FEATURED
+                    </VChip>
+                    <VChip
+                      :color="course.isFree ? 'success' : 'info'"
+                      size="x-small"
+                      variant="elevated"
+                      class="font-weight-bold px-2"
+                    >
+                      {{ course.isFree ? 'FREE' : 'PAID' }}
+                    </VChip>
+                  </div>
+                  
                   <VChip
-                    :color="course.isFree ? 'success' : 'info'"
+                    v-if="course.isEnrolled"
+                    color="success"
                     size="small"
+                    variant="elevated"
+                    class="font-weight-bold"
                   >
-                    {{ course.isFree ? 'Free' : 'Paid' }}
-                  </VChip>
-                  <VChip
-                    v-if="course.category"
-                    color="secondary"
-                    size="small"
-                  >
-                    {{ course.category.name }}
+                    <VIcon
+                      start
+                      icon="tabler-circle-check"
+                      size="14"
+                    />
+                    ENROLLED
                   </VChip>
                 </div>
-                <h5 class="text-h5 font-weight-bold mb-2">
+              </div>
+
+              <VCardText class="pa-5 flex-grow-1">
+                <div class="d-flex align-center mb-2">
+                  <span
+                    v-if="course.category"
+                    class="text-overline text-secondary font-weight-bold"
+                  >
+                    {{ course.category.name }}
+                  </span>
+                  <VSpacer />
+                </div>
+                
+                <h3
+                  class="text-h6 font-weight-bold mb-2 line-clamp-2"
+                  style="min-height: 3rem; line-height: 1.5rem;"
+                >
                   {{ course.title }}
-                </h5>
-                <p class="text-body-1 truncated-text">
+                </h3>
+                
+                <p class="text-body-2 text-medium-emphasis truncated-text mb-0">
                   {{ course.description }}
                 </p>
               </VCardText>
 
-              <VCardActions class="pa-4">
-                <VRow>
-                  <VCol cols="6">
-                    <VBtn
-                      block
-                      rounded="lg"
-                      color="secondary"
-                      variant="tonal"
-                      @click="viewCourseDetails(course.id)"
-                    >
-                      View Details
-                    </VBtn>
-                  </VCol>
-                  <VCol cols="6">
-                    <VBtn
-                      block
-                      rounded="lg"
-                      color="primary"
-                      variant="tonal"
-                      @click="handleSubscribeClick(course)"
-                    >
-                      Subscribe
-                    </VBtn>
-                  </VCol>
-                </VRow>
+              <VDivider class="mx-5" />
+
+              <VCardActions class="pa-5">
+                <VBtn
+                  block
+                  :color="course.isEnrolled ? 'success' : 'primary'"
+                  variant="elevated"
+                  rounded="lg"
+                  size="large"
+                  class="font-weight-bold"
+                  @click="handleSubscribeClick(course)"
+                >
+                  <VIcon
+                    v-if="course.isEnrolled"
+                    start
+                    icon="tabler-player-play"
+                  />
+                  {{ course.isEnrolled ? 'Continue Learning' : 'Subscribe Now' }}
+                </VBtn>
               </VCardActions>
             </VCard>
           </VCol>
@@ -375,16 +507,154 @@ onMounted(() => {
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <!-- Payment Method Dialog -->
+    <VDialog
+      v-model="isPaymentMethodDialogVisible"
+      max-width="600"
+    >
+      <VCard>
+        <VCardTitle class="d-flex justify-space-between align-center pa-4">
+          <span class="text-h5">Select Payment Method</span>
+          <VBtn
+            icon
+            variant="text"
+            color="default"
+            @click="isPaymentMethodDialogVisible = false"
+          >
+            <VIcon icon="tabler-x" />
+          </VBtn>
+        </VCardTitle>
+        
+        <VDivider />
+
+        <VCardText class="pa-4">
+          <VRow>
+            <VCol
+              v-for="method in paymentMethods"
+              :key="method.paymentMethodId"
+              cols="12"
+              sm="6"
+              md="4"
+            >
+              <VCard
+                border
+                :color="selectedPaymentMethod === method.paymentMethodId ? 'primary' : ''"
+                :variant="selectedPaymentMethod === method.paymentMethodId ? 'tonal' : 'outlined'"
+                class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
+                @click="selectedPaymentMethod = method.paymentMethodId"
+              >
+                <VImg
+                  :src="method.imageUrl"
+                  height="40"
+                  width="60"
+                  class="mb-2"
+                  contain
+                />
+                <span class="text-subtitle-2 text-center">{{ method.paymentMethodEn }}</span>
+              </VCard>
+            </VCol>
+          </VRow>
+        </VCardText>
+
+        <VDivider />
+
+        <VCardActions class="pa-4">
+          <VSpacer />
+          <VBtn
+            variant="outlined"
+            color="secondary"
+            @click="isPaymentMethodDialogVisible = false"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            color="primary"
+            variant="elevated"
+            :disabled="!selectedPaymentMethod"
+            :loading="!!processingPlanId"
+            @click="proceedToCheckout"
+          >
+            Proceed to Pay
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- Payment Error Dialog -->
+    <VDialog
+      v-model="isPaymentErrorDialogVisible"
+      max-width="500"
+    >
+      <VCard class="text-center pa-4">
+        <VCardText>
+          <VIcon
+            icon="tabler-alert-circle"
+            size="64"
+            color="error"
+            class="mb-4"
+          />
+          <h3 class="text-h5 font-weight-bold text-error mb-2">
+            Payment Failed
+          </h3>
+          <p class="text-body-1 mb-0">
+            {{ error }}
+          </p>
+        </VCardText>
+        <VCardActions class="justify-center">
+          <VBtn
+            color="primary"
+            variant="elevated"
+            @click="isPaymentErrorDialogVisible = false"
+          >
+            Close
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </VContainer>
 </template>
 
 <style scoped>
+.course-card {
+  transition: all 0.3s ease-in-out;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px -4px rgba(var(--v-theme-on-surface), 0.1) !important;
+}
+
+.course-card:hover .course-thumbnail {
+  transform: scale(1.05);
+}
+
+.course-thumbnail {
+  transition: transform 0.5s ease;
+}
+
 .truncated-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3; /* Limit to 3 lines */
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.6;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.filter-card {
+  border: 1px solid rgba(var(--v-border-color), 0.1);
+  background: rgba(var(--v-theme-surface), 0.8);
+  backdrop-filter: blur(8px);
 }
 </style>

@@ -123,24 +123,26 @@ const getStatusClasses = (item, level) => {
           {{ level.title }}
         </h2>
         <div class="timeline-wrapper">
+          <div class="timeline-main-line" />
           <div
-            v-for="(item, itemIndex) in level.items"
+            v-for="(item) in level.items"
             :key="item.id + '-' + item.type"
             class="timeline-item"
             :class="getStatusClasses(item, level)"
           >
-            <div
-              v-if="itemIndex < level.items.length - 1"
-              class="timeline-connector"
-            />
             <div class="timeline-avatar-wrapper">
               <VAvatar
                 size="100"
                 class="timeline-avatar"
                 :style="{ cursor: item.locked ? 'not-allowed' : 'pointer' }"
+                variant="flat"
+                color="surface"
                 @click="openModal(item)"
               >
-                <VIcon size="x-large">
+                <VIcon
+                  size="x-large"
+                  :class="{ 'opacity-60': item.locked }"
+                >
                   {{ item.icon }}
                 </VIcon>
               </VAvatar>
@@ -216,13 +218,26 @@ const getStatusClasses = (item, level) => {
 
 .timeline-wrapper {
   position: relative;
+  padding-left: 0;
+}
+
+.timeline-main-line {
+  position: absolute;
+  left: 50px; /* Center of 100px avatar */
+  top: 50px; /* Start from center of first avatar */
+  bottom: 50px; /* End at center of last avatar */
+  width: 2px;
+  background-color: rgba(var(--v-border-color), 0.2);
+  z-index: 0;
+  transition: all 0.3s ease;
 }
 
 .timeline-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   position: relative;
-  padding-bottom: 16px;
+  padding-bottom: 64px;
+  z-index: 1;
 }
 
 .timeline-item:last-child {
@@ -232,72 +247,58 @@ const getStatusClasses = (item, level) => {
 .timeline-avatar-wrapper {
   position: relative;
   z-index: 2;
-  margin-top: 8px;
+  flex-shrink: 0;
 }
 
 .timeline-avatar {
-  border: 2px solid #9E9E9E; /* Default gray border */
-  background-color: white;
+  border: 2px solid rgba(var(--v-border-color), 0.3);
+  background-color: rgb(var(--v-theme-surface)) !important;
   transition: all 0.3s ease;
+  z-index: 2;
+  position: relative;
+  opacity: 1 !important;
 }
 
 .timeline-card {
   width: 100%;
   transition: all 0.3s ease;
-  margin-top: 8px;
 }
 
-.timeline-connector {
-  position: absolute;
-  left: 50px; /* Center of 100px avatar */
-  top: 0;
-  height: 100%;
-  width: 2px;
-  background-color: #9E9E9E; /* Default gray line */
-  z-index: 1;
-  margin-top: 58px; /* Offset to start below avatar center? No, usually top: 0 and z-index below avatar */
-}
-/* Adjust connector logic */
-/* In original: left: 50px. Avatar size 100. Center is 50px. */
-/* margin-top: 8px on avatar wrapper. */
-/* The connector should probably start from the center of the avatar and go down. */
-/* But here it seems to run full height. */
-
-/* States */
 .status-completed .timeline-avatar {
-  border-color: #4CAF50;
-  color: #4CAF50;
+  border-color: rgb(var(--v-theme-success));
+  color: rgb(var(--v-theme-success));
 }
-.status-completed .timeline-connector {
-  background-color: #4CAF50;
-}
+
 .status-completed .timeline-card {
-  border-left: 4px solid #4CAF50;
+  border-inline-start: 4px solid rgb(var(--v-theme-success));
 }
 
 .status-current .timeline-avatar {
-  border-color: #2196F3;
-  color: #2196F3;
-  box-shadow: 0 0 12px 4px rgba(33, 150, 243, 0.5);
-}
-.status-current .timeline-card {
-  border-left: 4px solid #2196F3;
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 12px 4px rgba(var(--v-theme-primary), 0.25);
 }
 
-.status-locked {
+.status-current .timeline-card {
+  border-inline-start: 4px solid rgb(var(--v-theme-primary));
+}
+
+.status-locked .timeline-card {
+  opacity: 0.6;
+}
+
+.opacity-60 {
   opacity: 0.6;
 }
 
 /* Exam Specific Styles */
 .item-exam.status-completed .timeline-avatar {
-  border-color: #FFC107;
-  color: #FFC107;
+  border-color: rgb(var(--v-theme-warning));
+  color: rgb(var(--v-theme-warning));
 }
-.item-exam.status-completed .timeline-connector {
-  background-color: #FFC107;
-}
+
 .item-exam.status-completed .timeline-card {
-  border-left: 4px solid #FFC107;
+  border-inline-start: 4px solid rgb(var(--v-theme-warning));
 }
 
 @media (max-width: 600px) {

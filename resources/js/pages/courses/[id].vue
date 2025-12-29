@@ -5,6 +5,12 @@ import 'video.js/dist/video-js.css'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+definePage({
+  meta: {
+    layout: "learner",
+  },
+})
+
 const route = useRoute()
 const router = useRouter()
 const courseDetails = ref(null)
