@@ -118,6 +118,14 @@ class QuestionController extends Controller
 
         $question = Question::create($data);
 
+        if (isset($data['term_ids'])) {
+            $question->terms()->sync($data['term_ids']);
+        }
+
+        if (isset($data['concept_ids'])) {
+            $question->concepts()->sync($data['concept_ids']);
+        }
+
         return response()->json([
             'message' => 'Question created successfully',
             'question' => $question
@@ -127,8 +135,9 @@ class QuestionController extends Controller
     /**
      * Display the specified question.
      */
-    public function show(Question $question, Course $course, ShowQuestionRequest $request): JsonResponse
+    public function show(Course $course, Question $question, ShowQuestionRequest $request): JsonResponse
     {
+        $question->load(['terms', 'concepts']);
         return response()->json($question);
     }
 
@@ -180,6 +189,14 @@ class QuestionController extends Controller
         $this->processQuestionDataByType($data);
 
         $question->update($data);
+
+        if (isset($data['term_ids'])) {
+            $question->terms()->sync($data['term_ids']);
+        }
+
+        if (isset($data['concept_ids'])) {
+            $question->concepts()->sync($data['concept_ids']);
+        }
 
         return response()->json([
             'message' => 'Question updated successfully',

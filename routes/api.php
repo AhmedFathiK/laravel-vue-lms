@@ -173,6 +173,17 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
             Route::put('/{term}', [TermController::class, 'update']);
             Route::delete('/{term}', [TermController::class, 'destroy']);
         });
+
+        // Concepts
+        Route::prefix('/concepts')->group(function () {
+            Route::get('/', [ConceptController::class, 'index']);
+            Route::get('/select-fields', [ConceptController::class, 'getConceptsForSelectFields']);
+            Route::post('/', [ConceptController::class, 'store']);
+            Route::get('/{concept}', [ConceptController::class, 'show']);
+            Route::put('/{concept}', [ConceptController::class, 'update']);
+            Route::delete('/{concept}', [ConceptController::class, 'destroy']);
+            Route::post('/{concept}/translate', [ConceptController::class, 'translate']);
+        });
     });
 
     Route::apiResource('course-categories', \App\Http\Controllers\Admin\CourseCategoryController::class);

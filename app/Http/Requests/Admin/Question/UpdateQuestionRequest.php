@@ -51,6 +51,10 @@ class UpdateQuestionRequest extends FormRequest
             'incorrect_feedback' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
+            'term_ids' => ['nullable', 'array'],
+            'term_ids.*' => ['exists:terms,id'],
+            'concept_ids' => ['nullable', 'array'],
+            'concept_ids.*' => ['exists:concepts,id'],
 
             'media_type' => [Rule::in(['none', 'image', 'image_with_audio', 'video'])],
             'media_url' => ['nullable', 'string', 'max:255'],
@@ -197,5 +201,4 @@ class UpdateQuestionRequest extends FormRequest
 
         return $oldMediaType !== 'image_with_audio' && $newMediaType === 'image_with_audio';
     }
-
 }

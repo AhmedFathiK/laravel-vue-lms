@@ -72,14 +72,14 @@ class TermController extends Controller
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
-                // For JSON fields, we need to use whereRaw
-                $q->whereRaw("JSON_EXTRACT(term, '$.*') LIKE ?", [$search . '%'])
-                    ->orWhereRaw("JSON_EXTRACT(definition, '$.*') LIKE ?", ['%' . $search . '%'])
-                    ->orWhereRaw("JSON_EXTRACT(example, '$.*') LIKE ?", ['%' . $search . '%']);
+                $q->where('term', 'like', '%' . $search . '%');
             });
         }
-        $terms = $query->limit(5)->get();
-        return response()->json(TermResource::collection($terms));
+
+        $limit = $request->get('limit', 50);
+        $terms = $query->limit($limit)->get();
+
+        return response()->json(TermResource::collection($terms)->resolve());
     }
 
     /**

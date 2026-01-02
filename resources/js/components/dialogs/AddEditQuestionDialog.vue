@@ -34,6 +34,10 @@ const isFormValid = ref(true)
 // Local question state
 const localQuestion = ref({})
 
+// Pre-selected items for autocompletes
+const preSelectedTerms = ref([])
+const preSelectedConcepts = ref([])
+
 // Handle tag input
 const newTag = ref('')
 
@@ -64,6 +68,8 @@ const getDefaultQuestion = () => ({
   minWords: 0,
   maxWords: 0,
   content: {}, // Add content field
+  term_ids: [],
+  concept_ids: [],
 })
 
 // Computed dialog title
@@ -130,13 +136,35 @@ watch(
       
       if (props.dialogMode === 'edit' && props.data && Object.keys(props.data).length > 0) {
         localQuestion.value = JSON.parse(JSON.stringify(props.data))
+        
+        // Map relationships to IDs and pre-selected items
+        if (props.data.terms) {
+          localQuestion.value.term_ids = props.data.terms.map(t => t.id)
+          preSelectedTerms.value = props.data.terms
+        } else if (!localQuestion.value.term_ids) {
+          localQuestion.value.term_ids = []
+          preSelectedTerms.value = []
+        }
+
+        if (props.data.concepts) {
+          localQuestion.value.concept_ids = props.data.concepts.map(c => c.id)
+          preSelectedConcepts.value = props.data.concepts
+        } else if (!localQuestion.value.concept_ids) {
+          localQuestion.value.concept_ids = []
+          preSelectedConcepts.value = []
+        }
+
         initializeQuestionTypeData()
       } else {
         localQuestion.value = getDefaultQuestion()
+        preSelectedTerms.value = []
+        preSelectedConcepts.value = []
       }
       isFormValid.value = true
     } else {
       localQuestion.value = {}
+      preSelectedTerms.value = []
+      preSelectedConcepts.value = []
     }
   },
   { immediate: true },
@@ -1191,6 +1219,52 @@ const removeTag = tag => {
                 </VCol>
               </VRow>
             </div>
+          </div>
+
+          <VDivider class="my-6" />
+
+          <div class="mb-6">
+            <p class="text-overline text-primary mb-3">
+              {{ t('questions.dialog.relationships', 'Relationships') }}
+            </p>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppServerSideAutocomplete
+                  v-model="localQuestion.term_ids"
+                  :api-link="`/admin/courses/${props.courseId}/terms/select-fields`"
+                  :pre-selected-items="preSelectedTerms"
+                  :label="t('questions.dialog.relatedTerms', 'Related Terms')"
+                  multiple
+                  chips
+                  closable-chips
+                  item-title="term"
+                  item-value="id"
+                  :placeholder="t('questions.dialog.selectTerms', 'Select related terms')"
+                  :error-messages="formErrors.term_ids"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppServerSideAutocomplete
+                  v-model="localQuestion.concept_ids"
+                  :api-link="`/admin/courses/${props.courseId}/concepts/select-fields`"
+                  :pre-selected-items="preSelectedConcepts"
+                  :label="t('questions.dialog.relatedConcepts', 'Related Concepts')"
+                  multiple
+                  chips
+                  closable-chips
+                  item-title="title"
+                  item-value="id"
+                  :placeholder="t('questions.dialog.selectConcepts', 'Select related concepts')"
+                  :error-messages="formErrors.concept_ids"
+                />
+              </VCol>
+            </VRow>
           </div>
 
           <VDivider class="my-6" />

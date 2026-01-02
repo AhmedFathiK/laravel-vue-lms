@@ -336,7 +336,7 @@ const getInputClass = index => {
               >
                 <VChip
                   v-if="userAnswers[bIndex]"
-                  draggable="true"
+                  :draggable="true"
                   class="cursor-grab"
                   :color="isSubmitted ? (userAnswers[bIndex] === blank.answer ? 'success' : 'error') : 'primary'"
                   @dragstart="handleDragStart(userAnswers[bIndex], bIndex)"
@@ -369,7 +369,7 @@ const getInputClass = index => {
       <VChip
         v-for="(option, idx) in availableOptions"
         :key="idx"
-        draggable="true"
+        :draggable="true"
         class="cursor-grab elevation-2"
         color="default"
         variant="outlined"

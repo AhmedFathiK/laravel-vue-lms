@@ -42,6 +42,10 @@ class StoreQuestionRequest extends FormRequest
             'incorrect_feedback' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string'],
+            'term_ids' => ['nullable', 'array'],
+            'term_ids.*' => ['exists:terms,id'],
+            'concept_ids' => ['nullable', 'array'],
+            'concept_ids.*' => ['exists:concepts,id'],
 
             'points' => ['required', 'integer', 'min:0'],
             'media_type' => ['nullable', Rule::in(['none', 'image', 'image_with_audio', 'video'])],
@@ -126,31 +130,31 @@ class StoreQuestionRequest extends FormRequest
                     $validator->errors()->add('correct_answer', 'The number of answers must match the number of blanks in the question text.');
                 }
             }
-            
+
             // Validate media requirements based on media_type
             $mediaType = $this->input('media_type');
-            
+
             if ($mediaType && $mediaType !== 'none') {
                 // For image and image_with_audio, check if media file is provided for new uploads
                 if (($mediaType === 'image' || $mediaType === 'image_with_audio') && !$this->hasFile('media') && !$this->input('media_url')) {
                     $validator->errors()->add('media', 'An image file is required when image media type is selected.');
                 }
-                
+
                 // For video, check if URL is provided
                 if ($mediaType === 'video' && !$this->input('media_url')) {
                     $validator->errors()->add('media_url', 'A video URL is required when video media type is selected.');
                 }
-                
+
                 // For image_with_audio, check if audio URL is provided
                 if ($mediaType === 'image_with_audio' && !$this->input('audio_url')) {
                     $validator->errors()->add('audio_url', 'An audio URL is required when image with audio media type is selected.');
                 }
-                
+
                 // Validate image media types
                 if (($mediaType === 'image' || $mediaType === 'image_with_audio') && $this->hasFile('media')) {
                     $file = $this->file('media');
                     $allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-                    
+
                     if (!in_array($file->getMimeType(), $allowedImageTypes)) {
                         $validator->errors()->add('media', 'The media file must be an image (jpeg, png, webp, gif).');
                     }
@@ -158,8 +162,4 @@ class StoreQuestionRequest extends FormRequest
             }
         });
     }
-
 }
-
-
-

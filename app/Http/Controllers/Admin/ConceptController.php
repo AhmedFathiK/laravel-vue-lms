@@ -46,6 +46,32 @@ class ConceptController extends Controller
     }
 
     /**
+     * Display a listing of the concepts for a course.
+     * This is designed for select fields with search ability
+     */
+    public function getConceptsForSelectFields(Request $request, Course $course): JsonResponse
+    {
+        if (!Gate::allows('view.terms')) {
+            abort(403);
+        }
+
+        $query = $course->concepts();
+
+        // Apply search
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title->en', 'like', '%' . $search . '%');
+            });
+        }
+        
+        $limit = $request->get('limit', 50);
+        $concepts = $query->limit($limit)->get();
+        
+        return response()->json($concepts);
+    }
+
+    /**
      * Store a newly created concept in storage.
      */
     public function store(StoreRequest $request): JsonResponse

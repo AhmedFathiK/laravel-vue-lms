@@ -100,6 +100,9 @@ const handleQuestionAnswered = async ({ correct, userAnswer }) => {
     
   hasAnsweredCurrent.value = true
   isCorrect.value = correct
+
+  // Track attempt locally
+  attempts.value[currentSlide.value.id] = (attempts.value[currentSlide.value.id] || 0) + 1
   
   if (correct) {
     drawerFeedback.value = currentSlide.value.question.correctFeedback || 'Correct!'
@@ -111,27 +114,9 @@ const handleQuestionAnswered = async ({ correct, userAnswer }) => {
   drawerOpen.value = true
 
   if (correct) {
-    // Update progress
-    try {
-      await $api.post(`/learner/slides/${currentSlide.value.id}/progress`, {
-        'isCompleted': true,
-        'isCorrect': true,
-        'responseData': { answer: userAnswer },
-      })
-    } catch (e) {
-      console.error('Progress update failed', e)
-    }
+    // No API call here - tracked locally via attempts
   } else {
-    // Update progress (failed attempt)
-    try {
-      await $api.post(`/learner/slides1/${currentSlide.value.id}/progress`, {
-        'isCompleted': false,
-        'isCorrect': false,
-        'responseData': { answer: userAnswer },
-      })
-    } catch (e) {
-      console.error('Progress update failed', e)
-    }
+    // No API call here - tracked locally via attempts
 
     // Add to reshow queue if enabled
     if (lesson.value.reshowIncorrectSlides) {
@@ -223,8 +208,16 @@ const nextSlide = () => {
 
 const finishLesson = async () => {
   try {
-    // Mark lesson as complete
-    await $api.post(`/learner/lessons/${lessonId}/complete`)
+    // Prepare results for batch submission
+    const results = Object.entries(attempts.value).map(([slideId, count]) => ({
+      slide_id: parseInt(slideId),
+      attempts: count,
+    }))
+
+    // Mark lesson as complete with results
+    await $api.post(`/learner/lessons/${lessonId}/complete`, {
+      results,
+    })
         
     // Redirect to course page
     router.push({ name: 'my-courses' }) 
