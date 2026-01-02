@@ -43,7 +43,7 @@ class DevelopmentSeeder extends Seeder
         foreach ($courses as $course) {
             // Terms and Questions pool for this course
             $terms = Term::factory()->count(20)->for($course)->create();
-            $questions = Question::factory()->count(20)->for($course)->state(['type' => 'mcq'])->create();
+            $questions = Question::factory()->count(20)->for($course)->create();
 
             // Levels: 5 to 15 per course, named Level 1, Level 2, etc.
             $levelCount = rand(5, 15);
@@ -74,8 +74,8 @@ class DevelopmentSeeder extends Seeder
 
                         // Ensure we have at least one MCQ and one Term slide if possible
                         if ($i === 2 && $questions->isNotEmpty()) {
-                            $type = 'mcq';
                             $q = $questions->random();
+                            $type = $q->type;
                             $questionId = $q->id;
                             $content = json_encode([]);
                         } elseif ($i === 3 && $terms->isNotEmpty()) {
@@ -87,8 +87,8 @@ class DevelopmentSeeder extends Seeder
                             // Randomize the rest
                             $rand = rand(1, 10);
                             if ($rand <= 3 && $questions->isNotEmpty()) {
-                                $type = 'mcq';
                                 $q = $questions->random();
+                                $type = $q->type;
                                 $questionId = $q->id;
                                 $content = json_encode([]);
                             } elseif ($rand <= 6 && $terms->isNotEmpty()) {

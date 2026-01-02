@@ -43,6 +43,8 @@ class UpdateRequest extends FormRequest
             'term_id' => ['nullable', 'integer', 'exists:terms,id'],
             'content' => ['required_if:type,explanation', 'string', 'nullable'],
             'sort_order' => ['nullable', 'integer'],
+            'feedback_sentence' => ['nullable', 'string', 'max:255'],
+            'feedback_translation' => ['nullable', 'string', 'max:255'],
         ];
 
         return $rules;

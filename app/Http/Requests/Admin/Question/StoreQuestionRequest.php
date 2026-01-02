@@ -50,6 +50,12 @@ class StoreQuestionRequest extends FormRequest
             'media' => ['nullable', 'file', 'max:10240'], // 10MB max file size
             'options' => ['nullable', 'array'],
             'correct_answer' => ['nullable', 'array'],
+            'blanks' => ['nullable', 'array'],
+            'matching_pairs' => ['nullable', 'array'],
+            'reordering_items' => ['nullable', 'array'],
+            'grading_guidelines' => ['nullable', 'string'],
+            'min_words' => ['nullable', 'integer', 'min:0'],
+            'max_words' => ['nullable', 'integer', 'min:0'],
         ];
 
         // Add specific rules for different question types

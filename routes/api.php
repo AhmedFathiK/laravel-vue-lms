@@ -228,15 +228,12 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
     Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
+    Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
 
 
     // Progress Tracking
-    Route::get('courses/{course}/progress', [ProgressController::class, 'courseProgress']);
-    Route::get('lessons/{lesson}/progress', [ProgressController::class, 'lessonProgress']);
-    Route::post('slides/{slide}/progress', [ProgressController::class, 'updateSlideProgress']);
-    Route::post('lessons/{lesson}/reset-progress', [ProgressController::class, 'resetLessonProgress']);
-    Route::post('courses/{course}/reset-progress', [ProgressController::class, 'resetCourseProgress']);
-    Route::get('statistics', [ProgressController::class, 'userStatistics']);
+    Route::post('lessons/{lesson}/complete', [ProgressController::class, 'completeLesson']);
+
 
     // Subscription & Access
     Route::get('subscriptions', [LearnerSubscriptionController::class, 'index']);

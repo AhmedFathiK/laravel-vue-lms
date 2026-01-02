@@ -208,7 +208,8 @@ const confirmDelete = question => {
   isDeleteDialogVisible.value = true
 }
 
-const deleteQuestion = async () => {
+const deleteQuestion = async result => {
+  if (!result || !result.confirmed) return
   if (!questionToDelete.value) return
   
   try {
@@ -392,7 +393,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
               class="ms-5 text-caption"
             >
               <li
-                v-for="(option, index) in item.options"
+                v-for="(option, index) in (item.content?.options || item.options)"
                 :key="index"
               >
                 {{ option }}
@@ -405,7 +406,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
               class="ms-5 text-caption"
             >
               <li
-                v-for="(pair, index) in item.options"
+                v-for="(pair, index) in (item.content?.pairs || item.options)"
                 :key="index"
               >
                 {{ pair.left }} → {{ pair.right }}
@@ -418,7 +419,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
               class="ms-5 text-caption"
             >
               <li
-                v-for="(option, index) in item.options"
+                v-for="(option, index) in (item.content?.blanks || item.options)"
                 :key="index"
               >
                 Blank {{ index + 1 }}: {{ option.options.join(', ') }}
@@ -432,7 +433,7 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
               class="ms-5 text-caption"
             >
               <li
-                v-for="(option, index) in item.options"
+                v-for="(option, index) in (item.content?.items || item.options)"
                 :key="index"
               >
                 {{ option }}
@@ -465,25 +466,29 @@ watch([searchQuery, selectedType, selectedDifficulty, selectedTag, page, itemsPe
         <!-- Actions column -->
         <template #[`item.actions`]="{ item }">
           <div class="d-flex gap-1">
-            <IconBtn @click="onEditQuestion(item)">
-              <VIcon icon="tabler-edit" />
-              <VTooltip
-                activator="parent"
-                location="top"
-              >
-                {{ t('common.edit', 'Edit') }}
-              </VTooltip>
-            </IconBtn>
+            <VTooltip location="top">
+              <template #activator="{ props }">
+                <IconBtn
+                  v-bind="props"
+                  @click="onEditQuestion(item)"
+                >
+                  <VIcon icon="tabler-edit" />
+                </IconBtn>
+              </template>
+              {{ t('common.edit', 'Edit') }}
+            </VTooltip>
             
-            <IconBtn @click="confirmDelete(item)">
-              <VIcon icon="tabler-trash" />
-              <VTooltip
-                activator="parent"
-                location="top"
-              >
-                {{ t('common.delete', 'Delete') }}
-              </VTooltip>
-            </IconBtn>
+            <VTooltip location="top">
+              <template #activator="{ props }">
+                <IconBtn
+                  v-bind="props"
+                  @click="confirmDelete(item)"
+                >
+                  <VIcon icon="tabler-trash" />
+                </IconBtn>
+              </template>
+              {{ t('common.delete', 'Delete') }}
+            </VTooltip>
           </div>
         </template>
 

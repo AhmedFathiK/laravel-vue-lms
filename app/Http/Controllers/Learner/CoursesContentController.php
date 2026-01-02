@@ -9,8 +9,62 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+use App\Models\Lesson;
+
+use App\Http\Resources\Learner\LessonResource;
+
 class CoursesContentController extends Controller
 {
+    /**
+     * Display a specific lesson's content.
+     */
+    public function showLesson(Request $request, Lesson $lesson): JsonResponse
+    {
+        $user = Auth::user();
+        $course = $lesson->level->course;
+
+        // Check enrollment
+        $enrollment = CourseEnrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->with('userSubscription')
+            ->first();
+
+        if (!$enrollment) {
+            return response()->json([
+                "error" => "You are not enrolled in this course.",
+                "course_id" => $course->id
+            ], 403);
+        }
+
+        // Check subscription status
+        if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
+            return response()->json([
+                "error" => "Your subscription for this course has expired.",
+                "expired" => true,
+                "course_id" => $course->id,
+                "ends_at" => $enrollment->userSubscription->ends_at
+            ], 403);
+        }
+
+        // Check access to this specific lesson (e.g., if previous lessons are completed)
+        // For simplicity, we might skip the strict "previous completed" check here if the frontend handles it,
+        // but ideally, we should check it.
+        // Using the model's helper:
+        if (!$lesson->isAccessibleToUser($user)) {
+            return response()->json(["error" => "You do not have access to this lesson yet."], 403);
+        }
+
+        // Load slides with content
+        $lesson->load([
+            'slides' => function ($query) {
+                $query->orderBy('sort_order')
+                    ->with(['question', 'term']);
+            }
+        ]);
+
+        return response()->json(new LessonResource($lesson));
+    }
+
     /**
      * Display a user's courses content.
      */

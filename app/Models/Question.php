@@ -24,8 +24,7 @@ class Question extends Model
         'title',
         'question_text',
         'type',
-        'options',
-        'correct_answer',
+        'content',
         'points',
         'difficulty',
         'tags',
@@ -38,8 +37,7 @@ class Question extends Model
     ];
 
     protected $casts = [
-        'options' => 'array',
-        'correct_answer' => 'array',
+        'content' => 'array',
         'tags' => 'array',
     ];
 
@@ -55,6 +53,22 @@ class Question extends Model
         return $this->belongsToMany(ExamSection::class, 'exam_section_questions')
             ->withPivot('order')
             ->orderByPivot('order');
+    }
+
+    /**
+     * Get the terms related to this question.
+     */
+    public function terms(): BelongsToMany
+    {
+        return $this->belongsToMany(Term::class, 'question_term');
+    }
+
+    /**
+     * Get the concepts related to this question.
+     */
+    public function concepts(): BelongsToMany
+    {
+        return $this->belongsToMany(Concept::class, 'question_concept');
     }
 
     public function responses(): HasMany

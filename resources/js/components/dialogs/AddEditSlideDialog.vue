@@ -47,6 +47,8 @@ const createDefaultForm = () => ({
   termId: null,
   content: '',
   sortOrder: 0,
+  feedbackSentence: '',
+  feedbackTranslation: '',
 })
 
 const formData = ref(createDefaultForm())
@@ -61,6 +63,10 @@ watch(() => props.isDialogVisible, isVisible => {
       if (!formData.value.content) formData.value.content = ''
       if (!formData.value.title) formData.value.title = ''
       if (!formData.value.lessonId) formData.value.lessonId = parseInt(props.lessonId)
+      
+      // Map data to form
+      formData.value.feedbackSentence = props.data.feedbackSentence || ''
+      formData.value.feedbackTranslation = props.data.feedbackTranslation || ''
     } else {
       formData.value = createDefaultForm()
       selectedQuestion.value = null
@@ -121,6 +127,27 @@ watch(selectedTerm, newTerm => {
 })
 
 const isTermType = computed(() => formData.value.type === 'term')
+
+const getOptions = question => {
+  if (!question) return []
+  const content = question.content || {}
+  
+  if (question.type === 'matching') {
+    return content.pairs || question.options || []
+  }
+  if (question.type === 'reordering') {
+    return content.items || question.options || []
+  }
+  
+  return content.options || question.options || []
+}
+
+const getCorrectAnswer = question => {
+  if (!question) return []
+  const content = question.content || {}
+  
+  return content.correctAnswer || question.correctAnswer || []
+}
 </script>
 
 <template>
@@ -177,13 +204,33 @@ const isTermType = computed(() => formData.value.type === 'term')
                 :error-messages="formErrors.type"
                 required
               >
-                <template #item="{ item, itemProps }">
-                  <VListItem v-bind="itemProps">
-                    <VListItemTitle>{{ item.label }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.description }}</VListItemSubtitle>
-                  </VListItem>
+                <template #item="{ item, props: itemProps }">
+                  <VListItem
+                    v-bind="itemProps"
+                    :subtitle="item.raw.description"
+                  />
                 </template>
               </VSelect>
+            </VCol>
+
+            <VCol
+              v-if="isQuestionType"
+              cols="12"
+            >
+              <div class="text-subtitle-2 mb-2">
+                Feedback Content
+              </div>
+              <AppTextField
+                v-model="formData.feedbackSentence"
+                label="Feedback Sentence (Target Language)"
+                :error-messages="formErrors.feedbackSentence"
+                class="mb-3"
+              />
+              <AppTextField
+                v-model="formData.feedbackTranslation"
+                label="Feedback Translation (Source Language)"
+                :error-messages="formErrors.feedbackTranslation"
+              />
             </VCol>
 
             <VCol
@@ -214,10 +261,10 @@ const isTermType = computed(() => formData.value.type === 'term')
                       <span>Answers:</span>
                       <ul>
                         <li
-                          v-for="(answer, index) in item.raw.options"
+                          v-for="(answer, index) in getOptions(item.raw)"
                           :key="index"
                         >
-                          {{ index + 1 }}. {{ answer }} | correct: {{ item.raw.correctAnswer[index] == 0 ? 'No' : 'Yes' }}
+                          {{ index + 1 }}. {{ answer }} | correct: {{ getCorrectAnswer(item.raw)[index] == 0 ? 'No' : 'Yes' }}
                         </li>
                       </ul>
                     </template>
@@ -225,10 +272,10 @@ const isTermType = computed(() => formData.value.type === 'term')
                       <span>Answers:</span>
                       <ul>
                         <li
-                          v-for="(answer, index) in item.raw.options"
+                          v-for="(answer, index) in getOptions(item.raw)"
                           :key="index"
                         >
-                          {{ index + 1 }}. Placeholder: {{ answer.placeholder }} | Choices: {{ answer.options.join(', ') }} | Correct Choice: {{ answer.options[answer.correctAnswer] }}
+                          {{ index + 1 }}. Placeholder: {{ answer.placeholder }} | Choices: {{ answer.options ? answer.options.join(', ') : '' }} | Correct Choice: {{ answer.options && answer.correctAnswer !== undefined ? answer.options[answer.correctAnswer] : '' }}
                         </li>
                       </ul>
                     </template>
@@ -247,7 +294,7 @@ const isTermType = computed(() => formData.value.type === 'term')
                       <span>Answers:</span>
                       <ul>
                         <li
-                          v-for="(answer, index) in item.raw.options"
+                          v-for="(answer, index) in getOptions(item.raw)"
                           :key="index"
                         >
                           {{ index + 1 }}. Left: {{ answer.left }} | Right: {{ answer.right }}
@@ -257,7 +304,7 @@ const isTermType = computed(() => formData.value.type === 'term')
                     <template v-if="item.raw.type == 'reordering'">
                       <ul>
                         <li
-                          v-for="(answer, index) in item.raw.options"
+                          v-for="(answer, index) in getOptions(item.raw)"
                           :key="index"
                         >
                           {{ index + 1 }}. {{ answer }}

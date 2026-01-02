@@ -222,87 +222,75 @@ class QuestionController extends Controller
             return;
         }
 
-        // Ensure options and correct_answer are arrays
-        if (!isset($data['options'])) {
-            $data['options'] = [];
-        }
-
-        if (!isset($data['correct_answer'])) {
-            $data['correct_answer'] = [];
-        }
+        $content = [];
 
         switch ($type) {
             case Question::TYPE_MCQ:
-                // For MCQ, options is an array of strings and correct_answer is an array of indices
+                // For MCQ, content includes options and correct_answer
+                $content = [
+                    'options' => $data['options'] ?? [],
+                    'correctAnswer' => $data['correct_answer'] ?? [],
+                ];
                 break;
 
             case Question::TYPE_FILL_BLANK:
                 // For fill in the blank, correct_answer is an array of possible correct answers
-                // No options needed
-                $data['options'] = [];
+                $content = [
+                    'correctAnswer' => $data['correct_answer'] ?? [],
+                ];
                 break;
 
             case Question::TYPE_FILL_BLANK_CHOICES:
-                // For fill in the blank with choices, store the blanks structure in options
-                // and correct answers in correct_answer
+                // For fill in the blank with choices, store the blanks structure
                 if (isset($data['blanks']) && is_array($data['blanks'])) {
-                    $data['options'] = $data['blanks'];
-                    $data['correct_answer'] = array_map(function ($blank) {
-                        return [
-                            'id' => $blank['id'] ?? uniqid(),
-                            'answer' => $blank['correct_answer'] ?? null
-                        ];
+                    $content['blanks'] = array_map(function ($blank) {
+                        if (isset($blank['correct_answer'])) {
+                            $blank['correctAnswer'] = $blank['correct_answer'];
+                            unset($blank['correct_answer']);
+                        }
+                        return $blank;
                     }, $data['blanks']);
-
-                    // Remove blanks from data as it's not in the database schema
-                    unset($data['blanks']);
                 }
                 break;
 
             case Question::TYPE_MATCHING:
-                // For matching, store pairs in options and correct mappings in correct_answer
+                // For matching, store pairs
                 if (isset($data['matching_pairs']) && is_array($data['matching_pairs'])) {
-                    $data['options'] = $data['matching_pairs'];
-
-                    // Create mapping for correct answers
-                    $data['correct_answer'] = array_map(function ($index) {
-                        return [
-                            'left' => $index,
-                            'right' => $index
-                        ];
-                    }, array_keys($data['matching_pairs']));
-
-                    // Remove matching_pairs from data
-                    unset($data['matching_pairs']);
+                    $content['pairs'] = $data['matching_pairs'];
                 }
                 break;
 
             case Question::TYPE_REORDERING:
-                // For reordering, store items in options and correct order in correct_answer
+                // For reordering, store items
                 if (isset($data['reordering_items']) && is_array($data['reordering_items'])) {
-                    $data['options'] = $data['reordering_items'];
-                    $data['correct_answer'] = array_keys($data['reordering_items']);
-
-                    // Remove reordering_items from data
-                    unset($data['reordering_items']);
+                    $content['items'] = $data['reordering_items'];
                 }
                 break;
 
             case Question::TYPE_WRITING:
-                // For writing, store grading guidelines and word limits in options
-                $data['options'] = [
+                // For writing, store grading guidelines and limits
+                $content = [
                     'grading_guidelines' => $data['grading_guidelines'] ?? '',
                     'min_words' => $data['min_words'] ?? 0,
                     'max_words' => $data['max_words'] ?? 0,
                 ];
-
-                // No correct answers for writing questions
-                $data['correct_answer'] = [];
-
-                // Remove extra fields from data
-                unset($data['grading_guidelines'], $data['min_words'], $data['max_words']);
                 break;
         }
+
+        // Assign to content field
+        $data['content'] = $content;
+
+        // Clean up legacy fields from input data
+        unset(
+            $data['options'],
+            $data['correct_answer'],
+            $data['blanks'],
+            $data['matching_pairs'],
+            $data['reordering_items'],
+            $data['grading_guidelines'],
+            $data['min_words'],
+            $data['max_words']
+        );
     }
 
     /**

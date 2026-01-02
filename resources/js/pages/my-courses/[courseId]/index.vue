@@ -1,7 +1,7 @@
 <script setup>
 import api from '@/utils/api'
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 definePage({
   meta: {
@@ -9,6 +9,7 @@ definePage({
   },
 })
 
+const router = useRouter()
 const route = useRoute()
 const courseData = ref(null)
 const loading = ref(true)
@@ -32,6 +33,21 @@ const fetchCourseContent = async () => {
 }
 
 onMounted(fetchCourseContent)
+
+const handleItemClick = item => {
+  if (item.locked) return
+
+  if (item.type === 'lesson') {
+    router.push({ 
+      name: 'my-courses-study-id', 
+      params: { id: item.id }, 
+    })
+  } else {
+    // Fallback to modal for exams or other types
+    selectedItem.value = item
+    isModalVisible.value = true
+  }
+}
 
 const openModal = item => {
   if (!item.locked) {
@@ -137,7 +153,7 @@ const getStatusClasses = (item, level) => {
                 :style="{ cursor: item.locked ? 'not-allowed' : 'pointer' }"
                 variant="flat"
                 color="surface"
-                @click="openModal(item)"
+                @click="handleItemClick(item)"
               >
                 <VIcon
                   size="x-large"
@@ -150,7 +166,7 @@ const getStatusClasses = (item, level) => {
             <VCard
               class="timeline-card ms-4"
               :disabled="item.locked"
-              @click="openModal(item)"
+              @click="handleItemClick(item)"
             >
               <VCardText>
                 <div class="d-flex justify-space-between align-center">

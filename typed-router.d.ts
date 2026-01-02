@@ -46,6 +46,7 @@ declare module 'vue-router/auto-routes' {
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'my-courses': RouteRecordInfo<'my-courses', '/my-courses', Record<never, never>, Record<never, never>>,
     'my-courses-course-id': RouteRecordInfo<'my-courses-course-id', '/my-courses/:courseId', { courseId: ParamValue<true> }, { courseId: ParamValue<false> }>,
+    'my-courses-study-id': RouteRecordInfo<'my-courses-study-id', '/my-courses/study/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'payment': RouteRecordInfo<'payment', '/payment', Record<never, never>, Record<never, never>>,
     'pricing': RouteRecordInfo<'pricing', '/pricing', Record<never, never>, Record<never, never>>,

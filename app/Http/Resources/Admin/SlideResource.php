@@ -16,13 +16,17 @@ class SlideResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'lesson_id' => $this->lesson_id,
+            'lessonId' => $this->lesson_id,
             'type' => $this->type,
             'title' => $this->title,
             'content' => $this->content,
-            'sort_order' => $this->sort_order,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'sortOrder' => $this->sort_order,
+            'createdAt' => $this->created_at,
+            'updatedAt' => $this->updated_at,
+            'feedbackSentence' => $this->feedback_sentence,
+            'feedbackTranslation' => $this->feedback_translation,
+            'mediaUrl' => $this->media_url, // Assuming these might exist on model or are dynamically appended
+            'mediaType' => $this->media_type,
 
             // Term (only for term slides)
             'term' => $this->type === 'term' && $this->relationLoaded('term')

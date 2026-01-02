@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Translatable\HasTranslations;
 
@@ -55,5 +56,13 @@ class Term extends Model
     public function revisionItems(): MorphMany
     {
         return $this->morphMany(RevisionItem::class, 'revisionable');
+    }
+
+    /**
+     * Get the questions related to this term.
+     */
+    public function questions(): BelongsToMany
+    {
+        return $this->belongsToMany(Question::class, 'question_term');
     }
 }

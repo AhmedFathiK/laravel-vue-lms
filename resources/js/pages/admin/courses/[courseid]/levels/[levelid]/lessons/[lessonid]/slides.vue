@@ -39,26 +39,26 @@ const isDeleteDialogVisible = ref(false)
 
 const editedItem = ref({
   id: null,
-  "lesson_id": null,
+  lessonId: null,
   type: 'explanation',
   content: '',
   options: [],
-  "correct_answer": [],
-  "sort_order": 0,
-  "question_id": null,
-  "term_id": null,
+  correctAnswer: [],
+  sortOrder: 0,
+  questionId: null,
+  termId: null,
 })
 
 const defaultItem = {
   id: null,
-  "lesson_id": null,
+  lessonId: null,
   type: 'explanation',
   content: '',
   options: [],
-  "correct_answer": [],
-  "sort_order": 0,
-  "question_id": null,
-  "term_id": null,
+  correctAnswer: [],
+  sortOrder: 0,
+  questionId: null,
+  termId: null,
 }
 
 const selectedSlide = ref(null)
@@ -185,8 +185,8 @@ const editItem = item => {
 // Create new item
 const createItem = () => {
   editedItem.value = JSON.parse(JSON.stringify(defaultItem))
-  editedItem.value["lesson_id"] = parseInt(lessonId.value)
-  editedItem.value["sort_order"] = slides.value.length + 1
+  editedItem.value.lessonId = parseInt(lessonId.value)
+  editedItem.value.sortOrder = slides.value.length + 1
   isSlideEditDialogVisible.value = true
 }
 
@@ -197,11 +197,17 @@ const deleteItem = item => {
 }
 
 // Confirm delete
-const confirmDelete = async () => {
+const confirmDelete = async confirmed => {
+  if (!confirmed) {
+    isDeleteDialogVisible.value = false
+    
+    return
+  }
+
   if (!selectedSlide.value) return
   
   try {
-    await api.delete(`/admin/slides/${selectedSlide.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides/${selectedSlide.value.id}`)
     toast.success('Slide deleted successfully')
     isDeleteDialogVisible.value = false
     fetchSlides()
@@ -238,7 +244,7 @@ const saveOrder = async () => {
 // Update slide order
 const updateSortOrder = () => {
   slides.value.forEach((slide, index) => {
-    slide["sort_order"] = index + 1
+    slide.sortOrder = index + 1
   })
 }
 

@@ -81,14 +81,17 @@ watch(() => props.isDialogVisible, isVisible => {
 // Extra data mapping for files
 const extraData = computed(() => {
   const data = {}
-  if (mediaFile.value) data.mediaFile = mediaFile.value
-  if (audioFile.value) data.audioFile = audioFile.value
-  if (exampleAudioFile.value) data.exampleAudioFile = exampleAudioFile.value
+  
+  const getFile = val => Array.isArray(val) ? val[0] : val
+
+  if (mediaFile.value) data.mediaFile = getFile(mediaFile.value)
+  if (audioFile.value) data.audioFile = getFile(audioFile.value)
+  if (exampleAudioFile.value) data.exampleAudioFile = getFile(exampleAudioFile.value)
   
   return data
 })
 
-const { isLoading, onSubmit } = useCrudSubmit({
+const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
   apiEndpoint: computed(() => props.termData?.id 

@@ -61,9 +61,12 @@ const deleteThumbnail = ref(false)
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
     if (props.data) {
+      // Exclude thumbnail and other non-form fields to prevent validation errors or large payloads
+      const { thumbnail: _, slides: __, ...lessonData } = props.data
+
       form.value = {
         ...defaultForm(),
-        ...props.data,
+        ...lessonData,
         levelId: props.levelId,
         courseId: props.courseId,
       }
@@ -87,7 +90,9 @@ watch(() => props.isDialogVisible, isVisible => {
 
 // Handle image upload
 const handleImageUpload = file => {
-  if (!file) {
+  const imageFile = Array.isArray(file) ? file[0] : file
+
+  if (!imageFile) {
     thumbnail.value = null
     thumbnailPreview.value = null
 
@@ -96,7 +101,7 @@ const handleImageUpload = file => {
 
   // Validate file type
   const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
-  if (!validTypes.includes(file.type)) {
+  if (!validTypes.includes(imageFile.type)) {
     toast.error('Please upload a valid image file (JPEG, PNG, GIF)')
     thumbnail.value = null
     thumbnailPreview.value = null
@@ -105,7 +110,7 @@ const handleImageUpload = file => {
   }
 
   // Validate file size (max 2MB)
-  if (file.size > 2 * 1024 * 1024) {
+  if (imageFile.size > 2 * 1024 * 1024) {
     toast.error('Image size should be less than 2MB')
     thumbnail.value = null
     thumbnailPreview.value = null
@@ -114,7 +119,7 @@ const handleImageUpload = file => {
   }
 
   // Create a preview URL for the selected image
-  thumbnailPreview.value = URL.createObjectURL(file)
+  thumbnailPreview.value = URL.createObjectURL(imageFile)
 
   // Reset delete flag if a new image is selected
   deleteThumbnail.value = false
@@ -124,9 +129,11 @@ const handleImageUpload = file => {
 const extraData = computed(() => {
   const data = {}
 
+  const file = Array.isArray(thumbnail.value) ? thumbnail.value[0] : thumbnail.value
+
   // Add thumbnail only if a new file is selected
-  if (thumbnail.value instanceof File) {
-    data.thumbnail = thumbnail.value
+  if (file instanceof File) {
+    data.thumbnail = file
   }
 
   // Handle thumbnail deletion

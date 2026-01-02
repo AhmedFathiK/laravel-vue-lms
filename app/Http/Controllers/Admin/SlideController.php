@@ -49,6 +49,8 @@ class SlideController extends Controller
                 'term_id'       => $slide->term_id,
                 'content'       => $slide->content,
                 'sort_order'    => $slide->sort_order,
+                'feedback_sentence' => $slide->feedback_sentence,
+                'feedback_translation' => $slide->feedback_translation,
                 'created_at'    => $slide->created_at,
                 'updated_at'    => $slide->updated_at,
                 'term'          => $slide->term,
@@ -75,6 +77,8 @@ class SlideController extends Controller
             'term_id' => $slide->term_id,
             'content' => $slide->content,
             'sort_order' => $slide->sort_order,
+            'feedback_sentence' => $slide->feedback_sentence,
+            'feedback_translation' => $slide->feedback_translation,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
         ], 201);
@@ -98,6 +102,8 @@ class SlideController extends Controller
             'term_id' => $slide->term_id,
             'content' => $slide->content,
             'sort_order' => $slide->sort_order,
+            'feedback_sentence' => $slide->feedback_sentence,
+            'feedback_translation' => $slide->feedback_translation,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
         ]);
@@ -118,6 +124,8 @@ class SlideController extends Controller
             'options' => $slide->options,
             'correct_answer' => $slide->correct_answer,
             'sort_order' => $slide->sort_order,
+            'feedback_sentence' => $slide->feedback_sentence,
+            'feedback_translation' => $slide->feedback_translation,
             'created_at' => $slide->created_at,
             'updated_at' => $slide->updated_at,
         ]);

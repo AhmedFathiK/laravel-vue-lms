@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 
 const props = defineProps({
@@ -34,6 +35,42 @@ const editItem = () => {
 const deleteItem = () => {
   emit("click:delete", props.slideNumber)
 }
+
+const questionData = computed(() => {
+  const q = props.data.question
+  if (!q) return { title: '', questionText: '', options: [] }
+
+  const content = q.content || {}
+  let options = []
+
+  if (props.data.type === 'matching') {
+    options = content.pairs || q.options || []
+  } else if (props.data.type === 'reordering') {
+    options = content.items || q.options || []
+  } else if (props.data.type === 'mcq') {
+    options = content.options || q.options || []
+  } else {
+    options = q.options || []
+  }
+
+  return {
+    title: q.title,
+    questionText: q.questionText || '',
+    options: options,
+  }
+})
+
+const termData = computed(() => {
+  const t = props.data.term
+  if (!t) return {}
+  
+  return {
+    ...t,
+    mediaUrl: t.mediaUrl,
+    mediaType: t.mediaType,
+    exampleTranslation: t.exampleTranslation,
+  }
+})
 
 console.log(props.data)
 </script>
@@ -98,7 +135,7 @@ console.log(props.data)
                       {{ data.title }}
                     </template>
                     <template v-else>
-                      {{ data.question.title ? data.question.title : data.title }}
+                      {{ questionData.title ? questionData.title : data.title }}
                     </template>
                   </p>
                   <div
@@ -106,9 +143,9 @@ console.log(props.data)
                     class="slide-img w-50"
                   >
                     <VImg
-                      v-if="data.term_id && ['image', 'image_with_audio'].includes(data.term.media_type) && data.term.media_url"
+                      v-if="data.termId && ['image', 'image_with_audio'].includes(termData.mediaType) && termData.mediaUrl"
                       cover
-                      :src="data.term.media_url"
+                      :src="termData.mediaUrl"
                       height="162.13"
                     /> 
 
@@ -143,7 +180,7 @@ console.log(props.data)
                       </VRow>
                     </PerfectScrollbar>
                     <template v-else>
-                      {{ data.question.question_text }}
+                      {{ questionData.questionText }}
                     </template>
                   </div>
                 </VCol>
@@ -160,7 +197,7 @@ console.log(props.data)
                       <VCol cols="6">
                         <VList>
                           <VListItem
-                            v-for="(answer, index) in data.question.options"
+                            v-for="(answer, index) in questionData.options"
                             :key="index"
                             color="primary"
                             rounded="xl"
@@ -177,7 +214,7 @@ console.log(props.data)
                       <VCol cols="6">
                         <VList>
                           <VListItem
-                            v-for="(answer, index) in data.question.options"
+                            v-for="(answer, index) in questionData.options"
                             :key="index"
                             color="primary"
                             rounded="xl"
@@ -204,7 +241,7 @@ console.log(props.data)
                         class="d-flex justify-center flex-column"
                       >
                         <div
-                          v-for="(answer, index) in data.question.options"
+                          v-for="(answer, index) in questionData.options"
                           :key="index"
                           class="mcq-answer my-1 overflow-y-auto pa-1"
                         >
@@ -225,15 +262,15 @@ console.log(props.data)
                       >
                         <div class="blanks-mcq-question mb-4 pa-2">
                           <template
-                            v-for="(questionPart, index) in data.question.questionText.split(/\[blank\d+\]/)"
+                            v-for="(questionPart, index) in questionData.questionText.split(/\[blank\d+\]/)"
                             :key="index"
                           >
                             <div class="blanks-mcq-question-text-placeholder mx-2 pt-1">
                               {{ questionPart }}
                             </div>
-  
+
                             <div
-                              v-if="index < data.question.questionText.split(/\[blank\d+\]/).length - 1"
+                              v-if="index < questionData.questionText.split(/\[blank\d+\]/).length - 1"
                               class="blank-placeholder ma-1"
                             />
                           </template>
@@ -266,7 +303,7 @@ console.log(props.data)
                         class="d-flex justify-center flex-column"
                       >
                         <div
-                          v-for="(answer, index) in data.question.options"
+                          v-for="(answer, index) in questionData.options"
                           :key="index"
                           class="mcq-answer my-1 overflow-y-auto pa-1"
                         >
@@ -282,19 +319,19 @@ console.log(props.data)
                     >
                       <div class="course-term d-flex flex-column py-2">
                         <div class="term-text-placeholder mb-2 pa-1">
-                          {{ data.term.term }}
+                          {{ termData.term }}
                         </div>
                         <div class="term-meaning-text-placeholder pa-1">
-                          {{ data.term.definition }}
+                          {{ termData.definition }}
                         </div>
                       </div>
                       <div class="term-example">
                         Example
                         <div class="example-placeholder mb-2 text-start pa-1">
-                          {{ data.term.example }}
+                          {{ termData.example }}
                         </div>
                         <div class="example-teanslation-placeholder pa-1">
-                          {{ data.term.example_translation }}
+                          {{ termData.exampleTranslation }}
                         </div>
                       </div>
                     </VCol>

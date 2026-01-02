@@ -22,7 +22,7 @@ class SlideFactory extends Factory
         return [
             'lesson_id' => Lesson::factory(),
             'type' => 'explanation',
-            'content' => json_encode(['en' => $this->faker->paragraph(3)]),
+            'content' => ['en' => $this->faker->paragraph(3)],
             'sort_order' => $this->faker->numberBetween(1, 100),
             'question_id' => null,
             'term_id' => null,
@@ -36,7 +36,7 @@ class SlideFactory extends Factory
             return [
                 'type' => 'mcq',
                 'question_id' => $question->id,
-                'content' => json_encode([]),
+                'content' => ['en' => ''],
             ];
         });
     }
@@ -48,7 +48,7 @@ class SlideFactory extends Factory
             return [
                 'type' => 'term',
                 'term_id' => $term->id,
-                'content' => json_encode([]),
+                'content' => ['en' => ''],
             ];
         });
     }

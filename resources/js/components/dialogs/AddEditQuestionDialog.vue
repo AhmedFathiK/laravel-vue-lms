@@ -4,7 +4,6 @@ import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   isDialogVisible: {
@@ -29,7 +28,6 @@ const props = defineProps({
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
 const { t } = useI18n()
-const toast = useToast()
 const formRef = ref(null)
 const isFormValid = ref(true)
 
@@ -49,7 +47,7 @@ const getDefaultQuestion = () => ({
   title: '',
   questionText: '',
   type: 'mcq',
-  options: [],
+  options: ['', ''],
   correctAnswer: [],
   points: 1,
   difficulty: 'medium',
@@ -65,6 +63,7 @@ const getDefaultQuestion = () => ({
   gradingGuidelines: '',
   minWords: 0,
   maxWords: 0,
+  content: {}, // Add content field
 })
 
 // Computed dialog title
@@ -201,7 +200,23 @@ watch(() => localQuestion.value.type, () => {
 const initializeQuestionTypeData = () => {
   const type = localQuestion.value.type
 
-  if (type === 'writing' && localQuestion.value.options && typeof localQuestion.value.options === 'object') {
+  // Reset type-specific arrays if not the current type to prevent state pollution
+  if (type !== 'fill_blank_choices') localQuestion.value.blanks = []
+  if (type !== 'matching') localQuestion.value.matchingPairs = []
+  if (type !== 'reordering') localQuestion.value.reorderingItems = []
+
+  if (type === 'writing' && localQuestion.value.content) {
+    if (!localQuestion.value.gradingGuidelines && localQuestion.value.content.gradingGuidelines) {
+      localQuestion.value.gradingGuidelines = localQuestion.value.content.gradingGuidelines
+    }
+    if (!localQuestion.value.minWords && localQuestion.value.content.minWords) {
+      localQuestion.value.minWords = localQuestion.value.content.minWords
+    }
+    if (!localQuestion.value.maxWords && localQuestion.value.content.maxWords) {
+      localQuestion.value.maxWords = localQuestion.value.content.maxWords
+    }
+  } else if (type === 'writing' && localQuestion.value.options && typeof localQuestion.value.options === 'object') {
+    // Legacy support
     if (!localQuestion.value.gradingGuidelines && localQuestion.value.options.gradingGuidelines) {
       localQuestion.value.gradingGuidelines = localQuestion.value.options.gradingGuidelines
     }
@@ -219,6 +234,8 @@ const initializeQuestionTypeData = () => {
   if (!Array.isArray(localQuestion.value.correctAnswer)) {
     localQuestion.value.correctAnswer = []
   }
+
+  // arrays already ensured by the reset logic above or default empty, but let's keep the checks for safety if logic changes
   if (!Array.isArray(localQuestion.value.blanks)) {
     localQuestion.value.blanks = []
   }
@@ -230,21 +247,142 @@ const initializeQuestionTypeData = () => {
   }
 
   if (type === 'fill_blank_choices') {
-    if (!localQuestion.value.blanks.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
-      localQuestion.value.blanks = localQuestion.value.options
+    if (!localQuestion.value.blanks.length) {
+      if (Array.isArray(localQuestion.value.content)) {
+        // If content is array, it might be the blanks/options
+        // But for fill_blank_choices it's complex. Let's assume it's blanks structure if it matches
+        localQuestion.value.blanks = localQuestion.value.content
+      } else if (Array.isArray(localQuestion.value.content?.blanks) && localQuestion.value.content.blanks.length > 0) {
+        localQuestion.value.blanks = localQuestion.value.content.blanks
+      } else if (Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0 && typeof localQuestion.value.options[0] === 'object' && 'options' in localQuestion.value.options[0]) {
+        // Check if options are compatible with fill_blank_choices (array of objects with options property)
+        // If incompatible (e.g. strings from MCQ or matching pairs), don't use them
+        localQuestion.value.blanks = localQuestion.value.options
+      }
+    }
+
+    // Ensure all blanks have options array
+    if (Array.isArray(localQuestion.value.blanks)) {
+      localQuestion.value.blanks = localQuestion.value.blanks.map(b => {
+        // Ensure b is an object
+        const blank = (typeof b === 'object' && b !== null) ? b : {}
+        
+        // Ensure options is an array
+        if (!Array.isArray(blank.options)) {
+          blank.options = ['', '']
+        }
+        
+        // Ensure placeholder
+        if (!blank.placeholder) {
+          blank.placeholder = ''
+        }
+
+        // Ensure correctAnswer is set
+        if (blank.correctAnswer === undefined) {
+          blank.correctAnswer = '0'
+        }
+        
+        return blank
+      })
     }
   } else if (type === 'matching') {
-    if (!localQuestion.value.matchingPairs.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
-      localQuestion.value.matchingPairs = localQuestion.value.options
+    // Check if options are valid matching pairs (objects with left/right)
+    let options = []
+    
+    if (localQuestion.value.matchingPairs.length) {
+      options = localQuestion.value.matchingPairs
+    } else if (Array.isArray(localQuestion.value.content)) {
+      // If content is array, use it directly (legacy/migrated data)
+      options = localQuestion.value.content
+    } else {
+      options = localQuestion.value.content?.pairs || localQuestion.value.options || []
+    }
+
+    const isValidMatchingOptions = options.length > 0 &&
+      typeof options[0] === 'object' &&
+      options[0] !== null &&
+      'left' in options[0]
+
+    if (!localQuestion.value.matchingPairs.length && isValidMatchingOptions) {
+      localQuestion.value.matchingPairs = options
     } else if (!localQuestion.value.matchingPairs.length) {
+      // If we have options but they are invalid (e.g. strings from MCQ), clear them so they don't persist
+      if (options.length > 0 && !isValidMatchingOptions) {
+        localQuestion.value.options = []
+      }
       addMatchingPair()
     }
   } else if (type === 'reordering') {
-    if (!localQuestion.value.reorderingItems.length && Array.isArray(localQuestion.value.options) && localQuestion.value.options.length > 0) {
-      localQuestion.value.reorderingItems = localQuestion.value.options
+    // Reordering expects options to be strings (same as MCQ), so we can reuse them if they are strings
+    // But if they are objects (from Matching), we should clear them
+    let options = []
+    
+    if (localQuestion.value.reorderingItems.length) {
+      options = localQuestion.value.reorderingItems
+    } else if (Array.isArray(localQuestion.value.content) && typeof localQuestion.value.content[0] === 'string') {
+      options = localQuestion.value.content
+    } else {
+      options = localQuestion.value.content?.items || localQuestion.value.options || []
+    }
+    
+    const isOptionsStrings = options.length > 0 && typeof options[0] === 'string'
+    
+    if (!localQuestion.value.reorderingItems.length && isOptionsStrings) {
+      localQuestion.value.reorderingItems = options
     } else if (!localQuestion.value.reorderingItems.length) {
+      // If options exist but are not strings, clear them
+      if (options.length > 0 && !isOptionsStrings) {
+        localQuestion.value.options = []
+      }
       addReorderingItem()
     }
+  } else if (type === 'mcq') {
+    // MCQ expects options to be strings
+    // If they are objects (from Matching), clear them
+    let options = []
+    
+    if (localQuestion.value.options.length) {
+      options = localQuestion.value.options
+    } else if (Array.isArray(localQuestion.value.content) && typeof localQuestion.value.content[0] === 'string') {
+      options = localQuestion.value.content
+    } else {
+      options = localQuestion.value.content?.options || []
+    }
+    
+    const isOptionsStrings = options.length > 0 && typeof options[0] === 'string'
+
+    if (options.length > 0 && !isOptionsStrings) {
+      localQuestion.value.options = ['', ''] // Reset to 2 empty options
+      localQuestion.value.correctAnswer = []
+    } else if (options.length === 0) {
+      localQuestion.value.options = ['', ''] // Default to 2 empty options
+    } else {
+      // If we have valid options from content/options, use them
+      // We already determined 'options' above, so assign it
+      localQuestion.value.options = options
+      
+      if (localQuestion.value.content?.correctAnswer) {
+        localQuestion.value.correctAnswer = localQuestion.value.content.correctAnswer
+      }
+    }
+
+    // Ensure correct answers are strings and ensure options is an array
+    if (Array.isArray(localQuestion.value.correctAnswer)) {
+      localQuestion.value.correctAnswer = localQuestion.value.correctAnswer.map(String)
+    }
+    
+    // Safety check for options being array
+    if (!Array.isArray(localQuestion.value.options)) {
+      localQuestion.value.options = ['', '']
+    }
+  } else if (type === 'fill_blank') {
+    if (localQuestion.value.content?.correctAnswer) {
+      localQuestion.value.correctAnswer = localQuestion.value.content.correctAnswer
+    }
+  } else if (type === 'writing' && localQuestion.value.content) {
+    localQuestion.value.gradingGuidelines = localQuestion.value.content.gradingGuidelines
+    localQuestion.value.minWords = localQuestion.value.content.minWords
+    localQuestion.value.maxWords = localQuestion.value.content.maxWords
   }
 }
 
@@ -381,7 +519,7 @@ const removeMatchingPair = index => {
 
 const updateMatchingCorrectAnswers = () => {
   if (!localQuestion.value.matchingPairs) return
-  localQuestion.value.correctAnswer = localQuestion.value.matchingPairs.map((pair, index) => ({
+  localQuestion.value.correctAnswer = localQuestion.value.matchingPairs.map((_, index) => ({
     left: index,
     right: index,
   }))
@@ -661,7 +799,7 @@ const removeTag = tag => {
               />
               
               <div
-                v-for="(option, index) in localQuestion.options"
+                v-for="(_, index) in localQuestion.options"
                 :key="index"
                 class="d-flex align-center mb-2"
               >
@@ -938,7 +1076,7 @@ const removeTag = tag => {
               />
               <div class="mb-4">
                 <div 
-                  v-for="(item, itemIndex) in localQuestion.reorderingItems || []" 
+                  v-for="(_, itemIndex) in localQuestion.reorderingItems || []" 
                   :key="itemIndex"
                   class="d-flex align-center mb-2"
                 >

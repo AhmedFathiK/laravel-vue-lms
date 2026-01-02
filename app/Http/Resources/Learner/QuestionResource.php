@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\Admin;
+namespace App\Http\Resources\Learner;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,17 +17,17 @@ class QuestionResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'questionText' => $this->question_text,
+            'question_text' => $this->question_text,
             'type' => $this->type,
             'content' => $this->content,
             'points' => $this->points,
             'difficulty' => $this->difficulty,
             'tags' => $this->tags,
-            'correctFeedback' => $this->correct_feedback,
-            'incorrectFeedback' => $this->incorrect_feedback,
-            'mediaUrl' => $this->media_url,
-            'mediaType' => $this->media_type,
-            'audioUrl' => $this->audio_url,
+            'correct_feedback' => $this->correct_feedback,
+            'incorrect_feedback' => $this->incorrect_feedback,
+            'media_url' => $this->media_url,
+            'media_type' => $this->media_type,
+            'audio_url' => $this->audio_url,
         ];
     }
 }
