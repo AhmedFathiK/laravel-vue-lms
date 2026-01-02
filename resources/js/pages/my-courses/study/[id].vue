@@ -131,12 +131,11 @@ const triggerCheck = () => {
   }
 }
 
-const showCheckButton = computed(() => {
-  if (drawerOpen.value) return false
-  if (!currentSlide.value || !currentSlide.value.question) return false
-  
-  return false
-})
+const showCheckButton = computed(() =>
+  !drawerOpen.value &&
+  !!currentSlide.value?.question,
+)
+
 
 const isReordering = computed(() => {
   return currentSlide.value?.question?.type === 'reordering'
