@@ -1,7 +1,7 @@
 <script setup>
 import LessonProgress from '@/components/SlideTypes/LessonProgress.vue'
 import $api from '@/utils/api'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 
@@ -135,13 +135,7 @@ const showCheckButton = computed(() => {
   if (drawerOpen.value) return false
   if (!currentSlide.value || !currentSlide.value.question) return false
   
-  // Reordering now uses the drawer button
-  if (currentSlide.value.question.type === 'reordering') return false
-
-  return false // Defaulting to false since reordering was the only one using it? Or maybe others do?
-  // Let's keep it safe:
-  // return ['reordering'].includes(currentSlide.value.question.type) 
-  // But we removed reordering. So if there are no other types using check button, return false.
+  return false
 })
 
 const isReordering = computed(() => {
@@ -172,7 +166,6 @@ const handleNavigationClick = () => {
 }
 
 // Watch for reordering slide to open drawer immediately
-import { watch } from 'vue'
 
 watch(currentSlide, newSlide => {
   if (newSlide?.question?.type === 'reordering' && !hasAnsweredCurrent.value) {
@@ -210,7 +203,7 @@ const finishLesson = async () => {
   try {
     // Prepare results for batch submission
     const results = Object.entries(attempts.value).map(([slideId, count]) => ({
-      slide_id: parseInt(slideId),
+      slideId: parseInt(slideId),
       attempts: count,
     }))
 

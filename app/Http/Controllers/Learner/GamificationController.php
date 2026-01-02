@@ -9,6 +9,7 @@ use App\Services\GamificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class GamificationController extends Controller
 {
@@ -72,7 +73,7 @@ class GamificationController extends Controller
                 }
             }
 
-            $breakdown = $query->select('type', \DB::raw('SUM(points) as total'))
+            $breakdown = $query->select('type', DB::raw('SUM(points) as total'))
                 ->groupBy('type')
                 ->get()
                 ->pluck('total', 'type')
@@ -216,7 +217,7 @@ class GamificationController extends Controller
         // Get breakdown by rarity
         $rarityBreakdown = \App\Models\UserTrophy::join('trophies', 'user_trophies.trophy_id', '=', 'trophies.id')
             ->where('user_trophies.user_id', $userId)
-            ->select('trophies.rarity', \DB::raw('COUNT(*) as count'))
+            ->select('trophies.rarity', DB::raw('COUNT(*) as count'))
             ->groupBy('trophies.rarity')
             ->get()
             ->pluck('count', 'rarity')

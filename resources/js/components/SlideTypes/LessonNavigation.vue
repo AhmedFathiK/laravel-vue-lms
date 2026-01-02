@@ -179,6 +179,7 @@ const handleFinish = () => {
                 </div>
               </div>
             </div>
+            <!-- eslint-disable-next-line vue/no-v-html -->
             <div 
               class="text-body-1"
               v-html="isCorrect ? correctFeedback : incorrectFeedback" 
