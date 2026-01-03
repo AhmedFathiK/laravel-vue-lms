@@ -131,10 +131,7 @@ const triggerCheck = () => {
   }
 }
 
-const showCheckButton = computed(() =>
-  !drawerOpen.value &&
-  !!currentSlide.value?.question,
-)
+
 
 
 const isReordering = computed(() => {
@@ -325,21 +322,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Check Button Footer -->
-    <div
-      v-if="showCheckButton"
-      class="check-button-footer elevation-24 d-flex align-center justify-center pa-4"
-    >
-      <VBtn
-        size="x-large"
-        block
-        color="primary"
-        style="max-width: 800px;"
-        @click="triggerCheck"
-      >
-        Check
-      </VBtn>
-    </div>
+
 
     <!-- Navigation / Feedback Drawer -->
     <LessonNavigation
@@ -372,15 +355,5 @@ onMounted(() => {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-.check-button-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgb(var(--v-theme-surface));
-  z-index: 1000;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
 }
 </style>
