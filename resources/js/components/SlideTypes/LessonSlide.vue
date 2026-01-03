@@ -39,12 +39,14 @@ defineExpose({ submitAnswer })
     <!-- Non-Question Types -->
     <ExplanationSlide
       v-if="slide.type === 'explanation'"
+      :key="slide.id"
       :slide="slide"
       @completed="handleCompleted"
     />
     
     <TermSlide
       v-else-if="slide.type === 'term'"
+      :key="`term-${slide.id}`"
       :slide="slide"
       @completed="handleCompleted"
     />
@@ -53,6 +55,7 @@ defineExpose({ submitAnswer })
     <template v-else-if="slide.question">
       <MCQSlide 
         v-if="slide.question.type === 'mcq'" 
+        :key="slide.id"
         ref="activeSlideRef"
         :question="slide.question"
         @answered="handleAnswered"
@@ -60,6 +63,7 @@ defineExpose({ submitAnswer })
       
       <MatchingSlide
         v-else-if="slide.question.type === 'matching'"
+        :key="`matching-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
         @answered="handleAnswered"
@@ -67,6 +71,7 @@ defineExpose({ submitAnswer })
       
       <ReorderingSlide
         v-else-if="slide.question.type === 'reordering'"
+        :key="`reordering-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
         @answered="handleAnswered"
@@ -74,6 +79,7 @@ defineExpose({ submitAnswer })
       
       <FillBlankSlide
         v-else-if="['fill_blank', 'fill_blank_choices'].includes(slide.question.type)"
+        :key="`fill_blank-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
         :type="slide.question.type"
