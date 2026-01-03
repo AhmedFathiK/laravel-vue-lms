@@ -168,91 +168,111 @@ const isCurrentItem = (item, level) => {
 
             <!-- Timeline Items -->
             <div class="timeline-container">
-              <div 
-                v-for="(item, index) in level.items" 
-                :key="item.id + '-' + item.type" 
-                class="timeline-item-row"
-              >
-                <!-- Visual Column (Avatar + Line) -->
-                <div class="timeline-visual d-flex flex-column align-center me-5">
-                  <div class="avatar-wrapper">
-                    <VAvatar
-                      size="64"
-                      class="item-avatar"
-                      :class="[
-                        { 
-                          'avatar-completed': item.completed, 
-                          'avatar-locked': item.locked,
-                          'avatar-current': isCurrentItem(item, level)
-                        }
-                      ]"
+              <template v-if="level.items && level.items.length > 0">
+                <div
+                  v-for="(item, index) in level.items"
+                  :key="item.id + '-' + item.type"
+                  class="timeline-item-row"
+                >
+                  <!-- Visual Column (Avatar + Line) -->
+                  <div class="timeline-visual d-flex flex-column align-center me-5">
+                    <div class="avatar-wrapper">
+                      <VAvatar
+                        size="64"
+                        class="item-avatar"
+                        :class="[
+                          { 
+                            'avatar-completed': item.completed, 
+                            'avatar-locked': item.locked,
+                            'avatar-current': isCurrentItem(item, level)
+                          }
+                        ]"
+                        @click="handleItemClick(item)"
+                      >
+                        <VImg 
+                          v-if="item.thumbnail" 
+                          :src="item.thumbnail" 
+                          cover 
+                        />
+                        <VIcon 
+                          v-else 
+                          size="28" 
+                          :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
+                          :class="{ 'icon-locked': item.locked }"
+                        >
+                          {{ item.icon || 'tabler-book' }}
+                        </VIcon>
+                      </VAvatar>
+
+                      <!-- Checkmark Badge (Now outside VAvatar) -->
+                      <div
+                        v-if="item.completed"
+                        class="completion-badge"
+                      >
+                        <VIcon
+                          size="14"
+                          color="white"
+                          icon="tabler-check"
+                        />
+                      </div>
+                    </div>
+                               
+                    <!-- Connecting Line -->
+                    <div 
+                      v-if="!isLastItem(level, index)" 
+                      class="timeline-line"
+                      :class="{ 'line-completed': item.completed }"
+                    />
+                  </div>
+
+                  <!-- Content Column -->
+                  <div class="timeline-content py-2 flex-grow-1">
+                    <h3 
+                      class="text-h6 font-weight-bold mb-1"
+                      :class="{ 
+                        'text-disabled': item.locked, 
+                        'cursor-pointer': !item.locked,
+                        'text-primary': isCurrentItem(item, level)
+                      }"
                       @click="handleItemClick(item)"
                     >
-                      <VImg 
-                        v-if="item.thumbnail" 
-                        :src="item.thumbnail" 
-                        cover 
-                      />
-                      <VIcon 
-                        v-else 
-                        size="28" 
-                        :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
-                        :class="{ 'icon-locked': item.locked }"
-                      >
-                        {{ item.icon || 'tabler-book' }}
-                      </VIcon>
-                    </VAvatar>
-
-                    <!-- Checkmark Badge (Now outside VAvatar) -->
-                    <div
-                      v-if="item.completed"
-                      class="completion-badge"
+                      {{ item.title }}
+                    </h3>
+                    <p 
+                      class="text-body-1 mb-0"
+                      :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
                     >
-                      <VIcon
-                        size="14"
-                        color="white"
-                        icon="tabler-check"
-                      />
-                    </div>
+                      {{ item.description }}
+                    </p>
+                               
+                    <VChip
+                      v-if="item.type === 'exam'"
+                      color="warning"
+                      size="x-small"
+                      class="mt-2"
+                      variant="tonal"
+                    >
+                      Exam
+                    </VChip>
                   </div>
-                             
-                  <!-- Connecting Line -->
-                  <div 
-                    v-if="!isLastItem(level, index)" 
-                    class="timeline-line"
-                    :class="{ 'line-completed': item.completed }"
-                  />
                 </div>
+              </template>
 
-                <!-- Content Column -->
-                <div class="timeline-content py-2 flex-grow-1">
-                  <h3 
-                    class="text-h6 font-weight-bold mb-1"
-                    :class="{ 
-                      'text-disabled': item.locked, 
-                      'cursor-pointer': !item.locked,
-                      'text-primary': isCurrentItem(item, level)
-                    }"
-                    @click="handleItemClick(item)"
-                  >
-                    {{ item.title }}
-                  </h3>
-                  <p 
-                    class="text-body-1 mb-0"
-                    :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
-                  >
-                    {{ item.description }}
-                  </p>
-                             
-                  <VChip
-                    v-if="item.type === 'exam'"
-                    color="warning"
-                    size="x-small"
-                    class="mt-2"
-                    variant="tonal"
-                  >
-                    Exam
-                  </VChip>
+              <div
+                v-else
+                class="d-flex flex-column align-center justify-center py-12 text-center"
+              >
+                <VIcon
+                  icon="tabler-book-off"
+                  size="48"
+                  color="disabled"
+                  class="mb-2"
+                />
+                <div class="text-h6 text-disabled">
+                  No lessons yet
+                </div>
+                <div class="text-body-2 text-disabled">
+                  New content will be added soon.
                 </div>
               </div>
             </div>
