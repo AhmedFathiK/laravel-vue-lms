@@ -20,9 +20,11 @@ const isLoading = ref(true)
 const error = ref(null)
 const lesson = ref(null)
 const slides = ref([])
+const initialSlideCount = ref(0)
 const currentSlideIndex = ref(0)
 const progress = ref(0)
 const attempts = ref({})
+const resolvedSlideIds = ref(new Set())
 
 // State for interaction
 const drawerOpen = ref(false)
@@ -65,6 +67,7 @@ const fetchLesson = async () => {
 
     lesson.value = response
     slides.value = response.slides || []
+    initialSlideCount.value = slides.value.length
   } catch (err) {
     console.error('Error fetching lesson:', err)
     error.value = err.response?.data?.error || err.message || 'Failed to load lesson content.'
@@ -79,18 +82,24 @@ const currentSlide = computed(() => {
   return slides.value[currentSlideIndex.value]
 })
 
+const isTrulyFinished = computed(() => {
+  // Only show finish if we are on the last slide AND we have resolved it (answered)
+  // Or if it's not a question (explanation) and we reached the end
+  if (!isLastSlide.value) return false
+  
+  if (currentSlide.value?.question && !hasAnsweredCurrent.value) {
+    return false
+  }
+  
+  return true
+})
+
 const isLastSlide = computed(() => {
   return currentSlideIndex.value >= slides.value.length - 1 && reshowQueue.value.length === 0
 })
 
 const currentProgress = computed(() => {
-  // Simple progress based on index vs total initial slides
-  // Does not regress when reshowing
-  if (!slides.value.length) return 0
-
-  // If we are in reshow mode (index > initial length), show 100% or near it?
-  // Let's stick to simple index/total for now
-  return currentSlideIndex.value
+  return resolvedSlideIds.value.size
 })
 
 const lessonSlideRef = ref(null)
@@ -106,6 +115,7 @@ const handleQuestionAnswered = async ({ correct, userAnswer }) => {
   
   if (correct) {
     drawerFeedback.value = currentSlide.value.question.correctFeedback || 'Correct!'
+    resolvedSlideIds.value.add(currentSlide.value.id)
   } else {
     drawerFeedback.value = currentSlide.value.question.incorrectFeedback || 'Incorrect.'
   }
@@ -118,9 +128,32 @@ const handleQuestionAnswered = async ({ correct, userAnswer }) => {
   } else {
     // No API call here - tracked locally via attempts
 
-    // Add to reshow queue if enabled
-    if (lesson.value.reshowIncorrectSlides) {
-      reshowQueue.value.push(currentSlide.value)
+    // Add to reshow queue if enabled and limits allow
+    const reshowIncorrect = lesson.value.reshowIncorrectSlides || lesson.value.reshow_incorrect_slides
+    const reshowEnabled = !!reshowIncorrect
+    
+    let allowedReshows = 0
+    if (lesson.value.reshowCount !== undefined) allowedReshows = parseInt(lesson.value.reshowCount)
+    else if (lesson.value.reshow_count !== undefined) allowedReshows = parseInt(lesson.value.reshow_count)
+
+    const currentAttempts = attempts.value[currentSlide.value.id] || 0
+    
+    // reshowEnabled must be true
+    // AND current attempts (which includes this one) must be <= maxReshows (which implies additional shows?)
+    // Actually, if reshowCount is "number of reshows", then total allowed attempts is 1 + reshowCount.
+    // If currentAttempts <= maxReshows, it means we haven't used up our "reshow" allowance?
+    // Let's assume reshowCount = 1.
+    // Attempt 1: currentAttempts = 1. 1 <= 1? Yes. Push.
+    // Attempt 2: currentAttempts = 2. 2 <= 1? No. Don't push.
+    // Result: 2 attempts total. Correct.
+    
+    if (reshowEnabled && currentAttempts <= allowedReshows) {
+      // Deep clone to reset state (user answers) for the new attempt
+      const slideClone = JSON.parse(JSON.stringify(currentSlide.value))
+
+      reshowQueue.value.push(slideClone)
+    } else {
+      resolvedSlideIds.value.add(currentSlide.value.id)
     }
   }
 }
@@ -144,9 +177,26 @@ const drawerMode = computed(() => {
   return currentSlide.value?.question ? 'feedback' : 'continue'
 })
 
+const showExitDialog = ref(false)
+
+const handleExit = () => {
+  showExitDialog.value = true
+}
+
+const confirmExit = () => {
+  showExitDialog.value = false
+  if (lesson.value && lesson.value.course_id) {
+    router.push(`/my-courses/${lesson.value.course_id}`)
+  } else {
+    router.back()
+  }
+}
+
 const handleNavigationClick = () => {
-  // If reordering question and not answered yet, trigger check
-  if (isReordering.value && !hasAnsweredCurrent.value) {
+
+  // If question and not answered yet, trigger check
+  // This applies to reordering, fill_blank, or any type requiring manual submission
+  if (currentSlide.value?.question && !hasAnsweredCurrent.value) {
     drawerOpen.value = false // Hide drawer briefly
     
     // Wait for drawer to close (animation) before checking
@@ -172,6 +222,7 @@ watch(currentSlide, newSlide => {
 const handleNonQuestionCompleted = async () => {
   // Track attempt (1 view)
   attempts.value[currentSlide.value.id] = (attempts.value[currentSlide.value.id] || 0) + 1
+  resolvedSlideIds.value.add(currentSlide.value.id)
 
   hasAnsweredCurrent.value = true
   isCorrect.value = true
@@ -195,7 +246,12 @@ const nextSlide = () => {
   }
 }
 
+const isFinishing = ref(false)
+
 const finishLesson = async () => {
+  if (isFinishing.value) return
+  isFinishing.value = true
+
   try {
     // Prepare results for batch submission
     const results = Object.entries(attempts.value).map(([slideId, count]) => ({
@@ -209,14 +265,36 @@ const finishLesson = async () => {
     })
         
     // Redirect to course page
-    router.push({ name: 'my-courses' }) 
+    if (lesson.value?.course_id) {
+      router.push(`/my-courses/${lesson.value.course_id}`)
+    } else {
+      router.push({ name: 'my-courses' })
+    }
   } catch (error) {
     console.error("Error finishing:", error)
 
     // Even if error, try to redirect
-    router.push({ name: 'my-courses' }) 
+    if (lesson.value?.course_id) {
+      router.push(`/my-courses/${lesson.value.course_id}`)
+    } else {
+      router.push({ name: 'my-courses' })
+    }
+  } finally {
+    isFinishing.value = false
   }
 }
+
+const handleFinish = () => {
+  // If it's a question and not answered, we must check it first
+  if (currentSlide.value?.question && !hasAnsweredCurrent.value) {
+    triggerCheck()
+    
+    return
+  }
+  
+  finishLesson()
+}
+
 
 onMounted(() => {
   fetchLesson()
@@ -230,11 +308,11 @@ onMounted(() => {
       <VBtn
         icon="tabler-x"
         variant="text"
-        @click="router.back()"
+        @click="handleExit"
       />
       <LessonProgress
         :current="currentProgress"
-        :total="slides.length"
+        :total="initialSlideCount"
       />
       <!--
         <div class="d-flex align-center">
@@ -299,6 +377,7 @@ onMounted(() => {
       >
         <LessonSlide 
           ref="lessonSlideRef"
+          :key="currentSlideIndex"
           :slide="currentSlide"
           @answered="handleQuestionAnswered"
           @completed="handleNonQuestionCompleted"
@@ -329,15 +408,43 @@ onMounted(() => {
       v-model="drawerOpen"
       :mode="drawerMode"
       :is-correct="isCorrect"
-      :is-last-slide="isLastSlide"
+      :is-last-slide="isTrulyFinished"
       :correct-feedback="drawerFeedback"
       :incorrect-feedback="drawerFeedback"
-      :feedback-sentence="currentSlide?.feedbackSentence"
-      :feedback-translation="currentSlide?.feedbackTranslation"
-      :language="lesson?.courseMainLocale"
+      :feedback-sentence="currentSlide?.feedback_sentence"
+      :feedback-translation="currentSlide?.feedback_translation"
+      :language="lesson?.course_main_locale"
       @next="handleNavigationClick"
-      @finish="finishLesson"
+      @finish="handleFinish"
     />
+
+    <!-- Exit Dialog -->
+    <VDialog
+      v-model="showExitDialog"
+      max-width="400"
+    >
+      <VCard title="Exit Lesson?">
+        <VCardText>
+          Are you sure you want to leave? Your progress in this session may be lost.
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            variant="text"
+            @click="showExitDialog = false"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            color="error"
+            variant="text"
+            @click="confirmExit"
+          >
+            Exit
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </div>
 </template>
 
