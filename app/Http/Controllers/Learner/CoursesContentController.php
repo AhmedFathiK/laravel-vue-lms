@@ -23,6 +23,11 @@ class CoursesContentController extends Controller
         $user = Auth::user();
         $course = $lesson->level->course;
 
+        // Ensure content is published
+        if ($lesson->status !== 'published' || $lesson->level->status !== 'published') {
+            abort(404);
+        }
+
         // Check enrollment
         $enrollment = CourseEnrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
@@ -91,19 +96,23 @@ class CoursesContentController extends Controller
 
         $course->load([
             'levels' => function ($query) {
-                $query->orderBy('sort_order');
+                $query->where('status', 'published')
+                    ->orderBy('sort_order');
             },
             'levels.lessons' => function ($query) {
-                $query->orderBy('sort_order')
+                $query->where('status', 'published')
+                    ->orderBy('sort_order')
                     ->withCount(['studiedBy as is_completed' => function ($query) {
                         $query->where('user_id', Auth::id());
                     }]);
             },
             'levels.exams' => function ($query) {
-                $query->withCount(['attempts as is_completed' => function ($query) {
-                    $query->where('user_id', Auth::id())
-                        ->where('is_passed', true);
-                }]);
+                $query->where('status', 'published')
+                    ->where('is_active', true)
+                    ->withCount(['attempts as is_completed' => function ($query) {
+                        $query->where('user_id', Auth::id())
+                            ->where('is_passed', true);
+                    }]);
             }
         ]);
 

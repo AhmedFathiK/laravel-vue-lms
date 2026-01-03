@@ -81,6 +81,11 @@ class Level extends Model
      */
     public function isAccessibleToUser(User $user): bool
     {
+        // Ensure content is published
+        if ($this->status !== 'published' || $this->course->status !== 'published') {
+            return false;
+        }
+
         // If the level or course is free, it's accessible to everyone
         if ($this->is_free || $this->course->is_free) {
             return true;

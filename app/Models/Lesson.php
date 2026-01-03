@@ -79,6 +79,11 @@ class Lesson extends Model
      */
     public function isAccessibleToUser(User $user): bool
     {
+        // Ensure content is published
+        if ($this->status !== 'published' || $this->level->status !== 'published') {
+            return false;
+        }
+
         // If the lesson is free, it's accessible to everyone
         if ($this->is_free) {
             return true;

@@ -1,7 +1,7 @@
+import { router } from '@/plugins/1.router'
 import { useAuthStore } from '@/stores/auth'
 import { themeConfig } from '@themeConfig'
 import axios from 'axios'
-import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
 // Create Axios instance with defaults
@@ -67,10 +67,19 @@ api.interceptors.response.use(
     return response.data
   },
   async error => {
-    const router = useRouter()
     const authStore = useAuthStore()
-    const toast = useToast()
     
+    // Check if error is due to 404 (Not Found)
+    if (error.response && error.response.status === 404) {
+      const { router } = await import('@/plugins/1.router')
+
+      router.push('/not-found')
+      
+      return Promise.reject(error)
+    }
+
+    const toast = useToast()
+
     // Check if error is due to CSRF token mismatch (419 status)
     if (error.response && error.response.status === 419) {
       console.log('CSRF token mismatch, attempting to refresh token...')
