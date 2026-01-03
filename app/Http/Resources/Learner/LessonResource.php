@@ -31,6 +31,7 @@ class LessonResource extends JsonResource
             // So I should return snake_case.
             'reshow_count' => $this->reshow_count,
             'require_correct_answers' => $this->require_correct_answers,
+            'course_id' => $this->level->course_id,
             'course_main_locale' => $this->level->course->main_locale ?? 'en-US',
         ];
     }

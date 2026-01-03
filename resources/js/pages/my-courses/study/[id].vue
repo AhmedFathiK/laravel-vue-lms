@@ -82,17 +82,17 @@ const currentSlide = computed(() => {
   return slides.value[currentSlideIndex.value]
 })
 
-const isTrulyFinished = computed(() => {
+const isTrulyFinished = computed(() =>
+
   // Only show finish if we are on the last slide AND we have resolved it (answered)
   // Or if it's not a question (explanation) and we reached the end
-  if (!isLastSlide.value) return false
-  
-  if (currentSlide.value?.question && !hasAnsweredCurrent.value) {
-    return false
-  }
-  
-  return true
-})
+  isLastSlide.value &&
+  (
+    !currentSlide.value?.question ||
+    hasAnsweredCurrent.value
+  ),
+)
+
 
 const isLastSlide = computed(() => {
   return currentSlideIndex.value >= slides.value.length - 1 && reshowQueue.value.length === 0
@@ -129,12 +129,11 @@ const handleQuestionAnswered = async ({ correct, userAnswer }) => {
     // No API call here - tracked locally via attempts
 
     // Add to reshow queue if enabled and limits allow
-    const reshowIncorrect = lesson.value.reshowIncorrectSlides || lesson.value.reshow_incorrect_slides
+    const reshowIncorrect = lesson.value.reshowIncorrectSlides
     const reshowEnabled = !!reshowIncorrect
     
-    let allowedReshows = 0
+    let allowedReshows = Infinity
     if (lesson.value.reshowCount !== undefined) allowedReshows = parseInt(lesson.value.reshowCount)
-    else if (lesson.value.reshow_count !== undefined) allowedReshows = parseInt(lesson.value.reshow_count)
 
     const currentAttempts = attempts.value[currentSlide.value.id] || 0
     
@@ -185,8 +184,8 @@ const handleExit = () => {
 
 const confirmExit = () => {
   showExitDialog.value = false
-  if (lesson.value && lesson.value.course_id) {
-    router.push(`/my-courses/${lesson.value.course_id}`)
+  if (lesson.value && lesson.value.courseId) {
+    router.push(`/my-courses/${lesson.value.courseId}`)
   } else {
     router.back()
   }
@@ -265,8 +264,10 @@ const finishLesson = async () => {
     })
         
     // Redirect to course page
-    if (lesson.value?.course_id) {
-      router.push(`/my-courses/${lesson.value.course_id}`)
+    if (lesson.value?.courseId) {
+      const cId = lesson.value?.courseId
+
+      router.push(`/my-courses/${cId}`)
     } else {
       router.push({ name: 'my-courses' })
     }
@@ -274,8 +275,10 @@ const finishLesson = async () => {
     console.error("Error finishing:", error)
 
     // Even if error, try to redirect
-    if (lesson.value?.course_id) {
-      router.push(`/my-courses/${lesson.value.course_id}`)
+    if (lesson.value?.data?.courseId || lesson.value?.courseId) {
+      const cId = lesson.value?.data?.courseId || lesson.value?.courseId
+
+      router.push(`/my-courses/${cId}`)
     } else {
       router.push({ name: 'my-courses' })
     }
@@ -411,9 +414,10 @@ onMounted(() => {
       :is-last-slide="isTrulyFinished"
       :correct-feedback="drawerFeedback"
       :incorrect-feedback="drawerFeedback"
-      :feedback-sentence="currentSlide?.feedback_sentence"
-      :feedback-translation="currentSlide?.feedback_translation"
-      :language="lesson?.course_main_locale"
+      :feedback-sentence="currentSlide?.feedbackSentence"
+      :feedback-translation="currentSlide?.feedbackTranslation"
+      :language="lesson?.courseMainLocale"
+      :loading="isFinishing"
       @next="handleNavigationClick"
       @finish="handleFinish"
     />

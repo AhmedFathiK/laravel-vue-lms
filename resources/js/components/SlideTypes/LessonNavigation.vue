@@ -38,6 +38,10 @@ const props = defineProps({
     type: String,
     default: 'en-US',
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'next', 'finish'])
@@ -206,6 +210,7 @@ const handleFinish = () => {
               class="rounded px-8"
               size="x-large"
               color="primary"
+              :loading="loading"
               @click="handleFinish"
             >
               Finish
