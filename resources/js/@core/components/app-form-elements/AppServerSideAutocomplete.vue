@@ -31,6 +31,7 @@ const search = ref('')
 const attrs = useAttrs()
 const searchResults = ref([])
 const fieldHasItemsSelected = ref(false)
+const cachedSelectedItems = ref([])
 
 // Generate a unique ID for the component
 const elementId = computed(() => {
@@ -40,6 +41,23 @@ const elementId = computed(() => {
 })
 
 const label = computed(() => attrs.label)
+const itemValueKey = computed(() => attrs['item-value'] || attrs.itemValue || 'value')
+
+// Combine search results with cached selected items to ensure chips display correctly
+const computedItems = computed(() => {
+  const items = [...searchResults.value]
+  
+  cachedSelectedItems.value.forEach(cachedItem => {
+    // If item not in searchResults, add it
+    // We use loose comparison for ID just in case (string vs number)
+    const exists = items.some(i => i[itemValueKey.value] == cachedItem[itemValueKey.value])
+    if (!exists) {
+      items.push(cachedItem)
+    }
+  })
+  
+  return items
+})
 
 // Dynamic no data text based on search state
 const searchNoDataText = ref(props.noDataText || t(`Please enter ${props.minimumSearchChars} or more characters`))
@@ -106,8 +124,39 @@ const onSelecting = item => {
   if (!('multiple' in attrs)) {
     fieldHasItemsSelected.value = true
   }
+  
+  // Update cachedSelectedItems
+  const selectedIds = Array.isArray(item) ? item : (item ? [item] : [])
+  
+  // If return-object is used, item is the object(s)
+  if ('return-object' in attrs || attrs['return-object'] === '') {
+    // If returning objects, we don't strictly need caching for display, 
+    // but it helps to keep them in the list.
+    // However, with return-object, item IS the object.
+    const selectedObjects = Array.isArray(item) ? item : (item ? [item] : [])
+
+    cachedSelectedItems.value = [...selectedObjects]
+  } else {
+    // Add new items from searchResults to cache
+    selectedIds.forEach(id => {
+      const inCache = cachedSelectedItems.value.some(i => i[itemValueKey.value] == id)
+      if (!inCache) {
+        const inSearch = searchResults.value.find(i => i[itemValueKey.value] == id)
+        if (inSearch) {
+          cachedSelectedItems.value.push(inSearch)
+        }
+      }
+    })
+      
+    // Remove deselected items
+    cachedSelectedItems.value = cachedSelectedItems.value.filter(i => selectedIds.includes(i[itemValueKey.value]))
+  }
+
   emit('update:modelValue', item)
   emit('itemSelected', item)
+  
+  // Clear search text to allow new search
+  search.value = ''
 }
 
 // Clear the field
@@ -116,6 +165,7 @@ const clearField = () => {
 
   fieldHasItemsSelected.value = false
   searchResults.value = []
+  cachedSelectedItems.value = []
   
   if (minChars > 0) {
     searchNoDataText.value = t("Please enter {number} or more characters", { 
@@ -143,6 +193,7 @@ watch(() => props.apiRequestData, () => {
 watch(() => props.preSelectedItems, newItems => {
   if (newItems && newItems.length) {
     searchResults.value = [...newItems]
+    cachedSelectedItems.value = [...newItems]
   }
 }, { immediate: true })
 </script>
@@ -179,7 +230,7 @@ watch(() => props.preSelectedItems, newItems => {
         },
       }"
       v-model:search="search"
-      :items="searchResults"
+      :items="computedItems"
       :no-data-text="searchNoDataText"
       @click:clear="clearField"
       @update:model-value="onSelecting"

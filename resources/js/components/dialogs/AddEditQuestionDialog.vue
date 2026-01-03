@@ -68,8 +68,8 @@ const getDefaultQuestion = () => ({
   minWords: 0,
   maxWords: 0,
   content: {}, // Add content field
-  term_ids: [],
-  concept_ids: [],
+  termIds: [],
+  conceptIds: [],
 })
 
 // Computed dialog title
@@ -139,18 +139,18 @@ watch(
         
         // Map relationships to IDs and pre-selected items
         if (props.data.terms) {
-          localQuestion.value.term_ids = props.data.terms.map(t => t.id)
+          localQuestion.value.termIds = props.data.terms.map(t => t.id)
           preSelectedTerms.value = props.data.terms
-        } else if (!localQuestion.value.term_ids) {
-          localQuestion.value.term_ids = []
+        } else if (!localQuestion.value.termIds) {
+          localQuestion.value.termIds = []
           preSelectedTerms.value = []
         }
 
         if (props.data.concepts) {
-          localQuestion.value.concept_ids = props.data.concepts.map(c => c.id)
+          localQuestion.value.conceptIds = props.data.concepts.map(c => c.id)
           preSelectedConcepts.value = props.data.concepts
-        } else if (!localQuestion.value.concept_ids) {
-          localQuestion.value.concept_ids = []
+        } else if (!localQuestion.value.conceptIds) {
+          localQuestion.value.conceptIds = []
           preSelectedConcepts.value = []
         }
 
@@ -436,6 +436,15 @@ const extraData = computed(() => {
     (localQuestion.value.mediaType === 'image' || localQuestion.value.mediaType === 'image_with_audio')
   ) {
     data.media = mediaFile.value
+  }
+
+  // Map camelCase to snake_case for backend
+  if (localQuestion.value.termIds) {
+    data['term_ids'] = localQuestion.value.termIds
+  }
+
+  if (localQuestion.value.conceptIds) {
+    data['concept_ids'] = localQuestion.value.conceptIds
   }
   
   // courseId is already in localQuestion if not edited, but let's ensure it for add mode if missing?
@@ -1233,7 +1242,7 @@ const removeTag = tag => {
                 md="6"
               >
                 <AppServerSideAutocomplete
-                  v-model="localQuestion.term_ids"
+                  v-model="localQuestion.termIds"
                   :api-link="`/admin/courses/${props.courseId}/terms/select-fields`"
                   :pre-selected-items="preSelectedTerms"
                   :label="t('questions.dialog.relatedTerms', 'Related Terms')"
@@ -1243,7 +1252,7 @@ const removeTag = tag => {
                   item-title="term"
                   item-value="id"
                   :placeholder="t('questions.dialog.selectTerms', 'Select related terms')"
-                  :error-messages="formErrors.term_ids"
+                  :error-messages="formErrors.termIds"
                 />
               </VCol>
               <VCol
@@ -1251,7 +1260,7 @@ const removeTag = tag => {
                 md="6"
               >
                 <AppServerSideAutocomplete
-                  v-model="localQuestion.concept_ids"
+                  v-model="localQuestion.conceptIds"
                   :api-link="`/admin/courses/${props.courseId}/concepts/select-fields`"
                   :pre-selected-items="preSelectedConcepts"
                   :label="t('questions.dialog.relatedConcepts', 'Related Concepts')"
@@ -1261,7 +1270,7 @@ const removeTag = tag => {
                   item-title="title"
                   item-value="id"
                   :placeholder="t('questions.dialog.selectConcepts', 'Select related concepts')"
-                  :error-messages="formErrors.concept_ids"
+                  :error-messages="formErrors.conceptIds"
                 />
               </VCol>
             </VRow>

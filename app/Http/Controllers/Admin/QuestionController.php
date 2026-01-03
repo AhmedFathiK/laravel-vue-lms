@@ -22,7 +22,7 @@ class QuestionController extends Controller
      */
     public function index(IndexQuestionRequest $request, Course $course): JsonResponse
     {
-        $query = Question::query();
+        $query = Question::query()->with(['terms', 'concepts']);
 
         // Apply filters
         $query->where('course_id', $course->id);
@@ -126,6 +126,8 @@ class QuestionController extends Controller
             $question->concepts()->sync($data['concept_ids']);
         }
 
+        $question->load(['terms', 'concepts']);
+
         return response()->json([
             'message' => 'Question created successfully',
             'question' => $question
@@ -138,6 +140,7 @@ class QuestionController extends Controller
     public function show(Course $course, Question $question, ShowQuestionRequest $request): JsonResponse
     {
         $question->load(['terms', 'concepts']);
+
         return response()->json($question);
     }
 
@@ -197,6 +200,8 @@ class QuestionController extends Controller
         if (isset($data['concept_ids'])) {
             $question->concepts()->sync($data['concept_ids']);
         }
+
+        $question->load(['terms', 'concepts']);
 
         return response()->json([
             'message' => 'Question updated successfully',
