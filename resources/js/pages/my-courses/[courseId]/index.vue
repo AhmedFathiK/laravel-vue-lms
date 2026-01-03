@@ -1,7 +1,7 @@
 <script setup>
 import api from '@/utils/api'
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 definePage({
   meta: {
@@ -67,30 +67,29 @@ const completeItem = itemToComplete => {
   closeModal()
 }
 
-const getItemStatus = (item, level) => {
-  if (item.completed) {
-    return 'completed'
-  }
-  if (item.locked) {
-    return 'locked'
-  }
+const getLevelProgress = level => {
+  if (!level.items || level.items.length === 0) return 0
+  const completedCount = level.items.filter(item => item.completed).length
   
-  return 'current'
+  return Math.round((completedCount / level.items.length) * 100)
 }
 
-const getStatusClasses = (item, level) => {
-  const status = getItemStatus(item, level)
-  const classes = [`status-${status}`]
-  if (item.type === 'exam') {
-    classes.push('item-exam')
-  }
+const isLastItem = (level, index) => {
+  return index === level.items.length - 1
+}
+
+const isCurrentItem = (item, level) => {
+  if (item.completed || item.locked) return false
+
+  // It is current if it's the first one that is neither completed nor locked
+  const firstActive = level.items.find(i => !i.completed && !i.locked)
   
-  return classes
+  return firstActive && firstActive.id === item.id
 }
 </script>
 
 <template>
-  <VContainer class="course-timeline">
+  <VContainer class="course-timeline pa-4">
     <div
       v-if="loading"
       class="d-flex justify-center align-center"
@@ -126,69 +125,139 @@ const getStatusClasses = (item, level) => {
     </VAlert>
 
     <template v-else-if="courseData">
-      <h1 class="text-h3 mb-10 text-center">
+      <h1 class="text-h3 mb-6 text-center">
         {{ courseData.title }}
       </h1>
 
       <div
         v-for="(level) in courseData.levels"
         :key="level.id"
-        class="level-section mb-12"
+        class="mb-8"
       >
-        <h2 class="text-h4 mb-8">
-          {{ level.title }}
-        </h2>
-        <div class="timeline-wrapper">
-          <div class="timeline-main-line" />
-          <div
-            v-for="(item) in level.items"
-            :key="item.id + '-' + item.type"
-            class="timeline-item"
-            :class="getStatusClasses(item, level)"
-          >
-            <div class="timeline-avatar-wrapper">
-              <VAvatar
-                size="100"
-                class="timeline-avatar"
-                :style="{ cursor: item.locked ? 'not-allowed' : 'pointer' }"
+        <VCard
+          class="level-card"
+          border
+          flat
+        >
+          <VCardText class="pa-6">
+            <!-- Level Title -->
+            <h2 class="text-h5 font-weight-bold mb-2">
+              {{ level.title }}
+            </h2>
+
+            <!-- Progress Bar -->
+            <div class="d-flex align-center mb-8">
+              <VProgressLinear
+                :model-value="getLevelProgress(level)"
+                color="success"
+                height="10"
+                rounded
+                class="flex-grow-1"
+                bg-color="#E0E0E0"
+                bg-opacity="1"
+              />
+              <VChip 
+                color="success" 
+                size="small" 
+                class="ms-4 font-weight-bold" 
                 variant="flat"
-                color="surface"
-                @click="handleItemClick(item)"
               >
-                <VIcon
-                  size="x-large"
-                  :class="{ 'opacity-60': item.locked }"
-                >
-                  {{ item.icon }}
-                </VIcon>
-              </VAvatar>
+                {{ getLevelProgress(level) }}%
+              </VChip>
             </div>
-            <VCard
-              class="timeline-card ms-4"
-              :disabled="item.locked"
-              @click="handleItemClick(item)"
-            >
-              <VCardText>
-                <div class="d-flex justify-space-between align-center">
-                  <h3 class="text-h6">
+
+            <!-- Timeline Items -->
+            <div class="timeline-container">
+              <div 
+                v-for="(item, index) in level.items" 
+                :key="item.id + '-' + item.type" 
+                class="timeline-item-row"
+              >
+                <!-- Visual Column (Avatar + Line) -->
+                <div class="timeline-visual d-flex flex-column align-center me-5">
+                  <div class="avatar-wrapper">
+                    <VAvatar
+                      size="64"
+                      class="item-avatar"
+                      :class="[
+                        { 
+                          'avatar-completed': item.completed, 
+                          'avatar-locked': item.locked,
+                          'avatar-current': isCurrentItem(item, level)
+                        }
+                      ]"
+                      @click="handleItemClick(item)"
+                    >
+                      <VImg 
+                        v-if="item.thumbnail" 
+                        :src="item.thumbnail" 
+                        cover 
+                      />
+                      <VIcon 
+                        v-else 
+                        size="28" 
+                        :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
+                        :class="{ 'icon-locked': item.locked }"
+                      >
+                        {{ item.icon || 'tabler-book' }}
+                      </VIcon>
+                    </VAvatar>
+
+                    <!-- Checkmark Badge (Now outside VAvatar) -->
+                    <div
+                      v-if="item.completed"
+                      class="completion-badge"
+                    >
+                      <VIcon
+                        size="14"
+                        color="white"
+                        icon="tabler-check"
+                      />
+                    </div>
+                  </div>
+                             
+                  <!-- Connecting Line -->
+                  <div 
+                    v-if="!isLastItem(level, index)" 
+                    class="timeline-line"
+                    :class="{ 'line-completed': item.completed }"
+                  />
+                </div>
+
+                <!-- Content Column -->
+                <div class="timeline-content py-2 flex-grow-1">
+                  <h3 
+                    class="text-h6 font-weight-bold mb-1"
+                    :class="{ 
+                      'text-disabled': item.locked, 
+                      'cursor-pointer': !item.locked,
+                      'text-primary': isCurrentItem(item, level)
+                    }"
+                    @click="handleItemClick(item)"
+                  >
                     {{ item.title }}
                   </h3>
+                  <p 
+                    class="text-body-1 mb-0"
+                    :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
+                  >
+                    {{ item.description }}
+                  </p>
+                             
                   <VChip
                     v-if="item.type === 'exam'"
-                    color="amber"
-                    text-color="white"
-                    size="small"
+                    color="warning"
+                    size="x-small"
+                    class="mt-2"
+                    variant="tonal"
                   >
                     Exam
                   </VChip>
                 </div>
-                <p class="text-body-1 mt-2">
-                  {{ item.description }}
-                </p>
-              </VCardText>
-            </VCard>
-          </div>
-        </div>
+              </div>
+            </div>
+          </VCardText>
+        </VCard>
       </div>
     </template>
 
@@ -227,105 +296,130 @@ const getStatusClasses = (item, level) => {
 
 <style scoped>
 .course-timeline {
-  padding: 2rem;
-  max-width: 800px;
+  max-width: 900px;
   margin: auto;
 }
 
-.timeline-wrapper {
-  position: relative;
-  padding-left: 0;
+.level-card {
+    border-radius: 16px;
+    background-color: rgb(var(--v-theme-surface));
 }
 
-.timeline-main-line {
-  position: absolute;
-  left: 50px; /* Center of 100px avatar */
-  top: 50px; /* Start from center of first avatar */
-  bottom: 50px; /* End at center of last avatar */
-  width: 2px;
-  background-color: rgba(var(--v-border-color), 0.2);
-  z-index: 0;
-  transition: all 0.3s ease;
+.timeline-item-row {
+    display: flex;
+    align-items: flex-start;
+    min-height: 100px; /* Ensure enough space */
 }
 
-.timeline-item {
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding-bottom: 64px;
-  z-index: 1;
+.timeline-visual {
+    min-width: 64px;
+    height: 100%;
 }
 
-.timeline-item:last-child {
-  padding-bottom: 0;
+.avatar-wrapper {
+    position: relative;
+    z-index: 2;
+    padding: 4px; /* Space for border/shadow */
+    margin: -4px; /* Compensate for padding to keep alignment */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 72px; /* 64 + 4 + 4 */
+    height: 72px;
 }
 
-.timeline-avatar-wrapper {
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0;
+.item-avatar {
+    border: 2px solid transparent;
+    background-color: rgb(var(--v-theme-surface));
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.timeline-avatar {
-  border: 2px solid rgba(var(--v-border-color), 0.3);
-  background-color: rgb(var(--v-theme-surface)) !important;
-  transition: all 0.3s ease;
-  z-index: 2;
-  position: relative;
-  opacity: 1 !important;
+.avatar-completed {
+    border-color: rgb(var(--v-theme-success));
 }
 
-.timeline-card {
-  width: 100%;
-  transition: all 0.3s ease;
+.avatar-current {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.2);
 }
 
-.status-completed .timeline-avatar {
-  border-color: rgb(var(--v-theme-success));
-  color: rgb(var(--v-theme-success));
+.avatar-locked {
+    background-color: rgba(var(--v-theme-on-surface), 0.08) !important;
+    border-color: rgba(var(--v-theme-on-surface), 0.12);
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 1; /* Override Vuetify's potential opacity on disabled */
 }
 
-.status-completed .timeline-card {
-  border-inline-start: 4px solid rgb(var(--v-theme-success));
+.icon-locked {
+    color: rgba(var(--v-theme-on-surface), 0.38) !important;
 }
 
-.status-current .timeline-avatar {
-  border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 12px 4px rgba(var(--v-theme-primary), 0.25);
+.text-disabled {
+    color: rgba(var(--v-theme-on-surface), 0.38) !important;
 }
 
-.status-current .timeline-card {
-  border-inline-start: 4px solid rgb(var(--v-theme-primary));
+/* Badge styling */
+.completion-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 24px;
+    height: 24px;
+    background-color: rgb(var(--v-theme-success));
+    border-radius: 50%;
+    border: 2px solid rgb(var(--v-theme-surface));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.status-locked .timeline-card {
-  opacity: 0.6;
+.timeline-line {
+    width: 4px;
+    flex-grow: 1;
+    background-color: rgba(var(--v-theme-on-surface), 0.08); /* Faint line for better contrast in dark mode */
+    margin-top: -2px; 
+    margin-bottom: -2px;
+    position: relative;
+    z-index: 1;
+    border-radius: 2px;
+    min-height: 40px;
 }
 
-.opacity-60 {
-  opacity: 0.6;
+.line-completed {
+    background-color: rgb(var(--v-theme-success));
 }
 
-/* Exam Specific Styles */
-.item-exam.status-completed .timeline-avatar {
-  border-color: rgb(var(--v-theme-warning));
-  color: rgb(var(--v-theme-warning));
+.cursor-pointer {
+    cursor: pointer;
 }
 
-.item-exam.status-completed .timeline-card {
-  border-inline-start: 4px solid rgb(var(--v-theme-warning));
-}
-
+/* Responsive adjustments */
 @media (max-width: 600px) {
   .course-timeline {
-    padding: 1rem;
+    padding: 1rem !important;
   }
-  .timeline-card .text-h6 {
-    font-size: 1rem !important;
+  
+  .item-avatar {
+      width: 48px !important;
+      height: 48px !important;
   }
-  .timeline-card .text-body-1 {
-    font-size: 0.875rem !important;
+  
+  .avatar-wrapper {
+      width: 56px;
+      height: 56px;
+  }
+  
+  .timeline-visual {
+      min-width: 48px;
+  }
+  
+  .text-h6 {
+      font-size: 1rem !important;
   }
 }
 </style>
