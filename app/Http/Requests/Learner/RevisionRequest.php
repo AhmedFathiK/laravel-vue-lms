@@ -38,20 +38,10 @@ class RevisionRequest extends FormRequest
             ],
             'recordResponse' => [
                 'grade' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
-                'mastery_progress' => 'nullable|array',
-                'mastery_progress.*.category' => 'required_with:mastery_progress|string|max:50',
-                'mastery_progress.*.description' => 'nullable|string|max:255',
-                'mastery_progress.*.strength' => 'nullable|integer|min:1|max:10',
-            ],
-            'getMasteryProgress' => [
-                'course_id' => 'nullable|exists:courses,id',
-                'category' => 'nullable|string',
-                'strength_below' => 'nullable|integer|min:1|max:10',
             ],
             'generatePractice' => [
                 'course_id' => 'nullable|exists:courses,id',
                 'count' => 'nullable|integer|min:1|max:20',
-                'include_mastery_progress' => 'nullable|boolean',
                 'type' => ['nullable', Rule::in(['term', 'concept', 'both'])],
             ],
             'getStatistics' => [

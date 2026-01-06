@@ -291,8 +291,6 @@ Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
     Route::get('practice', [RevisionController::class, 'generatePractice']);
     Route::get('statistics', [RevisionController::class, 'getStatistics']);
     Route::get('grammar-topics', [RevisionController::class, 'getGrammarTopics']);
-
-    Route::get('mastery-progress', [RevisionController::class, 'getMasteryProgress']);
 });
 
 // Gamification System

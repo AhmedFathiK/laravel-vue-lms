@@ -69,11 +69,4 @@ class RevisionItem extends Model
         return $query;
     }
 
-    /**
-     * Get the mastery progress records for this revision item.
-     */
-    public function masteryProgress()
-    {
-        return $this->hasMany(MasteryProgress::class);
-    }
 }

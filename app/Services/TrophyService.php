@@ -131,13 +131,14 @@ class TrophyService
                 break;
 
             case 'term_mastered':
-                // Count mastered terms
-                $query = DB::table('mastery_progress')
+                // Count mastered terms (stability >= 50)
+                $query = DB::table('revision_items')
                     ->where('user_id', $user->id)
-                    ->where('mastery_level', '>=', 5); // Assuming level 5+ is mastery
+                    ->where('revisionable_type', \App\Models\Term::class)
+                    ->where('stability', '>=', 50);
 
                 if ($courseId && $trophy->course_id) {
-                    $query->join('terms', 'mastery_progress.term_id', '=', 'terms.id')
+                    $query->join('terms', 'revision_items.revisionable_id', '=', 'terms.id')
                         ->where('terms.course_id', $courseId);
                 }
 

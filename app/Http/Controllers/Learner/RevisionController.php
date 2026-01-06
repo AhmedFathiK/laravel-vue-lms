@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Learner\RevisionRequest;
 use App\Models\Concept;
 use App\Models\Course;
-use App\Models\MasteryProgress;
 use App\Models\RevisionItem;
 use App\Models\Term;
 use App\Services\FSRSService;

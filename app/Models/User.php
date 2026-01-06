@@ -83,14 +83,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all mastery progress records for this user.
-     */
-    public function masteryProgress(): HasMany
-    {
-        return $this->hasMany(MasteryProgress::class);
-    }
-
-    /**
      * Get all trophies earned by this user.
      */
     public function trophies(): HasMany

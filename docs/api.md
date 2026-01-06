@@ -1206,14 +1206,7 @@ GET /api/gamification/rankings
 **Request:**
 ```json
 {
-    "grade": 3,  // 1=Again, 2=Hard, 3=Good, 4=Easy
-    "mastery_progress": [
-        {
-            "category": "pronunciation",
-            "description": "Working on the 'th' sound",
-            "strength": 3
-        }
-    ]
+    "grade": 3  // 1=Again, 2=Hard, 3=Good, 4=Easy
 }
 ```
 
@@ -1243,42 +1236,6 @@ GET /api/gamification/rankings
 }
 ```
 
-### Get Mastery Progress
-
-**Endpoint:** `GET /api/revision/mastery-progress`
-
-**Query Parameters:**
-- `course_id` (optional): Filter by course ID
-- `category` (optional): Filter by category
-- `strength_below` (optional): Filter by strength below a certain value
-
-**Response:**
-```json
-{
-    "data": [
-        {
-            "id": 1,
-            "user_id": 1,
-            "revision_item_id": 1,
-            "category": "pronunciation",
-            "description": "Working on the 'th' sound",
-            "strength": 3,
-            "last_identified_at": "2023-06-01T12:00:00.000000Z",
-            "revision_item": {
-                "id": 1,
-                "revisionable": {
-                    "id": 42,
-                    "term": "hello",
-                    "meaning": "a greeting"
-                }
-            }
-        }
-    ],
-    "links": { "..." },
-    "meta": { "..." }
-}
-```
-
 ### Generate Practice Questions
 
 **Endpoint:** `GET /api/revision/practice`
@@ -1286,7 +1243,6 @@ GET /api/gamification/rankings
 **Query Parameters:**
 - `course_id` (optional): Filter by course ID
 - `count` (optional): Number of practice questions to generate (default: 5)
-- `include_mastery_progress` (optional): Include items with mastery progress (default: true)
 - `type` (optional): Filter by type ('term', 'concept', 'both')
 
 **Response:**
@@ -1335,14 +1291,6 @@ GET /api/gamification/rankings
         "2023-05-30": 18,
         "2023-05-31": 25,
         "2023-06-01": 22
-    },
-    "mastery_progress": {
-        "total": 15,
-        "by_category": {
-            "pronunciation": 7,
-            "meaning": 5,
-            "usage": 3
-        }
     }
 }
 ```
