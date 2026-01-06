@@ -36,9 +36,12 @@ class ConceptCategoryController extends Controller
     /**
      * Store a newly created concept category in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreRequest $request, Course $course): JsonResponse
     {
-        $category = ConceptCategory::create($request->validated());
+        $data = $request->validated();
+        $data['course_id'] = $course->id;
+
+        $category = ConceptCategory::create($data);
 
         return response()->json($category, 201);
     }
@@ -46,7 +49,7 @@ class ConceptCategoryController extends Controller
     /**
      * Display the specified concept category.
      */
-    public function show(ConceptCategory $category): JsonResponse
+    public function show(Course $course, ConceptCategory $category): JsonResponse
     {
         if (!Gate::allows('view.terms')) {
             abort(403);
@@ -58,7 +61,7 @@ class ConceptCategoryController extends Controller
     /**
      * Update the specified concept category in storage.
      */
-    public function update(UpdateRequest $request, ConceptCategory $category): JsonResponse
+    public function update(UpdateRequest $request, Course $course, ConceptCategory $category): JsonResponse
     {
         $category->update($request->validated());
 
@@ -68,7 +71,7 @@ class ConceptCategoryController extends Controller
     /**
      * Remove the specified concept category from storage.
      */
-    public function destroy(ConceptCategory $category): JsonResponse
+    public function destroy(Course $course, ConceptCategory $category): JsonResponse
     {
         if (!Gate::allows('delete.terms')) {
             abort(403);

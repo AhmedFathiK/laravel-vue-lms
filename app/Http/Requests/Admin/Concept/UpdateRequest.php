@@ -26,10 +26,8 @@ class UpdateRequest extends FormRequest
         $rules = [
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'category_id' => ['nullable', 'integer', 'exists:concept_categories,id'],
-            'title' => ['sometimes', 'array'],
-            'title.*' => ['string', 'max:255'],
-            'explanation' => ['sometimes', 'array'],
-            'explanation.*' => ['string'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'explanation' => ['sometimes', 'string'],
             'examples' => ['nullable', 'array'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_type' => ['nullable', 'string', 'in:image,video'],

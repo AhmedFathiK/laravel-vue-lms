@@ -14,11 +14,19 @@ const { locale } = useI18n()
 
 // Removed locale reference
 const isLoading = ref(false)
+const isTableLoading = ref(false)
 const course = ref(null)
 const concepts = ref([])
 const conceptCategories = ref([])
 const isDialogVisible = ref(false)
 const editingConcept = ref(null)
+
+// Headers
+const headers = [
+  { title: 'Title', key: 'title' },
+  { title: 'Category', key: 'category.title' },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'center' },
+]
 
 // Password confirmation dialog
 const isPasswordDialogVisible = ref(false)
@@ -31,15 +39,28 @@ const courseId = computed(() => route.params.courseid)
 const page = ref(1)
 const perPage = ref(10)
 const totalItems = ref(0)
-const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
 
 // Sorting
-const sortBy = ref('createdAt')
-const sortDesc = ref(true)
+const sortBy = ref('title')
+const sortDesc = ref(false)
 
 // Search
 const searchQuery = ref('')
 const categoryFilter = ref(null)
+
+const debouncedFetch = useDebounceFn(() => {
+  page.value = 1
+  fetchConcepts()
+}, 500)
+
+watch(searchQuery, () => {
+  debouncedFetch()
+})
+
+watch(categoryFilter, () => {
+  page.value = 1
+  fetchConcepts()
+})
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -81,10 +102,18 @@ const fetchConceptCategories = async () => {
 }
 
 // Fetch concepts
-const fetchConcepts = async () => {
+const fetchConcepts = async (options = {}) => {
   if (!courseId.value) return
   
-  isLoading.value = true
+  // Update sorting and pagination if options are provided
+  if (options.page) page.value = options.page
+  if (options.itemsPerPage) perPage.value = options.itemsPerPage
+  if (options.sortBy && options.sortBy.length > 0) {
+    sortBy.value = options.sortBy[0].key
+    sortDesc.value = options.sortBy[0].order === 'desc'
+  }
+
+  isTableLoading.value = true
   try {
     // Build query parameters
     const params = new URLSearchParams()
@@ -99,7 +128,7 @@ const fetchConcepts = async () => {
     }
 
     if (categoryFilter.value) {
-      params.append('category_id', categoryFilter.value)
+      params.append('categoryId', categoryFilter.value)
     }
     
     // Make API request
@@ -130,7 +159,7 @@ const fetchConcepts = async () => {
     concepts.value = []
     totalItems.value = 0
   } finally {
-    isLoading.value = false
+    isTableLoading.value = false
   }
 }
 
@@ -174,16 +203,7 @@ const handleConceptSaved = () => {
   fetchConcepts()
 }
 
-// Watch for search changes
-watch(searchQuery, () => {
-  page.value = 1
-  fetchConcepts()
-})
 
-watch(categoryFilter, () => {
-  page.value = 1
-  fetchConcepts()
-})
 
 // Watch for locale changes and refresh data
 watch(() => locale.value, () => {
@@ -194,7 +214,6 @@ watch(() => locale.value, () => {
 // Initialize
 onMounted(() => {
   fetchCourse()
-  fetchConcepts()
   fetchConceptCategories()
 })
 </script>
@@ -272,10 +291,10 @@ onMounted(() => {
           >
             <VTextField
               v-model="searchQuery"
-              label="Search"
+              placeholder="Search concepts..."
               density="compact"
               prepend-inner-icon="tabler-search"
-              single-line
+              clearable
               hide-details
               variant="outlined"
             />
@@ -298,79 +317,63 @@ onMounted(() => {
         </VRow>
         
         <!-- Concepts Table -->
-        <VTable class="text-no-wrap">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th class="text-center">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="concepts.length === 0">
-              <td
-                colspan="3"
-                class="text-center pa-4"
-              >
-                No concepts found. <VBtn
-                  variant="text"
-                  color="primary"
-                  @click="openAddDialog"
-                >
-                  Add a concept
-                </VBtn>
-              </td>
-            </tr>
-            <tr
-              v-for="concept in concepts"
-              :key="concept.id"
+        <VDataTableServer
+          v-model:page="page"
+          v-model:items-per-page="perPage"
+          :headers="headers"
+          :items="concepts"
+          :items-length="totalItems"
+          :loading="isTableLoading"
+          class="text-no-wrap"
+          @update:options="fetchConcepts"
+        >
+          <!-- Category -->
+          <template #[`item.category.title`]="{ item }">
+            {{ item.category?.title || 'None' }}
+          </template>
+
+          <!-- Actions -->
+          <template #[`item.actions`]="{ item }">
+            <VBtn
+              icon
+              variant="text"
+              color="default"
+              size="small"
+              @click="openEditDialog(item)"
             >
-              <td>{{ concept.title }}</td>
-              <td>{{ concept.category?.title || 'None' }}</td>
-              <td class="text-center">
-                <VBtn
-                  icon
-                  variant="text"
-                  color="default"
-                  size="small"
-                  @click="openEditDialog(concept)"
-                >
-                  <VIcon
-                    size="20"
-                    icon="tabler-edit"
-                  />
-                </VBtn>
-                
-                <VBtn
-                  icon
-                  variant="text"
-                  color="default"
-                  size="small"
-                  @click="confirmDeleteConcept(concept)"
-                >
-                  <VIcon
-                    size="20"
-                    icon="tabler-trash"
-                  />
-                </VBtn>
-              </td>
-            </tr>
-          </tbody>
-        </VTable>
-        
-        <!-- Pagination -->
-        <div class="d-flex align-center justify-space-between mt-4">
-          <div>
-            Showing {{ concepts.length }} of {{ totalItems }} concepts
-          </div>
-          <VPagination
-            v-model="page"
-            :length="totalPages"
-            @update:model-value="fetchConcepts"
-          />
-        </div>
+              <VIcon
+                size="20"
+                icon="tabler-edit"
+              />
+            </VBtn>
+            
+            <VBtn
+              icon
+              variant="text"
+              color="default"
+              size="small"
+              @click="confirmDeleteConcept(item)"
+            >
+              <VIcon
+                size="20"
+                icon="tabler-trash"
+              />
+            </VBtn>
+          </template>
+
+          <!-- No Data -->
+          <template #no-data>
+            <div class="text-center pa-4">
+              No concepts found. <VBtn
+                variant="text"
+                color="primary"
+                @click="openAddDialog"
+              >
+                Add a concept
+              </VBtn>
+            </div>
+          </template>
+        </VDataTableServer>
         
         <!-- Back Button -->
         <div class="mt-6">

@@ -26,17 +26,34 @@ class ConceptController extends Controller
 
         // Apply filters
         if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
+            $query->where('concepts.category_id', $request->category_id);
         }
 
-        if ($request->has('title')) {
-            $query->where('title->en', 'like', '%' . $request->title . '%');
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('concepts.title->en', 'like', '%' . $search . '%')
+                    ->orWhere('concepts.title->ar', 'like', '%' . $search . '%')
+                    ->orWhere('concepts.explanation->en', 'like', '%' . $search . '%')
+                    ->orWhere('concepts.explanation->ar', 'like', '%' . $search . '%');
+            });
         }
 
         // Apply sorting
-        $sortField = $request->get('sort_field', 'title->en');
-        $sortDirection = $request->get('sort_direction', 'asc');
-        $query->orderBy($sortField, $sortDirection);
+        $sortBy = $request->get('sort_by', 'title');
+        $sortDesc = $request->get('sort_desc', '0') == '1';
+        $direction = $sortDesc ? 'desc' : 'asc';
+
+        if ($sortBy === 'category.title') {
+            $query->leftJoin('concept_categories', 'concepts.category_id', '=', 'concept_categories.id')
+                ->orderBy('concept_categories.title', $direction)
+                ->select('concepts.*');
+        } elseif (in_array($sortBy, ['title', 'explanation'])) {
+            // For translatable fields, sort by the current locale (assuming 'en' as default for now)
+            $query->orderBy($sortBy . '->en', $direction);
+        } else {
+            $query->orderBy($sortBy, $direction);
+        }
 
         // Apply pagination
         $perPage = $request->get('per_page', 15);
@@ -74,9 +91,10 @@ class ConceptController extends Controller
     /**
      * Store a newly created concept in storage.
      */
-    public function store(StoreRequest $request): JsonResponse
+    public function store(StoreRequest $request, Course $course): JsonResponse
     {
         $data = $request->validated();
+        $data['course_id'] = $course->id;
 
         if (isset($data['explanation'])) {
             if (is_array($data['explanation'])) {
@@ -96,7 +114,7 @@ class ConceptController extends Controller
     /**
      * Display the specified concept.
      */
-    public function show(Concept $concept): JsonResponse
+    public function show(Course $course, Concept $concept): JsonResponse
     {
         if (!Gate::allows('view.terms')) {
             abort(403);
@@ -108,9 +126,10 @@ class ConceptController extends Controller
     /**
      * Update the specified concept in storage.
      */
-    public function update(UpdateRequest $request, Concept $concept): JsonResponse
+    public function update(UpdateRequest $request, Course $course, Concept $concept): JsonResponse
     {
         $data = $request->validated();
+        $data['course_id'] = $course->id;
 
         if (isset($data['explanation'])) {
             if (is_array($data['explanation'])) {
@@ -130,7 +149,7 @@ class ConceptController extends Controller
     /**
      * Remove the specified concept from storage.
      */
-    public function destroy(Concept $concept): JsonResponse
+    public function destroy(Course $course, Concept $concept): JsonResponse
     {
         if (!Gate::allows('delete.terms')) {
             abort(403);
@@ -144,7 +163,7 @@ class ConceptController extends Controller
     /**
      * Translate a concept to a specific locale.
      */
-    public function translate(Request $request, Concept $concept): JsonResponse
+    public function translate(Request $request, Course $course, Concept $concept): JsonResponse
     {
         if (!Gate::allows('translate.terms')) {
             abort(403);
@@ -162,7 +181,7 @@ class ConceptController extends Controller
         $concept->setTranslations('title', $titles);
 
         $explanations = $concept->getTranslations('explanation');
-        $explanations[$validated['locale']] = $validated['explanation'];
+        $explanations[$validated['locale']] = $this->sanitizeHtml($validated['explanation']);
         $concept->setTranslations('explanation', $explanations);
 
         if (isset($validated['examples'])) {
