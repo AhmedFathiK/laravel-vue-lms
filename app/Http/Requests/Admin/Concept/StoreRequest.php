@@ -25,9 +25,9 @@ class StoreRequest extends FormRequest
     {
         $rules = [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
+            'category_id' => ['nullable', 'integer', 'exists:concept_categories,id'],
             'title' => ['required', 'string', 'max:255'],
             'explanation' => ['required', 'string'],
-            'type' => ['required', 'string', 'max:50'],
             'examples' => ['nullable', 'array'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_type' => ['nullable', 'string', 'in:image,video'],

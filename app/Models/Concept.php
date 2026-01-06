@@ -15,11 +15,11 @@ class Concept extends Model
 
     protected $fillable = [
         'course_id',
+        'category_id',
         'parent_id',
         'lesson_id',
         'title',
         'explanation',
-        'type', // grammar, vocabulary, pronunciation, etc.
         'examples',
         'media_url',
         'media_type',
@@ -51,6 +51,11 @@ class Concept extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ConceptCategory::class, 'category_id');
     }
 
     /**

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\Learner\RevisionController;
+use App\Http\Controllers\Admin\ConceptCategoryController;
 use App\Http\Controllers\Admin\ConceptController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\LessonController;
@@ -183,6 +184,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
             Route::put('/{concept}', [ConceptController::class, 'update']);
             Route::delete('/{concept}', [ConceptController::class, 'destroy']);
             Route::post('/{concept}/translate', [ConceptController::class, 'translate']);
+        });
+
+        // Concept Categories
+        Route::prefix('/concept-categories')->group(function () {
+            Route::get('/', [ConceptCategoryController::class, 'index']);
+            Route::post('/', [ConceptCategoryController::class, 'store']);
+            Route::get('/{category}', [ConceptCategoryController::class, 'show']);
+            Route::put('/{category}', [ConceptCategoryController::class, 'update']);
+            Route::delete('/{category}', [ConceptCategoryController::class, 'destroy']);
         });
     });
 

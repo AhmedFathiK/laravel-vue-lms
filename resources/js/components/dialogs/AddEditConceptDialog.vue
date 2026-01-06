@@ -2,6 +2,7 @@
 import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import api from '@/utils/api'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+import TiptapEditor from '@core/components/TiptapEditor.vue'
 import { requiredValidator } from '@core/utils/validators'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
@@ -30,33 +31,34 @@ const emit = defineEmits(['update:isDialogVisible', 'saved'])
 
 const toast = useToast()
 const refForm = ref(null)
-const conceptTypes = ref([])
+const conceptCategories = ref([])
 
 const defaultForm = () => ({
   title: '',
   explanation: '',
-  type: '',
-  status: 'active',
+  categoryId: null,
   courseId: props.courseId,
 })
 
 const form = ref(defaultForm())
 
-// Fetch concept types
-const fetchConceptTypes = async () => {
+// Fetch concept categories
+const fetchConceptCategories = async () => {
   try {
-    const response = await api.get('/admin/concepts/types')
+    const response = await api.get(`/admin/courses/${props.courseId}/concept-categories`)
 
-    conceptTypes.value = response || []
+    conceptCategories.value = response.map(cat => ({
+      title: cat.title,
+      value: cat.id,
+    }))
   } catch (error) {
-    console.error('Error fetching concept types:', error)
-    toast.error('Failed to load concept types')
-    conceptTypes.value = []
+    console.error('Error fetching concept categories:', error)
+    toast.error('Failed to load concept categories')
   }
 }
 
 onMounted(() => {
-  fetchConceptTypes()
+  fetchConceptCategories()
 })
 
 watch(() => props.isDialogVisible, isVisible => {
@@ -65,8 +67,7 @@ watch(() => props.isDialogVisible, isVisible => {
       form.value = {
         title: props.data.title || '',
         explanation: props.data.explanation || '',
-        type: props.data.type || '',
-        status: props.data.status || 'active',
+        categoryId: props.data.categoryId || null,
         courseId: props.courseId,
       }
     } else {
@@ -116,45 +117,34 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
               />
             </VCol>
 
-            <!-- Type -->
-            <VCol
-              cols="12"
-              md="6"
-            >
+            <!-- Category -->
+            <VCol cols="12">
               <AppSelect
-                v-model="form.type"
-                :items="conceptTypes"
-                label="Type"
-                :rules="[requiredValidator]"
-                placeholder="Select Type"
-                :error-messages="validationErrors.type"
-              />
-            </VCol>
-
-            <!-- Status -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="form.status"
-                :items="[{ title: 'Active', value: 'active' }, { title: 'Inactive', value: 'inactive' }]"
-                label="Status"
-                placeholder="Select Status"
-                :error-messages="validationErrors.status"
+                v-model="form.categoryId"
+                :items="conceptCategories"
+                label="Category"
+                placeholder="Select Category"
+                clearable
+                :error-messages="validationErrors.categoryId"
               />
             </VCol>
 
             <!-- Explanation -->
             <VCol cols="12">
-              <AppTextarea
+              <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                Explanation
+              </VLabel>
+              <TiptapEditor
                 v-model="form.explanation"
-                label="Explanation"
-                :rules="[requiredValidator]"
-                rows="5"
                 placeholder="Enter concept explanation"
-                :error-messages="validationErrors.explanation"
+                class="border rounded"
               />
+              <div
+                v-if="validationErrors.explanation"
+                class="v-messages text-error mt-1"
+              >
+                {{ validationErrors.explanation[0] }}
+              </div>
             </VCol>
 
             <!-- Actions -->

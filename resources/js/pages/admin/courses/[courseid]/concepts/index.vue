@@ -16,6 +16,7 @@ const { locale } = useI18n()
 const isLoading = ref(false)
 const course = ref(null)
 const concepts = ref([])
+const conceptCategories = ref([])
 const isDialogVisible = ref(false)
 const editingConcept = ref(null)
 
@@ -38,6 +39,7 @@ const sortDesc = ref(true)
 
 // Search
 const searchQuery = ref('')
+const categoryFilter = ref(null)
 
 // Fetch course details
 const fetchCourse = async () => {
@@ -62,6 +64,22 @@ const fetchCourse = async () => {
   }
 }
 
+// Fetch concept categories
+const fetchConceptCategories = async () => {
+  if (!courseId.value) return
+  
+  try {
+    const response = await api.get(`/admin/courses/${courseId.value}/concept-categories`)
+
+    conceptCategories.value = response.map(cat => ({
+      title: cat.title,
+      value: cat.id,
+    }))
+  } catch (error) {
+    console.error('Error fetching concept categories:', error)
+  }
+}
+
 // Fetch concepts
 const fetchConcepts = async () => {
   if (!courseId.value) return
@@ -78,6 +96,10 @@ const fetchConcepts = async () => {
     
     if (searchQuery.value) {
       params.append('search', searchQuery.value)
+    }
+
+    if (categoryFilter.value) {
+      params.append('category_id', categoryFilter.value)
     }
     
     // Make API request
@@ -158,15 +180,22 @@ watch(searchQuery, () => {
   fetchConcepts()
 })
 
+watch(categoryFilter, () => {
+  page.value = 1
+  fetchConcepts()
+})
+
 // Watch for locale changes and refresh data
 watch(() => locale.value, () => {
   fetchConcepts()
+  fetchConceptCategories()
 })
 
 // Initialize
 onMounted(() => {
   fetchCourse()
   fetchConcepts()
+  fetchConceptCategories()
 })
 </script>
 
@@ -214,6 +243,14 @@ onMounted(() => {
         <template #append>
           <div class="d-flex gap-4">
             <VBtn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="tabler-category"
+              :to="`/admin/courses/${courseId}/concepts/categories`"
+            >
+              Manage Categories
+            </VBtn>
+            <VBtn
               prepend-icon="tabler-plus"
               @click="openAddDialog"
             >
@@ -226,7 +263,7 @@ onMounted(() => {
       <VDivider />
       
       <VCardText>
-        <!-- Search -->
+        <!-- Search & Filter -->
         <VRow class="mb-4">
           <VCol
             cols="12"
@@ -243,6 +280,21 @@ onMounted(() => {
               variant="outlined"
             />
           </VCol>
+          <VCol
+            cols="12"
+            sm="6"
+            md="4"
+          >
+            <VSelect
+              v-model="categoryFilter"
+              :items="conceptCategories"
+              label="Filter by Category"
+              density="compact"
+              clearable
+              hide-details
+              variant="outlined"
+            />
+          </VCol>
         </VRow>
         
         <!-- Concepts Table -->
@@ -250,8 +302,7 @@ onMounted(() => {
           <thead>
             <tr>
               <th>Title</th>
-              <th>Type</th>
-              <th>Status</th>
+              <th>Category</th>
               <th class="text-center">
                 Actions
               </th>
@@ -260,7 +311,7 @@ onMounted(() => {
           <tbody>
             <tr v-if="concepts.length === 0">
               <td
-                colspan="4"
+                colspan="3"
                 class="text-center pa-4"
               >
                 No concepts found. <VBtn
@@ -277,16 +328,7 @@ onMounted(() => {
               :key="concept.id"
             >
               <td>{{ concept.title }}</td>
-              <td>{{ concept.type }}</td>
-              <td>
-                <VChip
-                  :color="concept.status === 'active' ? 'success' : 'secondary'"
-                  size="small"
-                  label
-                >
-                  {{ concept.status }}
-                </VChip>
-              </td>
+              <td>{{ concept.category?.title || 'None' }}</td>
               <td class="text-center">
                 <VBtn
                   icon
@@ -355,6 +397,7 @@ onMounted(() => {
     <!-- Deletion Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isPasswordDialogVisible"
+      confirmation-question="Are you sure you want to delete this concept? This action cannot be undone."
       @confirm="handleDeleteConfirm"
     />
   </section>

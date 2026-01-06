@@ -16,7 +16,6 @@ class ConceptFactory extends Factory
             'course_id' => Course::factory(),
             'title' => ['en' => $this->faker->word],
             'explanation' => ['en' => $this->faker->sentence],
-            'type' => $this->faker->randomElement(['grammar', 'vocabulary']),
         ];
     }
 }

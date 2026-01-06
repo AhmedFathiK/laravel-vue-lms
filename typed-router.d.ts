@@ -23,6 +23,7 @@ declare module 'vue-router/auto-routes' {
     'access-control': RouteRecordInfo<'access-control', '/access-control', Record<never, never>, Record<never, never>>,
     'admin-courses': RouteRecordInfo<'admin-courses', '/admin/courses', Record<never, never>, Record<never, never>>,
     'admin-courses-courseid-concepts': RouteRecordInfo<'admin-courses-courseid-concepts', '/admin/courses/:courseid/concepts', { courseid: ParamValue<true> }, { courseid: ParamValue<false> }>,
+    'admin-courses-courseid-concepts-categories': RouteRecordInfo<'admin-courses-courseid-concepts-categories', '/admin/courses/:courseid/concepts/categories', { courseid: ParamValue<true> }, { courseid: ParamValue<false> }>,
     'admin-courses-courseid-levels': RouteRecordInfo<'admin-courses-courseid-levels', '/admin/courses/:courseid/levels', { courseid: ParamValue<true> }, { courseid: ParamValue<false> }>,
     'admin-courses-courseid-levels-levelid-lessons': RouteRecordInfo<'admin-courses-courseid-levels-levelid-lessons', '/admin/courses/:courseid/levels/:levelid/lessons', { courseid: ParamValue<true>, levelid: ParamValue<true> }, { courseid: ParamValue<false>, levelid: ParamValue<false> }>,
     'admin-courses-courseid-levels-levelid-lessons-lessonid-slides': RouteRecordInfo<'admin-courses-courseid-levels-levelid-lessons-lessonid-slides', '/admin/courses/:courseid/levels/:levelid/lessons/:lessonid/slides', { courseid: ParamValue<true>, levelid: ParamValue<true>, lessonid: ParamValue<true> }, { courseid: ParamValue<false>, levelid: ParamValue<false>, lessonid: ParamValue<false> }>,

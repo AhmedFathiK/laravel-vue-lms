@@ -22,11 +22,11 @@ class ConceptController extends Controller
             abort(403);
         }
 
-        $query = $course->concepts();
+        $query = $course->concepts()->with('category');
 
         // Apply filters
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
         }
 
         if ($request->has('title')) {
@@ -55,7 +55,7 @@ class ConceptController extends Controller
             abort(403);
         }
 
-        $query = $course->concepts();
+        $query = $course->concepts()->with('category');
 
         // Apply search
         if ($request->has('search')) {
@@ -64,10 +64,10 @@ class ConceptController extends Controller
                 $q->where('title->en', 'like', '%' . $search . '%');
             });
         }
-        
+
         $limit = $request->get('limit', 50);
         $concepts = $query->limit($limit)->get();
-        
+
         return response()->json($concepts);
     }
 
@@ -76,7 +76,19 @@ class ConceptController extends Controller
      */
     public function store(StoreRequest $request): JsonResponse
     {
-        $concept = Concept::create($request->validated());
+        $data = $request->validated();
+
+        if (isset($data['explanation'])) {
+            if (is_array($data['explanation'])) {
+                foreach ($data['explanation'] as $locale => $content) {
+                    $data['explanation'][$locale] = $this->sanitizeHtml($content);
+                }
+            } else {
+                $data['explanation'] = $this->sanitizeHtml($data['explanation']);
+            }
+        }
+
+        $concept = Concept::create($data);
 
         return response()->json($concept, 201);
     }
@@ -98,7 +110,19 @@ class ConceptController extends Controller
      */
     public function update(UpdateRequest $request, Concept $concept): JsonResponse
     {
-        $concept->update($request->validated());
+        $data = $request->validated();
+
+        if (isset($data['explanation'])) {
+            if (is_array($data['explanation'])) {
+                foreach ($data['explanation'] as $locale => $content) {
+                    $data['explanation'][$locale] = $this->sanitizeHtml($content);
+                }
+            } else {
+                $data['explanation'] = $this->sanitizeHtml($data['explanation']);
+            }
+        }
+
+        $concept->update($data);
 
         return response()->json($concept);
     }
@@ -115,27 +139,6 @@ class ConceptController extends Controller
         $concept->delete();
 
         return response()->json(null, 204);
-    }
-
-    /**
-     * Get all concept types.
-     */
-    public function getTypes(): JsonResponse
-    {
-        if (!Gate::allows('view.terms')) {
-            abort(403);
-        }
-
-        $types = [
-            ['value' => 'grammar', 'label' => 'Grammar Rule'],
-            ['value' => 'vocabulary', 'label' => 'Vocabulary Group'],
-            ['value' => 'pronunciation', 'label' => 'Pronunciation Rule'],
-            ['value' => 'idiom', 'label' => 'Idiomatic Expression'],
-            ['value' => 'structure', 'label' => 'Sentence Structure'],
-            ['value' => 'culture', 'label' => 'Cultural Context'],
-        ];
-
-        return response()->json($types);
     }
 
     /**
@@ -171,5 +174,18 @@ class ConceptController extends Controller
         $concept->save();
 
         return response()->json($concept);
+    }
+
+    /**
+     * Sanitize HTML content
+     */
+    protected function sanitizeHtml($html): string
+    {
+        if (empty($html)) return '';
+
+        // Allowed tags for concept explanations
+        $allowedTags = '<b><i><u><ul><li><ol><p><br><strong><em><span><div><table><thead><tbody><tr><th><td>';
+
+        return strip_tags($html, $allowedTags);
     }
 }

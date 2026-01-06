@@ -85,6 +85,11 @@ class Course extends Model
         return $this->hasMany(Concept::class);
     }
 
+    public function conceptCategories(): HasMany
+    {
+        return $this->hasMany(ConceptCategory::class);
+    }
+
     public function questions(): HasMany
     {
         return $this->hasMany(Question::class);
