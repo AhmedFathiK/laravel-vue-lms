@@ -322,7 +322,7 @@ console.log(props.data)
                           {{ termData.term }}
                         </div>
                         <div class="term-meaning-text-placeholder pa-1">
-                          {{ termData.definition }}
+                          {{ termData.meaning }}
                         </div>
                       </div>
                       <div class="term-example">

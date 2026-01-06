@@ -40,7 +40,10 @@ class Slide extends Model
     ];
 
     public array $translatable = [
+        'title',
         'content',
+        'feedback_sentence',
+        'feedback_translation',
     ];
 
     protected $casts = [

@@ -1,0 +1,438 @@
+{
+    "id": 179,
+    "courseId": 28,
+    "title": {
+        "en": "Level 1: Basics",
+        "ar": "المستوى الأول: الأساسيات"
+    },
+    "description": {
+        "en": "Basic English words and simple sentences.",
+        "ar": "الكلمات الأساسية والجمل البسيطة في اللغة الإنجليزية."
+    },
+    "sortOrder": 1,
+    "status": "published",
+    "isFree": true,
+    "lessons": [
+        {
+            "id": 1,
+            "title": {
+                "en": "Greetings",
+                "ar": "التحيات"
+            },
+            "description": {
+                "en": "Learn common English greetings.",
+                "ar": "تعلم التحيات الشائعة في اللغة الإنجليزية."
+            },
+            "terms": [
+                {
+                    "id": 101,
+                    "term": {
+                        "en": "Hello",
+                        "ar": "مرحباً"
+                    },
+                    "meaning": {
+                        "en": "A greeting used when meeting someone.",
+                        "ar": "تحية تُستخدم عند مقابلة شخص."
+                    },
+                    "example": {
+                        "en": "Hello, Ahmed!",
+                        "ar": "مرحباً يا أحمد!"
+                    }
+                },
+                {
+                    "id": 102,
+                    "term": {
+                        "en": "Hi",
+                        "ar": "أهلاً"
+                    },
+                    "meaning": {
+                        "en": "An informal greeting.",
+                        "ar": "تحية غير رسمية."
+                    },
+                    "example": {
+                        "en": "Hi, Sara!",
+                        "ar": "أهلاً يا سارة!"
+                    }
+                },
+                {
+                    "id": 103,
+                    "term": {
+                        "en": "Good morning",
+                        "ar": "صباح الخير"
+                    },
+                    "meaning": {
+                        "en": "A greeting used in the morning.",
+                        "ar": "تحية تُستخدم في الصباح."
+                    },
+                    "example": {
+                        "en": "Good morning, teacher.",
+                        "ar": "صباح الخير يا أستاذ."
+                    }
+                },
+                {
+                    "id": 104,
+                    "term": {
+                        "en": "Goodbye",
+                        "ar": "مع السلامة"
+                    },
+                    "meaning": {
+                        "en": "A word used when leaving.",
+                        "ar": "كلمة تُستخدم عند المغادرة."
+                    },
+                    "example": {
+                        "en": "Goodbye, see you later.",
+                        "ar": "مع السلامة، أراك لاحقاً."
+                    }
+                }
+            ],
+            "concept": {
+                "id": 201,
+                "title": {
+                    "en": "Using greetings",
+                    "ar": "استخدام التحيات"
+                },
+                "explanation": {
+                    "en": "<p>We use greetings when we meet or leave people.</p>",
+                    "ar": "<p>نستخدم التحيات عند مقابلة الناس أو مغادرتهم.</p>"
+                },
+                "type": "grammar"
+            },
+            "slides": [
+                {
+                    "id": 1,
+                    "type": "term",
+                    "title": {
+                        "en": "New Word",
+                        "ar": "كلمة جديدة"
+                    },
+                    "termId": 101,
+                    "sortOrder": 1
+                },
+                {
+                    "id": 2,
+                    "type": "term",
+                    "title": {
+                        "en": "New Word",
+                        "ar": "كلمة جديدة"
+                    },
+                    "termId": 102,
+                    "sortOrder": 2
+                },
+                {
+                    "id": 3,
+                    "type": "term",
+                    "title": {
+                        "en": "New Word",
+                        "ar": "كلمة جديدة"
+                    },
+                    "termId": 103,
+                    "sortOrder": 3
+                },
+                {
+                    "id": 4,
+                    "type": "term",
+                    "title": {
+                        "en": "New Word",
+                        "ar": "كلمة جديدة"
+                    },
+                    "termId": 104,
+                    "sortOrder": 4
+                },
+                {
+                    "id": 5,
+                    "type": "explanation",
+                    "title": {
+                        "en": "Explanation",
+                        "ar": "الشرح"
+                    },
+                    "content": {
+                        "en": "<p>These words are used to greet people.</p>",
+                        "ar": "<p>تُستخدم هذه الكلمات لتحية الناس.</p>"
+                    },
+                    "sortOrder": 5
+                },
+                {
+                    "id": 6,
+                    "type": "concept",
+                    "title": {
+                        "en": "Using greetings",
+                        "ar": "استخدام التحيات"
+                    },
+                    "content": {
+                        "en": "<p>Say Hello or Hi when you meet someone.</p>",
+                        "ar": "<p>قل Hello أو Hi عند مقابلة شخص.</p>"
+                    },
+                    "sortOrder": 6
+                },
+                {
+                    "id": 7,
+                    "type": "mcq",
+                    "title": {
+                        "en": "Choose the greeting",
+                        "ar": "اختر التحية"
+                    },
+                    "content": {
+                        "en": "<p>Which word is a greeting?</p>",
+                        "ar": "<p>أي كلمة تُستخدم للتحية؟</p>"
+                    },
+                    "question": {
+                        "questionText": {
+                            "en": "Which word is a greeting?",
+                            "ar": "أي كلمة تُستخدم للتحية؟"
+                        },
+                        "content": {
+                            "options": {
+                                "en": [
+                                    "Hello",
+                                    "Book",
+                                    "Apple",
+                                    "Run"
+                                ],
+                                "ar": [
+                                    "Hello",
+                                    "كتاب",
+                                    "تفاحة",
+                                    "يجري"
+                                ]
+                            },
+                            "correctAnswer": [
+                                "0"
+                            ]
+                        }
+                    },
+                    "feedbackSentence": "Well done!",
+                    "feedbackTranslation": {
+                        "en": "You chose the correct greeting.",
+                        "ar": "لقد اخترت التحية الصحيحة."
+                    },
+                    "sortOrder": 7
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": {
+                "en": "People & Pronouns",
+                "ar": "الأشخاص والضمائر"
+            },
+            "description": {
+                "en": "Learn basic English pronouns.",
+                "ar": "تعلم الضمائر الأساسية في اللغة الإنجليزية."
+            },
+            "terms": [
+                {
+                    "id": 105,
+                    "term": {
+                        "en": "I",
+                        "ar": "أنا"
+                    },
+                    "meaning": {
+                        "en": "Used to talk about yourself.",
+                        "ar": "تُستخدم للتحدث عن نفسك."
+                    },
+                    "example": {
+                        "en": "I am Ahmed.",
+                        "ar": "أنا أحمد."
+                    }
+                },
+                {
+                    "id": 106,
+                    "term": {
+                        "en": "You",
+                        "ar": "أنت"
+                    },
+                    "meaning": {
+                        "en": "Used to talk to someone.",
+                        "ar": "تُستخدم لمخاطبة شخص."
+                    },
+                    "example": {
+                        "en": "You are my friend.",
+                        "ar": "أنت صديقي."
+                    }
+                },
+                {
+                    "id": 107,
+                    "term": {
+                        "en": "He",
+                        "ar": "هو"
+                    },
+                    "meaning": {
+                        "en": "Used for a male.",
+                        "ar": "تُستخدم للمذكر."
+                    },
+                    "example": {
+                        "en": "He is a student.",
+                        "ar": "هو طالب."
+                    }
+                },
+                {
+                    "id": 108,
+                    "term": {
+                        "en": "She",
+                        "ar": "هي"
+                    },
+                    "meaning": {
+                        "en": "Used for a female.",
+                        "ar": "تُستخدم للمؤنث."
+                    },
+                    "example": {
+                        "en": "She is a teacher.",
+                        "ar": "هي معلمة."
+                    }
+                }
+            ],
+            "concept": {
+                "id": 202,
+                "title": {
+                    "en": "Verb to be (am / is)",
+                    "ar": "الفعل to be (am / is)"
+                },
+                "explanation": {
+                    "en": "<p>I use <b>am</b>. He and She use <b>is</b>.</p>",
+                    "ar": "<p>نستخدم <b>am</b> مع I و <b>is</b> مع He و She.</p>"
+                },
+                "type": "grammar"
+            },
+            "slides": [
+                {
+                    "id": 20,
+                    "type": "concept",
+                    "title": {
+                        "en": "Verb to be",
+                        "ar": "الفعل to be"
+                    },
+                    "content": {
+                        "en": "<p>I am Ahmed. She is a teacher.</p>",
+                        "ar": "<p>I am Ahmed. She is a teacher.</p>"
+                    },
+                    "sortOrder": 1
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": {
+                "en": "Everyday Objects",
+                "ar": "الأشياء اليومية"
+            },
+            "description": {
+                "en": "Learn names of common objects.",
+                "ar": "تعلم أسماء الأشياء الشائعة."
+            },
+            "terms": [
+                {
+                    "id": 109,
+                    "term": {
+                        "en": "Book",
+                        "ar": "كتاب"
+                    },
+                    "meaning": {
+                        "en": "Something you read.",
+                        "ar": "شيء نقرأه."
+                    },
+                    "example": {
+                        "en": "This is a book.",
+                        "ar": "هذا كتاب."
+                    }
+                },
+                {
+                    "id": 110,
+                    "term": {
+                        "en": "Pen",
+                        "ar": "قلم"
+                    },
+                    "meaning": {
+                        "en": "Used for writing.",
+                        "ar": "يُستخدم للكتابة."
+                    },
+                    "example": {
+                        "en": "I have a pen.",
+                        "ar": "لدي قلم."
+                    }
+                },
+                {
+                    "id": 111,
+                    "term": {
+                        "en": "Chair",
+                        "ar": "كرسي"
+                    },
+                    "meaning": {
+                        "en": "You sit on it.",
+                        "ar": "نجلس عليه."
+                    },
+                    "example": {
+                        "en": "The chair is red.",
+                        "ar": "الكرسي أحمر."
+                    }
+                },
+                {
+                    "id": 112,
+                    "term": {
+                        "en": "Bag",
+                        "ar": "حقيبة"
+                    },
+                    "meaning": {
+                        "en": "You carry things in it.",
+                        "ar": "نحمل فيها الأشياء."
+                    },
+                    "example": {
+                        "en": "My bag is new.",
+                        "ar": "حقيبتي جديدة."
+                    }
+                }
+            ],
+            "concept": {
+                "id": 203,
+                "title": {
+                    "en": "This is / That is",
+                    "ar": "This is / That is"
+                },
+                "explanation": {
+                    "en": "<p>Use <b>This</b> for near objects and <b>That</b> for far objects.</p>",
+                    "ar": "<p>نستخدم <b>This</b> للأشياء القريبة و <b>That</b> للأشياء البعيدة.</p>"
+                },
+                "type": "grammar"
+            },
+            "slides": [
+                {
+                    "id": 30,
+                    "type": "mcq",
+                    "title": {
+                        "en": "Choose the object",
+                        "ar": "اختر الشيء"
+                    },
+                    "content": {
+                        "en": "<p>Which one is a book?</p>",
+                        "ar": "<p>أيهم كتاب؟</p>"
+                    },
+                    "question": {
+                        "questionText": {
+                            "en": "Which one is a book?",
+                            "ar": "أيهم كتاب؟"
+                        },
+                        "content": {
+                            "options": {
+                                "en": [
+                                    "Book",
+                                    "Run",
+                                    "Eat",
+                                    "Happy"
+                                ],
+                                "ar": [
+                                    "كتاب",
+                                    "يجري",
+                                    "يأكل",
+                                    "سعيد"
+                                ]
+                            },
+                            "correctAnswer": [
+                                "0"
+                            ]
+                        }
+                    },
+                    "sortOrder": 1
+                }
+            ]
+        }
+    ]
+}

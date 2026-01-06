@@ -19,7 +19,7 @@ class TermResource extends JsonResource
             'id' => $this->id,
             'courseId' => $this->course_id,
             'term' => $this->term,
-            'definition' => $this->definition,
+            'meaning' => $this->meaning,
             'mediaUrl' => $this->media_url,
             'mediaType' => $this->media_type,
             'audioUrl' => $this->audio_url,

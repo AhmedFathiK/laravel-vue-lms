@@ -61,6 +61,7 @@ declare module 'vue' {
     EnableOneTimePasswordDialog: typeof import('./resources/js/components/dialogs/EnableOneTimePasswordDialog.vue')['default']
     ErrorHeader: typeof import('./resources/js/components/ErrorHeader.vue')['default']
     ExplanationSlide: typeof import('./resources/js/components/SlideTypes/ExplanationSlide.vue')['default']
+    FillBlankChoicesSlide: typeof import('./resources/js/components/SlideTypes/FillBlankChoicesSlide.vue')['default']
     FillBlankSlide: typeof import('./resources/js/components/SlideTypes/FillBlankSlide.vue')['default']
     I18n: typeof import('./resources/js/@core/components/I18n.vue')['default']
     LessonNavigation: typeof import('./resources/js/components/SlideTypes/LessonNavigation.vue')['default']
@@ -90,5 +91,6 @@ declare module 'vue' {
     TiptapEditor: typeof import('./resources/js/@core/components/TiptapEditor.vue')['default']
     TwoFactorAuthDialog: typeof import('./resources/js/components/dialogs/TwoFactorAuthDialog.vue')['default']
     UserUpgradePlanDialog: typeof import('./resources/js/components/dialogs/UserUpgradePlanDialog.vue')['default']
+    VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }

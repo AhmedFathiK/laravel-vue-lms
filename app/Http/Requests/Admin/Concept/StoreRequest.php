@@ -25,10 +25,8 @@ class StoreRequest extends FormRequest
     {
         $rules = [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
-            'title' => ['required', 'array'],
-            'title.en' => ['required', 'string', 'max:255'],
-            'explanation' => ['required', 'array'],
-            'explanation.en' => ['required', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'explanation' => ['required', 'string'],
             'type' => ['required', 'string', 'max:50'],
             'examples' => ['nullable', 'array'],
             'media_url' => ['nullable', 'string', 'max:255'],
@@ -37,5 +35,4 @@ class StoreRequest extends FormRequest
 
         return $rules;
     }
-
 }

@@ -28,6 +28,8 @@ class QuestionResource extends JsonResource
             'mediaUrl' => $this->media_url,
             'mediaType' => $this->media_type,
             'audioUrl' => $this->audio_url,
+            'terms' => TermResource::collection($this->whenLoaded('terms')),
+            'concepts' => $this->whenLoaded('concepts'),
         ];
     }
 }

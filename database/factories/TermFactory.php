@@ -21,7 +21,7 @@ class TermFactory extends Factory
         return [
             'course_id' => Course::factory(),
             'term' => $this->faker->word,
-            'definition' => $this->faker->sentence,
+            'meaning' => $this->faker->sentence,
             'example' => $this->faker->sentence,
         ];
     }

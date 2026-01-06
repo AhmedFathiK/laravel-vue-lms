@@ -77,7 +77,7 @@ const term = computed(() => props.slide.term || props.slide)
           {{ term.term || term.title }}
         </h2>
         <p class="text-h6 text-medium-emphasis mb-0">
-          {{ term.definition || term.description }}
+          {{ term.meaning || term.description }}
         </p>
       </VCardText>
     </VCard>

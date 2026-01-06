@@ -13,7 +13,12 @@ export default [
     title: 'My Courses',
     to: { name: 'my-courses' },
     icon: { icon: 'tabler-books' },
-  },  
+  },
+  {
+    title: 'Revisions',
+    to: { name: 'revisions' },
+    icon: { icon: 'tabler-refresh' },
+  },
   {
     title: 'Browse Courses',
     to: { name: 'browse-courses' },

@@ -1,11 +1,12 @@
 <script setup>
+import ExplanationSlide from '@/components/SlideTypes/ExplanationSlide.vue'
+import FillBlankChoicesSlide from '@/components/SlideTypes/FillBlankChoicesSlide.vue'
+import FillBlankSlide from '@/components/SlideTypes/FillBlankSlide.vue'
+import MatchingSlide from '@/components/SlideTypes/MatchingSlide.vue'
+import MCQSlide from '@/components/SlideTypes/MCQSlide.vue'
+import ReorderingSlide from '@/components/SlideTypes/ReorderingSlide.vue'
+import TermSlide from '@/components/SlideTypes/TermSlide.vue'
 import { ref } from 'vue'
-import ExplanationSlide from './ExplanationSlide.vue'
-import FillBlankSlide from './FillBlankSlide.vue'
-import MCQSlide from './MCQSlide.vue'
-import MatchingSlide from './MatchingSlide.vue'
-import ReorderingSlide from './ReorderingSlide.vue'
-import TermSlide from './TermSlide.vue'
 
 const props = defineProps({
   slide: {
@@ -54,7 +55,7 @@ defineExpose({ submitAnswer })
     <!-- Question Types -->
     <template v-else-if="slide.question">
       <MCQSlide 
-        v-if="slide.question.type === 'mcq'" 
+        v-if="(slide.question.type || slide.type) === 'mcq'" 
         :key="slide.id"
         ref="activeSlideRef"
         :question="slide.question"
@@ -62,7 +63,7 @@ defineExpose({ submitAnswer })
       />
       
       <MatchingSlide
-        v-else-if="slide.question.type === 'matching'"
+        v-else-if="(slide.question.type || slide.type) === 'matching'"
         :key="`matching-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
@@ -70,7 +71,7 @@ defineExpose({ submitAnswer })
       />
       
       <ReorderingSlide
-        v-else-if="slide.question.type === 'reordering'"
+        v-else-if="(slide.question.type || slide.type) === 'reordering'"
         :key="`reordering-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
@@ -78,11 +79,18 @@ defineExpose({ submitAnswer })
       />
       
       <FillBlankSlide
-        v-else-if="['fill_blank', 'fill_blank_choices'].includes(slide.question.type)"
+        v-else-if="(slide.question.type || slide.type) === 'fill_blank'"
         :key="`fill_blank-${slide.id}`"
         ref="activeSlideRef"
         :question="slide.question"
-        :type="slide.question.type"
+        @answered="handleAnswered"
+      />
+
+      <FillBlankChoicesSlide
+        v-else-if="(slide.question.type || slide.type) === 'fill_blank_choices'"
+        :key="`fill_blank_choices-${slide.id}`"
+        ref="activeSlideRef"
+        :question="slide.question"
         @answered="handleAnswered"
       />
       
@@ -93,7 +101,7 @@ defineExpose({ submitAnswer })
         <div class="text-h6">
           Unsupported Question Type
         </div>
-        <div>Type: {{ slide.question.type }}</div>
+        <div>Type: {{ slide.question.type || slide.type }}</div>
       </div>
     </template>
     

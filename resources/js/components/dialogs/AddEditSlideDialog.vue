@@ -359,7 +359,7 @@ const getCorrectAnswer = question => {
                     :prepend-avatar="['image', 'image_with_audio'].includes(item.raw.mediaType) && item.raw.mediaUrl ? item.raw.mediaUrl : null"
                   >
                     <VListItemTitle>{{ item.term }}</VListItemTitle>
-                    <VListItemSubtitle>{{ item.definition }}</VListItemSubtitle>
+                    <VListItemSubtitle>{{ item.meaning }}</VListItemSubtitle>
                   </VListItem>
                 </template>
               </AppServerSideAutocomplete>
@@ -380,7 +380,7 @@ const getCorrectAnswer = question => {
                   </VBtn>
                 </div>
                 <div class="mt-1">
-                  <small>Definition: {{ selectedTerm.definition }}</small>
+                  <small>Meaning: {{ selectedTerm.meaning }}</small>
                 </div>
               </div>
             </VCol>

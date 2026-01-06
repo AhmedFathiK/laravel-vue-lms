@@ -207,7 +207,7 @@ class SlideController extends Controller
             [
                 'value' => Slide::TYPE_TERM,
                 'label' => 'Terminology',
-                'description' => 'Term with definition, translation, and optional media',
+                'description' => 'Term with meaning, translation, and optional media',
             ],
             [
                 'value' => Slide::TYPE_EXPLANATION,

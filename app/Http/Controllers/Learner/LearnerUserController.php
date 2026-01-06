@@ -24,9 +24,9 @@ class LearnerUserController extends Controller
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
-        $user->locale = $validated['locale'];
+        $user->interface_language = $validated['locale'];
         $user->save();
 
-        return response()->json(['message' => 'Locale updated successfully', 'locale' => $user->locale]);
+        return response()->json(['message' => 'Locale updated successfully', 'locale' => $user->interface_language]);
     }
 }

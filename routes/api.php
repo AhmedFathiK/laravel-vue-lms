@@ -42,7 +42,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 
     // Protected routes
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
@@ -57,7 +57,7 @@ Route::prefix('token')->group(function () {
     Route::post('/register', [TokenController::class, 'register']);
 
     // Protected routes
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
         Route::get('/user', [TokenController::class, 'user']);
         Route::delete('/revoke', [TokenController::class, 'revokeToken']);
         Route::delete('/revoke-all', [TokenController::class, 'revokeAllTokens']);
@@ -72,7 +72,7 @@ Route::prefix('token')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
     // Profile and general user routes
     Route::get('/profile', function (Request $request) {
         return response()->json([
@@ -90,7 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->prefix('admin')->group(function () {
     // User & Role Management
     Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);
     Route::apiResource('users', UserController::class);
@@ -285,10 +285,14 @@ Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
     Route::get('items', [RevisionController::class, 'index']);
     Route::get('due-items', [RevisionController::class, 'getDueItems']);
     Route::post('add-item', [RevisionController::class, 'addItem']);
-    Route::post('items/{revisionItem}/response', [RevisionController::class, 'recordResponse']);
-    Route::get('mastery-progress', [RevisionController::class, 'getMasteryProgress']);
+
+    // Updated Routes
+    Route::post('response', [RevisionController::class, 'recordResponse']);
     Route::get('practice', [RevisionController::class, 'generatePractice']);
     Route::get('statistics', [RevisionController::class, 'getStatistics']);
+    Route::get('grammar-topics', [RevisionController::class, 'getGrammarTopics']);
+
+    Route::get('mastery-progress', [RevisionController::class, 'getMasteryProgress']);
 });
 
 // Gamification System

@@ -33,8 +33,8 @@ class TermController extends Controller
             $query->where(function ($q) use ($search) {
                 // For JSON fields, we need to use whereRaw
                 $q->where("term", "like",  '%' . $search . '%')
-                    ->orWhereRaw("JSON_EXTRACT(definition, '$.*') LIKE ?", ['%' . $search . '%'])
-                    ->orWhereRaw("JSON_EXTRACT(example, '$.*') LIKE ?", ['%' . $search . '%']);
+                    ->orWhere("example", "like",  '%' . $search . '%')
+                    ->orWhereRaw("JSON_EXTRACT(meaning, '$.*') LIKE ?", ['%' . $search . '%']);
             });
         }
 
@@ -212,21 +212,11 @@ class TermController extends Controller
 
         $validated = $request->validate([
             'locale' => ['required', 'string', 'max:10'],
-            'translation' => ['required', 'string'],
-            'definition' => ['required', 'string'],
-            'example' => ['nullable', 'string'],
+            'meaning' => ['required', 'string'],
         ]);
 
-        // For term, use the translation field
-        $term->setTranslation('term', $validated['locale'], $validated['translation']);
-
-        // For definition, use setTranslation directly
-        $term->setTranslation('definition', $validated['locale'], $validated['definition']);
-
-        // For example, check if it exists first
-        if (isset($validated['example'])) {
-            $term->setTranslation('example', $validated['locale'], $validated['example']);
-        }
+        // For meaning, use setTranslation directly
+        $term->setTranslation('meaning', $validated['locale'], $validated['meaning']);
 
         // Save the term
         $term->save();

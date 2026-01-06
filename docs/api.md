@@ -1144,7 +1144,7 @@ GET /api/gamification/rankings
             "revisionable": {
                 "id": 42,
                 "term": "hello",
-                "definition": "a greeting",
+                "meaning": "a greeting",
                 "translation": "hola",
                 "media_url": null,
                 "media_type": null
@@ -1192,7 +1192,7 @@ GET /api/gamification/rankings
         "revisionable": {
             "id": 42,
             "term": "hello",
-            "definition": "a greeting",
+            "meaning": "a greeting",
             "translation": "hola"
         }
     }
@@ -1269,7 +1269,7 @@ GET /api/gamification/rankings
                 "revisionable": {
                     "id": 42,
                     "term": "hello",
-                    "definition": "a greeting"
+                    "meaning": "a greeting"
                 }
             }
         }
@@ -1295,12 +1295,12 @@ GET /api/gamification/rankings
     "practice_questions": [
         {
             "revision_item_id": 1,
-            "question_type": "definition",
-            "prompt": "What is the definition of 'hello'?",
-            "answer": "a greeting",
-            "item_data": {
+            "question_type": "meaning",
+            "prompt": "What is the meaning of 'hello'?",
+            "revisionable": {
+                "id": 42,
                 "term": "hello",
-                "definition": "a greeting",
+                "meaning": "a greeting",
                 "translation": "hola",
                 "media_url": null,
                 "media_type": null

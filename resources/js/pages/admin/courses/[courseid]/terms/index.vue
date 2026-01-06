@@ -41,7 +41,7 @@ const courseId = computed(() => route.params.courseid)
 const headers = [
   { title: 'ID', key: 'id', width: '80px' },
   { title: 'Term', key: 'term' },
-  { title: 'Definition', key: 'definition', sortable: false },
+  { title: 'Meaning', key: 'meaning', sortable: false },
   { title: 'Media Type', key: 'mediaType', width: '120px' },
   { title: 'Example', key: 'hasExample', width: '100px', sortable: false },
   { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
@@ -260,13 +260,13 @@ onMounted(() => {
             <span class="font-weight-medium">{{ item.term }}</span>
           </template>
           
-          <!-- Definition column -->
-          <template #[`item.definition`]="{ item }">
+          <!-- Meaning column -->
+          <template #[`item.meaning`]="{ item }">
             <span
               class="text-truncate d-inline-block"
               style="max-width: 300px;"
             >
-              {{ item.definition }}
+              {{ item.meaning }}
             </span>
           </template>
           

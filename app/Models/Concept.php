@@ -15,6 +15,8 @@ class Concept extends Model
 
     protected $fillable = [
         'course_id',
+        'parent_id',
+        'lesson_id',
         'title',
         'explanation',
         'type', // grammar, vocabulary, pronunciation, etc.

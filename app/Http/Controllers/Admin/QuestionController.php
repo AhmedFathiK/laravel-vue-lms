@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Question\IndexQuestionRequest;
 use App\Http\Requests\Admin\Question\ShowQuestionRequest;
 use App\Http\Requests\Admin\Question\StoreQuestionRequest;
 use App\Http\Requests\Admin\Question\UpdateQuestionRequest;
+use App\Http\Resources\Admin\QuestionResource;
 use App\Models\Course;
 use App\Models\Question;
 use Illuminate\Http\JsonResponse;
@@ -58,7 +59,13 @@ class QuestionController extends Controller
         $perPage = $request->get('per_page', 15);
         $questions = $query->paginate($perPage);
 
-        return response()->json($questions);
+        return response()->json([
+            'data' => QuestionResource::collection($questions->items()),
+            'total' => $questions->total(),
+            'currentPage' => $questions->currentPage(),
+            'perPage' => $questions->perPage(),
+            'lastPage' => $questions->lastPage(),
+        ]);
     }
 
     /**
@@ -85,7 +92,7 @@ class QuestionController extends Controller
 
         $questions = $query->get();
 
-        return response()->json($questions);
+        return response()->json(QuestionResource::collection($questions));
     }
 
     /**
@@ -116,7 +123,20 @@ class QuestionController extends Controller
         // Process question data based on type
         $this->processQuestionDataByType($data);
 
-        $question = Question::create($data);
+        // Create question instance
+        $content = null;
+        if (isset($data['content'])) {
+            $content = $data['content'];
+            unset($data['content']);
+        }
+
+        $question = new Question($data);
+
+        if ($content) {
+            $question->setTranslation('content', app()->getLocale(), $content);
+        }
+
+        $question->save();
 
         if (isset($data['term_ids'])) {
             $question->terms()->sync($data['term_ids']);
@@ -130,7 +150,7 @@ class QuestionController extends Controller
 
         return response()->json([
             'message' => 'Question created successfully',
-            'question' => $question
+            'question' => new QuestionResource($question)
         ], 201);
     }
 
@@ -141,7 +161,7 @@ class QuestionController extends Controller
     {
         $question->load(['terms', 'concepts']);
 
-        return response()->json($question);
+        return response()->json(new QuestionResource($question));
     }
 
     /**
@@ -191,7 +211,13 @@ class QuestionController extends Controller
         // Process question data based on type
         $this->processQuestionDataByType($data);
 
-        $question->update($data);
+        if (isset($data['content'])) {
+            $question->setTranslation('content', app()->getLocale(), $data['content']);
+            unset($data['content']);
+        }
+
+        $question->fill($data);
+        $question->save();
 
         if (isset($data['term_ids'])) {
             $question->terms()->sync($data['term_ids']);
@@ -205,7 +231,7 @@ class QuestionController extends Controller
 
         return response()->json([
             'message' => 'Question updated successfully',
-            'question' => $question
+            'question' => new QuestionResource($question)
         ]);
     }
 

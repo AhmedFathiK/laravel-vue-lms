@@ -24,7 +24,7 @@ class StoreRequest extends FormRequest
         $rules = [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'term' => ['required', 'string', 'max:255'],
-            'definition' => ['required', 'string'],
+            'meaning' => ['required', 'string'],
             'media_url' => ['nullable', 'string', 'max:255'],
             'media_file' => ['nullable', 'file', 'max:10240', 'mimes:jpeg,png,jpg,gif,svg,mp4,webm,ogg,mp3,wav'],
             'media_type' => ['nullable', 'string', 'in:image,image_with_audio,video'],

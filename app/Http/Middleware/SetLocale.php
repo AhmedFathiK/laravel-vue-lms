@@ -25,13 +25,8 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         // Check if user is authenticated and has a locale preference
-        if (Auth::check() && Auth::user()->locale) {
-            App::setLocale(Auth::user()->locale);
-        }
-        // Else check for Accept-Language header
-        else if ($request->hasHeader('Accept-Language')) {
-            $locale = substr($request->header('Accept-Language'), 0, 2);
-            App::setLocale($locale);
+        if (Auth::check() && Auth::user()->interface_language) {
+            App::setLocale(Auth::user()->interface_language);
         }
 
         return $next($request);

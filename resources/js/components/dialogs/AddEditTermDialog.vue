@@ -39,7 +39,7 @@ const mediaTypeOptions = [
 const defaultForm = () => ({
   courseId: props.courseId,
   term: '',
-  definition: '',
+  meaning: '',
   mediaUrl: null, // File or string
   mediaType: '',
   audioUrl: null, // File or string
@@ -94,10 +94,10 @@ const extraData = computed(() => {
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   formRef: refForm,
   form: form,
-  apiEndpoint: computed(() => props.termData?.id 
-    ? `/admin/courses/${props.courseId}/terms/${props.termData.id}` 
+  apiEndpoint: computed(() => props.data?.id 
+    ? `/admin/courses/${props.courseId}/terms/${props.data.id}` 
     : `/admin/courses/${props.courseId}/terms`),
-  isUpdate: computed(() => !!props.termData?.id),
+  isUpdate: computed(() => !!props.data?.id),
   extraData: extraData, // Pass computed files
   isFormData: true, // Always use FormData for file uploads
   emit,
@@ -112,7 +112,7 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   >
     <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
 
-    <VCard :title="props.termData ? 'Edit Term' : 'Add New Term'">
+    <VCard :title="props.data ? 'Edit Term' : 'Add New Term'">
       <VCardText>
         <VForm
           ref="refForm"
@@ -133,17 +133,17 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
               />
             </VCol>
 
-            <!-- Definition -->
+            <!-- Meaning -->
             <VCol
               cols="12"
               md="6"
             >
               <AppTextField
-                v-model="form.definition"
-                label="Definition"
+                v-model="form.meaning"
+                label="Meaning"
                 :rules="[requiredValidator]"
-                placeholder="Enter definition"
-                :error-messages="validationErrors.definition"
+                placeholder="Enter meaning"
+                :error-messages="validationErrors.meaning"
               />
             </VCol>
 

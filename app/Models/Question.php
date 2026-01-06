@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Translatable\HasTranslations;
 
 class Question extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTranslations;
 
     const TYPE_MCQ = 'mcq';
     const TYPE_MATCHING = 'matching';
@@ -36,8 +37,15 @@ class Question extends Model
         'audio_url',
     ];
 
+    public array $translatable = [
+        'title',
+        'question_text',
+        'correct_feedback',
+        'incorrect_feedback',
+        'content',
+    ];
+
     protected $casts = [
-        'content' => 'array',
         'tags' => 'array',
     ];
 

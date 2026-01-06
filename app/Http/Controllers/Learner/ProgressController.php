@@ -94,9 +94,9 @@ class ProgressController extends Controller
                 [$type, $id] = explode('_', $key);
                 $modelType = $type === 'term' ? Term::class : Concept::class;
 
-                // Determine effective grade based on worst performance (max attempts)
-                $maxAttempts = max($attemptsList);
-                $grade = $this->calculateGrade($maxAttempts);
+                // Determine effective grade based on CORRECT answers count (attempts == 1)
+                $correctCount = count(array_filter($attemptsList, fn($a) => $a === 1));
+                $grade = $this->calculateGrade($correctCount);
 
                 // Find or Init Revision Item
                 $revisionItem = RevisionItem::firstOrNew([

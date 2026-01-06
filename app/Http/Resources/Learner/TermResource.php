@@ -17,7 +17,7 @@ class TermResource extends JsonResource
         return [
             'id' => $this->id,
             'term' => $this->term,
-            'definition' => $this->definition,
+            'meaning' => $this->meaning,
             'media_url' => $this->media_url,
             'media_type' => $this->media_type,
             'audio_url' => $this->audio_url,

@@ -16,7 +16,7 @@ class Term extends Model
     protected $fillable = [
         'course_id',
         'term',
-        'definition',
+        'meaning',
         'media_url',
         'media_type',
         'audio_url',
@@ -26,9 +26,7 @@ class Term extends Model
     ];
 
     public array $translatable = [
-        'term',
-        'definition',
-        'example',
+        'meaning',
         'example_translation',
     ];
 

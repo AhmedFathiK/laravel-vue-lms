@@ -5,22 +5,27 @@ namespace App\Http\Controllers\Learner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Learner\RevisionRequest;
 use App\Models\Concept;
+use App\Models\Course;
 use App\Models\MasteryProgress;
 use App\Models\RevisionItem;
 use App\Models\Term;
 use App\Services\FSRSService;
+use App\Services\RevisionSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class RevisionController extends Controller
 {
     protected FSRSService $fsrsService;
+    protected RevisionSessionService $revisionSessionService;
 
-    public function __construct(FSRSService $fsrsService)
+    public function __construct(FSRSService $fsrsService, RevisionSessionService $revisionSessionService)
     {
         $this->fsrsService = $fsrsService;
+        $this->revisionSessionService = $revisionSessionService;
     }
 
     /**
@@ -68,380 +73,255 @@ class RevisionController extends Controller
     }
 
     /**
-     * Get items due for revision
+     * Generate practice questions for revision using the new Session Service
      */
-    public function getDueItems(RevisionRequest $request): JsonResponse
+    public function generatePractice(Request $request): JsonResponse
     {
+        $user = Auth::user();
+        $courseId = $request->input('course_id');
+        $course = $courseId ? Course::find($courseId) : null;
+        $type = $request->input('type', 'both');
         $limit = $request->input('limit', 20);
-        $query = RevisionItem::where('user_id', Auth::id())
-            ->with('revisionable')
-            ->where('due_date', '<=', now())
-            ->orderBy('due_date', 'asc');
+        $earlyReview = $request->boolean('early_review');
 
-        // Filter by course
-        if ($request->has('course_id')) {
-            $courseId = $request->course_id;
-            $query->whereHasMorph(
-                'revisionable',
-                [Term::class, Concept::class],
-                function ($q) use ($courseId) {
-                    $q->where('course_id', $courseId);
-                }
-            );
-        }
-
-        $dueItems = $query->paginate($limit);
-
-        return response()->json($dueItems);
-    }
-
-    /**
-     * Add a term or concept to the user's revision items
-     */
-    public function addItem(RevisionRequest $request): JsonResponse
-    {
-        $type = $request->type === 'term' ? Term::class : Concept::class;
-        $model = $request->type === 'term' ? Term::find($request->id) : Concept::find($request->id);
-
-        if (!$model) {
-            return response()->json(['message' => 'Item not found'], 404);
-        }
-
-        // Check if the item is already in the user's revision list
-        $existingItem = RevisionItem::where('user_id', Auth::id())
-            ->where('revisionable_type', $type)
-            ->where('revisionable_id', $request->id)
-            ->first();
-
-        if ($existingItem) {
-            return response()->json(['message' => 'Item already in revision list', 'item' => $existingItem]);
-        }
-
-        // Create a new revision item
-        $revisionItem = new RevisionItem([
-            'user_id' => Auth::id(),
-            'state' => 'new',
-            'due_date' => now(),
-        ]);
-
-        $model->revisionItems()->save($revisionItem);
+        $slides = $this->revisionSessionService->generateSession($user, $course, $type, $limit, $earlyReview);
 
         return response()->json([
-            'message' => 'Item added to revision list',
-            'item' => $revisionItem->load('revisionable')
-        ], 201);
+            'slides' => $slides,
+            'count' => count($slides)
+        ]);
     }
 
     /**
-     * Record a review response for a revision item
+     * Get grammar topics with mastery status for the accordion view
      */
-    public function recordResponse(RevisionRequest $request, RevisionItem $revisionItem): JsonResponse
+    public function getGrammarTopics(Request $request): JsonResponse
     {
+        $userId = Auth::id();
+        $courseId = $request->input('course_id');
+
+        // Fetch parent concepts (where parent_id is null)
+        $query = Concept::whereNull('parent_id')
+            ->with(['children' => function ($q) {
+                $q->with('revisionItems'); // Load revision status for children
+            }]);
+
+        if ($courseId) {
+            $query->where('course_id', $courseId);
+        }
+
+        $parents = $query->get();
+
+        $data = $parents->map(function ($parent) use ($userId) {
+            $children = $parent->children->map(function ($child) use ($userId) {
+                $item = $child->revisionItems->where('user_id', $userId)->first();
+
+                // Determine status
+                $status = 'Not Started';
+                $stability = 0;
+
+                if ($item) {
+                    $stability = $item->stability;
+                    if (in_array($item->state, ['new', 'relearning']) || $item->stability < 2) {
+                        $status = 'Needs practice';
+                    } elseif ($item->stability >= 2 && $item->stability < 10) {
+                        $status = 'Improving';
+                    } elseif ($item->stability >= 10 && $item->stability < 50) {
+                        $status = 'Strong';
+                    } else {
+                        $status = 'Mastered';
+                    }
+                }
+
+                return [
+                    'id' => $child->id,
+                    'title' => $child->title,
+                    'explanation' => $child->explanation, // Short excerpt?
+                    'status' => $status,
+                    'stability' => $stability,
+                    'lesson_id' => $child->lesson_id
+                ];
+            });
+
+            return [
+                'id' => $parent->id,
+                'title' => $parent->title,
+                'description' => $parent->explanation, // Using explanation as description
+                'topics_count' => $children->count(),
+                'topics' => $children
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Record a review response for a revision item (Batch or Single)
+     * Now accepts 'results' array for the item's questions
+     */
+    public function recordResponse(Request $request): JsonResponse
+    {
+        $request->validate([
+            'revision_item_id' => 'required|exists:revision_items,id',
+            'results' => 'required|array', // Array of booleans [true, false, true]
+        ]);
+
+        $revisionItem = RevisionItem::find($request->revision_item_id);
+
         // Ensure the revision item belongs to the authenticated user
         if ($revisionItem->user_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Apply FSRS algorithm to update the revision item
+        // Calculate Grade based on results
+        $grade = $this->revisionSessionService->calculateGrade($request->results);
+
+        // Apply FSRS algorithm
         if ($revisionItem->review_count === 0) {
-            $this->fsrsService->initializeRevisionItem($revisionItem, $request->grade);
+            $this->fsrsService->initializeRevisionItem($revisionItem, $grade);
         } else {
-            $this->fsrsService->updateRevisionItem($revisionItem, $request->grade);
+            $this->fsrsService->updateRevisionItem($revisionItem, $grade);
         }
 
-        // Save the updated revision item
         $revisionItem->save();
-
-        // Process mastery progress if provided
-        if ($request->has('mastery_progress')) {
-            $now = now();
-
-            foreach ($request->mastery_progress as $progressData) {
-                // Create or update mastery progress
-                MasteryProgress::updateOrCreate(
-                    [
-                        'user_id' => Auth::id(),
-                        'revision_item_id' => $revisionItem->id,
-                        'category' => $progressData['category'],
-                    ],
-                    [
-                        'description' => $progressData['description'] ?? null,
-                        'strength' => $progressData['strength'] ?? 1,
-                        'last_identified_at' => $now,
-                    ]
-                );
-            }
-        }
-
-        // Get next intervals for reference
-        $nextIntervals = $this->fsrsService->getNextIntervals($revisionItem);
 
         return response()->json([
             'message' => 'Response recorded successfully',
+            'grade' => $grade,
             'item' => $revisionItem->load('revisionable'),
-            'next_intervals' => $nextIntervals
+            'next_due' => $revisionItem->due_date
         ]);
     }
 
     /**
-     * Get mastery progress for a user
+     * Get statistics about the user's revision progress (Buckets)
      */
-    public function getMasteryProgress(RevisionRequest $request): JsonResponse
-    {
-        $query = MasteryProgress::where('user_id', Auth::id())
-            ->with('revisionItem.revisionable')
-            ->orderBy('strength', 'asc')
-            ->orderBy('last_identified_at', 'desc');
-
-        // Filter by category
-        if ($request->has('category')) {
-            $query->where('category', $request->category);
-        }
-
-        // Filter by strength
-        if ($request->has('strength_below')) {
-            $query->where('strength', '<', $request->strength_below);
-        }
-
-        // Filter by course
-        if ($request->has('course_id')) {
-            $courseId = $request->course_id;
-            $query->whereHas('revisionItem', function ($q) use ($courseId) {
-                $q->whereHasMorph(
-                    'revisionable',
-                    [Term::class, Concept::class],
-                    function ($q) use ($courseId) {
-                        $q->where('course_id', $courseId);
-                    }
-                );
-            });
-        }
-
-        $masteryProgress = $query->paginate(20);
-
-        return response()->json($masteryProgress);
-    }
-
-    /**
-     * Generate practice questions for revision
-     */
-    public function generatePractice(RevisionRequest $request): JsonResponse
-    {
-        $count = $request->input('count', 5);
-        $includeMasteryProgress = $request->boolean('include_mastery_progress', true);
-        $type = $request->input('type', 'both');
-
-        // Base query for due revision items
-        $query = RevisionItem::where('user_id', Auth::id())
-            ->with('revisionable')
-            ->where('due_date', '<=', now());
-
-        // Filter by course if specified
-        if ($request->has('course_id')) {
-            $courseId = $request->course_id;
-            $query->whereHasMorph(
-                'revisionable',
-                [Term::class, Concept::class],
-                function ($q) use ($courseId) {
-                    $q->where('course_id', $courseId);
-                }
-            );
-        }
-
-        // Filter by type if specified
-        if ($type !== 'both') {
-            $modelType = $type === 'term' ? Term::class : Concept::class;
-            $query->where('revisionable_type', $modelType);
-        }
-
-        // Get items with lowest stability first
-        $query->orderBy('stability', 'asc')
-            ->orderBy('due_date', 'asc');
-
-        $items = $query->take($count)->get();
-
-        // If we don't have enough items, try to get some that aren't due yet
-        if ($items->count() < $count) {
-            $remainingCount = $count - $items->count();
-
-            $notDueQuery = RevisionItem::where('user_id', Auth::id())
-                ->with('revisionable')
-                ->where('due_date', '>', now());
-
-            // Apply same filters
-            if ($request->has('course_id')) {
-                $courseId = $request->course_id;
-                $notDueQuery->whereHasMorph(
-                    'revisionable',
-                    [Term::class, Concept::class],
-                    function ($q) use ($courseId) {
-                        $q->where('course_id', $courseId);
-                    }
-                );
-            }
-
-            if ($type !== 'both') {
-                $modelType = $type === 'term' ? Term::class : Concept::class;
-                $notDueQuery->where('revisionable_type', $modelType);
-            }
-
-            // Order by due date to get the ones that will be due soonest
-            $notDueQuery->orderBy('due_date', 'asc');
-
-            $notDueItems = $notDueQuery->take($remainingCount)->get();
-
-            // Merge the collections
-            $items = $items->merge($notDueItems);
-        }
-
-        // Prepare the response data
-        $practiceItems = [];
-
-        foreach ($items as $item) {
-            $practiceItem = [
-                'revision_item' => $item,
-                'revisionable' => $item->revisionable,
-            ];
-
-            // Include mastery progress if requested
-            if ($includeMasteryProgress) {
-                $masteryProgress = MasteryProgress::where('user_id', Auth::id())
-                    ->where('revision_item_id', $item->id)
-                    ->orderBy('strength', 'asc')
-                    ->get();
-
-                $practiceItem['mastery_progress'] = $masteryProgress;
-            }
-
-            $practiceItems[] = $practiceItem;
-        }
-
-        return response()->json([
-            'practice_items' => $practiceItems,
-            'count' => count($practiceItems)
-        ]);
-    }
-
-    /**
-     * Get statistics about the user's revision progress
-     */
-    public function getStatistics(RevisionRequest $request): JsonResponse
+    public function getStatistics(Request $request): JsonResponse
     {
         $userId = Auth::id();
         $courseId = $request->input('course_id');
 
-        // Base query for user's revision items
-        $query = RevisionItem::where('user_id', $userId);
+        // Helper to get stats for a type
+        $getStatsForType = function ($typeClass) use ($userId, $courseId) {
+            $query = RevisionItem::where('user_id', $userId)
+                ->where('revisionable_type', $typeClass);
 
-        // Filter by course if specified
-        if ($courseId) {
-            $query->whereHasMorph(
-                'revisionable',
-                [Term::class, Concept::class],
-                function ($q) use ($courseId) {
-                    $q->where('course_id', $courseId);
-                }
-            );
-        }
-
-        // Total items
-        $totalItems = $query->count();
-
-        // Items by state
-        $itemsByState = $query->select('state', DB::raw('count(*) as count'))
-            ->groupBy('state')
-            ->pluck('count', 'state')
-            ->toArray();
-
-        // Fill in missing states with zero
-        $states = ['new', 'learning', 'review', 'mastered'];
-        foreach ($states as $state) {
-            if (!isset($itemsByState[$state])) {
-                $itemsByState[$state] = 0;
-            }
-        }
-
-        // Due items
-        $dueItems = $query->where('due_date', '<=', now())->count();
-
-        // Items due in the next 7 days
-        $now = now();
-        $nextWeek = now()->addDays(7);
-        $upcomingItems = $query->whereBetween('due_date', [$now, $nextWeek])->count();
-
-        // Average stability
-        $avgStability = $query->where('stability', '>', 0)->avg('stability') ?? 0;
-
-        // Average difficulty
-        $avgDifficulty = $query->where('difficulty', '>', 0)->avg('difficulty') ?? 0;
-
-        // Review history (last 30 days)
-        $thirtyDaysAgo = now()->subDays(30);
-        $reviewHistory = DB::table('revision_item_histories')
-            ->join('revision_items', 'revision_item_histories.revision_item_id', '=', 'revision_items.id')
-            ->where('revision_items.user_id', $userId)
-            ->where('revision_item_histories.created_at', '>=', $thirtyDaysAgo)
-            ->select(
-                DB::raw('DATE(revision_item_histories.created_at) as date'),
-                DB::raw('count(*) as count')
-            )
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->pluck('count', 'date')
-            ->toArray();
-
-        // Fill in missing dates with zero
-        $dateRange = [];
-        for ($i = 0; $i < 30; $i++) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            if (!isset($reviewHistory[$date])) {
-                $reviewHistory[$date] = 0;
-            }
-            $dateRange[] = $date;
-        }
-
-        // Sort by date
-        ksort($reviewHistory);
-
-        // Mastery progress statistics
-        $masteryQuery = MasteryProgress::where('user_id', $userId);
-
-        if ($courseId) {
-            $masteryQuery->whereHas('revisionItem', function ($q) use ($courseId) {
-                $q->whereHasMorph(
+            if ($courseId) {
+                $query->whereHasMorph(
                     'revisionable',
-                    [Term::class, Concept::class],
+                    [$typeClass],
                     function ($q) use ($courseId) {
                         $q->where('course_id', $courseId);
                     }
                 );
-            });
-        }
+            }
 
-        $masteryByCategory = $masteryQuery->select('category', DB::raw('count(*) as count'))
-            ->groupBy('category')
-            ->pluck('count', 'category')
-            ->toArray();
+            $items = $query->get();
 
-        $masteryByStrength = $masteryQuery->select(
-            DB::raw('FLOOR(strength) as strength_level'),
-            DB::raw('count(*) as count')
-        )
-            ->groupBy('strength_level')
-            ->pluck('count', 'strength_level')
-            ->toArray();
+            // Buckets
+            $buckets = [
+                'needs_practice' => 0,
+                'improving' => 0,
+                'strong' => 0,
+                'mastered' => 0,
+            ];
+
+            foreach ($items as $item) {
+                // Logic for buckets
+                // Needs Practice: New/Relearning or Stability < 2
+                if (in_array($item->state, ['new', 'relearning']) || $item->stability < 2) {
+                    $buckets['needs_practice']++;
+                }
+                // Improving: Learning/Review & Stability 2-10
+                elseif ($item->stability >= 2 && $item->stability < 10) {
+                    $buckets['improving']++;
+                }
+                // Strong: Stability 10-50
+                elseif ($item->stability >= 10 && $item->stability < 50) {
+                    $buckets['strong']++;
+                }
+                // Mastered: Stability >= 50
+                else {
+                    $buckets['mastered']++;
+                }
+            }
+
+            return [
+                'total' => $items->count(),
+                'buckets' => $buckets,
+                'due_count' => $items->where('due_date', '<=', now())->count()
+            ];
+        };
 
         return response()->json([
-            'total_items' => $totalItems,
-            'items_by_state' => $itemsByState,
-            'due_items' => $dueItems,
-            'upcoming_items' => $upcomingItems,
-            'avg_stability' => round($avgStability, 2),
-            'avg_difficulty' => round($avgDifficulty, 2),
-            'review_history' => $reviewHistory,
-            'mastery_by_category' => $masteryByCategory,
-            'mastery_by_strength' => $masteryByStrength
+            'terms' => $getStatsForType(Term::class),
+            'concepts' => $getStatsForType(Concept::class),
         ]);
+    }
+
+    /**
+     * Initialize revision items for a completed lesson
+     * To be called when a lesson is finished
+     */
+    public function initializeForLesson(Request $request): JsonResponse
+    {
+        // This endpoint might be called by the frontend after finishing a lesson
+        // Or called internally by LessonController
+
+        $request->validate([
+            'lesson_id' => 'required|exists:lessons,id',
+            'answers' => 'required|array' // [ 'term_id_1' => correct_count, 'concept_id_2' => correct_count ]
+        ]);
+
+        $user = Auth::user();
+        $lessonId = $request->lesson_id;
+        $answers = $request->answers; // Map of ID => count of correct answers in lesson
+
+        // We assume the frontend calculates how many times each term/concept was answered correctly
+        // and sends it here.
+        // Or we can calculate it if we have access to the raw lesson attempt data.
+        // For simplicity and flexibility, let's assume the client sends the summary.
+        // "answers": [ { "type": "term", "id": 1, "correct_count": 2 }, ... ]
+
+        $createdCount = 0;
+
+        foreach ($answers as $answer) {
+            $type = $answer['type'] === 'term' ? Term::class : Concept::class;
+            $id = $answer['id'];
+            $correctCount = $answer['correct_count'];
+
+            // Calculate Initial Grade
+            // 0 -> 1, 1 -> 2, 2 -> 3, 3+ -> 4
+            $grade = 1;
+            if ($correctCount == 1) $grade = 2;
+            elseif ($correctCount == 2) $grade = 3;
+            elseif ($correctCount >= 3) $grade = 4;
+
+            // Check if exists
+            $exists = RevisionItem::where('user_id', $user->id)
+                ->where('revisionable_type', $type)
+                ->where('revisionable_id', $id)
+                ->exists();
+
+            if (!$exists) {
+                $item = new RevisionItem([
+                    'user_id' => $user->id,
+                    'state' => 'new',
+                    'due_date' => now(),
+                ]);
+
+                $model = $type::find($id);
+                if ($model) {
+                    $model->revisionItems()->save($item);
+
+                    // Initialize FSRS
+                    $this->fsrsService->initializeRevisionItem($item, $grade);
+                    $item->save();
+                    $createdCount++;
+                }
+            }
+        }
+
+        return response()->json(['message' => "Initialized $createdCount revision items"]);
     }
 }

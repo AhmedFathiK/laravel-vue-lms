@@ -15,7 +15,8 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             UserSeeder::class,
-            DevelopmentSeeder::class,
+            // DevelopmentSeeder::class, // Factory-based random data
+            LanguageCourseSeeder::class, // Real language course data
         ]);
     }
 }

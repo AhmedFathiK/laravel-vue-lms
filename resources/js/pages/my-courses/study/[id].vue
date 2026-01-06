@@ -166,12 +166,14 @@ const triggerCheck = () => {
 
 
 
-const isReordering = computed(() => {
-  return currentSlide.value?.question?.type === 'reordering'
+const isManualSubmissionSlide = computed(() => {
+  const type = currentSlide.value?.question?.type || currentSlide.value?.type
+  
+  return type === 'reordering' || type === 'fill_blank'
 })
 
 const drawerMode = computed(() => {
-  if (isReordering.value && !hasAnsweredCurrent.value) return 'continue'
+  if (isManualSubmissionSlide.value && !hasAnsweredCurrent.value) return 'continue'
   
   return currentSlide.value?.question ? 'feedback' : 'continue'
 })
@@ -210,10 +212,9 @@ const handleNavigationClick = () => {
   nextSlide()
 }
 
-// Watch for reordering slide to open drawer immediately
-
+// Watch for slides that need manual submission to open drawer immediately
 watch(currentSlide, newSlide => {
-  if (newSlide?.question?.type === 'reordering' && !hasAnsweredCurrent.value) {
+  if (isManualSubmissionSlide.value && !hasAnsweredCurrent.value) {
     drawerOpen.value = true
   }
 }, { immediate: true })

@@ -26,7 +26,7 @@ const slideTypes = ref([
   { value: "fill_blank", label: "Fill in the Blank", description: "Complete sentences by typing missing words", isQuestion: true },
   { value: "fill_blank_choices", label: "Fill in the Blank (with choices)", description: "Complete sentences by selecting from options", isQuestion: true },
   { value: "drag_and_drop", label: "Drag and Drop", description: "Drag items to their correct places", isQuestion: true },
-  { value: "term", label: "Term", description: "Vocabulary term with definition", isQuestion: false },
+  { value: "term", label: "Term", description: "Vocabulary term with meaning", isQuestion: false },
   { value: "explanation", label: "Explanation", description: "Text explanation or content", isQuestion: false },
 ])
 
