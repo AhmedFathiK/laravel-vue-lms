@@ -58,6 +58,16 @@ class Concept extends Model
         return $this->belongsTo(ConceptCategory::class, 'category_id');
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Concept::class, 'parent_id');
+    }
+
+    public function children(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Concept::class, 'parent_id');
+    }
+
     /**
      * Get all revision items for this concept.
      */

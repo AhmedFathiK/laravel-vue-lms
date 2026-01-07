@@ -64,7 +64,7 @@ class LearnerDashboardController extends Controller
             $courseStats[] = [
                 'id' => $course->id,
                 'title' => $course->title, // Translatable handle by model toArray
-                'image' => $course->image_url,
+                'image' => $course->thumbnail,
                 'progress' => $progress,
                 'due_reviews' => $dueReviews,
                 'total_lessons' => $totalLessons,

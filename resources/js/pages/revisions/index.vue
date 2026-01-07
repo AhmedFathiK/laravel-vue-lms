@@ -1,7 +1,8 @@
 <script setup>
 import $api from '@/utils/api'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 
 definePage({
   meta: {
@@ -9,10 +10,15 @@ definePage({
   },
 })
 
+const route = useRoute()
 const router = useRouter()
+const vuetifyTheme = useTheme()
 
 const activeTab = ref('concepts') // 'concepts' or 'terms'
 const loading = ref(true)
+const courses = ref([])
+const selectedCourseId = ref(route.query.courseId ? parseInt(route.query.courseId) : null)
+const coursesLoading = ref(false)
 
 const stats = ref({
   concepts: {
@@ -31,10 +37,40 @@ const stats = ref({
 const categories = ref([])
 const categoriesLoading = ref(false)
 
+const fetchCourses = async () => {
+  coursesLoading.value = true
+  try {
+    const res = await $api.get('/learner/my-courses')
+
+    // The endpoint returns enrollments, we need to extract the course objects
+    const enrollments = res.data || res
+
+    courses.value = enrollments
+      .filter(e => e.course)
+      .map(e => ({
+        ...e.course,
+        enrollmentId: e.id,
+      }))
+    
+    // If no course selected and we have courses, select the first one
+    if (!selectedCourseId.value && courses.value.length > 0) {
+      selectedCourseId.value = courses.value[0].id
+    }
+  } catch (e) {
+    console.error('Error fetching courses:', e)
+  } finally {
+    coursesLoading.value = false
+  }
+}
+
 const fetchStats = async () => {
+  if (!selectedCourseId.value) return
+  
   loading.value = true
   try {
-    const res = await $api.get('/revision/statistics')
+    const res = await $api.get('/revision/statistics', {
+      params: { courseId: selectedCourseId.value },
+    })
 
     stats.value = res
   } catch (e) {
@@ -45,11 +81,13 @@ const fetchStats = async () => {
 }
 
 const fetchCategories = async () => {
-  if (activeTab.value !== 'concepts') return
+  if (activeTab.value !== 'concepts' || !selectedCourseId.value) return
   
   categoriesLoading.value = true
   try {
-    const res = await $api.get('/revision/grammar-topics')
+    const res = await $api.get('/revision/grammar-topics', {
+      params: { courseId: selectedCourseId.value },
+    })
 
     categories.value = res
   } catch (e) {
@@ -59,7 +97,21 @@ const fetchCategories = async () => {
   }
 }
 
-onMounted(() => {
+const selectedCourse = computed(() => {
+  return courses.value.find(c => c.id === selectedCourseId.value)
+})
+
+watch(selectedCourseId, newId => {
+  if (newId) {
+    // Update URL without reloading
+    router.replace({ query: { ...route.query, courseId: newId } })
+    fetchStats()
+    fetchCategories()
+  }
+})
+
+onMounted(async () => {
+  await fetchCourses()
   fetchStats()
   fetchCategories()
 })
@@ -70,14 +122,19 @@ const startReview = (early = false) => {
     query: { 
       type: activeTab.value === 'concepts' ? 'concept' : 'term',
       earlyReview: early ? '1' : undefined,
+      courseId: selectedCourseId.value,
     }, 
   })
 }
 
 // Chart Options
 const chartOptions = computed(() => {
-  const currentStats = stats.value.concepts
+  const currentStats = activeTab.value === 'concepts' ? stats.value.concepts : stats.value.terms
   const total = currentStats.total
+  const themeColors = vuetifyTheme.current.value.colors
+  const variableColors = vuetifyTheme.current.value.variables
+  
+  const labelColor = `rgba(${variableColors['theme-on-surface']}, 0.87)`
   
   return {
     chart: {
@@ -94,19 +151,19 @@ const chartOptions = computed(() => {
     plotOptions: {
       pie: {
         donut: {
-          size: '70%',
+          size: '75%',
           labels: {
             show: true,
             total: {
               show: true,
-              label: 'TOPICS',
+              label: activeTab.value === 'concepts' ? 'TOPICS' : 'WORDS',
               formatter: () => total,
               color: 'rgba(var(--v-theme-on-surface), 0.87)',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
             },
             value: {
-              fontSize: '24px',
+              fontSize: '26px',
               fontWeight: 700,
               color: 'rgba(var(--v-theme-on-surface), 0.87)',
             },
@@ -116,18 +173,20 @@ const chartOptions = computed(() => {
     },
     dataLabels: { enabled: false },
     legend: {
-      position: 'right',
+      position: 'bottom',
       offsetY: 0,
-      height: 230,
-      itemMargin: { vertical: 5 },
+      itemMargin: { horizontal: 10, vertical: 5 },
       markers: { width: 10, height: 10, radius: 10 },
+      labels: {
+        colors: labelColor,
+      },
     },
     stroke: { show: false },
   }
 })
 
 const chartSeries = computed(() => {
-  const buckets = stats.value.concepts.buckets
+  const buckets = activeTab.value === 'concepts' ? stats.value.concepts.buckets : stats.value.terms.buckets
   
   return [
     buckets.needsPractice,
@@ -161,6 +220,38 @@ const toggleAll = () => {
 
 <template>
   <VContainer>
+    <!-- Course Selector -->
+    <VRow>
+      <VCol
+        cols="12"
+        md="6"
+        lg="4"
+      >
+        <VSelect
+          v-model="selectedCourseId"
+          :items="courses"
+          item-title="title"
+          item-value="id"
+          label="Select Course"
+          variant="outlined"
+          density="comfortable"
+          :loading="coursesLoading"
+          prepend-inner-icon="tabler-book"
+        >
+          <template #item="{ props, item }">
+            <VListItem
+              v-bind="props"
+              :prepend-avatar="item.raw.thumbnail"
+            >
+              <template #title>
+                {{ item.raw.title }}
+              </template>
+            </VListItem>
+          </template>
+        </VSelect>
+      </VCol>
+    </VRow>
+
     <VRow>
       <VCol cols="12">
         <div class="d-flex align-center gap-4 mb-4">
@@ -190,11 +281,8 @@ const toggleAll = () => {
           >
             <VCard class="h-100 pa-6 d-flex flex-column justify-space-between">
               <div>
-                <div class="text-success font-weight-bold mb-2">
-                  {{ stats.concepts.dueCount }} FREE REVIEWS LEFT
-                </div>
                 <h2 class="text-h3 font-weight-bold mb-6">
-                  Your grammar
+                  Your grammar in {{ selectedCourse?.title || 'Course' }}
                 </h2>
                 
                 <div class="d-flex align-center mb-2">
@@ -251,24 +339,11 @@ const toggleAll = () => {
                 <h3 class="text-h5 font-weight-bold">
                   Grammar topic mastery
                 </h3>
-                <VChip
-                  size="small"
-                  color="primary"
-                  variant="tonal"
-                  variant-color="primary"
-                >
-                  <VIcon
-                    start
-                    icon="tabler-lock-open"
-                    size="small"
-                  />
-                  UNLOCKED
-                </VChip>
               </div>
               
               <div
                 class="d-flex justify-center align-center"
-                style="min-height: 250px;"
+                style="min-height: 300px;"
               >
                 <div
                   v-if="!loading && stats.concepts.total === 0"
@@ -279,7 +354,7 @@ const toggleAll = () => {
                 <VueApexCharts
                   v-else-if="!loading"
                   type="donut"
-                  height="250"
+                  height="300"
                   width="100%"
                   :options="chartOptions"
                   :series="chartSeries"
@@ -403,31 +478,102 @@ const toggleAll = () => {
 
       <!-- Vocabulary Tab (Keeping simpler for now or reuse structure) -->
       <VWindowItem value="terms">
-        <VRow>
-          <VCol cols="12">
-            <VCard class="pa-6 text-center">
-              <h3 class="text-h5">
-                Vocabulary Review
-              </h3>
-              <p class="mb-4">
-                You have {{ stats.terms.dueCount }} words to review.
-              </p>
-              <VBtn 
-                v-if="stats.terms.dueCount > 0"
-                color="primary" 
-                @click="startReview(false)"
+        <!-- Top Section: 2 Cards -->
+        <VRow class="match-height">
+          <!-- Left Card: Your Vocabulary -->
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VCard class="h-100 pa-6 d-flex flex-column justify-space-between">
+              <div>
+                <div class="text-success font-weight-bold mb-2">
+                  {{ stats.terms.dueCount }} WORDS DUE FOR REVIEW
+                </div>
+                <h2 class="text-h3 font-weight-bold mb-6">
+                  Your vocabulary in {{ selectedCourse?.title || 'Course' }}
+                </h2>
+                
+                <div class="d-flex align-center mb-2">
+                  <span class="text-h2 font-weight-bold me-2">{{ stats.terms.total }}</span>
+                </div>
+                <div class="text-body-1 text-medium-emphasis mb-6">
+                  Total words learned
+                  <VIcon
+                    icon="tabler-info-circle"
+                    size="small"
+                    class="ms-1"
+                  />
+                </div>
+                
+                <p class="text-body-1 mb-6">
+                  Build your vocabulary with daily practice.
+                </p>
+              </div>
+              
+              <div>
+                <VBtn 
+                  v-if="stats.terms.dueCount > 0"
+                  color="primary" 
+                  size="large" 
+                  rounded="pill"
+                  class="px-8"
+                  @click="startReview(false)"
+                >
+                  Practice now
+                </VBtn>
+                <VBtn 
+                  v-else
+                  :disabled="stats.terms.total === 0"
+                  color="primary" 
+                  size="large" 
+                  rounded="pill"
+                  variant="outlined"
+                  class="px-8"
+                  @click="startReview(true)"
+                >
+                  Practice anyway (Early Review)
+                </VBtn>
+              </div>
+            </VCard>
+          </VCol>
+
+          <!-- Right Card: Vocabulary Mastery Chart -->
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VCard class="h-100 pa-6">
+              <div class="d-flex justify-space-between align-center mb-4">
+                <h3 class="text-h5 font-weight-bold">
+                  Vocabulary mastery
+                </h3>
+              </div>
+              
+              <div
+                class="d-flex justify-center align-center"
+                style="min-height: 300px;"
               >
-                Review Vocabulary
-              </VBtn>
-              <VBtn 
-                v-else
-                :disabled="stats.terms.total === 0"
-                color="primary" 
-                variant="outlined"
-                @click="startReview(true)"
-              >
-                Review Vocabulary (Early)
-              </VBtn>
+                <div
+                  v-if="!loading && stats.terms.total === 0"
+                  class="text-medium-emphasis"
+                >
+                  No data available
+                </div>
+                <VueApexCharts
+                  v-else-if="!loading"
+                  type="donut"
+                  height="300"
+                  width="100%"
+                  :options="chartOptions"
+                  :series="chartSeries"
+                />
+                <VProgressCircular
+                  v-else
+                  indeterminate
+                  color="primary"
+                />
+              </div>
             </VCard>
           </VCol>
         </VRow>

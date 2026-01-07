@@ -99,21 +99,20 @@ class RevisionController extends Controller
         $userId = Auth::id();
         $courseId = $request->input('course_id');
 
-        // Fetch parent concepts (where parent_id is null)
-        $query = Concept::whereNull('parent_id')
-            ->with(['children' => function ($q) {
-                $q->with('revisionItems'); // Load revision status for children
-            }]);
+        // Fetch categories and their concepts
+        $query = \App\Models\ConceptCategory::with(['concepts' => function ($q) {
+            $q->with('revisionItems'); // Load revision status for concepts
+        }]);
 
         if ($courseId) {
             $query->where('course_id', $courseId);
         }
 
-        $parents = $query->get();
+        $categories = $query->get();
 
-        $data = $parents->map(function ($parent) use ($userId) {
-            $children = $parent->children->map(function ($child) use ($userId) {
-                $item = $child->revisionItems->where('user_id', $userId)->first();
+        $data = $categories->map(function ($category) use ($userId) {
+            $concepts = $category->concepts->map(function ($concept) use ($userId) {
+                $item = $concept->revisionItems->where('user_id', $userId)->first();
 
                 // Determine status
                 $status = 'Not Started';
@@ -133,21 +132,21 @@ class RevisionController extends Controller
                 }
 
                 return [
-                    'id' => $child->id,
-                    'title' => $child->title,
-                    'explanation' => $child->explanation, // Short excerpt?
+                    'id' => $concept->id,
+                    'title' => $concept->title,
+                    'explanation' => $concept->explanation,
                     'status' => $status,
                     'stability' => $stability,
-                    'lesson_id' => $child->lesson_id
+                    'lesson_id' => $concept->lesson_id
                 ];
             });
 
             return [
-                'id' => $parent->id,
-                'title' => $parent->title,
-                'description' => $parent->explanation, // Using explanation as description
-                'topics_count' => $children->count(),
-                'topics' => $children
+                'id' => $category->id,
+                'title' => $category->title,
+                'description' => null, // ConceptCategory doesn't have a description field
+                'topics_count' => $concepts->count(),
+                'topics' => $concepts
             ];
         });
 

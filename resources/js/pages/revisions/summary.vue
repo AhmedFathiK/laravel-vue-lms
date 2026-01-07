@@ -10,12 +10,18 @@ definePage({
 
 const router = useRouter()
 const summaryItems = ref([])
+const courseId = ref(null)
 
 onMounted(() => {
   const state = history.state
   if (state && state.summary) {
     try {
       summaryItems.value = JSON.parse(state.summary)
+      
+      // Try to get courseId from the first item if available
+      if (summaryItems.value.length > 0 && summaryItems.value[0].item.revisionable.course_id) {
+        courseId.value = summaryItems.value[0].item.revisionable.course_id
+      }
     } catch (e) {
       console.error('Failed to parse summary data', e)
     }
@@ -23,7 +29,10 @@ onMounted(() => {
 })
 
 const goBack = () => {
-  router.push({ name: 'revisions' })
+  router.push({ 
+    name: 'revisions', 
+    query: courseId.value ? { courseId: courseId.value } : {} 
+  })
 }
 </script>
 

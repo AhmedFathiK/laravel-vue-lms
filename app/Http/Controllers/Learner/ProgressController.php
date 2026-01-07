@@ -61,7 +61,7 @@ class ProgressController extends Controller
         // Collect all attempts per Term/Concept
         $itemAttempts = []; // ['term_1' => [1, 2], 'concept_5' => [1]]
 
-        $slides = Slide::with(['question.terms', 'question.concepts'])
+        $slides = Slide::with(['question.terms', 'question.concepts', 'term'])
             ->whereIn('id', array_column($results, 'slide_id'))
             ->get()
             ->keyBy('id');
@@ -71,20 +71,29 @@ class ProgressController extends Controller
             $attempts = $result['attempts'];
 
             $slide = $slides->get($slideId);
-            if (!$slide || !$slide->question) {
+            if (!$slide) {
                 continue;
             }
 
-            // Process Terms
-            foreach ($slide->question->terms as $term) {
-                $key = 'term_' . $term->id;
+            // 1. Process terms directly linked to the slide
+            if ($slide->term_id) {
+                $key = 'term_' . $slide->term_id;
                 $itemAttempts[$key][] = $attempts;
             }
 
-            // Process Concepts
-            foreach ($slide->question->concepts as $concept) {
-                $key = 'concept_' . $concept->id;
-                $itemAttempts[$key][] = $attempts;
+            // 2. Process terms and concepts linked through the question
+            if ($slide->question) {
+                // Process Terms
+                foreach ($slide->question->terms as $term) {
+                    $key = 'term_' . $term->id;
+                    $itemAttempts[$key][] = $attempts;
+                }
+
+                // Process Concepts
+                foreach ($slide->question->concepts as $concept) {
+                    $key = 'concept_' . $concept->id;
+                    $itemAttempts[$key][] = $attempts;
+                }
             }
         }
 
@@ -94,9 +103,12 @@ class ProgressController extends Controller
                 [$type, $id] = explode('_', $key);
                 $modelType = $type === 'term' ? Term::class : Concept::class;
 
-                // Determine effective grade based on CORRECT answers count (attempts == 1)
-                $correctCount = count(array_filter($attemptsList, fn($a) => $a === 1));
-                $grade = $this->calculateGrade($correctCount);
+                // Determine effective grade based on attempts
+                // We take the average attempts or the worst attempt for this session?
+                // Usually, the first encounter in the lesson is what matters most for FSRS.
+                // For simplicity, let's take the first entry of attempts for this item in this lesson.
+                $firstAttempt = $attemptsList[0];
+                $grade = $this->calculateGrade($firstAttempt);
 
                 // Find or Init Revision Item
                 $revisionItem = RevisionItem::firstOrNew([
@@ -119,6 +131,26 @@ class ProgressController extends Controller
             'message' => 'Lesson completed and progress updated',
             'updated_items_count' => count($itemAttempts)
         ]);
+    }
+
+    /**
+     * Log a study session for an item that is not yet due without updating FSRS schedule.
+     */
+    private function logEarlyStudy(RevisionItem $item, int $grade): void
+    {
+        $now = now();
+        $history = $item->response_history ?? [];
+        
+        $history[] = [
+            'date' => $now->toDateTimeString(),
+            'grade' => $grade,
+            'type' => 'early_study', // Mark as early study
+            'note' => 'Item studied before due date, FSRS parameters preserved'
+        ];
+
+        $item->response_history = $history;
+        $item->review_count = ($item->review_count ?? 0) + 1;
+        $item->last_review = $now;
     }
 
     /**

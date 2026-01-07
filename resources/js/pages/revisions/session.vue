@@ -42,12 +42,14 @@ const fetchSession = async () => {
   try {
     const type = route.query.type || 'both'
     const earlyReview = route.query.earlyReview === '1'
+    const courseId = route.query.courseId
 
     const res = await $api.get('/revision/practice', { 
       params: { 
         type, 
         limit: 20,
         earlyReview: earlyReview ? 1 : 0,
+        course_id: courseId,
       }, 
     })
 
