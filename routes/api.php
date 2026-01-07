@@ -30,6 +30,8 @@ use App\Http\Controllers\Learner\CoursesContentController;
 use App\Http\Controllers\Learner\LearnerSubscriptionController;
 use App\Http\Controllers\PaymentGatewayController;
 
+use App\Http\Controllers\Learner\LearnerDashboardController;
+
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes
@@ -247,6 +249,7 @@ Route::prefix('learner')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
+    Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
     Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
     Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
