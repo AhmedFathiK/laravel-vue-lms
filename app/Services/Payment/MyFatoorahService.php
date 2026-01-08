@@ -129,7 +129,18 @@ class MyFatoorahService implements PaymentServiceInterface
             throw new InvalidArgumentException('MyFatoorah base URL is not configured.');
         }
 
-        $request = Http::withHeaders($this->headers);
+        $options = [
+            'curl' => [
+                CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2,
+            ],
+        ];
+
+        if (app()->isLocal()) {
+            $options['curl'][CURLOPT_SSL_CIPHER_LIST] = 'DEFAULT@SECLEVEL=1';
+        }
+
+        $request = Http::withHeaders($this->headers)
+            ->withOptions($options);
 
         if (app()->isLocal()) {
             $request = $request->withoutVerifying();
