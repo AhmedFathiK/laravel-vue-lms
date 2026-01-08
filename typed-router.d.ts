@@ -35,6 +35,7 @@ declare module 'vue-router/auto-routes' {
     'admin-roles': RouteRecordInfo<'admin-roles', '/admin/roles', Record<never, never>, Record<never, never>>,
     'admin-trash': RouteRecordInfo<'admin-trash', '/admin/trash', Record<never, never>, Record<never, never>>,
     'admin-trophies': RouteRecordInfo<'admin-trophies', '/admin/trophies', Record<never, never>, Record<never, never>>,
+    'admin-user-subscriptions': RouteRecordInfo<'admin-user-subscriptions', '/admin/user-subscriptions', Record<never, never>, Record<never, never>>,
     'admin-users': RouteRecordInfo<'admin-users', '/admin/users', Record<never, never>, Record<never, never>>,
     'admin-users-id': RouteRecordInfo<'admin-users-id', '/admin/users/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'browse-courses': RouteRecordInfo<'browse-courses', '/browse-courses', Record<never, never>, Record<never, never>>,

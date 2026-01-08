@@ -11,7 +11,7 @@ class CancelUserSubscriptionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage.subscriptions');
+        return $this->user()->can('edit.subscriptions') || $this->user()->can('manage.subscriptions');
     }
 
     /**

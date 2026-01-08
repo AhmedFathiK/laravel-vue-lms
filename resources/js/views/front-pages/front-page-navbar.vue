@@ -1,7 +1,6 @@
 <script setup>
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
-import navImg from '@images/front-pages/misc/nav-item-col-img.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { can } from '@layouts/plugins/casl'
 import { themeConfig } from '@themeConfig'
@@ -204,7 +203,7 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
 
           <RouterLink
             v-if="isAuthenticated"
-            to="/access-control"
+            to="/dashboard"
             class="font-weight-medium nav-link"
           >
             Dashboard
@@ -280,93 +279,20 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
               {{ item }}
             </RouterLink>
 
-            <!-- Pages Menu -->
-            <span
-              class="font-weight-medium cursor-pointer px-2 px-lg-4 py-2"
-              :class="isPageActive || isMegaMenuOpen ? 'active-link' : ''"
-              style="color: rgba(var(--v-theme-on-surface));"
-            >
-              Pages
-              <VIcon
-                icon="tabler-chevron-down"
-                size="16"
-                class="ms-2"
-              />
-              <VMenu
-                v-model="isMegaMenuOpen"
-                open-on-hover
-                activator="parent"
-                transition="slide-y-transition"
-                location="bottom center"
-                offset="16"
-                content-class="mega-menu"
-                location-strategy="static"
-                close-on-content-click
-              >
-                <VCard max-width="1000">
-                  <VCardText class="pa-8">
-                    <div class="nav-menu">
-                      <div
-                        v-for="(item, index) in filteredMenuItems"
-                        :key="index"
-                      >
-                        <div class="d-flex align-center gap-x-3 mb-6">
-                          <VAvatar
-                            variant="tonal"
-                            color="primary"
-                            rounded
-                            :icon="item.listIcon"
-                          />
-                          <div class="text-body-1 text-high-emphasis font-weight-medium">
-                            {{ item.listTitle }}
-                          </div>
-                        </div>
-                        <ul>
-                          <li
-                            v-for="listItem in item.navItems"
-                            :key="listItem.name"
-                            style="list-style: none;"
-                            class="text-body-1 mb-4 text-no-wrap"
-                          >
-                            <RouterLink
-                              class="mega-menu-item"
-                              :to="listItem.to"
-                              :target="item.listTitle === 'External' ? '_blank' : '_self'"
-                              :class="isCurrentRoute(listItem.to) ? 'active-link' : 'text-high-emphasis'"
-                            >
-                              <div class="d-flex align-center">
-                                <VIcon
-                                  icon="tabler-circle"
-                                  color="primary"
-                                  :size="10"
-                                  class="me-2"
-                                />
-                                <span>{{ listItem.name }}</span>
-                              </div>
-                            </RouterLink>
-                          </li>
-                        </ul>
-                      </div>
-                      <img
-                        :src="navImg"
-                        alt="Navigation Image"
-                        class="d-inline-block rounded-lg"
-                        style="border: 10px solid rgb(var(--v-theme-background));"
-                        :width="$vuetify.display.lgAndUp ? '330' : '250'"
-                        :height="$vuetify.display.lgAndUp ? '330' : '250'"
-                      >
-                    </div>
-                  </VCardText>
-                </VCard>
-              </VMenu>
-            </span>
-
             <RouterLink
               v-if="isAuthenticated"
-              :to="can('access', 'admin_panel') ? 'access-control' : 'dashboard'"
-              class="font-weight-medium nav-link"
+              to="/dashboard"
+              class="nav-link font-weight-medium py-2 px-2 px-lg-4"
             >
               Dashboard
+            </RouterLink>
+            
+            <RouterLink
+              v-if="isAuthenticated && can('access', 'admin_panel')"
+              to="/admin/dashboard"
+              class="nav-link font-weight-medium py-2 px-2 px-lg-4"
+            >
+              Admin Dashboard
             </RouterLink>
           </div>
         </div>

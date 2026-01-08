@@ -11,7 +11,7 @@ class DestroyUserSubscriptionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage.subscriptions');
+        return $this->user()->can('delete.subscriptions') || $this->user()->can('manage.subscriptions');
     }
 
     /**

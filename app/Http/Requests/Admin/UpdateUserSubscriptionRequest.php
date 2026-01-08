@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
-use Illuminate_Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateUserSubscriptionRequest extends FormRequest
 {
@@ -13,7 +13,7 @@ class UpdateUserSubscriptionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage.subscriptions');
+        return $this->user()->can('edit.subscriptions') || $this->user()->can('manage.subscriptions');
     }
 
     /**

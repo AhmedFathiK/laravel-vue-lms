@@ -61,6 +61,13 @@ export default [
     action: 'view',
     subject: 'receipts',
   },
+  {
+    title: 'User Subscriptions',
+    to: { name: 'admin-user-subscriptions' },
+    icon: { icon: 'tabler-calendar-user' },
+    action: 'view',
+    subject: 'subscriptions',
+  },
   { 
     heading: "General",
     abilities: [

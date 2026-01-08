@@ -18,7 +18,7 @@ class UserSubscriptionController extends Controller
      */
     public function index(ViewUserSubscriptionRequest $request): JsonResponse
     {
-        $query = UserSubscription::with(['user', 'plan', 'payment']);
+        $query = UserSubscription::with(['user', 'plan.course', 'payment']);
 
         // Filter by user
         if ($request->has('user_id')) {
@@ -69,7 +69,7 @@ class UserSubscriptionController extends Controller
 
         return response()->json([
             'message' => 'User subscription created successfully',
-            'subscription' => $subscription->load(['user', 'plan', 'payment']),
+            'subscription' => $subscription->load(['user', 'plan.course', 'payment']),
         ], 201);
     }
 
@@ -79,7 +79,7 @@ class UserSubscriptionController extends Controller
     public function show(ViewUserSubscriptionRequest $request, UserSubscription $userSubscription): JsonResponse
     {
         return response()->json([
-            'subscription' => $userSubscription->load(['user', 'plan', 'payment']),
+            'subscription' => $userSubscription->load(['user', 'plan.course', 'payment']),
         ]);
     }
 
@@ -92,7 +92,7 @@ class UserSubscriptionController extends Controller
 
         return response()->json([
             'message' => 'User subscription updated successfully',
-            'subscription' => $userSubscription->load(['user', 'plan', 'payment']),
+            'subscription' => $userSubscription->load(['user', 'plan.course', 'payment']),
         ]);
     }
 
@@ -115,7 +115,7 @@ class UserSubscriptionController extends Controller
 
         return response()->json([
             'message' => 'User subscription canceled successfully',
-            'subscription' => $userSubscription->load(['user', 'plan', 'payment']),
+            'subscription' => $userSubscription->load(['user', 'plan.course', 'payment']),
         ]);
     }
 
