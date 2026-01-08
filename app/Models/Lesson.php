@@ -105,15 +105,18 @@ class Lesson extends Model
     {
         parent::boot();
 
-        // When a lesson is soft deleted, also soft delete all related slides
+        // When a lesson is soft deleted, also soft delete all related slides and progress
         static::deleting(function ($lesson) {
             if (!$lesson->isForceDeleting()) {
                 // Propagate cascading flag to slides
-                Slide::$cascadingDelete = self::$cascadingDelete;
+                Slide::$cascadingDelete = true;
 
                 $lesson->slides()->each(function ($slide) {
                     $slide->delete();
                 });
+
+                // Also delete user progress records
+                $lesson->studiedBy()->delete();
 
                 // Reset the slide flag if we're not in a cascading delete
                 if (!self::$cascadingDelete) {

@@ -23,11 +23,14 @@ const selectedType = ref(null)
 const modelTypes = ref([])
 const sortBy = ref('deleted_at')
 const sortDesc = ref(true)
+const selectedItems = ref([])
 
 // Dialog visibility
 const isDeletionDialogVisible = ref(false)
 const isRestoreDialogVisible = ref(false)
 const isEmptyTrashDialogVisible = ref(false)
+const isBulkRestoreDialogVisible = ref(false)
+const isBulkDeletionDialogVisible = ref(false)
 const currentAction = ref(null)
 const currentItemId = ref(null)
 
@@ -141,6 +144,10 @@ const confirmAction = (action, id) => {
     isDeletionDialogVisible.value = true
   } else if (action === 'empty') {
     isEmptyTrashDialogVisible.value = true
+  } else if (action === 'bulk-restore') {
+    isBulkRestoreDialogVisible.value = true
+  } else if (action === 'bulk-delete') {
+    isBulkDeletionDialogVisible.value = true
   }
 }
 
@@ -152,6 +159,8 @@ const handleDeletionConfirm = async result => {
     await deleteItem(currentItemId.value)
   } else if (currentAction.value === 'empty') {
     await emptyTrash()
+  } else if (currentAction.value === 'bulk-delete') {
+    await bulkDelete()
   }
   
   // Reset values
@@ -163,11 +172,17 @@ const handleDeletionConfirm = async result => {
 const handleRestoreConfirm = async confirmed => {
   if (!confirmed) return
   
-  await restoreItem(currentItemId.value)
+  if (currentAction.value === 'restore') {
+    await restoreItem(currentItemId.value)
+  } else if (currentAction.value === 'bulk-restore') {
+    await bulkRestore()
+  }
   
   // Reset values
   currentAction.value = null
   currentItemId.value = null
+  isRestoreDialogVisible.value = false
+  isBulkRestoreDialogVisible.value = false
 }
 
 // Restore an item from trash
@@ -182,6 +197,19 @@ const restoreItem = async id => {
   }
 }
 
+// Bulk restore items
+const bulkRestore = async () => {
+  try {
+    await api.post('/admin/trash/bulk-restore', { ids: selectedItems.value })
+    toast.success('Selected items restored successfully')
+    selectedItems.value = []
+    fetchTrashItems()
+  } catch (error) {
+    console.error('Error in bulk restore:', error)
+    toast.error('Failed to restore selected items')
+  }
+}
+
 // Permanently delete an item
 const deleteItem = async id => {
   try {
@@ -191,6 +219,19 @@ const deleteItem = async id => {
   } catch (error) {
     console.error('Error deleting item:', error)
     toast.error('Failed to delete item')
+  }
+}
+
+// Bulk delete items
+const bulkDelete = async () => {
+  try {
+    await api.post('/admin/trash/bulk-delete', { ids: selectedItems.value })
+    toast.success('Selected items permanently deleted')
+    selectedItems.value = []
+    fetchTrashItems()
+  } catch (error) {
+    console.error('Error in bulk delete:', error)
+    toast.error('Failed to delete selected items')
   }
 }
 
@@ -218,14 +259,34 @@ onMounted(() => {
     <VCard>
       <VCardText class="d-flex justify-space-between align-center">
         <h2>Trash</h2>
-        <VBtn 
-          color="error" 
-          prepend-icon="tabler-trash"
-          :disabled="totalItems === 0"
-          @click="confirmAction('empty')"
-        >
-          Empty Trash
-        </VBtn>
+        <div class="d-flex gap-2">
+          <VBtn
+            v-if="selectedItems.length > 0"
+            color="success"
+            variant="tonal"
+            prepend-icon="tabler-arrow-back-up"
+            @click="confirmAction('bulk-restore')"
+          >
+            Restore Selected ({{ selectedItems.length }})
+          </VBtn>
+          <VBtn
+            v-if="selectedItems.length > 0"
+            color="error"
+            variant="tonal"
+            prepend-icon="tabler-trash"
+            @click="confirmAction('bulk-delete')"
+          >
+            Delete Selected ({{ selectedItems.length }})
+          </VBtn>
+          <VBtn 
+            color="error" 
+            prepend-icon="tabler-trash"
+            :disabled="totalItems === 0"
+            @click="confirmAction('empty')"
+          >
+            Empty Trash
+          </VBtn>
+        </div>
       </VCardText>
 
       <VCardText>
@@ -254,12 +315,15 @@ onMounted(() => {
         </div>
 
         <VDataTable
+          v-model="selectedItems"
           :headers="headers"
           :items="trashItems"
           :loading="isLoading"
           :items-per-page="itemsPerPage"
           :page="currentPage"
           :items-length="totalItems"
+          show-select
+          item-value="id"
           class="elevation-1"
           @update:options="handleOptionsChange"
         >
@@ -320,6 +384,17 @@ onMounted(() => {
       @confirm="handleRestoreConfirm"
     />
 
+    <!-- Bulk Restore Confirmation Dialog -->
+    <ConfirmDialog
+      v-model:is-dialog-visible="isBulkRestoreDialogVisible"
+      confirmation-question="Are you sure you want to restore the selected items?"
+      confirm-title="Items Restored"
+      confirm-msg="The selected items have been restored successfully."
+      cancel-title="Action Cancelled"
+      cancel-msg="No changes were made."
+      @confirm="handleRestoreConfirm"
+    />
+
     <!-- Deletion Confirmation Dialog -->
     <DeletionConfirmDialog
       v-model:is-dialog-visible="isDeletionDialogVisible"
@@ -338,6 +413,17 @@ onMounted(() => {
           ? 'The item has been permanently deleted.' 
           : 'The trash has been emptied successfully.'
       "
+      cancel-title="Action Cancelled"
+      cancel-msg="No changes were made."
+      @confirm="handleDeletionConfirm"
+    />
+
+    <!-- Bulk Deletion Confirmation Dialog -->
+    <DeletionConfirmDialog
+      v-model:is-dialog-visible="isBulkDeletionDialogVisible"
+      confirmation-question="Are you sure you want to permanently delete the selected items?"
+      confirm-title="Items Deleted"
+      confirm-msg="The selected items have been permanently deleted."
       cancel-title="Action Cancelled"
       cancel-msg="No changes were made."
       @confirm="handleDeletionConfirm"

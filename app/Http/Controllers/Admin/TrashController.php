@@ -139,6 +139,70 @@ class TrashController extends Controller
     }
 
     /**
+     * Restore multiple trashed items.
+     */
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        if (!Gate::allows('restore.trash')) {
+            abort(403);
+        }
+
+        $ids = $request->input('ids', []);
+        
+        if (empty($ids)) {
+            return response()->json(['message' => 'No items selected'], 400);
+        }
+
+        $trashItems = TrashItem::whereIn('id', $ids)->get();
+
+        foreach ($trashItems as $trashItem) {
+            $modelClass = $trashItem->model_type;
+            $modelId = $trashItem->model_id;
+
+            $model = $modelClass::onlyTrashed()->find($modelId);
+
+            if ($model) {
+                $model->restore();
+            }
+        }
+
+        return response()->json(['message' => 'Selected items restored successfully']);
+    }
+
+    /**
+     * Permanently delete multiple trashed items.
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        if (!Gate::allows('delete.trash')) {
+            abort(403);
+        }
+
+        $ids = $request->input('ids', []);
+        
+        if (empty($ids)) {
+            return response()->json(['message' => 'No items selected'], 400);
+        }
+
+        $trashItems = TrashItem::whereIn('id', $ids)->get();
+
+        foreach ($trashItems as $trashItem) {
+            $modelClass = $trashItem->model_type;
+            $modelId = $trashItem->model_id;
+
+            $model = $modelClass::onlyTrashed()->find($modelId);
+
+            if ($model) {
+                $model->forceDelete();
+            }
+
+            $trashItem->delete();
+        }
+
+        return response()->json(['message' => 'Selected items permanently deleted'], 204);
+    }
+
+    /**
      * Get the available model types for filtering.
      */
     public function getModelTypes(): JsonResponse

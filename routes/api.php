@@ -105,6 +105,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
     // System Management
     Route::get('trash', [\App\Http\Controllers\Admin\TrashController::class, 'index']);
+    Route::post('trash/bulk-restore', [\App\Http\Controllers\Admin\TrashController::class, 'bulkRestore']);
+    Route::post('trash/bulk-delete', [\App\Http\Controllers\Admin\TrashController::class, 'bulkDelete']);
     Route::post('trash/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore']);
     Route::delete('trash/{id}', [\App\Http\Controllers\Admin\TrashController::class, 'destroy']);
     Route::post('trash/empty', [\App\Http\Controllers\Admin\TrashController::class, 'emptyTrash']);

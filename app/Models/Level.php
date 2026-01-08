@@ -118,7 +118,7 @@ class Level extends Model
         static::deleting(function ($level) {
             if (!$level->isForceDeleting()) {
                 // Propagate cascading flag to lessons
-                Lesson::$cascadingDelete = self::$cascadingDelete;
+                Lesson::$cascadingDelete = true;
 
                 $level->lessons()->each(function ($lesson) {
                     $lesson->delete();

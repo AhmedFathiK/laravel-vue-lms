@@ -78,6 +78,9 @@ class LessonObserver
                 $slide->restore();
             }
         });
+
+        // Restore user progress records
+        $lesson->studiedBy()->onlyTrashed()->restore();
     }
 
     /**
