@@ -164,7 +164,7 @@ const handlePasswordConfirm = async result => {
   // For this example, we'll just proceed with the deletion
   
   try {
-    await api.delete(`/admin/levels/${levelToDelete.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/levels/${levelToDelete.value.id}`)
     toast.success('Level deleted successfully')
     fetchLevels()
   } catch (error) {

@@ -186,7 +186,7 @@ const handleDeleteConfirm = async () => {
   if (!conceptToDelete.value) return
   
   try {
-    await api.delete(`/admin/concepts/${conceptToDelete.value.id}`)
+    await api.delete(`/admin/courses/${courseId.value}/concepts/${conceptToDelete.value.id}`)
     toast.success('Concept deleted successfully')
     fetchConcepts()
   } catch (error) {
