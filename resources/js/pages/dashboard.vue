@@ -237,11 +237,14 @@ onMounted(() => {
       md="8"
     >
       <VCard
-        class="nba-card overflow-hidden"
+        class="nba-card h-100 overflow-hidden"
         :color="getActionColor(dashboardData.nextBestAction.type)"
         variant="tonal"
       >
-        <VRow no-gutters>
+        <VRow
+          no-gutters
+          class="h-100"
+        >
           <VCol
             cols="12"
             sm="8"
@@ -285,6 +288,7 @@ onMounted(() => {
       <VCard
         title="Trophy Room"
         subtitle="Keep learning to earn more!"
+        class="h-100"
       >
         <template #append>
           <VIcon
