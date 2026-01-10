@@ -113,7 +113,6 @@ class LanguageCourseSeeder extends Seeder
                             'lesson_id' => $lesson->id,
                             'title' => $conceptData['title'],
                             'explanation' => $conceptData['explanation'],
-                            'type' => 'grammar',
                         ]);
                         $createdConcepts[] = $concept;
                     }

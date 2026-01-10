@@ -43,7 +43,6 @@ class QuestionRelationshipTest extends TestCase
             'course_id' => $course->id,
             'title' => ['en' => 'Test Concept'],
             'explanation' => ['en' => 'Test Explanation'],
-            'type' => 'grammar',
         ]);
 
         $data = [
@@ -84,14 +83,12 @@ class QuestionRelationshipTest extends TestCase
             'course_id' => $course->id,
             'title' => ['en' => 'Concept 1'],
             'explanation' => ['en' => 'Exp 1'],
-            'type' => 'grammar',
         ]);
 
         $concept2 = Concept::create([
             'course_id' => $course->id,
             'title' => ['en' => 'Concept 2'],
             'explanation' => ['en' => 'Exp 2'],
-            'type' => 'grammar',
         ]);
 
         // Create question with term1 and concept1

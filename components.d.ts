@@ -83,8 +83,6 @@ declare module 'vue' {
     ScrollToTop: typeof import('./resources/js/@core/components/ScrollToTop.vue')['default']
     ShareProjectDialog: typeof import('./resources/js/components/dialogs/ShareProjectDialog.vue')['default']
     Shortcuts: typeof import('./resources/js/@core/components/Shortcuts.vue')['default']
-    SlickItem: typeof import('vue-slicksort')['SlickItem']
-    SlickList: typeof import('vue-slicksort')['SlickList']
     TablePagination: typeof import('./resources/js/@core/components/TablePagination.vue')['default']
     TermSlide: typeof import('./resources/js/components/SlideTypes/TermSlide.vue')['default']
     TheCustomizer: typeof import('./resources/js/@core/components/TheCustomizer.vue')['default']
@@ -92,6 +90,5 @@ declare module 'vue' {
     TiptapEditor: typeof import('./resources/js/@core/components/TiptapEditor.vue')['default']
     TwoFactorAuthDialog: typeof import('./resources/js/components/dialogs/TwoFactorAuthDialog.vue')['default']
     UserUpgradePlanDialog: typeof import('./resources/js/components/dialogs/UserUpgradePlanDialog.vue')['default']
-    VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }
