@@ -38,7 +38,6 @@ const form = ref({
   currency: 'USD',
   autoGeneratePdf: true,
   notifyUser: true,
-  createSubscription: true,
 })
 
 // UI state for autocompletes
@@ -88,7 +87,6 @@ const resetFormData = () => {
     currency: 'USD',
     autoGeneratePdf: true,
     notifyUser: true,
-    createSubscription: true,
   }
   selectedUser.value = null
   selectedCourse.value = null
@@ -181,7 +179,6 @@ watch(() => [props.isDialogVisible, props.data, props.dialogMode], async ([isVis
         currency: receipt.currency || 'USD',
         autoGeneratePdf: true,
         notifyUser: true,
-        createSubscription: isLinkedToSubscription.value,
       }
 
       if (form.value.courseId) {
@@ -427,17 +424,7 @@ const onDialogVisibleUpdate = val => {
                     :disabled="isSystemGenerated"
                   />
                 </VCol>
-                <VCol
-                  v-if="!isLinkedToSubscription"
-                  cols="12"
-                  md="4"
-                >
-                  <VCheckbox
-                    v-model="form.createSubscription"
-                    label="Create Subscription"
-                    :disabled="isLinkedToSubscription || isSystemGenerated"
-                  />
-                </VCol>
+
               </VRow>
             </VCol>
           </VRow>

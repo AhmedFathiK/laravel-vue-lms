@@ -92,19 +92,21 @@ class Level extends Model
         }
 
         // Check if user has any active subscription for this course
-        return $user->subscriptions()
+        $subscriptions = $user->subscriptions()
             ->whereHas('plan', function ($query) {
                 $query->where('course_id', $this->course_id)
                     ->where('is_active', true);
             })
-            ->where(function ($query) {
-                $query->where('status', 'active')
-                    ->where(function ($q) {
-                        $q->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
-                    });
-            })
-            ->exists();
+            ->whereIn('status', ['active', 'past_due'])
+            ->get();
+
+        foreach ($subscriptions as $subscription) {
+            if ($subscription->isActive()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

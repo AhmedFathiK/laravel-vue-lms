@@ -134,6 +134,13 @@ class PaymentController extends Controller
             ], 422);
         }
 
+        // Check if payment is linked to any subscription (regardless of status)
+        if ($payment->subscription()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete payment linked to a subscription.',
+            ], 422);
+        }
+
         $payment->delete();
 
         return response()->json([

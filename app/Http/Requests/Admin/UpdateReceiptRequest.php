@@ -32,7 +32,6 @@ class UpdateReceiptRequest extends FormRequest
             'notify_user' => 'sometimes|boolean',
             'auto_generate_pdf' => 'sometimes|boolean',
             'receipt_number' => 'nullable|string|unique:receipts,receipt_number,' . $this->receipt->id,
-            'create_subscription' => 'sometimes|boolean',
         ];
     }
 }

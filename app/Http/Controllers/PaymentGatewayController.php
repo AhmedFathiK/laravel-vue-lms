@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\DuplicateSubscriptionException;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\SubscriptionPlan;
@@ -12,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -68,7 +70,7 @@ class PaymentGatewayController extends Controller
                 metadata: [
                     'customer_reference' => (string) $payment->id,
                 ],
-                callbackUrl: route('payments.callback'),
+                callbackUrl: 'http://127.0.0.1:8000/api/payments/callback1',
                 errorUrl: route('payments.error'),
                 paymentMethodId: $validated['payment_method_id'] ?? null
             );
@@ -235,34 +237,12 @@ class PaymentGatewayController extends Controller
 
     private function handlePostPayment(Payment $payment): void
     {
-        $existingDetails = $payment->payment_details ?? [];
-
-        if (!isset($existingDetails['plan_id'])) {
-            return;
+        try {
+            $this->subscriptionService->processSuccessfulPayment($payment);
+        } catch (\Throwable $e) {
+            Log::error("Failed to process post-payment actions for Payment {$payment->id}: " . $e->getMessage());
+            throw $e;
         }
-
-        $plan = SubscriptionPlan::find($existingDetails['plan_id']);
-        if (!$plan || !$payment->user_id) {
-            return;
-        }
-
-        $user = \App\Models\User::find($payment->user_id);
-        if (!$user) {
-            return;
-        }
-
-        $this->subscriptionService->createSubscription($user, $plan, $payment);
-
-        Receipt::create([
-            'user_id' => $payment->user_id,
-            'payment_id' => $payment->id,
-            'receipt_number' => Receipt::generateUniqueReceiptNumber(),
-            'item_type' => 'subscription_plan',
-            'item_id' => $plan->id,
-            'item_name' => $plan->name,
-            'amount' => $payment->amount,
-            'currency' => $payment->currency,
-        ]);
     }
 
     private function successRedirectUrl(array $existingDetails, int $paymentId): string

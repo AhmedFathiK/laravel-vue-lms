@@ -6,12 +6,14 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Lesson;
 use App\Models\Level;
+use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\Slide;
 use App\Observers\CourseObserver;
 use App\Observers\CourseCategoryObserver;
 use App\Observers\LessonObserver;
 use App\Observers\LevelObserver;
+use App\Observers\PaymentObserver;
 use App\Observers\ReceiptObserver;
 use App\Observers\SlideObserver;
 use App\Policies\ReceiptPolicy;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         Slide::observe(SlideObserver::class);
         CourseCategory::observe(CourseCategoryObserver::class);
         Receipt::observe(ReceiptObserver::class);
+        Payment::observe(PaymentObserver::class);
 
         Gate::policy(Receipt::class, ReceiptPolicy::class);
     }

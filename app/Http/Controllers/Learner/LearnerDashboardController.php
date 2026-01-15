@@ -27,9 +27,13 @@ class LearnerDashboardController extends Controller
         // 1. Get enrolled courses via active subscriptions
         $enrolledCourses = Course::whereHas('subscriptionPlans.subscriptions', function ($query) use ($userId) {
             $query->where('user_id', $userId)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'past_due'])
                 ->where(function ($q) {
-                    $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
+                    // NOTE: This check is APPROXIMATE for dashboard visibility only.
+                    // It uses the max possible grace period (7 days) to ensure courses don't disappear prematurely.
+                    // Authoritative access control is enforced by UserSubscription::isActive() when entering the course.
+                    $q->whereNull('ends_at')
+                        ->orWhere('ends_at', '>', now()->subDays(config('subscription.grace_period.max_days', 7)));
                 });
         })->with(['levels.lessons'])->get();
 

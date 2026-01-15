@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
+use App\Exceptions\DuplicateSubscriptionException;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Lesson;
@@ -105,39 +106,21 @@ class LearnerSubscriptionController extends Controller
             ], 422);
         }
 
-        // Check if the user already has an active subscription for this course
-        $existingSubscription = $user->subscriptions()
-            ->whereHas('plan', function ($query) use ($plan) {
-                $query->where('course_id', $plan->course_id);
-            })
-            ->where('status', 'active')
-            ->where(function ($query) {
-                $query->whereNull('ends_at')
-                    ->orWhere('ends_at', '>', now());
-            })
-            ->first();
-
-        if ($existingSubscription) {
-            return response()->json([
-                'message' => 'You already have an active subscription for this course',
-                'subscription' => $existingSubscription,
-            ], 422);
-        }
-
         // 1. Free Plan Logic
         if ($plan->is_free || $plan->price <= 0) {
             try {
-                return \Illuminate\Support\Facades\DB::transaction(function () use ($subscriptionService, $user, $plan) {
-                    $subscription = $subscriptionService->createSubscription($user, $plan);
+                $subscription = $subscriptionService->createSubscription($user, $plan);
 
-                    return response()->json([
-                        'message' => 'Successfully subscribed to the plan',
-                        'subscription' => $subscription->load(['plan', 'plan.course']),
-                        'status' => 'enrolled',
-                    ], 201);
-                });
+                return response()->json([
+                    'message' => 'Successfully subscribed to the plan',
+                    'subscription' => $subscription->load(['plan', 'plan.course']),
+                    'status' => 'enrolled',
+                ], 201);
+            } catch (DuplicateSubscriptionException $e) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], 422);
             } catch (\Throwable $e) {
-                // If anything fails inside the transaction (including load()), everything rolls back
                 throw $e;
             }
         }
@@ -171,7 +154,7 @@ class LearnerSubscriptionController extends Controller
                 metadata: [
                     'customer_reference' => (string) $payment->id,
                 ],
-                callbackUrl: route('payments.callback'),
+                callbackUrl: 'http://127.0.0.1:8000/api/payments/callback1',
                 errorUrl: route('payments.error')
             );
 
@@ -299,9 +282,10 @@ class LearnerSubscriptionController extends Controller
                 default:
                     $subscription->ends_at = now()->addMonth();
             }
-
-            $subscription->status = 'active';
         }
+        
+        // Always ensure status is active when renewing
+        $subscription->status = UserSubscription::STATUS_ACTIVE;
 
         $subscription->save();
 
@@ -362,10 +346,6 @@ class LearnerSubscriptionController extends Controller
                 $query->where('course_id', $course->id);
             })
             ->where('status', 'active')
-            ->where(function ($query) {
-                $query->whereNull('ends_at')
-                    ->orWhere('ends_at', '>', now());
-            })
             ->with('plan')
             ->first();
 

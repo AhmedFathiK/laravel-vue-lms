@@ -16,8 +16,10 @@ class CourseCategoryFactory extends Factory
      */
     public function definition(): array
     {
+        $name = $this->faker->unique()->sentence(3);
         return [
-            'name' => $this->faker->unique()->sentence(3),
+            'name' => $name,
+            'slug' => \Illuminate\Support\Str::slug($name),
         ];
     }
 }

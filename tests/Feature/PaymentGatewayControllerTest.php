@@ -176,4 +176,128 @@ class PaymentGatewayControllerTest extends TestCase
             ],
         ]);
     }
+
+    public function test_callback_creates_subscription_and_receipt_for_valid_plan_payment(): void
+    {
+        $user = User::factory()->create();
+        $course = \App\Models\Course::factory()->create();
+        $plan = \App\Models\SubscriptionPlan::create([
+            'course_id' => $course->id,
+            'name' => 'Test Plan',
+            'price' => 100,
+            'currency' => 'USD',
+            'billing_cycle' => 'one-time',
+            'plan_type' => 'one-time',
+            'is_active' => true,
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'amount' => 100,
+            'currency' => 'USD',
+            'status' => 'pending',
+            'payment_method' => 'fake',
+            'payment_provider' => 'fake',
+            'payment_details' => [
+                'plan_id' => $plan->id,
+                'course_id' => $course->id,
+            ],
+        ]);
+
+        $this->app->instance(PaymentServiceInterface::class, new class($payment->id) implements PaymentServiceInterface
+        {
+            public function __construct(private readonly int $paymentId) {}
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array { return []; }
+            public function getPaymentMethods(float $a, string $c): array { return []; }
+            public function getPaymentStatus(string $paymentId): array {
+                return [
+                    'local_payment_id' => $this->paymentId,
+                    'status' => 'paid',
+                    'transaction_id' => 'gw-1',
+                    'gateway_data' => ['payment_id' => $paymentId],
+                ];
+            }
+            public function gatewayKey(): string { return 'fake'; }
+        });
+
+        $response = $this->get('/api/payments/callback?payment_id=gw-1');
+
+        $response->assertRedirect('/courses/' . $course->id . '?payment=success&payment_id=' . $payment->id);
+
+        $this->assertDatabaseHas('user_subscriptions', [
+            'user_id' => $user->id,
+            'subscription_plan_id' => $plan->id,
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseHas('receipts', [
+            'payment_id' => $payment->id,
+            'item_id' => $plan->id,
+        ]);
+    }
+
+    public function test_callback_handles_duplicate_subscription_gracefully(): void
+    {
+        $user = User::factory()->create();
+        $course = \App\Models\Course::factory()->create();
+        $plan = \App\Models\SubscriptionPlan::create([
+            'course_id' => $course->id,
+            'name' => 'Test Plan',
+            'price' => 100,
+            'currency' => 'USD',
+            'billing_cycle' => 'one-time',
+            'plan_type' => 'one-time',
+            'is_active' => true,
+        ]);
+
+        // Create existing subscription
+        \App\Models\UserSubscription::create([
+            'user_id' => $user->id,
+            'subscription_plan_id' => $plan->id,
+            'starts_at' => now(),
+            'status' => 'active',
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'amount' => 100,
+            'currency' => 'USD',
+            'status' => 'pending',
+            'payment_method' => 'fake',
+            'payment_provider' => 'fake',
+            'payment_details' => [
+                'plan_id' => $plan->id,
+                'course_id' => $course->id,
+            ],
+        ]);
+
+        $this->app->instance(PaymentServiceInterface::class, new class($payment->id) implements PaymentServiceInterface
+        {
+            public function __construct(private readonly int $paymentId) {}
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array { return []; }
+            public function getPaymentMethods(float $a, string $c): array { return []; }
+            public function getPaymentStatus(string $paymentId): array {
+                return [
+                    'local_payment_id' => $this->paymentId,
+                    'status' => 'paid',
+                    'transaction_id' => 'gw-1',
+                    'gateway_data' => ['payment_id' => $paymentId],
+                ];
+            }
+            public function gatewayKey(): string { return 'fake'; }
+        });
+
+        $response = $this->get('/api/payments/callback?payment_id=gw-1');
+
+        $response->assertRedirect('/courses/' . $course->id . '?payment=success&payment_id=' . $payment->id);
+
+        // Verify receipt is still created
+        $this->assertDatabaseHas('receipts', [
+            'payment_id' => $payment->id,
+            'item_id' => $plan->id,
+        ]);
+
+        // Verify only one subscription exists
+        $this->assertEquals(1, \App\Models\UserSubscription::where('user_id', $user->id)->where('subscription_plan_id', $plan->id)->count());
+    }
 }

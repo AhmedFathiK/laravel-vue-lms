@@ -2,17 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\DuplicateSubscriptionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelUserSubscriptionRequest;
 use App\Http\Requests\Admin\DestroyUserSubscriptionRequest;
 use App\Http\Requests\Admin\StoreUserSubscriptionRequest;
 use App\Http\Requests\Admin\UpdateUserSubscriptionRequest;
 use App\Http\Requests\Admin\ViewUserSubscriptionRequest;
+use App\Models\Payment;
+use App\Models\SubscriptionPlan;
+use App\Models\User;
 use App\Models\UserSubscription;
+use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 
 class UserSubscriptionController extends Controller
 {
+    protected $subscriptionService;
+
+    public function __construct(SubscriptionService $subscriptionService)
+    {
+        $this->subscriptionService = $subscriptionService;
+    }
+
     /**
      * Display a listing of user subscriptions.
      */
@@ -65,12 +77,34 @@ class UserSubscriptionController extends Controller
      */
     public function store(StoreUserSubscriptionRequest $request): JsonResponse
     {
-        $subscription = UserSubscription::create($request->validated());
+        $user = User::findOrFail($request->user_id);
+        $plan = SubscriptionPlan::findOrFail($request->subscription_plan_id);
+        $payment = $request->payment_id ? Payment::findOrFail($request->payment_id) : null;
 
-        return response()->json([
-            'message' => 'User subscription created successfully',
-            'subscription' => $subscription->load(['user', 'plan.course', 'payment']),
-        ], 201);
+        try {
+            if ($payment || $plan->is_free) {
+                // Use standard creation if payment exists or plan is free
+                $subscription = $this->subscriptionService->createSubscription($user, $plan, $payment);
+            } else {
+                // If paid plan and no payment, assume Manual Grant (Admin override)
+                // This will create a 0/Manual payment and receipt
+                $subscription = $this->subscriptionService->createManualSubscription(
+                    $user, 
+                    $plan, 
+                    'Manual subscription created via Admin Panel'
+                );
+            }
+
+            return response()->json([
+                'message' => 'User subscription created successfully',
+                'subscription' => $subscription->load(['user', 'plan.course', 'payment']),
+            ], 201);
+
+        } catch (DuplicateSubscriptionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+             return response()->json(['message' => 'Failed to create subscription: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

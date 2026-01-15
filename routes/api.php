@@ -331,3 +331,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('payments/callback', [PaymentGatewayController::class, 'callback'])->name('payments.callback');
 Route::get('payments/error', [PaymentGatewayController::class, 'error'])->name('payments.error');
+
+Route::post('webhooks/myfatoorah', [\App\Http\Controllers\PaymentWebhookController::class, 'handleMyFatoorah']);

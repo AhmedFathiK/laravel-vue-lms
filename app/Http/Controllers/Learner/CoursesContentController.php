@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Lesson;
 
 use App\Http\Resources\Learner\LessonResource;
+use App\Models\UserStudiedLesson;
 
 class CoursesContentController extends Controller
 {
@@ -23,40 +24,57 @@ class CoursesContentController extends Controller
         $user = Auth::user();
         $course = $lesson->level->course;
 
-        // Ensure content is published
-        if ($lesson->status !== 'published' || $lesson->level->status !== 'published') {
+        // 1. Ensure content is published
+        if ($lesson->status !== 'published' || $lesson->level->status !== 'published' || $course->status !== 'published') {
             abort(404);
         }
 
-        // Check enrollment
-        $enrollment = CourseEnrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->with('userSubscription')
-            ->first();
+        // 2. Check if content is Free (Preview)
+        $isFree = $lesson->is_free || $lesson->level->is_free || $course->is_free;
 
-        if (!$enrollment) {
-            return response()->json([
-                "error" => "You are not enrolled in this course.",
-                "course_id" => $course->id
-            ], 403);
-        }
+        if (!$isFree) {
+            // 3. Paid Content: Enforce Enrollment & Subscription
+            $enrollment = CourseEnrollment::where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->with('userSubscription')
+                ->first();
 
-        // Check subscription status
-        if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
-            return response()->json([
-                "error" => "Your subscription for this course has expired.",
-                "expired" => true,
-                "course_id" => $course->id,
-                "ends_at" => $enrollment->userSubscription->ends_at
-            ], 403);
-        }
+            if (!$enrollment) {
+                return response()->json([
+                    "error" => "You are not enrolled in this course.",
+                    "course_id" => $course->id
+                ], 403);
+            }
 
-        // Check access to this specific lesson (e.g., if previous lessons are completed)
-        // For simplicity, we might skip the strict "previous completed" check here if the frontend handles it,
-        // but ideally, we should check it.
-        // Using the model's helper:
-        if (!$lesson->isAccessibleToUser($user)) {
-            return response()->json(["error" => "You do not have access to this lesson yet."], 403);
+            if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
+                return response()->json([
+                    "error" => "Your subscription for this course has expired.",
+                    "expired" => true,
+                    "course_id" => $course->id,
+                    "ends_at" => $enrollment->userSubscription->ends_at
+                ], 403);
+            }
+
+            // 4. Paid Content: Enforce Sequential Access
+            // Check previous lesson in the same level
+            $previousLesson = Lesson::where('level_id', $lesson->level_id)
+                ->where('sort_order', '<', $lesson->sort_order)
+                ->where('status', 'published')
+                ->orderByDesc('sort_order')
+                ->first();
+
+            if ($previousLesson) {
+                $isCompleted = UserStudiedLesson::where('user_id', $user->id)
+                    ->where('lesson_id', $previousLesson->id)
+                    ->exists();
+
+                if (!$isCompleted) {
+                    return response()->json([
+                        "error" => "You must complete the previous lesson first.",
+                        "previous_lesson_id" => $previousLesson->id
+                    ], 403);
+                }
+            }
         }
 
         // Load slides with content

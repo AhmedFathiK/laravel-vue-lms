@@ -26,7 +26,10 @@ class UpdateUserSubscriptionRequest extends FormRequest
         return [
             'user_id' => ['sometimes', 'required', 'exists:users,id'],
             'subscription_plan_id' => ['sometimes', 'required', 'exists:subscription_plans,id'],
-            'payment_id' => ['nullable', 'exists:payments,id'],
+            'payment_id' => [
+                'nullable', 
+                'exists:payments,id',
+            ],
             'starts_at' => ['sometimes', 'required', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'status' => ['sometimes', 'required', 'string', 'in:active,canceled,expired'],
@@ -35,4 +38,31 @@ class UpdateUserSubscriptionRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $subscription = $this->route('user_subscription');
+            
+            // Check if payment_id is being modified
+            if ($this->has('payment_id')) {
+                $newPaymentId = $this->input('payment_id');
+                
+                if ($subscription->payment_id !== null && $newPaymentId != $subscription->payment_id) {
+                    $validator->errors()->add('payment_id', 'Cannot modify payment association for an active subscription.');
+                }
+            }
+
+            // Check if status is being set to active
+            if ($this->has('status') && $this->input('status') === 'active') {
+                $paymentId = $this->input('payment_id') ?? $subscription->payment_id;
+                
+                if ($paymentId) {
+                    $payment = \App\Models\Payment::find($paymentId);
+                    if ($payment && $payment->status !== 'completed') {
+                        $validator->errors()->add('status', 'Cannot activate subscription: Linked payment is not completed.');
+                    }
+                }
+            }
+        });
+    }
 }
