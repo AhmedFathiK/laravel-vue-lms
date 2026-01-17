@@ -39,14 +39,6 @@ onMounted(fetchCourseContent)
 const handleItemClick = item => {
   if (item.locked) return
 
-  // If it's a lesson with video, open video modal
-  if (item.type === 'lesson' && item.videoType) {
-    selectedItem.value = item
-    isVideoModalVisible.value = true
-    
-    return
-  }
-
   if (item.type === 'lesson') {
     router.push({ 
       name: 'my-courses-study-id', 
@@ -56,6 +48,15 @@ const handleItemClick = item => {
     // Fallback to modal for exams or other types
     selectedItem.value = item
     isModalVisible.value = true
+  }
+}
+
+const handlePlayClick = item => {
+  if (item.locked) return
+  
+  if (item.type === 'lesson' && item.videoType) {
+    selectedItem.value = item
+    isVideoModalVisible.value = true
   }
 }
 
@@ -216,7 +217,7 @@ const isCurrentItem = (item, level) => {
                           :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
                           :class="{ 'icon-locked': item.locked }"
                         >
-                          {{ item.icon || 'tabler-book' }}
+                          {{ item.type === 'exam' ? 'tabler-certificate' : (item.icon || 'tabler-book') }}
                         </VIcon>
                       </VAvatar>
 
@@ -242,25 +243,50 @@ const isCurrentItem = (item, level) => {
                   </div>
 
                   <!-- Content Column -->
-                  <div class="timeline-content py-2 flex-grow-1">
-                    <h3 
-                      class="text-h6 font-weight-bold mb-1"
-                      :class="{ 
-                        'text-disabled': item.locked, 
-                        'cursor-pointer': !item.locked,
-                        'text-primary': isCurrentItem(item, level)
-                      }"
-                      @click="handleItemClick(item)"
-                    >
-                      {{ item.title }}
-                    </h3>
-                    <p 
-                      class="text-body-1 mb-0"
-                      :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
-                    >
-                      {{ item.description }}
-                    </p>
-                               
+                  <div 
+                    class="timeline-content py-4 px-5 flex-grow-1 rounded-lg border"
+                    :class="{ 
+                      'cursor-pointer': !item.locked,
+                      'bg-light-primary': isCurrentItem(item, level)
+                    }"
+                    @click="handleItemClick(item)"
+                  >
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="flex-grow-1">
+                        <h3 
+                          class="text-h6 font-weight-bold mb-1"
+                          :class="{ 
+                            'text-disabled': item.locked, 
+                            'text-primary': isCurrentItem(item, level)
+                          }"
+                        >
+                          {{ item.title }}
+                        </h3>
+                        <p 
+                          class="text-body-2 mb-0"
+                          :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
+                        >
+                          {{ item.description }}
+                        </p>
+                      </div>
+                                 
+                      <!-- Play Button for Video Lessons -->
+                      <VBtn
+                        v-if="item.type === 'lesson' && item.videoType && !item.locked"
+                        icon
+                        variant="tonal"
+                        color="primary"
+                        size="small"
+                        class="ms-4 play-btn"
+                        @click.stop="handlePlayClick(item)"
+                      >
+                        <VIcon
+                          icon="tabler-player-play-filled"
+                          size="20"
+                        />
+                      </VBtn>
+                    </div>
+
                     <VChip
                       v-if="item.type === 'exam'"
                       color="warning"
@@ -442,6 +468,32 @@ const isCurrentItem = (item, level) => {
 
 .text-disabled {
     color: rgba(var(--v-theme-on-surface), 0.38) !important;
+}
+
+.timeline-content {
+    background-color: rgb(var(--v-theme-surface));
+    transition: all 0.2s ease;
+    border-color: rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+.timeline-content:hover:not(.text-disabled) {
+    background-color: rgba(var(--v-theme-primary), 0.04);
+    border-color: rgba(var(--v-theme-primary), 0.4) !important;
+}
+
+.bg-light-primary {
+    background-color: rgba(var(--v-theme-primary), 0.05) !important;
+    border-color: rgba(var(--v-theme-primary), 0.5) !important;
+}
+
+.play-btn {
+    transition: all 0.2s ease;
+}
+
+.play-btn:hover {
+    transform: scale(1.1);
+    background-color: rgb(var(--v-theme-primary)) !important;
+    color: white !important;
 }
 
 /* Badge styling */

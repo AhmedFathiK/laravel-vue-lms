@@ -92,9 +92,11 @@ const handleAcquireClick = async course => {
 
   if (course.hasActiveAccess) {
     router.push(`/my-courses/${course.id}`)
+
+    return
   }
 
-  // Check if course has free plan
+  viewCourseDetails(course.id)
 }
 
 const handlePayment = async plan => {
@@ -181,7 +183,7 @@ const confirmAcquisition = async () => {
   await handlePayment(selectedPlan.value)
 }
 
-watch([searchQuery, selectedCategory, selectedPricing, sortBy, currentPage], fetchCourses, { deep: true })
+watch([searchQuery, selectedCategory, sortBy, currentPage], fetchCourses, { deep: true })
 
 onMounted(() => {
   fetchCourses()
