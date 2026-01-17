@@ -4,6 +4,7 @@ import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { integerValidator, requiredValidator } from '@core/utils/validators'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 
 const props = defineProps({
   isDialogVisible: {
@@ -40,11 +41,18 @@ const statusOptions = [
   { title: 'Archived', value: 'archived' },
 ]
 
+const videoTypeOptions = [
+  { title: 'No Video', value: null },
+  { title: 'YouTube', value: 'youtube' },
+  { title: 'Vimeo', value: 'vimeo' },
+  { title: 'Hosted (Direct URL)', value: 'hosted' },
+]
+
 const defaultForm = () => ({
   title: '',
   description: '',
   videoUrl: '',
-  isFree: false,
+  videoType: null,
   status: 'draft',
   reshowIncorrectSlides: false,
   reshowCount: 1,
@@ -67,6 +75,13 @@ watch(() => props.isDialogVisible, isVisible => {
       form.value = {
         ...defaultForm(),
         ...lessonData,
+
+        // Map snake_case to camelCase for form fields
+        videoUrl: lessonData.video_url || lessonData.videoUrl || '',
+        videoType: lessonData.video_type || lessonData.videoType || null,
+        reshowIncorrectSlides: lessonData.reshow_incorrect_slides ?? lessonData.reshowIncorrectSlides ?? false,
+        reshowCount: lessonData.reshow_count ?? lessonData.reshowCount ?? 1,
+        requireCorrectAnswers: lessonData.require_correct_answers ?? lessonData.requireCorrectAnswers ?? false,
         levelId: props.levelId,
         courseId: props.courseId,
       }
@@ -124,6 +139,98 @@ const handleImageUpload = file => {
   // Reset delete flag if a new image is selected
   deleteThumbnail.value = false
 }
+
+// Video Validation and Preview
+const videoValidation = computed(() => {
+  if (!form.value.videoType) return true
+  if (!form.value.videoUrl) return 'Video URL is required'
+
+  const url = form.value.videoUrl
+  
+  if (form.value.videoType === 'youtube') {
+    // Basic YouTube regex
+    const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/.+$/
+
+    return youtubeRegex.test(url) || 'Invalid YouTube URL'
+  }
+  
+  if (form.value.videoType === 'vimeo') {
+    // Basic Vimeo regex
+    const vimeoRegex = /^(?:https?:\/\/)?(?:www\.)?vimeo\.com\/.+$/
+    
+    return vimeoRegex.test(url) || 'Invalid Vimeo URL'
+  }
+
+  if (form.value.videoType === 'hosted') {
+    // Basic URL regex and extension check (optional but good for UX)
+    const urlRegex = /^(?:https?:\/\/)?[\da-z-]+(?:\.[\da-z-]+)*\.[a-z]{2,}(?:\/.*)?$/
+
+    return urlRegex.test(url) || 'Invalid URL format'
+  }
+
+  return true
+})
+
+const videoEmbedUrl = computed(() => {
+  if (!form.value.videoUrl || !form.value.videoType) return null
+  if (videoValidation.value !== true) return null
+
+  const url = form.value.videoUrl
+
+  if (form.value.videoType === 'youtube') {
+    let videoId = ''
+    if (url.includes('youtu.be')) {
+      videoId = url.split('/').pop()
+    } else if (url.includes('v=')) {
+      videoId = url.split('v=')[1].split('&')[0]
+    } else if (url.includes('embed')) {
+      videoId = url.split('/').pop()
+    }
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`
+  }
+
+  if (form.value.videoType === 'vimeo') {
+    let videoId = ''
+    let hash = ''
+
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
+
+      if (urlObj.hostname.includes('player.vimeo.com')) {
+        videoId = urlObj.pathname.split('/').filter(Boolean).pop()
+        hash = urlObj.searchParams.get('h') || ''
+      } else if (urlObj.hostname.includes('vimeo.com')) {
+        const segments = urlObj.pathname.split('/').filter(Boolean)
+        if (segments.length > 0) {
+          videoId = segments[0]
+          if (segments.length > 1) {
+            hash = segments[1]
+          }
+        }
+      }
+    } catch (e) {
+      const segments = url.split('/').filter(Boolean)
+
+      videoId = segments[0] || ''
+      hash = segments[1] || ''
+    }
+
+    if (videoId) {
+      let embed = `https://player.vimeo.com/video/${videoId}`
+      if (hash) {
+        embed += `?h=${hash}`
+      }
+      
+      return embed
+    }
+  }
+
+  if (form.value.videoType === 'hosted') {
+    return url
+  }
+
+  return null
+})
 
 // Compute extra data for useCrudSubmit
 const extraData = computed(() => {
@@ -202,16 +309,18 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
               />
             </VCol>
 
-            <!-- Video URL -->
+            <!-- Video Type -->
             <VCol
               cols="12"
               md="6"
             >
-              <AppTextField
-                v-model="form.videoUrl"
-                label="Video URL"
-                placeholder="Enter video URL"
-                :error-messages="validationErrors.videoUrl"
+              <AppSelect
+                v-model="form.videoType"
+                :items="videoTypeOptions"
+                label="Video Source"
+                placeholder="Select Video Source"
+                :error-messages="validationErrors.videoType"
+                clearable
               />
             </VCol>
 
@@ -227,6 +336,39 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
                 placeholder="Select Status"
                 :error-messages="validationErrors.status"
               />
+            </VCol>
+
+            <!-- Video URL -->
+            <VCol
+              v-if="form.videoType"
+              cols="12"
+            >
+              <AppTextField
+                v-model="form.videoUrl"
+                :label="form.videoType === 'hosted' ? 'Direct Video URL' : 'Video Link'"
+                :placeholder="form.videoType === 'youtube' ? 'https://youtube.com/...' : 'Enter URL'"
+                :rules="[videoValidation]"
+                :error-messages="validationErrors.videoUrl"
+                hint="Enter the full URL of the video"
+                persistent-hint
+              />
+            </VCol>
+
+            <!-- Video Preview -->
+            <VCol
+              v-if="form.videoUrl && form.videoType && videoValidation === true"
+              cols="12"
+            >
+              <VLabel class="mb-1">
+                Video Preview
+              </VLabel>
+              <div class="video-preview-container rounded border overflow-hidden">
+                <VideoPlayer
+                  :key="form.videoUrl"
+                  :src="form.videoUrl"
+                  :type="form.videoType"
+                />
+              </div>
             </VCol>
 
             <!-- Thumbnail -->
@@ -353,10 +495,6 @@ const { isLoading: submitting, validationErrors, onSubmit: submit } = useCrudSub
               md="6"
               class="d-flex flex-column gap-2"
             >
-              <VSwitch
-                v-model="form.isFree"
-                label="Free Lesson"
-              />
               <VSwitch
                 v-model="form.reshowIncorrectSlides"
                 label="Reshow Incorrect Slides"

@@ -4,6 +4,7 @@ namespace App\Http\Resources\Learner;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\EntitlementPlanResource;
 
 class CourseResource extends JsonResource
 {
@@ -20,14 +21,22 @@ class CourseResource extends JsonResource
             'description' => $this->description,
             'thumbnail' => $this->thumbnail,
             'video_url' => $this->video_url ?? null,
-            'is_free' => $this->is_free,
             'is_featured' => $this->is_featured,
             'category' => new CourseCategoryResource($this->whenLoaded('category')),
             'levels' => LevelResource::collection($this->whenLoaded('levels')),
-            'subscription_plans' => SubscriptionPlanResource::collection($this->whenLoaded('subscriptionPlans')),
+            'billing_plans' => EntitlementPlanResource::collection($this->whenLoaded('billingPlans')),
             'total_students' => $this->enrollments_count ?? 0,
             'total_lectures' => $this->lessons_count ?? 0,
-            'is_enrolled' => $request->user('sanctum') ? $this->enrollments()->where('user_id', $request->user('sanctum')->id)->exists() : false,
+            'is_enrolled' => $request->user('sanctum') ? (
+                $this->enrollments()->where('user_id', $request->user('sanctum')->id)->exists()
+            ) : false,
+            'has_active_access' => $request->user('sanctum') ? (
+                $request->user('sanctum')->entitlements()
+                    ->active()
+                    ->whereHas('billingPlan.courses', function ($q) {
+                        $q->where('courses.id', $this->id);
+                    })->exists()
+            ) : false,
         ];
     }
 }

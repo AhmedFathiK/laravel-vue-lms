@@ -123,10 +123,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all subscriptions for this user.
+     * Get all entitlements for this user.
      */
-    public function subscriptions(): HasMany
+    public function entitlements(): HasMany
     {
-        return $this->hasMany(UserSubscription::class);
+        return $this->hasMany(UserEntitlement::class);
+    }
+
+    /**
+     * Get all capabilities (features) granted to this user.
+     */
+    public function capabilities()
+    {
+        return $this->hasManyThrough(UserCapability::class, UserEntitlement::class);
     }
 }

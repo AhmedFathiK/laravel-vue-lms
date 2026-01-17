@@ -8,6 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-// Schedule subscription status updates daily
-Schedule::command('subscriptions:update-status')->daily();
+// Schedule entitlement status updates daily
+Schedule::command('entitlements:update-status')->daily();
 

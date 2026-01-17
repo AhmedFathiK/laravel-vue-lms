@@ -229,7 +229,7 @@ const isPricingPlanDialogVisible = ref(false)
 
                 <div class="my-5">
                   <div class="d-flex justify-space-between mb-2">
-                    <span>Subscription</span>
+                    <span>Entitlement</span>
                     <h6 class="text-h6">
                       $85.99
                     </h6>

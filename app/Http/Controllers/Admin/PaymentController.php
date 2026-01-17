@@ -18,7 +18,7 @@ class PaymentController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view.payments', ['only' => ['index', 'show']]);
-        $this->middleware('permission:manage.subscriptions', ['only' => ['store', 'update', 'destroy']]);
+        $this->middleware('permission:manage.user_entitlements', ['only' => ['store', 'update', 'destroy']]);
     }
 
     /**
@@ -134,10 +134,10 @@ class PaymentController extends Controller
             ], 422);
         }
 
-        // Check if payment is linked to any subscription (regardless of status)
-        if ($payment->subscription()->exists()) {
+        // Check if payment is linked to any entitlement (regardless of status)
+        if ($payment->entitlement()->exists()) {
             return response()->json([
-                'message' => 'Cannot delete payment linked to a subscription.',
+                'message' => 'Cannot delete payment linked to an entitlement.',
             ], 422);
         }
 

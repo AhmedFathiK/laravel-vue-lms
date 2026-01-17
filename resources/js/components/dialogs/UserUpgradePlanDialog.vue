@@ -53,16 +53,16 @@ watch(selectedPlan, val => {
 
 const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   form,
-  apiEndpoint: computed(() => '/api/learner/subscribe'),
-  isUpdate: computed(() => false), // Always a new subscription action? Or update?
+  apiEndpoint: computed(() => '/api/learner/acquire-entitlement'),
+  isUpdate: computed(() => false), // Always a new entitlement action? Or update?
   emit,
   successMessage: 'Plan upgraded successfully',
 })
 
-const handleCancelSubscription = confirmed => {
+const handleCancelEntitlement = confirmed => {
   if (confirmed) {
-    // TODO: Implement cancel subscription API call
-    // axios.post('/api/learner/unsubscribe')
+    // TODO: Implement cancel entitlement API call
+    // axios.post('/api/learner/cancel-entitlement')
     isConfirmDialogVisible.value = false
     emit('refresh')
   } else {
@@ -128,7 +128,7 @@ const handleCancelSubscription = confirmed => {
             variant="tonal"
             @click="isConfirmDialogVisible = true"
           >
-            Cancel Subscription
+            Cancel Entitlement
           </VBtn>
         </div>
       </VCardText>
@@ -137,11 +137,11 @@ const handleCancelSubscription = confirmed => {
       <ConfirmDialog
         v-model:is-dialog-visible="isConfirmDialogVisible"
         cancel-title="Cancelled"
-        confirm-title="Unsubscribed!"
-        confirm-msg="Your subscription cancelled successfully."
-        confirmation-question="Are you sure to cancel your subscription?"
-        cancel-msg="Unsubscription Cancelled!!"
-        @confirm="handleCancelSubscription"
+        confirm-title="Cancelled!"
+        confirm-msg="Your entitlement cancelled successfully."
+        confirmation-question="Are you sure to cancel your entitlement?"
+        cancel-msg="Cancellation Cancelled!!"
+        @confirm="handleCancelEntitlement"
       />
     </VCard>
   </VDialog>

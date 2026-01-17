@@ -14,9 +14,9 @@ class LessonResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'sort_order' => $this->sort_order,
-            'is_free' => $this->is_free,
             'thumbnail' => $this->thumbnail,
             'video_url' => $this->video_url,
+            'video_type' => $this->video_type,
             // Include related slides using the SlideResource
             'slides' => SlideResource::collection($this->whenLoaded('slides')),
             // Include level if needed, or other relations

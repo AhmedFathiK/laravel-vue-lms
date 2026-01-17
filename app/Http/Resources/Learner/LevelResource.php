@@ -15,7 +15,6 @@ class LevelResource extends JsonResource
             'description' => $this->description,
             'sort_order' => $this->sort_order,
             'is_unlocked' => $this->is_unlocked,
-            'is_free' => $this->is_free,
             'lessons' => LessonResource::collection($this->whenLoaded('lessons')),
         ];
     }

@@ -75,7 +75,6 @@ class LevelController extends Controller
             'sort_order' => $lastLevel ? $lastLevel->sort_order + 1 : 1,
             'status' => $data['status'],
             'is_unlocked' => $data['is_unlocked'] ?? false,
-            'is_free' => $data['is_free'] ?? false,
         ]);
 
         return response()->json(new LevelResource($level), 201);

@@ -25,11 +25,11 @@ const fetchEnrollments = async () => {
   }
 }
 
-const isSubscriptionActive = enrollment => {
-  if (!enrollment.userSubscription) return true
+const isEntitlementActive = enrollment => {
+  if (!enrollment.userEntitlement) return false
   
-  const isStatusActive = enrollment.userSubscription.status === 'active'
-  const isNotExpired = !enrollment.userSubscription.endsAt || new Date(enrollment.userSubscription.endsAt) > new Date()
+  const isStatusActive = enrollment.userEntitlement.status === 'active'
+  const isNotExpired = !enrollment.userEntitlement.endsAt || new Date(enrollment.userEntitlement.endsAt) > new Date()
   
   return isStatusActive && isNotExpired
 }
@@ -103,16 +103,16 @@ onMounted(fetchEnrollments)
               <div class="d-flex gap-2">
                 <VChip
                   v-if="
-                    enrollment.userSubscription &&
-                      enrollment.userSubscription
-                        .subscriptionPlan
+                    enrollment.userEntitlement &&
+                      enrollment.userEntitlement
+                        .billingPlan
                   "
                   color="info"
                   size="small"
                 >
                   {{
-                    enrollment.userSubscription
-                      .subscriptionPlan.name
+                    enrollment.userEntitlement
+                      .billingPlan.name
                   }}
                 </VChip>
                 <VChip
@@ -124,7 +124,7 @@ onMounted(fetchEnrollments)
                 </VChip>
 
                 <VChip
-                  v-if="!isSubscriptionActive(enrollment)"
+                  v-if="!isEntitlementActive(enrollment)"
                   color="error"
                   size="small"
                 >
@@ -137,15 +137,15 @@ onMounted(fetchEnrollments)
             </h5>
             <p
               v-if="
-                enrollment.userSubscription &&
-                  enrollment.userSubscription.endsAt
+                enrollment.userEntitlement &&
+                  enrollment.userEntitlement.endsAt
               "
               class="text-caption"
             >
-              Subscription ends on:
+              Entitlement ends on:
               {{
                 new Date(
-                  enrollment.userSubscription.endsAt
+                  enrollment.userEntitlement.endsAt
                 ).toLocaleDateString()
               }}
             </p>
@@ -162,11 +162,11 @@ onMounted(fetchEnrollments)
           <VBtn
             rounded="lg"
             class="ma-4"
-            :to="isSubscriptionActive(enrollment) ? `/my-courses/${enrollment.course.id}` : null"
-            :disabled="!isSubscriptionActive(enrollment)"
-            :color="isSubscriptionActive(enrollment) ? 'primary' : 'secondary'"
+            :to="isEntitlementActive(enrollment) ? `/my-courses/${enrollment.course.id}` : null"
+            :disabled="!isEntitlementActive(enrollment)"
+            :color="isEntitlementActive(enrollment) ? 'primary' : 'secondary'"
           >
-            {{ isSubscriptionActive(enrollment) ? 'Continue Learning' : 'Subscription Expired' }}
+            {{ isEntitlementActive(enrollment) ? 'Continue Learning' : 'Entitlement Expired' }}
           </VBtn>
         </VCard>
       </VCol>

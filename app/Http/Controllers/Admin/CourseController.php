@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
+use App\Models\BillingPlan;
+
 class CourseController extends Controller
 {
     /**
@@ -27,7 +29,7 @@ class CourseController extends Controller
         $query = Course::query();
 
         // Include category relationship and counts
-        $query->with('category')->withCount(['levels', 'enrollments as subscriptions_count']);
+        $query->with('category')->withCount(['levels', 'enrollments as entitlements_count']);
 
         // Apply filters
         if ($request->has('status')) {
@@ -40,19 +42,6 @@ class CourseController extends Controller
 
         if ($request->has('category')) {
             $query->where('course_category_id', $request->category);
-        }
-
-        if ($request->has('is_free')) {
-            $isFree = $request->boolean('is_free');
-            if ($isFree) {
-                $query->whereHas('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            } else {
-                $query->whereDoesntHave('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            }
         }
 
         // Apply search
@@ -71,8 +60,8 @@ class CourseController extends Controller
 
         if ($sortBy === 'levels') {
             $sortBy = 'levels_count';
-        } elseif ($sortBy === 'subscriptions') {
-            $sortBy = 'subscriptions_count';
+        } elseif ($sortBy === 'entitlements') {
+            $sortBy = 'entitlements_count';
         }
 
         $query->orderBy($sortBy, $orderBy);
@@ -91,8 +80,8 @@ class CourseController extends Controller
                 'total' => Course::count(),
                 'active' => Course::where('status', 'active')->count(),
                 'draft' => Course::where('status', 'draft')->count(),
-                'subscription' => Course::whereHas('subscriptionPlans', function ($q) {
-                    $q->where('plan_type', 'recurring');
+                'entitlement' => Course::whereHas('planFeatures.billingPlan', function ($q) {
+                    $q->where('billing_type', 'recurring');
                 })->count(),
             ],
         ]);
@@ -110,7 +99,7 @@ class CourseController extends Controller
         $query = Course::query();
 
         // Include category relationship and counts
-        $query->with('category')->withCount(['levels', 'enrollments as subscriptions_count']);
+        $query->with('category')->withCount(['levels', 'enrollments as entitlements_count']);
 
         // Apply filters
         if ($request->has('status')) {
@@ -123,19 +112,6 @@ class CourseController extends Controller
 
         if ($request->has('category')) {
             $query->where('course_category_id', $request->category);
-        }
-
-        if ($request->has('is_free')) {
-            $isFree = $request->boolean('is_free');
-            if ($isFree) {
-                $query->whereHas('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            } else {
-                $query->whereDoesntHave('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            }
         }
 
         // Apply search
@@ -158,7 +134,7 @@ class CourseController extends Controller
         $query->with('category:id,name');
 
         // Apply pagination
-        $query->limit(5);
+        // $query->limit(5);
         $courses = $query->get();
 
         return response()->json(CourseResource::collection($courses));
@@ -194,12 +170,18 @@ class CourseController extends Controller
 
         $course->load(['levels', 'category']);
 
-        // Also load subscription plans for this course
-        $course->load(['subscriptionPlans' => function ($query) {
-            $query->where('is_active', true);
-        }]);
+        // Also load billing plans for this course
+        // We find billing plans that have a feature scoping to this course
+        $plans = BillingPlan::whereHas('planFeatures', function ($q) use ($course) {
+            $q->where('scope_type', 'App\Models\Course')
+              ->where('scope_id', $course->id);
+        })->where('is_active', true)->get();
 
-        return response()->json(new CourseResource($course));
+        // Attach manually to response if needed, or rely on frontend to fetch separately
+        $courseData = $course->toArray();
+        $courseData['billing_plans'] = $plans;
+
+        return response()->json($courseData);
     }
 
     /**
@@ -255,15 +237,18 @@ class CourseController extends Controller
     }
 
     /**
-     * Get subscription plans for a course.
+     * Get billing plans for a course.
      */
-    public function getSubscriptionPlans(Course $course): JsonResponse
+    public function getBillingPlans(Course $course): JsonResponse
     {
         if (!Gate::allows('view.courses')) {
             abort(403);
         }
 
-        $plans = $course->subscriptionPlans()
+        $plans = BillingPlan::whereHas('planFeatures', function ($q) use ($course) {
+                $q->where('scope_type', 'App\Models\Course')
+                  ->where('scope_id', $course->id);
+            })
             ->where('is_active', true)
             ->orderBy('price')
             ->get();

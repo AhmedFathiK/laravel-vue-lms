@@ -21,12 +21,14 @@ class ConvertCamelCase
         if ($request->query->count()) {
             $snakeQuery = $this->convertToSnakeCase($request->query->all());
             $request->query->replace($snakeQuery);
+            $request->merge($snakeQuery);
         }
 
         // Convert request body (POST, JSON, PUT…)
         if ($request->request->count()) {
             $snakeBody = $this->convertToSnakeCase($request->request->all());
             $request->request->replace($snakeBody);
+            $request->merge($snakeBody);
         }
 
         // Convert files
@@ -36,8 +38,20 @@ class ConvertCamelCase
         }
 
         if ($request->has('sort_by')) {
+            $sortBy = $request->input('sort_by');
+            if (is_array($sortBy)) {
+                $sortBy = array_map(function ($item) {
+                    if (is_array($item) && isset($item['key'])) {
+                        $item['key'] = \Illuminate\Support\Str::snake($item['key']);
+                    }
+
+                    return $item;
+                }, $sortBy);
+            } else {
+                $sortBy = \Illuminate\Support\Str::snake($sortBy);
+            }
             $request->merge([
-                'sort_by' => \Illuminate\Support\Str::snake($request->sort_by)
+                'sort_by' => $sortBy,
             ]);
         }
 

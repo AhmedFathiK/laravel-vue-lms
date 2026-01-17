@@ -38,7 +38,6 @@ class CourseObserver
                 'category_id' => $course->course_category_id,
                 'status' => $course->status,
                 'is_featured' => $course->is_featured,
-                'is_free' => $course->is_free,
             ],
         ]);
     }

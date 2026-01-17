@@ -33,7 +33,6 @@ class Course extends Model
 
     protected $casts = [
         'is_featured' => 'boolean',
-        'is_free' => 'boolean',
         'prerequisites' => 'array',
     ];
 
@@ -48,10 +47,22 @@ class Course extends Model
         }
 
         // Append calculated attributes
-        $attributes['is_free'] = $this->is_free;
-        $attributes['subscription_type'] = $this->subscription_type;
+        $attributes['entitlement_type'] = $this->entitlement_type;
 
         return $attributes;
+    }
+
+    /**
+     * Get the entitlement type (one-time or recurring) based on billing plans.
+     */
+    protected function entitlementType(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $hasRecurring = $this->billingPlans()->where('billing_type', 'recurring')->exists();
+                return $hasRecurring ? 'recurring' : 'one-time';
+            }
+        );
     }
 
     /**
@@ -63,11 +74,19 @@ class Course extends Model
     }
 
     /**
-     * Get the subscription plans for this course.
+     * Get the plan features scoped to this course.
      */
-    public function subscriptionPlans(): HasMany
+    public function planFeatures(): HasMany
     {
-        return $this->hasMany(SubscriptionPlan::class);
+        return $this->hasMany(PlanFeature::class, 'scope_id')->where('scope_type', 'App\Models\Course');
+    }
+
+    /**
+     * Get the billing plans associated with this course.
+     */
+    public function billingPlans(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(BillingPlan::class, 'billing_plan_course');
     }
 
     public function levels(): HasMany
@@ -98,29 +117,6 @@ class Course extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(CourseEnrollment::class);
-    }
-
-    /**
-     * Get all free levels in this course.
-     */
-    public function freeLevels(): HasMany
-    {
-        return $this->hasMany(Level::class)->where('is_free', true)->orderBy('sort_order');
-    }
-
-    /**
-     * Check if the course has any free content.
-     */
-    public function hasFreeContent(): bool
-    {
-        if ($this->is_free) {
-            return true;
-        }
-
-        return $this->levels()->where('is_free', true)->exists() ||
-            $this->levels()->whereHas('lessons', function ($query) {
-                $query->where('is_free', true);
-            })->exists();
     }
 
     /**

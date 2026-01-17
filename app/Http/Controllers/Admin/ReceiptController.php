@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exceptions\DuplicateSubscriptionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DeleteReceiptRequest;
 use App\Http\Requests\Admin\ResendReceiptRequest;
@@ -13,10 +12,12 @@ use App\Http\Resources\ReceiptResource;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Models\Course;
-use App\Models\SubscriptionPlan;
-use App\Models\UserSubscription;
+use App\Models\BillingPlan;
+use App\Models\UserEntitlement;
 use App\Services\Payment\Currency;
-use App\Services\SubscriptionService;
+use App\Services\EntitlementService;
+use App\Services\ReceiptPdfService;
+use App\Mail\EntitlementReceiptMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,11 +26,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReceiptController extends Controller
 {
-    protected $subscriptionService;
+    protected $entitlementService;
+    protected $receiptPdfService;
 
-    public function __construct(SubscriptionService $subscriptionService)
-    {
-        $this->subscriptionService = $subscriptionService;
+    public function __construct(
+        EntitlementService $entitlementService,
+        ReceiptPdfService $receiptPdfService
+    ) {
+        $this->entitlementService = $entitlementService;
+        $this->receiptPdfService = $receiptPdfService;
     }
 
     /**
@@ -37,7 +42,7 @@ class ReceiptController extends Controller
      */
     public function index(ViewReceiptRequest $request): JsonResponse
     {
-        $query = Receipt::with(['user', 'payment', 'course', 'subscriptionPlan.course', 'voidedBy']);
+        $query = Receipt::with(['user', 'payment', 'course', 'billingPlan.planFeatures', 'voidedBy']);
 
         // Handle soft-deleted receipts
         if ($request->boolean('with_trashed')) {
@@ -83,12 +88,12 @@ class ReceiptController extends Controller
             $query->whereDate('created_at', '<=', $request->to_date);
         }
 
-        // Filter by subscription type
-        if ($request->has('subscription_type')) {
-            $subscriptionType = $request->subscription_type;
-            $query->whereHas('payment.subscription', function ($q) use ($subscriptionType) {
-                $q->whereHas('plan', function ($q) use ($subscriptionType) {
-                    $q->where('plan_type', $subscriptionType);
+        // Filter by entitlement type
+        if ($request->has('entitlement_type')) {
+            $entitlementType = $request->entitlement_type;
+            $query->whereHas('payment.entitlement', function ($q) use ($entitlementType) {
+                $q->whereHas('billingPlan', function ($q) use ($entitlementType) {
+                    $q->where('billing_type', $entitlementType);
                 });
             });
         }
@@ -112,7 +117,7 @@ class ReceiptController extends Controller
             ->paginate($request->per_page ?? 15);
 
         $receipts->getCollection()->transform(function ($receipt) {
-            $receipt->is_linked_to_subscription = $receipt->subscription()->exists();
+            $receipt->is_linked_to_entitlement = $receipt->entitlement()->exists();
             return $receipt;
         });
 
@@ -156,23 +161,23 @@ class ReceiptController extends Controller
             // Get course and plan details
             $user = User::findOrFail($validated['user_id']);
             $course = Course::findOrFail($validated['course_id']);
-            $plan = SubscriptionPlan::findOrFail($validated['plan_id']);
+            $plan = BillingPlan::findOrFail($validated['plan_id']);
 
             // Create receipt
             $receipt = Receipt::create([
                 'user_id' => $validated['user_id'],
                 'payment_id' => $payment->id,
                 'receipt_number' => $validated['receipt_number'] ?? Receipt::generateUniqueReceiptNumber(),
-                'item_type' => 'subscription_plan',
+                'item_type' => 'billing_plan',
                 'item_id' => $plan->id,
                 'item_name' => $course->title . ' - ' . $plan->name,
                 'amount' => $validated['amount'],
                 'currency' => $currency,
             ]);
 
-            // Automatically create/link subscription
-            // We force createSubscription regardless of any previous "link_subscription" flag
-            $this->subscriptionService->createSubscription($user, $plan, $payment);
+            // Automatically create/link entitlement
+            // We force grantEntitlement regardless of any previous "link_entitlement" flag
+            $this->entitlementService->grantEntitlement($user, $plan, $payment);
 
             // Generate PDF if requested
             if ($request->auto_generate_pdf) {
@@ -182,9 +187,9 @@ class ReceiptController extends Controller
 
             // Send email notification if requested
             if ($request->notify_user) {
-                $user = User::findOrFail($validated['user_id']);
-                // Email sending logic would go here
-                // Mail::to($user->email)->send(new ReceiptCreated($receipt));
+                $pdf = $this->receiptPdfService->generate($receipt);
+                $pdfContent = $pdf->output();
+                Mail::to($user->email)->send(new EntitlementReceiptMail($receipt, $pdfContent));
             }
 
             DB::commit();
@@ -193,18 +198,12 @@ class ReceiptController extends Controller
                 'message' => 'Receipt created successfully',
                 'receipt' => $receipt->load(['user', 'payment']),
             ], 201);
-        } catch (DuplicateSubscriptionException $e) {
+        } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Failed to link subscription: User already has an active subscription.',
-                'error' => $e->getMessage(),
-            ], 422);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to create receipt',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Failed to create receipt or link entitlement.',
+                'error' => $th->getMessage(),
+            ], 400);
         }
     }
 
@@ -213,11 +212,14 @@ class ReceiptController extends Controller
      */
     public function statistics(Request $request): JsonResponse
     {
-        // TODO: Implement actual statistics logic
+        $totalRevenue = Receipt::sum('amount');
+        $totalReceipts = Receipt::count();
+        $averageAmount = $totalReceipts > 0 ? $totalRevenue / $totalReceipts : 0;
+
         return response()->json([
-            'total_revenue' => 0,
-            'total_receipts' => 0,
-            'average_amount' => 0,
+            'total_revenue' => $totalRevenue,
+            'total_receipts' => $totalReceipts,
+            'average_amount' => round($averageAmount, 2),
         ]);
     }
 
@@ -226,8 +228,8 @@ class ReceiptController extends Controller
      */
     public function download(Receipt $receipt)
     {
-        // TODO: Implement PDF download
-        return response()->json(['message' => 'PDF download not implemented yet'], 501);
+        $pdf = $this->receiptPdfService->generate($receipt);
+        return $pdf->download("receipt-{$receipt->receipt_number}.pdf");
     }
 
     /**
@@ -235,8 +237,23 @@ class ReceiptController extends Controller
      */
     public function resend(ResendReceiptRequest $request, Receipt $receipt): JsonResponse
     {
-        // TODO: Implement resend email logic
-        return response()->json(['message' => 'Resend email not implemented yet'], 501);
+        try {
+            $pdf = $this->receiptPdfService->generate($receipt);
+            $pdfContent = $pdf->output();
+            
+            Mail::to($receipt->user->email)->send(
+                new EntitlementReceiptMail($receipt, $pdfContent)
+            );
+
+            return response()->json([
+                'message' => 'Receipt email resent successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to resend receipt email',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -244,8 +261,19 @@ class ReceiptController extends Controller
      */
     public function regeneratePdf(Receipt $receipt): JsonResponse
     {
-        // TODO: Implement regenerate PDF logic
-        return response()->json(['message' => 'Regenerate PDF not implemented yet'], 501);
+        try {
+            // In this implementation, generate() always creates a fresh PDF from current DB data
+            $this->receiptPdfService->generate($receipt);
+            
+            return response()->json([
+                'message' => 'Receipt PDF regenerated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to regenerate PDF',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -269,7 +297,7 @@ class ReceiptController extends Controller
             if ($receipt->payment) {
                 // If payment is completed, we should probably mark it as voided or refunded
                 // For now, let's assume 'voided' is a valid status or use 'failed'
-                // Based on UserSubscriptionService logic, maybe 'failed' is safer to trigger observer
+                // Based on EntitlementService logic, maybe 'failed' is safer to trigger observer
                 // But Payment model might not have 'voided' status.
                 // Let's check Payment model constants or schema if available.
                 // Assuming standard 'failed' or 'refunded' for now if 'voided' not available.

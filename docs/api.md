@@ -557,7 +557,7 @@ POST /exam-responses/{response_id}/grade
 }
 ```
 
-## Payment & Subscription Management
+## Payment & Entitlement Management
 
 ### Payments
 
@@ -635,7 +635,7 @@ GET /receipts
 - `from_date` - Filter by date range start
 - `to_date` - Filter by date range end
 - `search` - Search by receipt number or item name
-- `item_type` - Filter by item type (course, subscription_plan)
+- `item_type` - Filter by item type (course, billing_plan)
 - `per_page` - Items per page (default: 15)
 
 #### Get a Specific Receipt
@@ -650,12 +650,12 @@ GET /receipts/{receipt_id}
 GET /receipts/{receipt_id}/download
 ```
 
-### Subscription Plans
+### Billing Plans
 
-#### List All Subscription Plans
+#### List All Billing Plans
 
 ```
-GET /subscription-plans
+GET /billing-plans
 ```
 
 **Query Parameters:**
@@ -664,16 +664,16 @@ GET /subscription-plans
 - `search` - Search by name
 - `per_page` - Items per page (default: 15)
 
-#### Get a Specific Subscription Plan
+#### Get a Specific Billing Plan
 
 ```
-GET /subscription-plans/{plan_id}
+GET /billing-plans/{plan_id}
 ```
 
-#### Create a Subscription Plan
+#### Create a Billing Plan
 
 ```
-POST /subscription-plans
+POST /billing-plans
 ```
 
 **Request Body:**
@@ -689,54 +689,54 @@ POST /subscription-plans
 }
 ```
 
-#### Update a Subscription Plan
+#### Update a Billing Plan
 
 ```
-PUT /subscription-plans/{plan_id}
+PUT /billing-plans/{plan_id}
 ```
 
 **Request Body:** Same as Create
 
-#### Delete a Subscription Plan
+#### Delete a Billing Plan
 
 ```
-DELETE /subscription-plans/{plan_id}
+DELETE /billing-plans/{plan_id}
 ```
 
-### User Subscriptions
+### User Entitlements
 
-#### List All User Subscriptions
+#### List All User Entitlements
 
 ```
-GET /user-subscriptions
+GET /user-entitlements
 ```
 
 **Query Parameters:**
 - `user_id` - Filter by user ID
-- `subscription_plan_id` - Filter by subscription plan ID
+- `billing_plan_id` - Filter by billing plan ID
 - `status` - Filter by status (active, canceled, expired)
 - `from_start_date` - Filter by start date range start
 - `to_start_date` - Filter by start date range end
 - `auto_renew` - Filter by auto-renew status (true/false)
 - `per_page` - Items per page (default: 15)
 
-#### Get a Specific User Subscription
+#### Get a Specific User Entitlement
 
 ```
-GET /user-subscriptions/{subscription_id}
+GET /user-entitlements/{entitlement_id}
 ```
 
-#### Create a User Subscription
+#### Create a User Entitlement
 
 ```
-POST /user-subscriptions
+POST /user-entitlements
 ```
 
 **Request Body:**
 ```json
 {
   "user_id": 1,
-  "subscription_plan_id": 2,
+  "billing_plan_id": 2,
   "payment_id": 3,
   "starts_at": "2023-06-01T00:00:00Z",
   "ends_at": "2023-07-01T00:00:00Z",
@@ -745,18 +745,18 @@ POST /user-subscriptions
 }
 ```
 
-#### Update a User Subscription
+#### Update a User Entitlement
 
 ```
-PUT /user-subscriptions/{subscription_id}
+PUT /user-entitlements/{entitlement_id}
 ```
 
 **Request Body:** Same as Create
 
-#### Cancel a User Subscription
+#### Cancel a User Entitlement
 
 ```
-POST /user-subscriptions/{subscription_id}/cancel
+POST /user-entitlements/{entitlement_id}/cancel
 ```
 
 **Request Body:**
@@ -766,10 +766,10 @@ POST /user-subscriptions/{subscription_id}/cancel
 }
 ```
 
-#### Delete a User Subscription
+#### Delete a User Entitlement
 
 ```
-DELETE /user-subscriptions/{subscription_id}
+DELETE /user-entitlements/{entitlement_id}
 ```
 
 # Learner API Endpoints
@@ -821,7 +821,7 @@ GET /receipts
 **Query Parameters:**
 - `from_date` - Filter by date range start
 - `to_date` - Filter by date range end
-- `item_type` - Filter by item type (course, subscription_plan)
+- `item_type` - Filter by item type (course, billing_plan)
 - `per_page` - Items per page (default: 10)
 
 ### Get a Specific Receipt

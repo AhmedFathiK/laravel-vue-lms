@@ -20,7 +20,6 @@ class Level extends Model
         'sort_order',
         'status',
         'is_unlocked',
-        'is_free',
     ];
 
     public array $translatable = [
@@ -30,7 +29,6 @@ class Level extends Model
 
     protected $casts = [
         'is_unlocked' => 'boolean',
-        'is_free' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -69,15 +67,7 @@ class Level extends Model
     }
 
     /**
-     * Get all free lessons in this level.
-     */
-    public function freeLessons(): HasMany
-    {
-        return $this->hasMany(Lesson::class)->where('is_free', true)->orderBy('sort_order');
-    }
-
-    /**
-     * Check if this level is accessible to a user based on their subscription.
+     * Check if this level is accessible to a user based on their entitlements.
      */
     public function isAccessibleToUser(User $user): bool
     {
@@ -86,27 +76,14 @@ class Level extends Model
             return false;
         }
 
-        // If the level or course is free, it's accessible to everyone
-        if ($this->is_free || $this->course->is_free) {
-            return true;
-        }
-
-        // Check if user has any active subscription for this course
-        $subscriptions = $user->subscriptions()
-            ->whereHas('plan', function ($query) {
-                $query->where('course_id', $this->course_id)
-                    ->where('is_active', true);
+        // Check if user has entitlement for this course
+        return $user->entitlements()
+            ->active()
+            ->whereHas('billingPlan.courses', function ($q) {
+                $q->where('courses.id', $this->course_id);
             })
-            ->whereIn('status', ['active', 'past_due'])
-            ->get();
+            ->exists();
 
-        foreach ($subscriptions as $subscription) {
-            if ($subscription->isActive()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

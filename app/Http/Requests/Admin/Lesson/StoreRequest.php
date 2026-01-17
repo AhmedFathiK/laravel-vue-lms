@@ -29,8 +29,21 @@ class StoreRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
-            'is_free' => ['nullable', 'boolean'],
-            'video_url' => ['nullable', 'string', 'max:255'],
+            'video_url' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $type = $this->input('video_type');
+                    if ($type === 'youtube' && !preg_match('/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/', $value)) {
+                        $fail('The video URL must be a valid YouTube URL.');
+                    }
+                    if ($type === 'vimeo' && !preg_match('/^(https?:\/\/)?(www\.)?(vimeo\.com)\/.+$/', $value)) {
+                        $fail('The video URL must be a valid Vimeo URL.');
+                    }
+                },
+            ],
+            'video_type' => ['nullable', 'string', 'in:youtube,vimeo,hosted'],
             'reshow_incorrect_slides' => ['nullable', 'boolean'],
             'reshow_count' => ['nullable', 'integer', 'min:1', 'max:10'],
             'require_correct_answers' => ['nullable', 'boolean'],

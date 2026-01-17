@@ -172,7 +172,7 @@ class UserController extends Controller
      */
     public function show(ShowUserRequest $request, User $user): JsonResponse
     {
-        $user->load(['roles', 'payments', 'subscriptions']);
+        $user->load(['roles', 'payments', 'entitlements']);
         $user->role_names = $user->getRoleNames();
 
         return response()->json([

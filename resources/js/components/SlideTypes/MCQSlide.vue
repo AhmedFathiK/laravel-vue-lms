@@ -1,7 +1,6 @@
 <script setup>
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
-import { computed, ref } from 'vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   question: {
@@ -157,10 +156,10 @@ const getCardClass = index => {
         style="max-width: 600px;"
       >
         <VideoPlayer
+          :key="question.mediaUrl"
           :src="question.mediaUrl"
-          controls
-          class="rounded-lg overflow-hidden"
-          fluid
+          :type="question.mediaUrl.includes('youtube') ? 'youtube' : (question.mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
+          class="rounded-lg overflow-hidden elevation-2"
         />
       </div>
     </div>

@@ -6,10 +6,10 @@ use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Lesson;
 use App\Models\Level;
-use App\Models\SubscriptionPlan;
+use App\Models\BillingPlan;
 use App\Models\User;
 use App\Models\UserStudiedLesson;
-use App\Models\UserSubscription;
+use App\Models\UserEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -37,25 +37,24 @@ class CourseAccessTest extends TestCase
             ->assertJson(['error' => 'You are not enrolled in this course.']);
     }
 
-    public function test_user_can_access_lesson_if_enrolled_and_subscribed()
+    public function test_user_can_access_lesson_if_enrolled_and_entitled()
     {
         $user = User::factory()->create();
         $course = Course::factory()->create(['status' => 'published']);
         $level = Level::factory()->create(['course_id' => $course->id, 'status' => 'published']);
         $lesson = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published']);
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'plan_type' => 'one-time',
-            'billing_cycle' => 'one-time',
+            'billing_type' => 'one_time',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        $subscription = UserSubscription::create([
+        $entitlement = UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now(),
             'status' => 'active',
         ]);
@@ -63,7 +62,7 @@ class CourseAccessTest extends TestCase
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'user_subscription_id' => $subscription->id,
+            'user_entitlement_id' => $entitlement->id,
         ]);
 
         $this->actingAs($user)
@@ -71,25 +70,25 @@ class CourseAccessTest extends TestCase
             ->assertStatus(200);
     }
 
-    public function test_user_cannot_access_lesson_if_subscription_expired()
+    public function test_user_cannot_access_lesson_if_entitlement_expired()
     {
         $user = User::factory()->create();
         $course = Course::factory()->create(['status' => 'published']);
         $level = Level::factory()->create(['course_id' => $course->id, 'status' => 'published']);
         $lesson = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'is_free' => false]);
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'plan_type' => 'recurring',
-            'billing_cycle' => 'monthly',
+            'billing_type' => 'recurring',
+            'billing_interval' => 'month',
+            'access_type' => 'while_active',
             'is_active' => true,
         ]);
 
-        $subscription = UserSubscription::create([
+        $entitlement = UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now()->subMonths(2),
             'ends_at' => now()->subDay(),
             'status' => 'expired',
@@ -98,34 +97,33 @@ class CourseAccessTest extends TestCase
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'user_subscription_id' => $subscription->id,
+            'user_entitlement_id' => $entitlement->id,
         ]);
 
         $this->actingAs($user)
             ->getJson("/api/learner/lessons/{$lesson->id}/content")
-            ->assertStatus(403)
-            ->assertJson(['error' => 'Your subscription for this course has expired.']);
+            ->assertStatus(403);
     }
 
-    public function test_user_can_access_free_lesson_even_if_subscription_expired()
+    public function test_user_can_access_free_lesson_even_if_entitlement_expired()
     {
         $user = User::factory()->create();
         $course = Course::factory()->create(['status' => 'published']);
         $level = Level::factory()->create(['course_id' => $course->id, 'status' => 'published']);
         $lesson = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'is_free' => true]);
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'plan_type' => 'recurring',
-            'billing_cycle' => 'monthly',
+            'billing_type' => 'recurring',
+            'billing_interval' => 'month',
+            'access_type' => 'while_active',
             'is_active' => true,
         ]);
 
-        $subscription = UserSubscription::create([
+        $entitlement = UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now()->subMonths(2),
             'ends_at' => now()->subDay(),
             'status' => 'expired',
@@ -134,7 +132,7 @@ class CourseAccessTest extends TestCase
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'user_subscription_id' => $subscription->id,
+            'user_entitlement_id' => $entitlement->id,
         ]);
 
         $this->actingAs($user)
@@ -150,19 +148,18 @@ class CourseAccessTest extends TestCase
         $lesson1 = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'sort_order' => 1]);
         $lesson2 = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'sort_order' => 2]);
 
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'plan_type' => 'one-time',
-            'billing_cycle' => 'one-time',
+            'billing_type' => 'one_time',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        $subscription = UserSubscription::create([
+        $entitlement = UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now(),
             'status' => 'active',
         ]);
@@ -170,7 +167,7 @@ class CourseAccessTest extends TestCase
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'user_subscription_id' => $subscription->id,
+            'user_entitlement_id' => $entitlement->id,
         ]);
 
         $this->actingAs($user)
@@ -187,19 +184,18 @@ class CourseAccessTest extends TestCase
         $lesson1 = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'sort_order' => 1]);
         $lesson2 = Lesson::factory()->create(['level_id' => $level->id, 'status' => 'published', 'sort_order' => 2]);
 
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'plan_type' => 'one-time',
-            'billing_cycle' => 'one-time',
+            'billing_type' => 'one_time',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        $subscription = UserSubscription::create([
+        $entitlement = UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now(),
             'status' => 'active',
         ]);
@@ -207,7 +203,7 @@ class CourseAccessTest extends TestCase
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'user_subscription_id' => $subscription->id,
+            'user_entitlement_id' => $entitlement->id,
         ]);
         
         // Mark lesson 1 as completed

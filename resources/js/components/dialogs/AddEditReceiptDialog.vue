@@ -50,7 +50,7 @@ const loadingPlans = ref(false)
 
 // New state properties
 const isSystemGenerated = ref(false)
-const isLinkedToSubscription = ref(false)
+const isLinkedToEntitlement = ref(false)
 
 const validationRules = {
   userId: [requiredValidator],
@@ -92,7 +92,7 @@ const resetFormData = () => {
   selectedCourse.value = null
   selectedPlan.value = null
   isSystemGenerated.value = false
-  isLinkedToSubscription.value = false
+  isLinkedToEntitlement.value = false
 }
 
 // Watchers to sync IDs
@@ -127,13 +127,13 @@ const fetchCoursePlans = async () => {
   
   loadingPlans.value = true
   try {
-    console.log(`Fetching subscription plans for course ID: ${courseId}`)
+    console.log(`Fetching billing plans for course ID: ${courseId}`)
 
-    const response = await api.get(`/admin/courses/${courseId}/subscription-plans`)
+    const response = await api.get(`/admin/courses/${courseId}/billing-plans`)
 
     plans.value = response.items || []
   } catch (error) {
-    toast.error('Failed to load subscription plans.')
+    toast.error('Failed to load billing plans.')
   } finally {
     loadingPlans.value = false
   }
@@ -143,7 +143,7 @@ watch(() => [props.isDialogVisible, props.data, props.dialogMode], async ([isVis
   if (isVisible) {
     if (mode === 'edit' && receipt && receipt.id) {
       isSystemGenerated.value = receipt.sourceType !== 'manual'
-      isLinkedToSubscription.value = receipt.isLinkedToSubscription
+      isLinkedToEntitlement.value = receipt.isLinkedToEntitlement
 
       selectedUser.value = {
         id: receipt.user.id,
@@ -156,14 +156,14 @@ watch(() => [props.isDialogVisible, props.data, props.dialogMode], async ([isVis
           title: receipt.course.title,
         }
         selectedPlan.value = null
-      } else if (receipt.itemType == 'subscriptionPlan' && receipt.subscriptionPlan.course) {
+      } else if (receipt.itemType == 'billingPlan' && receipt.billingPlan.course) {
         selectedCourse.value = {
-          id: receipt.subscriptionPlan.course.id,
-          title: receipt.subscriptionPlan.course.title,
+          id: receipt.billingPlan.course.id,
+          title: receipt.billingPlan.course.title,
         }
         selectedPlan.value = {
-          id: receipt.subscriptionPlan.id,
-          name: receipt.subscriptionPlan.name,
+          id: receipt.billingPlan.id,
+          name: receipt.billingPlan.name,
         }
       }
 
@@ -239,12 +239,12 @@ const onDialogVisibleUpdate = val => {
           System-generated receipts cannot be edited.
         </VAlert>
         <VAlert
-          v-if="isLinkedToSubscription && !isSystemGenerated"
+          v-if="isLinkedToEntitlement && !isSystemGenerated"
           type="info"
           variant="tonal"
           class="mb-4"
         >
-          This receipt is linked to a subscription. Some fields are locked.
+          This receipt is linked to an entitlement. Some fields are locked.
         </VAlert>
         <VForm
           ref="formRef"
@@ -257,7 +257,7 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                v-if="isLinkedToSubscription || isSystemGenerated"
+                v-if="isLinkedToEntitlement || isSystemGenerated"
                 :model-value="selectedUser?.fullName"
                 label="User"
                 readonly
@@ -280,7 +280,7 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                v-if="isLinkedToSubscription || isSystemGenerated"
+                v-if="isLinkedToEntitlement || isSystemGenerated"
                 :model-value="selectedCourse?.title"
                 label="Course"
                 readonly
@@ -303,16 +303,16 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                v-if="isLinkedToSubscription || isSystemGenerated"
+                v-if="isLinkedToEntitlement || isSystemGenerated"
                 :model-value="selectedPlan?.name"
-                label="Subscription Plan"
+                label="Billing Plan"
                 readonly
                 disabled
               />
               <AppAutocomplete
                 v-else
                 v-model="selectedPlan"
-                label="Subscription Plan"
+                label="Billing Plan"
                 placeholder="Select a plan"
                 :items="plans"
                 item-title="name"
@@ -328,7 +328,7 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                v-if="isLinkedToSubscription || isSystemGenerated"
+                v-if="isLinkedToEntitlement || isSystemGenerated"
                 :model-value="form.amount"
                 label="Amount"
                 readonly
@@ -341,7 +341,7 @@ const onDialogVisibleUpdate = val => {
                 type="number"
                 min="0"
                 step="0.01"
-                :disabled="isLinkedToSubscription || isSystemGenerated"
+                :disabled="isLinkedToEntitlement || isSystemGenerated"
                 :rules="validationRules.amount"
                 :error-messages="validationErrors.amount"
               />
@@ -351,7 +351,7 @@ const onDialogVisibleUpdate = val => {
               md="6"
             >
               <AppTextField
-                v-if="isLinkedToSubscription || isSystemGenerated"
+                v-if="isLinkedToEntitlement || isSystemGenerated"
                 :model-value="paymentMethods.find(method => method.value === 'manual')?.title"
                 label="Payment Method"
                 readonly
@@ -424,7 +424,6 @@ const onDialogVisibleUpdate = val => {
                     :disabled="isSystemGenerated"
                   />
                 </VCol>
-
               </VRow>
             </VCol>
           </VRow>

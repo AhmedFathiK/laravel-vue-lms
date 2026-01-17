@@ -1,6 +1,5 @@
 <script setup>
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -77,10 +76,10 @@ onMounted(() => {
         style="max-width: 600px;"
       >
         <VideoPlayer
+          :key="slide.mediaUrl"
           :src="slide.mediaUrl"
-          controls
+          :type="slide.mediaUrl.includes('youtube') ? 'youtube' : (slide.mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
           class="rounded-lg overflow-hidden elevation-2"
-          fluid
         />
       </div>
     </div>

@@ -1,7 +1,6 @@
 <script setup>
 import api from '@/utils/api'
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -23,6 +22,18 @@ const isPaymentMethodDialogVisible = ref(false)
 const paymentMethods = ref([])
 const selectedPaymentMethod = ref(null)
 const selectedPlan = ref(null)
+const fetchedBillingPlans = ref([])
+const isFreePlanDialogVisible = ref(false)
+
+const fetchBillingPlans = async () => {
+  try {
+    const response = await api.get(`/learner/courses/${route.params.id}/billing-plans`)
+    
+    fetchedBillingPlans.value = response.plans || []
+  } catch (err) {
+    console.error('Error fetching billing plans:', err)
+  }
+}
 
 const fetchCourseDetails = async () => {
   isLoading.value = true
@@ -41,14 +52,15 @@ const fetchCourseDetails = async () => {
 
 onMounted(async () => {
   await fetchCourseDetails()
+  await fetchBillingPlans()
   
   // Check for payment success and redirect if enrolled
-  if (route.query.payment === 'success' && courseDetails.value?.isEnrolled) {
+  if (route.query.payment === 'success' && courseDetails.value?.hasActiveAccess) {
     // Optional: Show a toast here
     router.push(`/my-courses/${courseDetails.value.id}`)
   } else if (route.query.payment === 'failed') {
     if (route.query.payment_id) {
-      error.value = 'Subscription payment failed. Please try again or contact support.'
+      error.value = 'Entitlement payment failed. Please try again or contact support.'
       isPaymentErrorDialogVisible.value = true
     }
 
@@ -62,12 +74,12 @@ onMounted(async () => {
   }
 })
 
-const subscriptionPlans = computed(() => courseDetails.value?.subscriptionPlans || [])
+const billingPlans = computed(() => fetchedBillingPlans.value)
 
 const resolvePlanTypeColor = type => {
-  if (type === 'monthly') return 'primary'
-  if (type === 'annual') return 'success'
+  if (type === 'recurring') return 'primary'
   if (type === 'one-time') return 'warning'
+  if (type === 'free') return 'success'
   
   return 'secondary'
 }
@@ -76,19 +88,9 @@ const handlePayment = async plan => {
   processingPlanId.value = plan.id
   selectedPlan.value = plan
   try {
-    // If the plan is free, subscribe directly without payment gateway
+    // If the plan is free, show confirmation dialog
     if (parseFloat(plan.price) === 0) {
-      await api.post('/learner/subscribe', {
-        // eslint-disable-next-line camelcase
-        plan_id: plan.id,
-      })
-        
-      // Refresh course details to update UI state
-      await fetchCourseDetails()
-
-      if (courseDetails.value?.isEnrolled) {
-        router.push(`/my-courses/${courseDetails.value.id}`)
-      }
+      isFreePlanDialogVisible.value = true
     } else {
       // For paid plans, fetch payment methods first
       const response = await api.get('/payments/methods', {
@@ -106,11 +108,38 @@ const handlePayment = async plan => {
       }
     }
   } catch (err) {
-    console.error('Subscription error', err)
-    error.value = err.message || 'Subscription failed'
+    console.error('Entitlement acquisition error', err)
+    error.value = err.message || 'Entitlement acquisition failed'
     isPaymentErrorDialogVisible.value = true
   } finally {
     processingPlanId.value = null
+  }
+}
+
+const confirmFreeEnrollment = async () => {
+  if (!selectedPlan.value) return
+
+  processingPlanId.value = selectedPlan.value.id
+  isFreePlanDialogVisible.value = false
+
+  try {
+    await api.post('/learner/acquire-entitlement', {
+      planId: selectedPlan.value.id,
+    })
+      
+    // Refresh course details to update UI state
+    await fetchCourseDetails()
+
+    if (courseDetails.value?.hasActiveAccess) {
+      router.push(`/my-courses/${courseDetails.value.id}`)
+    }
+  } catch (err) {
+    console.error('Free enrollment error', err)
+    error.value = err.message || 'Free enrollment failed'
+    isPaymentErrorDialogVisible.value = true
+  } finally {
+    processingPlanId.value = null
+    selectedPlan.value = null
   }
 }
 
@@ -124,12 +153,9 @@ const proceedToCheckout = async () => {
     const response = await api.post('/payments/checkout', {
       amount: selectedPlan.value.price,
       currency: selectedPlan.value.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
-      // eslint-disable-next-line camelcase
-      plan_id: selectedPlan.value.id,
-      // eslint-disable-next-line camelcase
-      course_id: courseDetails.value.id,
-      // eslint-disable-next-line camelcase
-      payment_method_id: String(selectedPaymentMethod.value),
+      planId: selectedPlan.value.id,
+      courseId: courseDetails.value.id,
+      paymentMethodId: String(selectedPaymentMethod.value),
     })
 
     if (response.success && response.paymentUrl) {
@@ -155,6 +181,38 @@ if (route.query.payment === 'success') {
 </script>
 
 <template>
+  <VDialog
+    v-model="isFreePlanDialogVisible"
+    max-width="500"
+  >
+    <VCard>
+      <VCardTitle class="text-h5 font-weight-bold pa-4">
+        Confirm Enrollment
+      </VCardTitle>
+      <VCardText class="pa-4">
+        <p class="text-body-1 mb-0">
+          You are about to enroll in <strong>{{ courseDetails?.title }}</strong> for free.
+        </p>
+      </VCardText>
+      <VCardActions class="justify-end pa-4">
+        <VBtn
+          variant="outlined"
+          color="secondary"
+          @click="isFreePlanDialogVisible = false"
+        >
+          Cancel
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          @click="confirmFreeEnrollment"
+        >
+          Enroll for Free
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
   <VDialog
     v-model="isPaymentErrorDialogVisible"
     max-width="500"
@@ -298,11 +356,9 @@ if (route.query.payment === 'success') {
             <div class="px-2 pt-2">
               <VideoPlayer
                 v-if="courseDetails.videoUrl || courseDetails.thumbnail"
+                :key="courseDetails.videoUrl"
                 :src="courseDetails.videoUrl || 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4'"
-                :poster="courseDetails.thumbnail"
-                controls
-                plays-inline
-                :height="$vuetify.display.mdAndUp ? 440 : 250"
+                :type="courseDetails.videoUrl?.includes('youtube') ? 'youtube' : (courseDetails.videoUrl?.includes('vimeo') ? 'vimeo' : 'hosted')"
                 class="w-100 rounded"
               />
               <div
@@ -388,16 +444,16 @@ if (route.query.payment === 'success') {
               <VDivider class="my-6" />
 
               <h5 class="text-h5 mb-4">
-                Subscription Plans
+                Billing Plans
               </h5>
               
-              <div v-if="courseDetails.isEnrolled">
+              <div v-if="courseDetails.hasActiveAccess">
                 <VAlert
                   type="success"
                   variant="tonal"
                   class="mb-4"
                 >
-                  You are already enrolled in this course.
+                  You have active access to this course.
                 </VAlert>
                 <VBtn
                   block
@@ -409,11 +465,11 @@ if (route.query.payment === 'success') {
               </div>
 
               <div
-                v-else-if="subscriptionPlans.length > 0"
+                v-else-if="billingPlans.length > 0"
                 class="d-flex flex-wrap gap-4"
               >
                 <VCard 
-                  v-for="plan in subscriptionPlans" 
+                  v-for="plan in billingPlans" 
                   :key="plan.id"
                   variant="outlined"
                   class="flex-grow-1"
@@ -422,15 +478,15 @@ if (route.query.payment === 'success') {
                   <VCardItem>
                     <template #prepend>
                       <VIcon 
-                        :icon="plan.planType === 'one-time' ? 'tabler-infinity' : 'tabler-calendar'" 
-                        :color="resolvePlanTypeColor(plan.planType)"
+                        :icon="plan.billingType === 'one-time' ? 'tabler-infinity' : 'tabler-calendar'" 
+                        :color="resolvePlanTypeColor(plan.billingType)"
                         size="32"
                         class="me-2"
                       />
                     </template>
                     <VCardTitle>{{ plan.name }}</VCardTitle>
                     <VCardSubtitle class="text-capitalize">
-                      {{ plan.planType?.replace('-', ' ') }}
+                      {{ plan.billingType?.replace('-', ' ') }}
                     </VCardSubtitle>
                   </VCardItem>
                   
@@ -439,9 +495,9 @@ if (route.query.payment === 'success') {
                       <span class="text-h4 font-weight-bold text-primary">{{ plan.price }}</span>
                       <span class="text-body-2 ms-1">{{ plan.currency }}</span>
                       <span
-                        v-if="plan.planType !== 'one-time'"
+                        v-if="plan.billingType === 'recurring'"
                         class="text-body-2 text-medium-emphasis"
-                      >/ {{ plan.billingCycle }}</span>
+                      >/ {{ plan.billingInterval }}</span>
                     </div>
                     <p class="text-body-2 mb-4">
                       {{ plan.description }}
@@ -449,12 +505,12 @@ if (route.query.payment === 'success') {
                     
                     <VBtn 
                       block 
-                      :color="resolvePlanTypeColor(plan.planType)" 
+                      :color="resolvePlanTypeColor(plan.billingType)" 
                       variant="tonal"
                       :loading="processingPlanId === plan.id"
                       @click="handlePayment(plan)"
                     >
-                      Subscribe Now
+                      {{ parseFloat(plan.price) === 0 ? 'Enroll for Free' : 'Acquire Now' }}
                     </VBtn>
                   </VCardText>
                 </VCard>
@@ -463,7 +519,7 @@ if (route.query.payment === 'success') {
                 <VAlert
                   type="info"
                   variant="tonal"
-                  text="No subscription plans available for this course."
+                  text="No billing plans available for this course."
                 />
               </div>
             </VCardText>

@@ -31,20 +31,6 @@ class LearnerCourseController extends Controller
             $query->where('course_category_id', $request->category_id);
         }
 
-        // Filter by pricing
-        if ($request->has('is_free')) {
-            $isFree = $request->boolean('is_free');
-            if ($isFree) {
-                $query->whereHas('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            } else {
-                $query->whereDoesntHave('subscriptionPlans', function ($q) {
-                    $q->where('is_free', true)->where('is_active', true);
-                });
-            }
-        }
-
         // Apply sorting
         $sort = $request->input('sort', 'created_at');
         $order = $request->input('order', 'desc');
@@ -91,7 +77,7 @@ class LearnerCourseController extends Controller
         }, 'levels.lessons' => function ($query) {
             $query->where('status', 'published')
                 ->orderBy('sort_order');
-        }, 'subscriptionPlans' => function ($query) {
+        }, 'billingPlans' => function ($query) {
             $query->where('is_active', true);
         }]);
 

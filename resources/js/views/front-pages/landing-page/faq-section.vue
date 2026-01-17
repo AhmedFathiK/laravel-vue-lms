@@ -12,7 +12,7 @@ const faqData = [
   },
   {
     question: 'What is regular license?',
-    answer: 'Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly subscription fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup). For more info on regular license you can check official description.',
+    answer: 'Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly entitlement fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup). For more info on regular license you can check official description.',
   },
   {
     question: 'What is extended license?',

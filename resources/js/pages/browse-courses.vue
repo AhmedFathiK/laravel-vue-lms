@@ -22,10 +22,7 @@ const perPage = ref(9)
 // Filters and search
 const searchQuery = ref('')
 const selectedCategory = ref(null)
-const selectedPricing = ref('All') // 'All', 'Free', 'Paid'
 const sortBy = ref('popularity,desc')
-
-const pricingOptions = ['All', 'Free', 'Paid']
 
 const sortOptions = [
   { title: 'Most Popular', value: 'popularity,desc' },
@@ -33,10 +30,10 @@ const sortOptions = [
   { title: 'Alphabetical', value: 'title,asc' },
 ]
 
-// Subscription and Payment dialogs
-const isSubscribeDialogVisible = ref(false)
-const selectedCourseForSubscription = ref(null)
-const subscriptionPlans = ref([])
+// Entitlement and Payment dialogs
+const isAcquireDialogVisible = ref(false)
+const selectedCourseForEntitlement = ref(null)
+const billingPlans = ref([])
 const selectedPlan = ref(null)
 
 const isLoading = ref(false)
@@ -69,7 +66,6 @@ const fetchCourses = async () => {
       perPage: perPage.value,
       search: searchQuery.value,
       categoryId: selectedCategory.value,
-      isFree: selectedPricing.value === 'Free' ? true : (selectedPricing.value === 'Paid' ? false : null),
       sort: sortField,
       order: sortOrder,
     }
@@ -87,66 +83,36 @@ const viewCourseDetails = courseId => {
   router.push(`/courses/${courseId}`)
 }
 
-const handleSubscribeClick = async course => {
+const handleAcquireClick = async course => {
   if (!authStore.isAuthenticated) {
     router.push({ name: 'login', query: { to: router.currentRoute.value.fullPath } })
     
     return
   }
 
-  if (course.isEnrolled) {
+  if (course.hasActiveAccess) {
     router.push(`/my-courses/${course.id}`)
-    
-    return
   }
 
-  selectedCourseForSubscription.value = course
-
-  if (course.isFree) {
-    try {
-      await api.post(`/learner/courses/${course.id}/enroll`)
-      
-      // Refresh courses to update enrollment status
-      await fetchCourses()
-      
-      // Redirect to course details
-      router.push(`/my-courses/${course.id}`)
-    } catch (err) {
-      console.error('Error enrolling in free course:', err)
-      error.value = err.message || 'Failed to enroll in course.'
-      isPaymentErrorDialogVisible.value = true
-    }
-  } else {
-    try {
-      const response = await api.get(`/learner/courses/${course.id}/subscription-plans`)
-
-      subscriptionPlans.value = response.plans
-      isSubscribeDialogVisible.value = true
-    } catch (err) {
-      console.error('Error fetching subscription plans:', err)
-      error.value = err.message || 'Failed to load subscription plans.'
-      isPaymentErrorDialogVisible.value = true
-    }
-  }
+  // Check if course has free plan
 }
 
 const handlePayment = async plan => {
   processingPlanId.value = plan.id
   selectedPlan.value = plan
   try {
-    // If the plan is free, subscribe directly without payment gateway
+    // If the plan is free, acquire entitlement directly without payment gateway
     if (parseFloat(plan.price) === 0) {
-      await api.post('/learner/subscribe', {
-        // eslint-disable-next-line camelcase
-        plan_id: plan.id,
+      await api.post('/learner/acquire-entitlement', {
+        planId: plan.id,
       })
         
-      isSubscribeDialogVisible.value = false
+      isAcquireDialogVisible.value = false
       
       // Refresh courses to update UI state
       await fetchCourses()
 
-      router.push(`/my-courses/${selectedCourseForSubscription.value.id}`)
+      router.push(`/my-courses/${selectedCourseForEntitlement.value.id}`)
     } else {
       // For paid plans, fetch payment methods first
       const response = await api.get('/payments/methods', {
@@ -159,14 +125,14 @@ const handlePayment = async plan => {
       if (response.success) {
         paymentMethods.value = response.data
         isPaymentMethodDialogVisible.value = true
-        isSubscribeDialogVisible.value = false
+        isAcquireDialogVisible.value = false
       } else {
         throw new Error('Failed to fetch payment methods')
       }
     }
   } catch (err) {
-    console.error('Subscription error', err)
-    error.value = err.message || 'Subscription failed'
+    console.error('Entitlement acquisition error', err)
+    error.value = err.message || 'Acquisition failed'
     isPaymentErrorDialogVisible.value = true
   } finally {
     processingPlanId.value = null
@@ -183,12 +149,9 @@ const proceedToCheckout = async () => {
     const response = await api.post('/payments/checkout', {
       amount: selectedPlan.value.price,
       currency: selectedPlan.value.currency || import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP',
-      // eslint-disable-next-line camelcase
-      plan_id: selectedPlan.value.id,
-      // eslint-disable-next-line camelcase
-      course_id: selectedCourseForSubscription.value.id,
-      // eslint-disable-next-line camelcase
-      payment_method_id: String(selectedPaymentMethod.value),
+      planId: selectedPlan.value.id,
+      courseId: selectedCourseForEntitlement.value.id,
+      paymentMethodId: String(selectedPaymentMethod.value),
     })
 
     if (response.success && response.paymentUrl) {
@@ -207,7 +170,7 @@ const proceedToCheckout = async () => {
   }
 }
 
-const confirmSubscription = async () => {
+const confirmAcquisition = async () => {
   if (!selectedPlan.value) {
     error.value = 'Please select a plan.'
     isPaymentErrorDialogVisible.value = true
@@ -256,7 +219,7 @@ onMounted(() => {
             <VCol
               cols="12"
               sm="6"
-              md="3"
+              md="4"
             >
               <VSelect
                 v-model="selectedCategory"
@@ -272,22 +235,8 @@ onMounted(() => {
             </VCol>
             <VCol
               cols="12"
-              sm="3"
-              md="2"
-            >
-              <VSelect
-                v-model="selectedPricing"
-                label="Pricing"
-                :items="pricingOptions"
-                variant="outlined"
-                hide-details
-                rounded="lg"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              sm="3"
-              md="3"
+              sm="6"
+              md="4"
             >
               <VSelect
                 v-model="sortBy"
@@ -345,18 +294,10 @@ onMounted(() => {
                     >
                       FEATURED
                     </VChip>
-                    <VChip
-                      :color="course.isFree ? 'success' : 'info'"
-                      size="x-small"
-                      variant="elevated"
-                      class="font-weight-bold px-2"
-                    >
-                      {{ course.isFree ? 'FREE' : 'PAID' }}
-                    </VChip>
                   </div>
                   
                   <VChip
-                    v-if="course.isEnrolled"
+                    v-if="course.hasActiveAccess"
                     color="success"
                     size="small"
                     variant="elevated"
@@ -405,14 +346,14 @@ onMounted(() => {
                   rounded="lg"
                   size="large"
                   class="font-weight-bold"
-                  @click="handleSubscribeClick(course)"
+                  @click="handleAcquireClick(course)"
                 >
                   <VIcon
                     v-if="course.isEnrolled"
                     start
                     icon="tabler-player-play"
                   />
-                  {{ course.isEnrolled ? 'Continue Learning' : 'Subscribe Now' }}
+                  {{ course.isEnrolled ? 'Continue Learning' : 'View Details' }}
                 </VBtn>
               </VCardActions>
             </VCard>
@@ -444,28 +385,28 @@ onMounted(() => {
       </VCol>
     </VRow>
 
-    <!-- Subscribe Dialog -->
+    <!-- Acquire Entitlement Dialog -->
     <VDialog
-      v-model="isSubscribeDialogVisible"
+      v-model="isAcquireDialogVisible"
       max-width="500"
     >
       <VCard>
         <VCardTitle class="d-flex justify-space-between align-center">
-          <span>Subscribe to {{ selectedCourseForSubscription?.title }}</span>
+          <span>Acquire {{ selectedCourseForEntitlement?.title }}</span>
           <VBtn
             icon="tabler-x"
             variant="plain"
             size="small"
-            @click="isSubscribeDialogVisible = false"
+            @click="isAcquireDialogVisible = false"
           />
         </VCardTitle>
         <VCardText>
           <p class="mb-4">
-            Select a subscription plan:
+            Select a billing plan:
           </p>
           <VRadioGroup v-model="selectedPlan">
             <VRadio
-              v-for="plan in subscriptionPlans"
+              v-for="plan in billingPlans"
               :key="plan.id"
               :value="plan"
               class="mb-2"
@@ -473,7 +414,7 @@ onMounted(() => {
               <template #label>
                 <div>
                   <span class="font-weight-semibold">{{ plan.name }}</span>
-                  <span class="text-sm ms-2">({{ plan.price === '0.00' ? 'Free' : `${plan.price} ${plan.currency} / ${plan.billingCycle}` }})</span>
+                  <span class="text-sm ms-2">({{ plan.price === '0.00' ? 'Free' : `${plan.price} ${plan.currency} / ${plan.billingInterval}` }})</span>
                   <p class="text-caption text-medium-emphasis">
                     {{ plan.description }}
                   </p>
@@ -482,7 +423,7 @@ onMounted(() => {
             </VRadio>
           </VRadioGroup>
           <VAlert
-            v-if="!subscriptionPlans.length"
+            v-if="!billingPlans.length"
             type="info"
             variant="tonal"
             class="mt-4"
@@ -493,16 +434,16 @@ onMounted(() => {
         <VCardActions class="justify-end">
           <VBtn
             variant="tonal"
-            @click="isSubscribeDialogVisible = false"
+            @click="isAcquireDialogVisible = false"
           >
             Cancel
           </VBtn>
           <VBtn
             color="primary"
             :disabled="!selectedPlan"
-            @click="confirmSubscription"
+            @click="confirmAcquisition"
           >
-            Confirm Subscription
+            Confirm
           </VBtn>
         </VCardActions>
       </VCard>

@@ -1,8 +1,7 @@
 <script setup>
 import AppIconAudioPlayer from '@/components/app-form-elements/AppIconAudioPlayer.vue'
 import AppOverlayAudioPlayer from '@/components/app-form-elements/AppOverlayAudioPlayer.vue'
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -63,10 +62,10 @@ const term = computed(() => props.slide.term || props.slide)
           class="term-video-wrapper w-100"
         >
           <VideoPlayer
+            :key="term.mediaUrl || term.video"
             :src="term.mediaUrl || term.video"
-            controls
+            :type="(term.mediaUrl || term.video).includes('youtube') ? 'youtube' : ((term.mediaUrl || term.video).includes('vimeo') ? 'vimeo' : 'hosted')"
             class="rounded-lg overflow-hidden elevation-2"
-            fluid
           />
         </div>
       </div>

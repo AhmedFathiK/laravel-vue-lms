@@ -29,7 +29,6 @@ class UpdateRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status' => ['sometimes', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
-            'is_free' => ['nullable', 'boolean'],
         ];
 
         return $rules;

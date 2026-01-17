@@ -24,7 +24,7 @@ class UpdateReceiptRequest extends FormRequest
         return [
             'user_id' => 'sometimes|exists:users,id',
             'course_id' => 'sometimes|exists:courses,id',
-            'plan_id' => 'sometimes|exists:subscription_plans,id',
+            'plan_id' => 'sometimes|exists:billing_plans,id',
             'amount' => 'sometimes|numeric|min:0',
             'payment_method' => 'sometimes|string|max:255',
             'payment_date' => 'sometimes|date',

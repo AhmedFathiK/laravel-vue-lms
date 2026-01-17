@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\DuplicateSubscriptionException;
+use App\Exceptions\DuplicateEntitlementException;
 use App\Models\Payment;
 use App\Models\Receipt;
-use App\Models\SubscriptionPlan;
-use App\Models\UserSubscription;
+use App\Models\BillingPlan;
+use App\Models\UserEntitlement;
 use App\Services\Payment\Currency;
 use App\Services\Payments\PaymentServiceInterface;
+use App\Services\EntitlementService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +24,7 @@ class PaymentGatewayController extends Controller
 {
     public function __construct(
         private readonly PaymentServiceInterface $paymentGateway,
-        private readonly \App\Services\SubscriptionService $subscriptionService
+        private readonly EntitlementService $entitlementService
     ) {}
 
     /**
@@ -34,7 +35,7 @@ class PaymentGatewayController extends Controller
         $rules = [
             'amount' => ['required', 'numeric', 'min:0.1'],
             'currency' => Currency::validationRules(required: false),
-            'plan_id' => ['nullable', 'exists:subscription_plans,id'],
+            'plan_id' => ['nullable', 'exists:billing_plans,id'],
             'course_id' => ['nullable', 'exists:courses,id'],
             'payment_method_id' => ['nullable', 'string'],
         ];
@@ -53,7 +54,7 @@ class PaymentGatewayController extends Controller
             'payment_method' => $this->paymentGateway->gatewayKey(),
             'payment_provider' => $this->paymentGateway->gatewayKey(),
             'payment_details' => [
-                'plan_id' => $validated['plan_id'] ?? null,
+                'billing_plan_id' => $validated['plan_id'] ?? null,
                 'course_id' => $validated['course_id'] ?? null,
                 'payment_method_id' => $validated['payment_method_id'] ?? null,
             ],
@@ -70,7 +71,7 @@ class PaymentGatewayController extends Controller
                 metadata: [
                     'customer_reference' => (string) $payment->id,
                 ],
-                callbackUrl: 'http://127.0.0.1:8000/api/payments/callback1',
+                callbackUrl: route('payments.callback'),
                 errorUrl: route('payments.error'),
                 paymentMethodId: $validated['payment_method_id'] ?? null
             );
@@ -179,7 +180,10 @@ class PaymentGatewayController extends Controller
         } catch (\Throwable $e) {
             Log::error('Payment Callback Failed: ' . $e->getMessage());
 
-            return response()->json(['success' => false, 'message' => 'Payment verification failed'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment verification failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -238,7 +242,7 @@ class PaymentGatewayController extends Controller
     private function handlePostPayment(Payment $payment): void
     {
         try {
-            $this->subscriptionService->processSuccessfulPayment($payment);
+            $this->entitlementService->processSuccessfulPayment($payment);
         } catch (\Throwable $e) {
             Log::error("Failed to process post-payment actions for Payment {$payment->id}: " . $e->getMessage());
             throw $e;

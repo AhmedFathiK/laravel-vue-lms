@@ -13,14 +13,18 @@ use App\Models\Lesson;
 
 use App\Http\Resources\Learner\LessonResource;
 use App\Models\UserStudiedLesson;
+use App\Services\EntitlementService;
 
 class CoursesContentController extends Controller
 {
+    public function __construct(protected EntitlementService $entitlementService) {}
+
     /**
      * Display a specific lesson's content.
      */
     public function showLesson(Request $request, Lesson $lesson): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $course = $lesson->level->course;
 
@@ -29,51 +33,39 @@ class CoursesContentController extends Controller
             abort(404);
         }
 
-        // 2. Check if content is Free (Preview)
-        $isFree = $lesson->is_free || $lesson->level->is_free || $course->is_free;
+        // 2. Enforce Entitlement (Strict)
+        $hasEntitlement = $user->entitlements()
+            ->active()
+            ->whereHas('billingPlan.courses', function ($query) use ($course) {
+                $query->where('courses.id', $course->id);
+            })
+            ->exists();
 
-        if (!$isFree) {
-            // 3. Paid Content: Enforce Enrollment & Subscription
-            $enrollment = CourseEnrollment::where('user_id', $user->id)
-                ->where('course_id', $course->id)
-                ->with('userSubscription')
-                ->first();
+        if (!$hasEntitlement) {
+             return response()->json([
+                "error" => "You do not have active access to this course.",
+                "course_id" => $course->id
+            ], 403);
+        }
 
-            if (!$enrollment) {
+        // 3. Paid Content: Enforce Sequential Access
+        // Check previous lesson in the same level
+        $previousLesson = Lesson::where('level_id', $lesson->level_id)
+            ->where('sort_order', '<', $lesson->sort_order)
+            ->where('status', 'published')
+            ->orderByDesc('sort_order')
+            ->first();
+
+        if ($previousLesson) {
+            $isCompleted = UserStudiedLesson::where('user_id', $user->id)
+                ->where('lesson_id', $previousLesson->id)
+                ->exists();
+
+            if (!$isCompleted) {
                 return response()->json([
-                    "error" => "You are not enrolled in this course.",
-                    "course_id" => $course->id
+                    "error" => "You must complete the previous lesson first.",
+                    "previous_lesson_id" => $previousLesson->id
                 ], 403);
-            }
-
-            if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
-                return response()->json([
-                    "error" => "Your subscription for this course has expired.",
-                    "expired" => true,
-                    "course_id" => $course->id,
-                    "ends_at" => $enrollment->userSubscription->ends_at
-                ], 403);
-            }
-
-            // 4. Paid Content: Enforce Sequential Access
-            // Check previous lesson in the same level
-            $previousLesson = Lesson::where('level_id', $lesson->level_id)
-                ->where('sort_order', '<', $lesson->sort_order)
-                ->where('status', 'published')
-                ->orderByDesc('sort_order')
-                ->first();
-
-            if ($previousLesson) {
-                $isCompleted = UserStudiedLesson::where('user_id', $user->id)
-                    ->where('lesson_id', $previousLesson->id)
-                    ->exists();
-
-                if (!$isCompleted) {
-                    return response()->json([
-                        "error" => "You must complete the previous lesson first.",
-                        "previous_lesson_id" => $previousLesson->id
-                    ], 403);
-                }
             }
         }
 
@@ -84,33 +76,44 @@ class CoursesContentController extends Controller
                     ->with(['question', 'term']);
             }
         ]);
+        
+        // Update Enrollment Last Accessed (if exists)
+        CourseEnrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->update(['last_accessed_at' => now()]);
 
         return response()->json(new LessonResource($lesson));
-    }
+}
 
     /**
      * Display a user's courses content.
      */
     public function show(Request $request, Course $course): JsonResponse
     {
-        // Check if user is enrolled
-        $enrollment = CourseEnrollment::where('user_id', Auth::id())
+        // Check Entitlement
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        $hasEntitlement = $user->entitlements()
+            ->active()
+            ->whereHas('capabilities', function ($query) use ($course) {
+                $query->where('scope_type', 'App\Models\Course')
+                      ->where('scope_id', $course->id);
+            })
+            ->exists();
+        
+        $hasEnrollment = CourseEnrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
-            ->with('userSubscription')
-            ->first();
+            ->exists();
 
-        if (!$enrollment) {
-            return response()->json(["error" => "You are not enrolled in this course."], 403);
+        if (!$hasEntitlement) {
+            return response()->json(["error" => "You do not have active access to this course."], 403);
         }
 
-        // Check if subscription is active
-        if ($enrollment->userSubscription && !$enrollment->userSubscription->isActive()) {
-            return response()->json([
-                "error" => "Your subscription for this course has expired.",
-                "expired" => true,
-                "ends_at" => $enrollment->userSubscription->ends_at
-            ], 403);
-        }
+        // Update Enrollment Last Accessed (if exists)
+        CourseEnrollment::where('user_id', Auth::id())
+            ->where('course_id', $course->id)
+            ->update(['last_accessed_at' => now()]);
 
         $course->load([
             'levels' => function ($query) {
@@ -149,7 +152,7 @@ class CoursesContentController extends Controller
             if (isset($level['lessons'])) {
                 foreach ($level['lessons'] as $lesson) {
                     $lesson['type'] = 'lesson';
-                    $lesson['icon'] = 'tabler-book';
+                    $lesson['icon'] = !empty($lesson['video_type']) ? 'tabler-player-play' : 'tabler-book';
                     // is_completed is count, convert to boolean
                     $lesson['completed'] = $lesson['is_completed'] > 0;
                     $items[] = $lesson;

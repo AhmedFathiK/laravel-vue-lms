@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Services\Payments\PaymentServiceInterface;
-use App\Services\SubscriptionService;
+use App\Services\EntitlementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ class PaymentWebhookController extends Controller
 {
     public function __construct(
         private readonly PaymentServiceInterface $paymentGateway,
-        private readonly SubscriptionService $subscriptionService
+        private readonly EntitlementService $entitlementService
     ) {}
 
     /**
@@ -181,7 +181,7 @@ class PaymentWebhookController extends Controller
             ]);
 
             // Idempotent: Safe to call even if Callback already ran
-            $this->subscriptionService->processSuccessfulPayment($payment);
+            $this->entitlementService->processSuccessfulPayment($payment);
             
             Log::info("MyFatoorah Webhook: Payment {$payment->id} processed successfully.");
         } else {
@@ -234,8 +234,8 @@ class PaymentWebhookController extends Controller
             ]);
             Log::info("MyFatoorah Webhook: Payment {$payment->id} marked as refunded.");
             
-            // Revoke the subscription
-            $this->subscriptionService->revokeSubscription($payment, 'Refunded via MyFatoorah Webhook');
+            // Revoke the entitlement
+            $this->entitlementService->revokeEntitlement($payment, 'Refunded via MyFatoorah Webhook');
         }
 
         return response()->json(['success' => true]);

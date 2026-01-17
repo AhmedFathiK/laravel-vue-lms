@@ -9,6 +9,8 @@ use App\Models\Level;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\Slide;
+use App\Events\EntitlementCreated;
+use App\Listeners\SendEntitlementReceipt;
 use App\Observers\CourseObserver;
 use App\Observers\CourseCategoryObserver;
 use App\Observers\LessonObserver;
@@ -21,6 +23,7 @@ use App\Services\Payment\MyFatoorahService;
 use App\Services\Payment\NullPaymentGatewayService;
 use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -53,6 +56,11 @@ class AppServiceProvider extends ServiceProvider
         CourseCategory::observe(CourseCategoryObserver::class);
         Receipt::observe(ReceiptObserver::class);
         Payment::observe(PaymentObserver::class);
+
+        Event::listen(
+            EntitlementCreated::class,
+            SendEntitlementReceipt::class
+        );
 
         Gate::policy(Receipt::class, ReceiptPolicy::class);
     }

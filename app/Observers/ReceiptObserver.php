@@ -5,7 +5,7 @@ namespace App\Observers;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\TrashItem;
-use App\Models\UserSubscription;
+use App\Models\UserEntitlement;
 
 class ReceiptObserver
 {
@@ -31,20 +31,20 @@ class ReceiptObserver
      */
     public function restored(Receipt $receipt): void
     {
-        // When a receipt is restored, we also restore its payment and potentially its subscription.
+        // When a receipt is restored, we also restore its payment and potentially its entitlement.
         
         // Restore the associated payment
         $receipt->payment()->onlyTrashed()->first()?->restore();
 
-        // Restore the associated subscription, but only if it wasn't deleted separately
-        $subscription = $receipt->subscription()->onlyTrashed()->first();
-        if ($subscription) {
-            $isSubscriptionTrashedSeparately = TrashItem::where('model_type', get_class($subscription))
-                ->where('model_id', $subscription->id)
+        // Restore the associated entitlement, but only if it wasn't deleted separately
+        $entitlement = $receipt->entitlement()->onlyTrashed()->first();
+        if ($entitlement) {
+            $isEntitlementTrashedSeparately = TrashItem::where('model_type', get_class($entitlement))
+                ->where('model_id', $entitlement->id)
                 ->exists();
 
-            if (!$isSubscriptionTrashedSeparately) {
-                $subscription->restore();
+            if (!$isEntitlementTrashedSeparately) {
+                $entitlement->restore();
             }
         }
 
@@ -70,10 +70,10 @@ class ReceiptObserver
             $payment->forceDelete();
         }
 
-        // Retrieve and force delete the related user subscription
-        $subscription = UserSubscription::withTrashed()->where('payment_id', $receipt->payment_id)->first();
-        if ($subscription) {
-            $subscription->forceDelete();
+        // Retrieve and force delete the related user entitlement
+        $entitlement = UserEntitlement::withTrashed()->where('payment_id', $receipt->payment_id)->first();
+        if ($entitlement) {
+            $entitlement->forceDelete();
         }
     }
 }

@@ -45,10 +45,10 @@ class Receipt extends Model
                     $receipt->payment->delete();
                 }
 
-                // Soft delete the related subscription
-                $subscription = UserSubscription::where('payment_id', $receipt->payment_id)->first();
-                if ($subscription) {
-                    $subscription->delete();
+                // Soft delete the related entitlement
+                $entitlement = UserEntitlement::where('payment_id', $receipt->payment_id)->first();
+                if ($entitlement) {
+                    $entitlement->delete();
                 }
             }
         });
@@ -71,11 +71,11 @@ class Receipt extends Model
     }
 
     /**
-     * Get the payment associated with this receipt.
+     * Get the entitlement associated with this receipt.
      */
-    public function subscription(): HasOneThrough
+    public function entitlement(): HasOneThrough
     {
-        return $this->hasOneThrough(UserSubscription::class, Payment::class, 'id', 'payment_id', 'id', 'id');
+        return $this->hasOneThrough(UserEntitlement::class, Payment::class, 'id', 'payment_id', 'id', 'id');
     }
 
     /**
@@ -87,11 +87,11 @@ class Receipt extends Model
     }
 
     /**
-     * Get the subscription plan associated with this receipt.
+     * Get the billing plan associated with this receipt.
      */
-    public function subscriptionPlan(): BelongsTo
+    public function billingPlan(): BelongsTo
     {
-        return $this->belongsTo(SubscriptionPlan::class, 'item_id');
+        return $this->belongsTo(BillingPlan::class, 'item_id');
     }
 
     /**

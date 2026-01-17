@@ -104,7 +104,7 @@ const currentBillingAddress = {
                 Active until Dec 09, 2021
               </h6>
               <p>
-                We will send you a notification upon Subscription expiration
+                We will send you a notification upon Entitlement expiration
               </p>
 
               <h6 class="text-h6 mb-1">
@@ -175,7 +175,7 @@ const currentBillingAddress = {
                   color="error"
                   variant="tonal"
                 >
-                  Cancel Subscription
+                  Cancel Entitlement
                 </VBtn>
               </div>
             </VCol>

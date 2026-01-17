@@ -26,8 +26,8 @@ class ReceiptResource extends JsonResource
             'user' => new UserResource($this->whenLoaded('user')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
             'course' => new CourseResource($this->whenLoaded('course')),
-            'subscriptionPlan' => new SubscriptionPlanResource($this->whenLoaded('subscriptionPlan')),
-            'isLinkedToSubscription' => $this->when(isset($this->is_linked_to_subscription), $this->is_linked_to_subscription),
+            'billingPlan' => $this->whenLoaded('billingPlan'),
+            'isLinkedToEntitlement' => $this->when(isset($this->is_linked_to_entitlement), $this->is_linked_to_entitlement),
 
             // Voided Info
             'voidedAt' => $this->voided_at,

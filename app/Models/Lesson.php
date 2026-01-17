@@ -19,8 +19,8 @@ class Lesson extends Model
         'description',
         'sort_order',
         'status',
-        'is_free',
         'video_url',
+        'video_type',
         'reshow_incorrect_slides',
         'reshow_count',
         'require_correct_answers',
@@ -34,7 +34,6 @@ class Lesson extends Model
 
     protected $casts = [
         'sort_order' => 'integer',
-        'is_free' => 'boolean',
         'reshow_incorrect_slides' => 'boolean',
         'reshow_count' => 'integer',
         'require_correct_answers' => 'boolean',
@@ -75,7 +74,7 @@ class Lesson extends Model
     }
 
     /**
-     * Check if this lesson is accessible to a user based on their subscription.
+     * Check if this lesson is accessible to a user based on their entitlements.
      */
     public function isAccessibleToUser(User $user): bool
     {
@@ -84,17 +83,7 @@ class Lesson extends Model
             return false;
         }
 
-        // If the lesson is free, it's accessible to everyone
-        if ($this->is_free) {
-            return true;
-        }
-
-        // If the level or course is free, the lesson is accessible
-        if ($this->level->is_free || $this->level->course->is_free) {
-            return true;
-        }
-
-        // Otherwise, check level access which handles subscription checks
+        // Check level access which handles entitlement checks
         return $this->level->isAccessibleToUser($user);
     }
 

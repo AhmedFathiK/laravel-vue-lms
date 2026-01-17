@@ -370,6 +370,7 @@
     "parseApiError": true,
     "setFormErrors": true,
     "useCrudSubmit": true,
-    "handleApiError": true
+    "handleApiError": true,
+    "videojsSetup": true
   }
 }

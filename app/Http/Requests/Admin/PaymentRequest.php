@@ -14,7 +14,7 @@ class PaymentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage.subscriptions');
+        return $this->user()->can('manage.user_entitlements');
     }
 
     /**
@@ -37,7 +37,7 @@ class PaymentRequest extends FormRequest
 
         // Additional fields for receipt generation
         if ($this->isMethod('post') || $this->input('status') === 'completed') {
-            $rules['item_type'] = ['nullable', 'string', 'in:course,subscription_plan'];
+            $rules['item_type'] = ['nullable', 'string', 'in:course,billing_plan'];
             $rules['item_id'] = ['nullable', 'integer', 'required_with:item_type'];
             $rules['item_name'] = ['nullable', 'string', 'max:255'];
         }

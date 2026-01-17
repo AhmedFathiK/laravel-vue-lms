@@ -27,7 +27,7 @@ const resolvePaymentMethodVariant = method => {
 
 const resolveItemTypeVariant = type => {
   type = type?.toLowerCase() || ''
-  if (type.includes('course') || type.includes('subscription_plan')) return { color: 'primary', icon: 'tabler-book' }
+  if (type.includes('course') || type.includes('billing_plan')) return { color: 'primary', icon: 'tabler-book' }
   
   return { color: 'secondary', icon: 'tabler-file' }
 }

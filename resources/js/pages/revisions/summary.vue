@@ -31,7 +31,7 @@ onMounted(() => {
 const goBack = () => {
   router.push({ 
     name: 'revisions', 
-    query: courseId.value ? { courseId: courseId.value } : {} 
+    query: courseId.value ? { courseId: courseId.value } : {}, 
   })
 }
 </script>

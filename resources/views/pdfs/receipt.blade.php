@@ -37,7 +37,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ $receipt->item_type === 'subscription_plan' ? 'Subscription' : 'Course' }}</td>
+                    <td>{{ $receipt->item_type === 'billing_plan' ? 'Entitlement' : 'Course' }}</td>
                     <td>{{ $receipt->item_name }}</td>
                     <td>{{ $receipt->currency }} {{ number_format($receipt->amount, 2) }}</td>
                 </tr>

@@ -17,8 +17,8 @@ use App\Http\Controllers\Admin\LeaderboardController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\SubscriptionPlanController;
-use App\Http\Controllers\Admin\UserSubscriptionController;
+use App\Http\Controllers\Admin\BillingPlanController;
+use App\Http\Controllers\Admin\UserEntitlementController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Learner\LearnerUserController;
 use App\Http\Controllers\Learner\LearnerCourseController;
@@ -27,7 +27,7 @@ use App\Http\Controllers\Learner\ProgressController;
 use App\Http\Controllers\Learner\LearnerReceiptController;
 use App\Http\Controllers\Admin\CourseAccessController;
 use App\Http\Controllers\Learner\CoursesContentController;
-use App\Http\Controllers\Learner\LearnerSubscriptionController;
+use App\Http\Controllers\Learner\LearnerEntitlementController;
 use App\Http\Controllers\PaymentGatewayController;
 
 use App\Http\Controllers\Learner\LearnerDashboardController;
@@ -103,6 +103,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::apiResource('roles', RoleController::class);
     Route::get('permissions', [RoleController::class, 'getPermissions']);
 
+    // Feature Management
+    Route::get('features', [\App\Http\Controllers\Admin\FeatureController::class, 'index']);
+
     // System Management
     Route::get('trash', [\App\Http\Controllers\Admin\TrashController::class, 'index']);
     Route::post('trash/bulk-restore', [\App\Http\Controllers\Admin\TrashController::class, 'bulkRestore']);
@@ -119,6 +122,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
     // Courses Content
     Route::prefix('/courses/{course}')->scopeBindings()->group(function () {
+        // Billing Plans
+        Route::get('billing-plans', [BillingPlanController::class, 'index']);
+        Route::post('billing-plans', [BillingPlanController::class, 'store']);
+        Route::get('billing-plans/{billingPlan}', [BillingPlanController::class, 'show']);
+        Route::put('billing-plans/{billingPlan}', [BillingPlanController::class, 'update']);
+        Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy']);
+        Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
+
         Route::prefix('/levels')->group(function () {
             Route::get('/', [LevelController::class, 'index']);
             Route::post('/order', [LevelController::class, 'updateOrder']);
@@ -161,14 +172,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
         Route::post('/exam-sections/{section}/reorder-questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'reorderQuestions']);
 
         // Exam Grading
-        Route::get('/exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
-        Route::get('/exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
-        Route::post('/exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
+    Route::get('/exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
+    Route::get('/exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
+    Route::post('/exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
 
-        // Subscription Plans
-        Route::apiResource('subscription-plans', SubscriptionPlanController::class);
-
-        // Content Management (nested under courses)
+    // Content Management (nested under courses)
         // Terms
         Route::prefix('/terms')->group(function () {
             Route::get('/', [TermController::class, 'index']);
@@ -215,7 +223,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::post('leaderboards/{leaderboard}/recalculate', [LeaderboardController::class, 'recalculateRanks']);
     Route::post('leaderboards/{leaderboard}/reset', [LeaderboardController::class, 'resetLeaderboard']);
 
-    // Payment & Subscription Management
+    // Payment & Entitlement Management
+    Route::apiResource('billing-plans', BillingPlanController::class);
+    Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
+    
     Route::apiResource('payments', PaymentController::class);
     Route::get('receipts/statistics', [ReceiptController::class, 'statistics']);
     Route::apiResource('receipts', ReceiptController::class);
@@ -224,9 +235,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::post('receipts/{receipt}/regenerate-pdf', [\App\Http\Controllers\Admin\ReceiptController::class, 'regeneratePdf']);
     Route::post('receipts/{receipt}/void', [\App\Http\Controllers\Admin\ReceiptController::class, 'void']);
 
-
-    Route::apiResource('user-subscriptions', UserSubscriptionController::class);
-    Route::post('user-subscriptions/{userSubscription}/cancel', [UserSubscriptionController::class, 'cancel']);
+    Route::apiResource('user-entitlements', UserEntitlementController::class);
+    Route::post('user-entitlements/{userEntitlement}/cancel', [UserEntitlementController::class, 'cancel']);
 
     // Access Control Management
     Route::post('courses/{course}/access-type', [CourseAccessController::class, 'setCourseAccessType']);
@@ -252,7 +262,7 @@ Route::prefix('learner')->group(function () {
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
-    Route::get('my-courses', [LearnerSubscriptionController::class, 'myCourses']);
+    Route::get('my-courses', [LearnerEntitlementController::class, 'myCourses']);
     Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
 
@@ -261,17 +271,17 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::post('lessons/{lesson}/complete', [ProgressController::class, 'completeLesson']);
 
 
-    // Subscription & Access
-    Route::get('subscriptions', [LearnerSubscriptionController::class, 'index']);
-    Route::get('subscriptions/{subscription}', [LearnerSubscriptionController::class, 'show']);
-    Route::post('subscribe', [LearnerSubscriptionController::class, 'subscribe']);
-    Route::post('courses/{course}/enroll', [LearnerSubscriptionController::class, 'enroll']);
-    Route::post('subscriptions/{subscription}/cancel', [LearnerSubscriptionController::class, 'cancel']);
-    Route::post('subscriptions/{subscription}/renew', [LearnerSubscriptionController::class, 'renew']);
-    Route::get('courses/{course}/free-content', [LearnerSubscriptionController::class, 'getFreeCourseContent']);
-    Route::get('courses/{course}/subscription-plans', [LearnerSubscriptionController::class, 'getAvailablePlans']);
-    Route::get('levels/{level}/access-status', [LearnerSubscriptionController::class, 'checkLevelAccess']);
-    Route::get('lessons/{lesson}/access-status', [LearnerSubscriptionController::class, 'checkLessonAccess']);
+    // Entitlement & Access
+    Route::get('entitlements', [LearnerEntitlementController::class, 'index']);
+    Route::get('entitlements/{entitlement}', [LearnerEntitlementController::class, 'show']);
+    Route::post('acquire-entitlement', [LearnerEntitlementController::class, 'acquire']);
+    Route::post('courses/{course}/enroll', [LearnerEntitlementController::class, 'enroll']);
+    Route::post('entitlements/{entitlement}/cancel', [LearnerEntitlementController::class, 'cancel']);
+    Route::post('entitlements/{entitlement}/renew', [LearnerEntitlementController::class, 'renew']);
+    Route::get('courses/{course}/free-content', [LearnerEntitlementController::class, 'getFreeCourseContent']);
+    Route::get('courses/{course}/billing-plans', [LearnerEntitlementController::class, 'getAvailablePlans']);
+    Route::get('levels/{level}/access-status', [LearnerEntitlementController::class, 'checkLevelAccess']);
+    Route::get('lessons/{lesson}/access-status', [LearnerEntitlementController::class, 'checkLessonAccess']);
 
     // Billing & Receipts
     Route::get('receipts', [LearnerReceiptController::class, 'index']);

@@ -123,12 +123,19 @@ class PermissionSeeder extends Seeder
             'delete.payments',
             'store.payments',
 
-            // Subscriptions
-            'view.subscriptions',
-            'create.subscriptions',
-            'edit.subscriptions',
-            'delete.subscriptions',
-            'manage.subscriptions',
+            // Billing Plans
+            'view.billing_plans',
+            'create.billing_plans',
+            'edit.billing_plans',
+            'delete.billing_plans',
+            'manage.billing_plans',
+
+            // User Entitlements
+            'view.user_entitlements',
+            'create.user_entitlements',
+            'edit.user_entitlements',
+            'delete.user_entitlements',
+            'manage.user_entitlements',
 
             // Settings & Localization
             'access.settings',

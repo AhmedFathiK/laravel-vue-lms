@@ -51,18 +51,18 @@ class LearnerReceiptController extends Controller
 
         $receipt->load(['payment']);
 
-        // Load subscription if exists
-        $subscription = null;
+        // Load entitlement if exists
+        $entitlement = null;
         if ($receipt->payment) {
-            $subscription = $receipt->payment->subscription;
-            if ($subscription) {
-                $subscription->load('plan');
+            $entitlement = $receipt->payment->entitlement;
+            if ($entitlement) {
+                $entitlement->load('billingPlan');
             }
         }
 
         return response()->json([
             'receipt' => $receipt,
-            'subscription' => $subscription,
+            'entitlement' => $entitlement,
         ]);
     }
 

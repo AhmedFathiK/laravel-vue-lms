@@ -1,5 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
+import VuePlyr from '@skjnldsv/vue-plyr'
+import '@skjnldsv/vue-plyr/dist/vue-plyr.css'
 
 const props = defineProps({
   src: {
@@ -8,7 +10,7 @@ const props = defineProps({
   },
 })
 
-const audio = ref(null)
+const plyrRef = ref(null)
 const isPlaying = ref(false)
 const duration = ref(0)
 const currentTime = ref(0)
@@ -17,32 +19,37 @@ const isDragging = ref(false)
 
 const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
+const onReady = () => {
+  const player = plyrRef.value.player
+  
+  player.on('timeupdate', () => {
+    if (!isDragging.value) {
+      currentTime.value = player.currentTime
+    }
+  })
+  
+  player.on('loadedmetadata', () => {
+    duration.value = player.duration
+  })
+  
+  player.on('play', () => isPlaying.value = true)
+  player.on('pause', () => isPlaying.value = false)
+  player.on('ended', () => {
+    isPlaying.value = false
+    currentTime.value = 0
+  })
+}
+
 const togglePlay = () => {
-  if (audio.value.paused) {
-    audio.value.play()
+  const player = plyrRef.value?.player
+  if (!player) return
+
+  if (player.paused) {
+    player.play()
   } else {
-    audio.value.pause()
+    player.pause()
   }
 }
-
-const onTimeUpdate = () => {
-  if (!isDragging.value) {
-    currentTime.value = audio.value.currentTime
-  }
-}
-
-const onLoadedMetadata = () => {
-  duration.value = audio.value.duration
-}
-
-const onEnded = () => {
-  isPlaying.value = false
-  currentTime.value = 0
-  audio.value.currentTime = 0
-}
-
-const onPlay = () => isPlaying.value = true
-const onPause = () => isPlaying.value = false
 
 const onSeekStart = () => {
   isDragging.value = true
@@ -50,17 +57,26 @@ const onSeekStart = () => {
 
 const onSeekEnd = val => {
   isDragging.value = false
-  audio.value.currentTime = val
+
+  const player = plyrRef.value?.player
+
+  if (player) {
+    player.currentTime = val
+  }
 }
 
 const seek = value => {
-  // While dragging, just update the slider visual
   currentTime.value = value
 }
 
 const setSpeed = rate => {
   playbackRate.value = rate
-  audio.value.playbackRate = rate
+
+  const player = plyrRef.value?.player
+
+  if (player) {
+    player.speed = rate
+  }
 }
 
 const formatTime = seconds => {
@@ -71,9 +87,9 @@ const formatTime = seconds => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-watch(() => props.src, newSrc => {
-  if(audio.value) {
-    audio.value.load()
+watch(() => props.src, () => {
+  const player = plyrRef.value?.player
+  if (player) {
     currentTime.value = 0
     isPlaying.value = false
   }
@@ -123,9 +139,9 @@ watch(() => props.src, newSrc => {
 
     <!-- Speed -->
     <VMenu location="top">
-      <template #activator="{ props }">
+      <template #activator="{ props: menuProps }">
         <VBtn
-          v-bind="props"
+          v-bind="menuProps"
           variant="text"
           size="small"
           class="px-0 text-caption font-weight-bold"
@@ -151,16 +167,15 @@ watch(() => props.src, newSrc => {
       </VList>
     </VMenu>
 
-    <audio
-      ref="audio"
-      :src="src"
-      class="d-none"
-      @timeupdate="onTimeUpdate"
-      @loadedmetadata="onLoadedMetadata"
-      @ended="onEnded"
-      @play="onPlay"
-      @pause="onPause"
-    />
+    <div class="d-none">
+      <VuePlyr
+        ref="plyrRef"
+        :options="{ controls: [] }"
+        @ready="onReady"
+      >
+        <audio :src="src" />
+      </VuePlyr>
+    </div>
   </div>
 </template>
 

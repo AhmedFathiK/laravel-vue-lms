@@ -31,7 +31,6 @@ const refForm = ref(null)
 const defaultForm = () => ({
   title: '',
   description: '',
-  isFree: false,
   status: 'draft',
   courseId: props.courseId,
 })
@@ -44,7 +43,6 @@ watch(() => props.isDialogVisible, isVisible => {
       form.value = {
         title: props.data.title || '',
         description: props.data.description || '',
-        isFree: !!props.data.isFree,
         status: props.data.status || 'draft',
         courseId: props.courseId,
       }
@@ -127,18 +125,6 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 label="Status"
                 placeholder="Select Status"
                 :error-messages="validationErrors.status"
-              />
-            </VCol>
-
-            <!-- Free Switch -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSwitch
-                v-model="form.isFree"
-                label="Free Level"
-                :error-messages="validationErrors.isFree"
               />
             </VCol>
 

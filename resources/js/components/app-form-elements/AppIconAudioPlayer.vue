@@ -1,7 +1,7 @@
 <script setup>
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
 import { ref } from 'vue'
+import VuePlyr from '@skjnldsv/vue-plyr'
+import '@skjnldsv/vue-plyr/dist/vue-plyr.css'
 
 const props = defineProps({
   src: {
@@ -10,23 +10,25 @@ const props = defineProps({
   },
 })
 
-const player = ref(null)
+const plyrRef = ref(null)
 const isPlaying = ref(false)
 
-const handleMounted = (payload) => {
-  player.value = payload.player
-  player.value.on('play', () => isPlaying.value = true)
-  player.value.on('pause', () => isPlaying.value = false)
-  player.value.on('ended', () => isPlaying.value = false)
+const onReady = () => {
+  const player = plyrRef.value.player
+  
+  player.on('play', () => isPlaying.value = true)
+  player.on('pause', () => isPlaying.value = false)
+  player.on('ended', () => isPlaying.value = false)
 }
 
 const togglePlay = () => {
-  if (!player.value) return
-  
+  if (!plyrRef.value?.player) return
+
+  const player = plyrRef.value.player
   if (isPlaying.value) {
-    player.value.pause()
+    player.pause()
   } else {
-    player.value.play()
+    player.play()
   }
 }
 </script>
@@ -44,13 +46,18 @@ const togglePlay = () => {
     </VBtn>
     
     <div class="d-none">
-      <VideoPlayer
-        :src="src"
-        controls
-        :height="40"
-        :width="200"
-        @mounted="handleMounted"
-      />
+      <VuePlyr 
+        ref="plyrRef" 
+        :options="{ controls: [] }"
+        @ready="onReady"
+      >
+        <audio>
+          <source
+            :src="src"
+            type="audio/mpeg"
+          >
+        </audio>
+      </VuePlyr>
     </div>
   </div>
 </template>

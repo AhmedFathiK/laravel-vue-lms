@@ -55,6 +55,13 @@ export default [
     ],
   },
   {
+    title: 'Billing Plans',
+    to: { name: 'admin-billing-plans' },
+    icon: { icon: 'tabler-currency-dollar' },
+    action: 'view',
+    subject: 'user_entitlements',
+  },
+  {
     title: 'Receipts',
     to: { name: 'admin-receipts' },
     icon: { icon: 'tabler-receipt' },
@@ -62,11 +69,11 @@ export default [
     subject: 'receipts',
   },
   {
-    title: 'User Subscriptions',
-    to: { name: 'admin-user-subscriptions' },
+    title: 'User Entitlements',
+    to: { name: 'admin-user-entitlements' },
     icon: { icon: 'tabler-calendar-user' },
     action: 'view',
-    subject: 'subscriptions',
+    subject: 'user_entitlements',
   },
   { 
     heading: "General",

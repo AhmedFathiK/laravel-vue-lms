@@ -25,7 +25,7 @@ class StoreReceiptRequest extends FormRequest
         return [
             'user_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
-            'plan_id' => 'required|exists:subscription_plans,id',
+            'plan_id' => 'required|exists:billing_plans,id',
             'amount' => 'required|numeric|min:0',
             'currency' => Currency::validationRules(required: false),
             'payment_method' => 'required|string',

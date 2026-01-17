@@ -47,7 +47,6 @@ const headers = computed(() => {
     { title: 'Title', key: 'title' },
     { title: 'Description', key: 'description', sortable: false },
     { title: 'Order', key: 'sortOrder', width: '80px' },
-    { title: 'Free Access', key: 'isFree', width: '120px' },
     { title: 'Status', key: 'status', width: '120px' },
     { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
   ]
@@ -370,16 +369,6 @@ onMounted(() => {
           <!-- Title column -->
           <template #[`item.title`]="{ item }">
             <span class="font-weight-medium">{{ item.title }}</span>
-          </template>
-          
-          <!-- Free access column -->
-          <template #[`item.isFree`]="{ item }">
-            <VChip
-              :color="item.isFree ? 'success' : 'error'"
-              size="small"
-            >
-              {{ formatBoolean(item.isFree) }}
-            </VChip>
           </template>
           
           <!-- Status column -->

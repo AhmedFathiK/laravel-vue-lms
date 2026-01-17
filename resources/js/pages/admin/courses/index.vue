@@ -53,7 +53,7 @@ const widgetData = ref([
     iconColor: 'warning',
   },
   {
-    title: 'Subscription Courses',
+    title: 'Entitlement Courses',
     value: '0',
     icon: 'tabler-refresh',
     iconColor: 'info',
@@ -86,13 +86,14 @@ const headers = [
     key: 'levels',
   },
   {
-    title: 'Subscriptions',
-    key: 'subscriptions',
+    title: 'Entitlements',
+    key: 'entitlements',
   },
   {
     title: 'Status',
     key: 'status',
   },
+
   {
     title: 'Actions',
     key: 'actions',
@@ -177,7 +178,7 @@ const updateWidgetCounts = () => {
     widgetData.value[0].value = (coursesData.value.stats.total || 0).toString()
     widgetData.value[1].value = (coursesData.value.stats.active || 0).toString()
     widgetData.value[2].value = (coursesData.value.stats.draft || 0).toString()
-    widgetData.value[3].value = (coursesData.value.stats.subscription || 0).toString()
+    widgetData.value[3].value = (coursesData.value.stats.entitlement || 0).toString()
     
     return
   }
@@ -190,17 +191,17 @@ const updateWidgetCounts = () => {
   // Make sure courses array exists
   const coursesList = coursesData.value.items || coursesData.value.data || []
   
-  // Count active, draft, and subscription courses
+  // Count active, draft, and entitlement courses
   let activeCount = 0
-  let subscriptionCount = 0
+  let entitlementCount = 0
   
   coursesList.forEach(course => {
     if (course.status === 'active') {
       activeCount++
     }
     
-    if (course.subscriptionPlans && course.subscriptionPlans.some(plan => plan.plan_type === 'recurring')) {
-      subscriptionCount++
+    if (course.billing_plans && course.billing_plans.some(plan => plan.billing_type === 'recurring')) {
+      entitlementCount++
     }
   })
   
@@ -210,8 +211,8 @@ const updateWidgetCounts = () => {
   // Set draft courses (approximate based on current page)
   widgetData.value[2].value = (coursesList.length - activeCount).toString()
   
-  // Set subscription courses (approximate based on current page)
-  widgetData.value[3].value = subscriptionCount.toString()
+  // Set entitlement courses (approximate based on current page)
+  widgetData.value[3].value = entitlementCount.toString()
 }
 
 // Fetch available categories
@@ -344,11 +345,7 @@ const handlePasswordConfirm = async result => {
   }
 }
 
-// Navigation functions for subscription plans and levels
-const navigateToSubscriptionPlans = courseId => {
-  router.push(`/admin/courses/${courseId}/subscription-plans`)
-}
-
+// Navigation functions for billing plans and levels
 const navigateToLevels = courseId => {
   router.push(`/admin/courses/${courseId}/levels`)
 }
@@ -565,10 +562,10 @@ onMounted(() => {
           </div>
         </template>
 
-        <!-- Subscriptions -->
-        <template #[`item.subscriptions`]="{ item }">
+        <!-- Entitlements -->
+        <template #[`item.entitlements`]="{ item }">
           <div class="text-body-1 text-high-emphasis">
-            {{ item.subscriptionsCount || 0 }}
+            {{ item.entitlementsCount || 0 }}
           </div>
         </template>
 
@@ -584,16 +581,7 @@ onMounted(() => {
           </VChip>
         </template>
 
-        <!-- Subscription Type -->
-        <template #[`item.subscription_type`]="{ item }">
-          <VChip
-            :color="item.is_free ? 'success' : (item.subscriptionPlans && item.subscriptionPlans.some(plan => plan.plan_type === 'recurring') ? 'primary' : 'info')"
-            size="small"
-            class="text-white"
-          >
-            {{ item.is_free ? 'Free' : (item.subscriptionPlans && item.subscriptionPlans.some(plan => plan.plan_type === 'recurring') ? 'Subscription' : 'One-time') }}
-          </VChip>
-        </template>
+
 
         <!-- Actions -->
         <template #[`item.actions`]="{ item }">
@@ -603,16 +591,6 @@ onMounted(() => {
 
           <IconBtn @click="showEditCourseDialog(item)">
             <VIcon icon="tabler-edit" />
-          </IconBtn>
-          
-          <IconBtn
-            color="primary"
-            @click="navigateToSubscriptionPlans(item.id)"
-          >
-            <VIcon icon="tabler-cash" />
-            <VTooltip activator="parent">
-              Subscription Plans
-            </VTooltip>
           </IconBtn>
           
           <IconBtn

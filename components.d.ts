@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AddAuthenticatorAppDialog: typeof import('./resources/js/components/dialogs/AddAuthenticatorAppDialog.vue')['default']
     AddEditAddressDialog: typeof import('./resources/js/components/dialogs/AddEditAddressDialog.vue')['default']
+    AddEditBillingPlanDialog: typeof import('./resources/js/components/dialogs/AddEditBillingPlanDialog.vue')['default']
     AddEditCardDialog: typeof import('./resources/js/components/dialogs/AddEditCardDialog.vue')['default']
     AddEditCategoryDialog: typeof import('./resources/js/components/dialogs/AddEditCategoryDialog.vue')['default']
     AddEditConceptDialog: typeof import('./resources/js/components/dialogs/AddEditConceptDialog.vue')['default']
@@ -19,11 +20,10 @@ declare module 'vue' {
     AddEditReceiptDialog: typeof import('./resources/js/components/dialogs/AddEditReceiptDialog.vue')['default']
     AddEditRoleDialog: typeof import('./resources/js/components/dialogs/AddEditRoleDialog.vue')['default']
     AddEditSlideDialog: typeof import('./resources/js/components/dialogs/AddEditSlideDialog.vue')['default']
-    AddEditSubscriptionPlanDialog: typeof import('./resources/js/components/dialogs/AddEditSubscriptionPlanDialog.vue')['default']
     AddEditTermDialog: typeof import('./resources/js/components/dialogs/AddEditTermDialog.vue')['default']
     AddEditTrophyDialog: typeof import('./resources/js/components/dialogs/AddEditTrophyDialog.vue')['default']
     AddEditUserDialog: typeof import('./resources/js/components/dialogs/AddEditUserDialog.vue')['default']
-    AddEditUserSubscriptionDialog: typeof import('./resources/js/components/dialogs/AddEditUserSubscriptionDialog.vue')['default']
+    AddEditUserEntitlementDialog: typeof import('./resources/js/components/dialogs/AddEditUserEntitlementDialog.vue')['default']
     AddPaymentMethodDialog: typeof import('./resources/js/components/dialogs/AddPaymentMethodDialog.vue')['default']
     AppAutocomplete: typeof import('./resources/js/@core/components/app-form-elements/AppAutocomplete.vue')['default']
     AppBarSearch: typeof import('./resources/js/@core/components/AppBarSearch.vue')['default']
@@ -92,6 +92,7 @@ declare module 'vue' {
     TiptapEditor: typeof import('./resources/js/@core/components/TiptapEditor.vue')['default']
     TwoFactorAuthDialog: typeof import('./resources/js/components/dialogs/TwoFactorAuthDialog.vue')['default']
     UserUpgradePlanDialog: typeof import('./resources/js/components/dialogs/UserUpgradePlanDialog.vue')['default']
+    VideoPlayer: typeof import('./resources/js/components/VideoPlayer.vue')['default']
     VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }

@@ -9,7 +9,9 @@ use App\Models\Lesson;
 use App\Models\Level;
 use App\Models\Question;
 use App\Models\Slide;
-use App\Models\SubscriptionPlan;
+use App\Models\BillingPlan;
+use App\Models\Feature;
+use App\Models\PlanFeature;
 use App\Models\Term;
 use Illuminate\Database\Seeder;
 
@@ -45,39 +47,40 @@ class LanguageCourseSeeder extends Seeder
                 'is_featured' => true,
             ]);
 
-            // Create Subscription Plans
-            SubscriptionPlan::create([
-                'course_id' => $course->id,
-                'name' => 'Free Plan',
+            // Create Billing Plans (Free)
+            $freePlan = BillingPlan::create([
+                'name' => $courseData['title']['en'] . ' - Free Plan',
                 'description' => 'Access to basic content',
                 'price' => 0,
                 'currency' => 'USD',
-                'is_free' => true,
-                'plan_type' => 'free',
-                'billing_cycle' => 'lifetime',
+                'billing_type' => 'free',
+                'access_type' => 'lifetime',
                 'is_active' => true,
             ]);
+            
+            $freePlan->courses()->sync([$course->id]);
 
-            SubscriptionPlan::create([
-                'course_id' => $course->id,
-                'name' => 'Premium Plan',
+            // Create Billing Plans (Premium)
+            $premiumPlan = BillingPlan::create([
+                'name' => $courseData['title']['en'] . ' - Premium Plan',
                 'description' => 'Full access to all levels',
                 'price' => 19.99,
                 'currency' => 'USD',
-                'is_free' => false,
-                'plan_type' => 'recurring',
-                'billing_cycle' => 'monthly',
+                'billing_type' => 'recurring',
+                'billing_interval' => 'month',
+                'access_type' => 'while_active',
                 'is_active' => true,
             ]);
+
+            $premiumPlan->courses()->sync([$course->id]);
 
             // Create Levels
             foreach ($courseData['levels'] as $levelIndex => $levelData) {
                 $level = Level::create([
                     'course_id' => $course->id,
-                    'title' => $levelData['title'], // Translatable array
-                    'description' => ['en' => "Level " . ($levelIndex + 1), 'ar' => "المستوى " . ($levelIndex + 1)],
+                    'title' => $levelData['title'],
+                    'description' => $levelData['description'],
                     'sort_order' => $levelIndex + 1,
-                    'is_free' => $levelIndex === 0, // First level is free
                     'status' => 'published',
                 ]);
 
@@ -88,7 +91,6 @@ class LanguageCourseSeeder extends Seeder
                         'title' => $lessonData['title'], // Translatable array
                         'description' => $lessonData['description'], // Translatable array
                         'sort_order' => $lessonIndex + 1,
-                        'is_free' => $levelIndex === 0 && $lessonIndex < 2, // First 2 lessons of level 1 are free
                         'status' => 'published',
                     ]);
 

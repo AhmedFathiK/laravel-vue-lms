@@ -6,9 +6,9 @@ use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Lesson;
 use App\Models\Level;
+use App\Models\BillingPlan;
 use App\Models\User;
-use App\Models\SubscriptionPlan;
-use App\Models\UserSubscription;
+use App\Models\UserEntitlement;
 use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,28 +26,26 @@ class LearnerLessonAccessTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->create(['status' => 'published']);
 
-        // Create free subscription plan for the course
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        // Create free billing plan
+        $plan = BillingPlan::create([
             'name' => 'Free Access',
             'price' => 0,
             'currency' => 'USD',
-            'billing_cycle' => 'one-time',
-            'plan_type' => 'free',
-            'is_free' => true,
+            'billing_type' => 'free',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        // Enroll user and subscribe
+        // Enroll user and entitle
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
             'enrolled_at' => now(),
         ]);
 
-        UserSubscription::create([
+        UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'status' => 'active',
             'starts_at' => now(),
         ]);
@@ -84,28 +82,26 @@ class LearnerLessonAccessTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->create(['status' => 'published']);
 
-        // Create free subscription plan for the course
-        $plan = SubscriptionPlan::create([
-            'course_id' => $course->id,
+        // Create free billing plan
+        $plan = BillingPlan::create([
             'name' => 'Free Access',
             'price' => 0,
             'currency' => 'USD',
-            'billing_cycle' => 'one-time',
-            'plan_type' => 'free',
-            'is_free' => true,
+            'billing_type' => 'free',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        // Enroll user and subscribe
+        // Enroll user and entitle
         CourseEnrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
             'enrolled_at' => now(),
         ]);
 
-        UserSubscription::create([
+        UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'status' => 'active',
             'starts_at' => now(),
         ]);

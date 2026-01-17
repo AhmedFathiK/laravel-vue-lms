@@ -45,7 +45,6 @@ class LessonObserver
                 'level_id' => $lesson->level_id,
                 'sort_order' => $lesson->sort_order,
                 'status' => $lesson->status,
-                'is_free' => $lesson->is_free,
             ],
         ]);
 

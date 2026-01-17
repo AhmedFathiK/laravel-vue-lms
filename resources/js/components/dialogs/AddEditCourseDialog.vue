@@ -165,10 +165,10 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
   successMessage: computed(() => props.dialogMode === 'edit' ? 'Course updated successfully' : 'Course created successfully'),
 })
 
-// Subscription options
-const subscriptionOptions = [
+// Entitlement options
+const entitlementOptions = [
   { title: 'One-time Payment', value: 'one-time' },
-  { title: 'Monthly Subscription', value: 'monthly' },
+  { title: 'Monthly Entitlement', value: 'monthly' },
 ]
 
 // Leaderboard reset frequency options

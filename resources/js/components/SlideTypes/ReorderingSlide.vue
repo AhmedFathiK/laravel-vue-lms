@@ -1,6 +1,5 @@
 <script setup>
-import { VideoPlayer } from '@videojs-player/vue'
-import 'video.js/dist/video-js.css'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref } from 'vue'
 import { SlickItem, SlickList } from 'vue-slicksort'
 
@@ -112,10 +111,10 @@ const getItemClass = index => {
         style="max-width: 600px;"
       >
         <VideoPlayer
+          :key="question.mediaUrl || question.media_url"
           :src="question.mediaUrl || question.media_url"
-          controls
-          class="rounded-lg overflow-hidden"
-          fluid
+          :type="(question.mediaUrl || question.media_url)?.includes('youtube') ? 'youtube' : ((question.mediaUrl || question.media_url)?.includes('vimeo') ? 'vimeo' : 'hosted')"
+          class="rounded-lg overflow-hidden elevation-2"
         />
       </div>
     </div>

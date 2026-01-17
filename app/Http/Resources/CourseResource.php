@@ -20,19 +20,20 @@ class CourseResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'thumbnail' => $this->thumbnail,
-            'isFeatured' => $this->is_featured,
-            'courseCategoryId' => $this->course_category_id,
-            'mainLocale' => $this->main_locale,
-            'isFree' => $this->is_free,
-            'leaderboardResetFrequency' => $this->leaderboard_reset_frequency,
+            'is_featured' => $this->is_featured,
+            'course_category_id' => $this->course_category_id,
+            'main_locale' => $this->main_locale,
+            'leaderboard_reset_frequency' => $this->leaderboard_reset_frequency,
             'prerequisites' => $this->prerequisites,
-            'createdAt' => $this->created_at,
-            'updatedAt' => $this->updated_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'category' => new CourseCategoryResource($this->whenLoaded('category')),
             'levels' => $this->whenLoaded('levels'),
-            'subscriptionPlans' => $this->whenLoaded('subscriptionPlans'),
-            'levelsCount' => $this->levels_count,
-            'subscriptionsCount' => $this->subscriptions_count,
+            'billing_plans' => $this->whenLoaded('planFeatures', function () {
+                return $this->planFeatures->map(fn($pf) => $pf->billingPlan);
+            }),
+            'levels_count' => $this->levels_count,
+            'entitlements_count' => $this->entitlements_count,
         ];
     }
 }

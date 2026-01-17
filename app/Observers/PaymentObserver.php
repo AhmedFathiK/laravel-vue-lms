@@ -3,7 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Payment;
-use App\Models\UserSubscription;
+use App\Models\UserEntitlement;
 
 use Illuminate\Support\Facades\Log;
 
@@ -20,44 +20,41 @@ class PaymentObserver
             $originalStatus = $payment->getOriginal('status');
             Log::info("Payment status changed from {$originalStatus} to {$newStatus}");
             
-            // Find linked subscription
-            // Payment hasOne UserSubscription
-            $subscription = $payment->subscription;
+            // Find linked entitlement
+            // Payment hasOne UserEntitlement
+            $entitlement = $payment->entitlement;
             
-            if ($subscription) {
-                Log::info('Linked subscription found: ' . $subscription->id . ' status: ' . $subscription->status);
+            if ($entitlement) {
+                Log::info('Linked entitlement found: ' . $entitlement->id . ' status: ' . $entitlement->status);
                 // Case: pending -> completed => Activate
                 if ($newStatus === 'completed') {
-                    if ($subscription->status === UserSubscription::STATUS_PENDING) {
-                        Log::info('Activating subscription');
-                        $subscription->update([
-                            'status' => UserSubscription::STATUS_ACTIVE,
+                    if ($entitlement->status === UserEntitlement::STATUS_PENDING) {
+                        Log::info('Activating entitlement');
+                        $entitlement->update([
+                            'status' => UserEntitlement::STATUS_ACTIVE,
                         ]);
                     }
                 }
                 
                 // Case: completed -> failed => Suspend/Fail
                 if ($newStatus === 'failed') {
-                    if ($subscription->status === UserSubscription::STATUS_ACTIVE) {
-                        Log::info('Failing subscription');
-                        $subscription->update([
-                            'status' => UserSubscription::STATUS_FAILED,
-                            'auto_renew' => false,
+                    if ($entitlement->status === UserEntitlement::STATUS_ACTIVE) {
+                        Log::info('Failing entitlement');
+                        $entitlement->update([
+                            'status' => UserEntitlement::STATUS_FAILED,
                         ]);
                     }
                 }
                 
                 // Case: completed -> refunded => Cancel
                 if ($newStatus === 'refunded') {
-                    Log::info('Canceling subscription (refunded)');
-                    $subscription->update([
-                        'status' => UserSubscription::STATUS_CANCELED,
-                        'cancellation_reason' => 'Payment Refunded',
-                        'auto_renew' => false,
+                    Log::info('Canceling entitlement (refunded)');
+                    $entitlement->update([
+                        'status' => UserEntitlement::STATUS_CANCELED,
                     ]);
                 }
             } else {
-                Log::info('No linked subscription found for payment ' . $payment->id);
+                Log::info('No linked entitlement found for payment ' . $payment->id);
             }
         }
     }

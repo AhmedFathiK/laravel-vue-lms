@@ -14,6 +14,7 @@ const props = defineProps({
 
 const progress = computed(() => {
   if (props.total === 0) return 0
+  
   return (props.current / props.total) * 100
 })
 </script>

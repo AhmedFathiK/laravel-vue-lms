@@ -25,7 +25,7 @@ const toDate = ref('')
 const receiptId = ref('')
 const userQuery = ref('')
 const courseId = ref('')
-const subscriptionType = ref('')
+const billingType = ref('')
 const isAddReceiptDialogVisible = ref(false)
 const showDeleted = ref(false)
 
@@ -76,7 +76,7 @@ const fetchReceipts = async () => {
       receiptId: receiptId.value || undefined,
       userQuery: userQuery.value || undefined,
       courseId: courseId.value || undefined,
-      subscriptionType: subscriptionType.value || undefined,
+      billingType: billingType.value || undefined,
       sortBy: sortBy.value,
       sortOrder: sortOrder.value,
       withTrashed: showDeleted.value,
@@ -95,7 +95,7 @@ const fetchReceipts = async () => {
 
 // Watch for changes to trigger refetch
 watch(
-  [searchQuery, selectedPaymentMethod, selectedItemType, page, itemsPerPage, fromDate, toDate, receiptId, userQuery, courseId, subscriptionType, sortBy, sortOrder, showDeleted],
+  [searchQuery, selectedPaymentMethod, selectedItemType, page, itemsPerPage, fromDate, toDate, receiptId, userQuery, courseId, billingType, sortBy, sortOrder, showDeleted],
   fetchReceipts,
   { immediate: true },
 )
@@ -115,7 +115,7 @@ const paymentMethods = [
 // Item type options for dropdown
 const itemTypes = [
   { title: 'Course', value: 'course' },
-  { title: 'Subscription Plan', value: 'subscription' },
+  { title: 'Billing Plan', value: 'billing_plan' },
 ]
 
 // Helper functions for UI
@@ -131,7 +131,7 @@ const resolvePaymentMethodVariant = method => {
 
 const resolveItemTypeVariant = type => {
   type = type?.toLowerCase() || ''
-  if (type.includes('course') || type.includes('subscription_plan')) return { color: 'primary', icon: 'tabler-book' }
+  if (type.includes('course') || type.includes('billing_plan')) return { color: 'primary', icon: 'tabler-book' }
   
   return { color: 'secondary', icon: 'tabler-file' }
 }
@@ -266,7 +266,7 @@ const clearFilters = () => {
   receiptId.value = ''
   userQuery.value = ''
   courseId.value = ''
-  subscriptionType.value = ''
+  billingType.value = ''
 }
 
 const onReceiptSubmitSuccess = () => {
@@ -618,12 +618,12 @@ const onReceiptSubmitSuccess = () => {
         <VCardText>
           <p>Are you sure you want to delete this receipt? This action cannot be undone.</p>
           <VAlert
-            v-if="receiptToDelete?.is_linked_to_subscription"
+            v-if="receiptToDelete?.is_linked_to_entitlement"
             color="warning"
             variant="tonal"
             class="mb-4"
           >
-            This receipt is linked to a subscription. Deleting it will also revoke access to that subscription.
+            This receipt is linked to an entitlement. Deleting it will also revoke access to that entitlement.
           </VAlert>
           <AppTextField
             v-model="deletionReason"
@@ -662,7 +662,7 @@ const onReceiptSubmitSuccess = () => {
           Confirm Void
         </VCardTitle>
         <VCardText>
-          <p>Are you sure you want to void this receipt? This will cancel the associated payment and deactivate the subscription.</p>
+          <p>Are you sure you want to void this receipt? This will cancel the associated payment and deactivate the entitlement.</p>
           <AppTextField
             v-model="voidReason"
             label="Void Reason"

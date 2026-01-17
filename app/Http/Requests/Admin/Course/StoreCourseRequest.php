@@ -36,7 +36,7 @@ class StoreCourseRequest extends FormRequest
             'video_url' => 'nullable|url',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'subscription_only' => 'boolean',
+            'entitlement_only' => 'boolean',
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'string|max:255',
         ];

@@ -46,7 +46,6 @@ class LevelObserver
                 'course_id' => $level->course_id,
                 'sort_order' => $level->sort_order,
                 'status' => $level->status,
-                'is_free' => $level->is_free,
             ],
         ]);
 

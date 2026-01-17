@@ -51,7 +51,6 @@ const headers = computed(() => {
     { title: 'Video', key: 'video', sortable: false, width: '80px' },
     { title: 'Slides', key: 'slidesCount', width: '80px' },
     { title: 'Order', key: 'sortOrder', width: '80px' },
-    { title: 'Free Access', key: 'isFree', width: '100px' },
     { title: 'Status', key: 'status', width: '100px' },
     { title: 'Actions', key: 'actions', sortable: false, width: '170px' },
   ]
@@ -557,17 +556,6 @@ onMounted(() => {
               label
             >
               {{ item.slides && Array.isArray(item.slides) ? item.slides.length : 0 }}
-            </VChip>
-          </template>
-          
-          <!-- Free Access Column -->
-          <template #[`item.isFree`]="{ item }">
-            <VChip
-              :color="item.isFree ? 'success' : 'error'"
-              size="small"
-              label
-            >
-              {{ item.isFree ? 'Free' : 'Premium' }}
             </VChip>
           </template>
           

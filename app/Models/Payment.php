@@ -45,10 +45,10 @@ class Payment extends Model
     }
 
     /**
-     * Get the subscription associated with this payment.
+     * Get the entitlement associated with this payment.
      */
-    public function subscription(): HasOne
+    public function entitlement(): HasOne
     {
-        return $this->hasOne(UserSubscription::class);
+        return $this->hasOne(UserEntitlement::class);
     }
 }

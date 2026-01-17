@@ -1,4 +1,5 @@
 <script setup>
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import api from '@/utils/api'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,6 +17,7 @@ const loading = ref(true)
 const error = ref(null)
 const selectedItem = ref(null)
 const isModalVisible = ref(false)
+const isVideoModalVisible = ref(false)
 
 const fetchCourseContent = async () => {
   loading.value = true
@@ -37,6 +39,14 @@ onMounted(fetchCourseContent)
 const handleItemClick = item => {
   if (item.locked) return
 
+  // If it's a lesson with video, open video modal
+  if (item.type === 'lesson' && item.videoType) {
+    selectedItem.value = item
+    isVideoModalVisible.value = true
+    
+    return
+  }
+
   if (item.type === 'lesson') {
     router.push({ 
       name: 'my-courses-study-id', 
@@ -51,13 +61,19 @@ const handleItemClick = item => {
 
 const openModal = item => {
   if (!item.locked) {
-    selectedItem.value = item
-    isModalVisible.value = true
+    if (item.type === 'lesson' && item.videoType) {
+      selectedItem.value = item
+      isVideoModalVisible.value = true
+    } else {
+      selectedItem.value = item
+      isModalVisible.value = true
+    }
   }
 }
 
 const closeModal = () => {
   isModalVisible.value = false
+  isVideoModalVisible.value = false
   selectedItem.value = null
 }
 
@@ -189,14 +205,14 @@ const isCurrentItem = (item, level) => {
                         ]"
                         @click="handleItemClick(item)"
                       >
-                        <VImg 
-                          v-if="item.thumbnail" 
-                          :src="item.thumbnail" 
-                          cover 
+                        <VImg
+                          v-if="item.thumbnail"
+                          :src="item.thumbnail"
+                          cover
                         />
-                        <VIcon 
-                          v-else 
-                          size="28" 
+                        <VIcon
+                          v-else
+                          size="28"
                           :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
                           :class="{ 'icon-locked': item.locked }"
                         >
@@ -311,6 +327,53 @@ const isCurrentItem = (item, level) => {
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <!-- Video Player Modal -->
+    <VDialog
+      v-model="isVideoModalVisible"
+      fullscreen
+      transition="dialog-bottom-transition"
+      class="video-player-dialog"
+    >
+      <VCard
+        color="black"
+        class="d-flex flex-column h-screen position-relative"
+      >
+        <!-- Transparent Overlay Header -->
+        <div class="video-header-overlay d-flex align-center px-6 py-4">
+          <div class="text-h6 text-white font-weight-medium text-truncate">
+            {{ selectedItem?.title }}
+          </div>
+          
+          <VSpacer />
+          
+          <VBtn
+            icon
+            variant="tonal"
+            color="white"
+            class="close-btn"
+            @click="closeModal"
+          >
+            <VIcon size="24">
+              tabler-x
+            </VIcon>
+          </VBtn>
+        </div>
+        
+        <VCardText class="flex-grow-1 d-flex align-center justify-center pa-0 bg-black overflow-hidden">
+          <div class="w-100 h-100 d-flex align-center justify-center">
+            <VideoPlayer 
+              v-if="selectedItem && selectedItem.videoType"
+              :key="selectedItem.id"
+              :src="selectedItem.videoUrl" 
+              :type="selectedItem.videoType" 
+              autoplay 
+              class="video-player-content"
+            />
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </VContainer>
 </template>
 
@@ -416,6 +479,49 @@ const isCurrentItem = (item, level) => {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+/* Video Player Dialog Enhancements */
+.video-header-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.video-header-overlay > * {
+  pointer-events: auto;
+}
+
+.video-player-dialog :deep(.v-card) {
+  background-color: #000 !important;
+}
+
+.close-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+
+.video-player-content {
+  width: 100%;
+  max-width: 1200px;
+  height: auto;
+  aspect-ratio: 16/9;
+}
+
+/* Hide header when user is inactive (if implemented in player) */
+.video-player-dialog:hover .video-header-overlay {
+  opacity: 1;
 }
 
 /* Responsive adjustments */

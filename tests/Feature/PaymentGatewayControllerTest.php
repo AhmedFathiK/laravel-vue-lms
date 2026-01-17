@@ -177,17 +177,16 @@ class PaymentGatewayControllerTest extends TestCase
         ]);
     }
 
-    public function test_callback_creates_subscription_and_receipt_for_valid_plan_payment(): void
+    public function test_callback_creates_entitlement_and_receipt_for_valid_plan_payment(): void
     {
         $user = User::factory()->create();
         $course = \App\Models\Course::factory()->create();
-        $plan = \App\Models\SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = \App\Models\BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'billing_cycle' => 'one-time',
-            'plan_type' => 'one-time',
+            'billing_type' => 'one_time',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
@@ -224,9 +223,9 @@ class PaymentGatewayControllerTest extends TestCase
 
         $response->assertRedirect('/courses/' . $course->id . '?payment=success&payment_id=' . $payment->id);
 
-        $this->assertDatabaseHas('user_subscriptions', [
+        $this->assertDatabaseHas('user_entitlements', [
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'status' => 'active',
         ]);
 
@@ -236,24 +235,23 @@ class PaymentGatewayControllerTest extends TestCase
         ]);
     }
 
-    public function test_callback_handles_duplicate_subscription_gracefully(): void
+    public function test_callback_handles_duplicate_entitlement_gracefully(): void
     {
         $user = User::factory()->create();
         $course = \App\Models\Course::factory()->create();
-        $plan = \App\Models\SubscriptionPlan::create([
-            'course_id' => $course->id,
+        $plan = \App\Models\BillingPlan::create([
             'name' => 'Test Plan',
             'price' => 100,
             'currency' => 'USD',
-            'billing_cycle' => 'one-time',
-            'plan_type' => 'one-time',
+            'billing_type' => 'one_time',
+            'access_type' => 'lifetime',
             'is_active' => true,
         ]);
 
-        // Create existing subscription
-        \App\Models\UserSubscription::create([
+        // Create existing entitlement
+        \App\Models\UserEntitlement::create([
             'user_id' => $user->id,
-            'subscription_plan_id' => $plan->id,
+            'billing_plan_id' => $plan->id,
             'starts_at' => now(),
             'status' => 'active',
         ]);
@@ -297,7 +295,7 @@ class PaymentGatewayControllerTest extends TestCase
             'item_id' => $plan->id,
         ]);
 
-        // Verify only one subscription exists
-        $this->assertEquals(1, \App\Models\UserSubscription::where('user_id', $user->id)->where('subscription_plan_id', $plan->id)->count());
+        // Verify only one entitlement exists
+        $this->assertEquals(1, \App\Models\UserEntitlement::where('user_id', $user->id)->where('billing_plan_id', $plan->id)->count());
     }
 }
