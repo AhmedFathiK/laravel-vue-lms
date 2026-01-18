@@ -244,7 +244,7 @@ const isCurrentItem = (item, level) => {
 
                   <!-- Content Column -->
                   <div 
-                    class="timeline-content py-4 px-5 flex-grow-1 rounded-lg border"
+                    class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
                     :class="{ 
                       'cursor-pointer': !item.locked,
                       'bg-light-primary': isCurrentItem(item, level)
@@ -270,14 +270,14 @@ const isCurrentItem = (item, level) => {
                         </p>
                       </div>
                                  
-                      <!-- Play Button for Video Lessons -->
+                      <!-- Desktop Play Button -->
                       <VBtn
                         v-if="item.type === 'lesson' && item.videoType && !item.locked"
                         icon
                         variant="tonal"
                         color="primary"
                         size="small"
-                        class="ms-4 play-btn"
+                        class="ms-4 play-btn d-none d-sm-inline-flex"
                         @click.stop="handlePlayClick(item)"
                       >
                         <VIcon
@@ -286,6 +286,21 @@ const isCurrentItem = (item, level) => {
                         />
                       </VBtn>
                     </div>
+
+                    <!-- Mobile Play Button -->
+                    <VBtn
+                      v-if="item.type === 'lesson' && item.videoType && !item.locked"
+                      block
+                      variant="tonal"
+                      color="primary"
+                      rounded="pill"
+                      size="small"
+                      class="mt-3 d-flex d-sm-none"
+                      prepend-icon="tabler-player-play-filled"
+                      @click.stop="handlePlayClick(item)"
+                    >
+                      Watch Video
+                    </VBtn>
 
                     <VChip
                       v-if="item.type === 'exam'"
@@ -422,7 +437,7 @@ const isCurrentItem = (item, level) => {
 
 .timeline-visual {
     min-width: 64px;
-    height: 100%;
+    align-self: stretch;
 }
 
 .avatar-wrapper {
@@ -593,7 +608,7 @@ const isCurrentItem = (item, level) => {
   }
   
   .timeline-visual {
-      min-width: 48px;
+      min-width: 56px;
   }
   
   .text-h6 {
