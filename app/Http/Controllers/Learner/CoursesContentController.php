@@ -152,7 +152,6 @@ class CoursesContentController extends Controller
             if (isset($level['lessons'])) {
                 foreach ($level['lessons'] as $lesson) {
                     $lesson['type'] = 'lesson';
-                    $lesson['icon'] = !empty($lesson['video_type']) ? 'tabler-player-play' : 'tabler-book';
                     // is_completed is count, convert to boolean
                     $lesson['completed'] = $lesson['is_completed'] > 0;
                     $items[] = $lesson;
@@ -163,7 +162,6 @@ class CoursesContentController extends Controller
             if (isset($level['exams'])) {
                 foreach ($level['exams'] as $exam) {
                     $exam['type'] = 'exam';
-                    $exam['icon'] = 'tabler-clipboard-check';
                     $exam['completed'] = $exam['is_completed'] > 0;
                     $items[] = $exam;
                 }

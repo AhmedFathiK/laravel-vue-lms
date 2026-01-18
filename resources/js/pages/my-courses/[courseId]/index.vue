@@ -217,7 +217,7 @@ const isCurrentItem = (item, level) => {
                           :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
                           :class="{ 'icon-locked': item.locked }"
                         >
-                          {{ item.type === 'exam' ? 'tabler-certificate' : (item.icon || 'tabler-book') }}
+                          {{ item.type === 'exam' ? 'tabler-certificate' : 'tabler-book' }}
                         </VIcon>
                       </VAvatar>
 
