@@ -1,5 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import { useDebounceFn } from '@vueuse/core'
 import { ref } from 'vue'
 
 const props = defineProps({
@@ -100,10 +101,15 @@ const init = () => {
 
 init()
 
+// Debounced emit to prevent excessive API calls
+const debouncedEmit = useDebounceFn(val => {
+  emit('update:modelValue', { ...val })
+}, 1000)
+
 // Sync to modelValue
 watch(userAnswers, newVal => {
   if (props.isExam) {
-    emit('update:modelValue', newVal)
+    debouncedEmit(newVal)
   }
 }, { deep: true })
 

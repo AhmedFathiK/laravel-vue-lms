@@ -41,9 +41,9 @@ watch(() => props.modelValue, newVal => {
 
 // Sync to modelValue (Exam Mode)
 watch(userAnswers, newVal => {
-  if (props.isExam && JSON.stringify(newVal) !== JSON.stringify(props.modelValue)) {
-    // Break infinite loop: only emit if different from prop
-    emit('update:modelValue', newVal)
+  if (props.isExam) {
+    // Always emit a clone so parent gets new reference and detects change
+    emit('update:modelValue', { ...newVal })
   }
 }, { deep: true })
 
