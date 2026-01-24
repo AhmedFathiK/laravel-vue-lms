@@ -91,9 +91,13 @@ const completeItem = itemToComplete => {
 
 const getLevelProgress = level => {
   if (!level.items || level.items.length === 0) return 0
-  const completedCount = level.items.filter(item => item.completed).length
   
-  return Math.round((completedCount / level.items.length) * 100)
+  const lessons = level.items.filter(item => item.type === 'lesson')
+  if (lessons.length === 0) return 0
+  
+  const completedCount = lessons.filter(item => item.completed).length
+  
+  return Math.round((completedCount / lessons.length) * 100)
 }
 
 const isLastItem = (level, index) => {
@@ -251,24 +255,29 @@ const isCurrentItem = (item, level) => {
             </h2>
 
             <!-- Progress Bar -->
-            <div class="d-flex align-center mb-8">
-              <VProgressLinear
-                :model-value="getLevelProgress(level)"
-                color="success"
-                height="10"
-                rounded
-                class="flex-grow-1"
-                bg-color="#E0E0E0"
-                bg-opacity="1"
-              />
-              <VChip 
-                color="success" 
-                size="small" 
-                class="ms-4 font-weight-bold" 
-                variant="flat"
-              >
-                {{ getLevelProgress(level) }}%
-              </VChip>
+            <div class="mb-8">
+              <div class="text-body-2 mb-1 text-medium-emphasis">
+                Completed Lessons
+              </div>
+              <div class="d-flex align-center">
+                <VProgressLinear
+                  :model-value="getLevelProgress(level)"
+                  color="success"
+                  height="10"
+                  rounded
+                  class="flex-grow-1"
+                  bg-color="#E0E0E0"
+                  bg-opacity="1"
+                />
+                <VChip 
+                  color="success" 
+                  size="small" 
+                  class="ms-4 font-weight-bold" 
+                  variant="flat"
+                >
+                  {{ getLevelProgress(level) }}%
+                </VChip>
+              </div>
             </div>
 
             <!-- Timeline Items -->
@@ -440,9 +449,7 @@ const isCurrentItem = (item, level) => {
         >
           <VCardText class="pa-6">
             <div class="timeline-container">
-              <div
-                class="timeline-item-row"
-              >
+              <div class="timeline-item-row">
                 <!-- Visual Column -->
                 <div class="timeline-visual d-flex flex-column align-center me-5">
                   <div class="avatar-wrapper">
