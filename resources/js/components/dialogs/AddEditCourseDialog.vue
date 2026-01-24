@@ -1,6 +1,9 @@
 <script setup>
 import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
+import AppSelect from '@core/components/app-form-elements/AppSelect.vue'
+import AppTextField from '@core/components/app-form-elements/AppTextField.vue'
+import AppTextarea from '@core/components/app-form-elements/AppTextarea.vue'
 import { requiredValidator } from '@core/utils/validators'
 import api from '@/utils/api'
 import { computed, ref, watch } from 'vue'
@@ -40,6 +43,7 @@ const createDefaultForm = () => ({
   prerequisites: [],
   status: 'draft',
   finalExamId: null,
+  placementExamId: null,
 })
 
 const form = ref(createDefaultForm())
@@ -97,6 +101,7 @@ watch(() => props.isDialogVisible, isVisible => {
         prerequisites: props.data.prerequisites || [],
         status: props.data.status || 'draft',
         finalExamId: props.data.finalExamId || null,
+        placementExamId: props.data.placementExamId || null,
       }
       
       // Fetch exams for this course if editing
@@ -241,12 +246,14 @@ const statusOptions = [
         >
           <VRow>
             <!-- Course Title -->
-            <VCol cols="12">
-              <VTextField
+            <VCol
+              cols="12"
+              md="8"
+            >
+              <AppTextField
                 v-model="form.title"
                 label="Title"
                 placeholder="Enter course title"
-                variant="outlined"
                 :rules="[requiredValidator]"
                 :error-messages="validationErrors.title"
                 required
@@ -254,15 +261,17 @@ const statusOptions = [
             </VCol>
 
             <!-- Course Category -->
-            <VCol cols="12">
-              <VSelect
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <AppSelect
                 v-model="form.courseCategoryId"
                 :items="categories"
                 item-title="name"
                 item-value="id"
                 label="Category"
                 placeholder="Select category"
-                variant="outlined"
                 :rules="[requiredValidator]"
                 :error-messages="validationErrors.courseCategoryId"
                 required
@@ -271,12 +280,11 @@ const statusOptions = [
 
             <!-- Course Description -->
             <VCol cols="12">
-              <VTextarea
+              <AppTextarea
                 v-model="form.description"
                 label="Description"
                 placeholder="Enter course description"
-                variant="outlined"
-                rows="4"
+                rows="3"
                 :rules="[requiredValidator]"
                 :error-messages="validationErrors.description"
                 required
@@ -286,15 +294,14 @@ const statusOptions = [
             <!-- Course Status -->
             <VCol
               cols="12"
-              md="6"
+              md="4"
             >
-              <VSelect
+              <AppSelect
                 v-model="form.status"
                 :items="statusOptions"
                 item-title="title"
                 item-value="value"
                 label="Status"
-                variant="outlined"
                 :error-messages="validationErrors.status"
               />
             </VCol>
@@ -303,40 +310,63 @@ const statusOptions = [
             <VCol
               v-if="props.dialogMode === 'edit'"
               cols="12"
-              md="6"
+              md="4"
             >
-              <VSelect
+              <AppSelect
                 v-model="form.finalExamId"
                 :items="courseExams"
                 item-title="title"
                 item-value="id"
                 label="Final Exam"
                 placeholder="Select Final Exam"
-                variant="outlined"
                 :loading="isExamsLoading"
                 clearable
                 :error-messages="validationErrors.finalExamId"
-                hint="Only exams belonging to this course are shown"
-                persistent-hint
+              />
+            </VCol>
+
+            <!-- Placement Exam Selection -->
+            <VCol
+              v-if="props.dialogMode === 'edit'"
+              cols="12"
+              md="4"
+            >
+              <AppSelect
+                v-model="form.placementExamId"
+                :items="courseExams"
+                item-title="title"
+                item-value="id"
+                label="Placement Test"
+                placeholder="Select Placement Test"
+                :loading="isExamsLoading"
+                clearable
+                :error-messages="validationErrors.placementExamId"
               />
             </VCol>
 
             <!-- Leaderboard Reset Frequency -->
-            <VCol cols="12">
-              <VSelect
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppSelect
                 v-model="form.leaderboardResetFrequency"
                 :items="resetFrequencyOptions"
                 item-title="title"
                 item-value="value"
                 label="Leaderboard Reset Frequency"
-                variant="outlined"
                 :error-messages="validationErrors.leaderboardResetFrequency"
               />
             </VCol>
 
             <!-- Thumbnail -->
-            <VCol cols="12">
-              <VLabel>Thumbnail</VLabel>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                Thumbnail
+              </VLabel>
               <VFileInput
                 v-model="thumbnail"
                 accept="image/*"
@@ -354,43 +384,31 @@ const statusOptions = [
               >
                 <VImg
                   :src="thumbnailPreview"
-                  height="100"
+                  height="80"
                   contain
-                  class="bg-grey-lighten-2 rounded mt-2"
+                  class="bg-grey-lighten-2 rounded"
                 />
-                <div class="mt-2">
-                  <VChip
-                    color="primary"
-                    size="small"
-                    class="me-2"
-                  >
-                    New image selected
-                  </VChip>
-                </div>
               </div>
               
               <!-- Current image from server -->
               <div
                 v-else-if="props.data?.thumbnail && !deleteThumbnail"
-                class="mt-2"
+                class="mt-2 d-flex align-center gap-2"
               >
                 <VImg
                   :src="props.data.thumbnail"
-                  height="100"
+                  height="80"
+                  width="80"
                   contain
-                  class="bg-grey-lighten-2 rounded mt-2"
+                  class="bg-grey-lighten-2 rounded"
                 />
-                <div class="mt-2">
-                  <VBtn
-                    color="error"
-                    size="small"
-                    variant="outlined"
-                    prepend-icon="tabler-trash"
-                    @click="deleteThumbnail = true"
-                  >
-                    Remove Thumbnail
-                  </VBtn>
-                </div>
+                <VBtn
+                  color="error"
+                  size="small"
+                  variant="text"
+                  icon="tabler-trash"
+                  @click="deleteThumbnail = true"
+                />
               </div>
               
               <!-- Message when thumbnail is marked for deletion -->
@@ -402,48 +420,36 @@ const statusOptions = [
                   color="warning"
                   variant="tonal"
                   density="compact"
+                  class="py-1 px-2 text-caption"
                 >
-                  Thumbnail will be removed when you save the course.
+                  Will be removed.
                   <VBtn
                     size="x-small"
-                    class="ms-2"
+                    variant="text"
+                    class="ms-1"
                     @click="deleteThumbnail = false"
                   >
                     Undo
                   </VBtn>
                 </VAlert>
               </div>
-
-              <!-- Placeholder when no image -->
-              <div
-                v-else
-                class="mt-2"
-              >
-                <VAvatar
-                  size="100"
-                  color="primary"
-                  variant="tonal"
-                >
-                  <VIcon
-                    icon="tabler-camera-off"
-                    size="32"
-                  />
-                </VAvatar>
-              </div>
             </VCol>
 
             <!-- Prerequisites -->
             <VCol cols="12">
-              <VLabel>Prerequisites (Optional)</VLabel>
+              <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                Prerequisites (Optional)
+              </VLabel>
               <div class="d-flex gap-2">
-                <VTextField
+                <AppTextField
                   v-model="prerequisiteInput"
                   placeholder="Enter prerequisite"
-                  variant="outlined"
                   class="flex-grow-1"
+                  @keydown.enter.prevent="addPrerequisite"
                 />
                 <VBtn
                   color="primary"
+                  variant="tonal"
                   @click="addPrerequisite"
                 >
                   Add
@@ -451,11 +457,11 @@ const statusOptions = [
               </div>
               
               <!-- Prerequisites List -->
-              <div class="mt-2">
+              <div class="mt-2 d-flex flex-wrap gap-1">
                 <VChip
                   v-for="(prereq, index) in form.prerequisites"
                   :key="index"
-                  class="ma-1"
+                  size="small"
                   closable
                   @click:close="removePrerequisite(index)"
                 >
