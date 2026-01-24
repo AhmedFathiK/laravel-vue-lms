@@ -1,6 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   question: {
@@ -107,6 +107,11 @@ const selectOption = option => {
   userAnswers.value[activeBlankIndex.value] = option
   activeBlankIndex.value = null // Hide choices after selection
   
+  // Ensure immediate update in Exam Mode
+  if (props.isExam) {
+    emit('update:modelValue', { ...userAnswers.value })
+  }
+
   // Check if all blanks are filled
   const allFilled = blanks.value.every((_, i) => userAnswers.value[i] !== '')
   if (allFilled && !props.isExam) {

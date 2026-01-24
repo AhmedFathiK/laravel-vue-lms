@@ -1,7 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { useDebounceFn } from '@vueuse/core'
-import { ref } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 
 const props = defineProps({
   question: {
@@ -101,15 +100,22 @@ const init = () => {
 
 init()
 
-// Debounced emit to prevent excessive API calls
-const debouncedEmit = useDebounceFn(val => {
-  emit('update:modelValue', { ...val })
-}, 1000)
+onUnmounted(() => {
+  if (debouncedEmit.value) clearTimeout(debouncedEmit.value)
+})
+
+const debouncedEmit = ref(null)
 
 // Sync to modelValue
 watch(userAnswers, newVal => {
   if (props.isExam) {
-    debouncedEmit(newVal)
+    // Clear existing timer
+    if (debouncedEmit.value) clearTimeout(debouncedEmit.value)
+    
+    // Set new timer
+    debouncedEmit.value = setTimeout(() => {
+      emit('update:modelValue', { ...newVal })
+    }, 1000)
   }
 }, { deep: true })
 

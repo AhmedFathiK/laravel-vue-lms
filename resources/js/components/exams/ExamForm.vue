@@ -152,7 +152,8 @@ const handleQuestionCreated = response => {
           type: question.type,
           questionText: question.questionText,
 
-          // Don't overwrite points/order as they are exam-specific
+          // Update points if provided (from Exam Builder dialog), otherwise keep existing
+          points: question.points !== undefined ? question.points : questions[idx].points,
         }
       }
     } else {
@@ -497,6 +498,7 @@ onUnmounted(() => {
       :course-id="courseId"
       :dialog-mode="editingQuestionData ? 'edit' : 'add'"
       :data="editingQuestionData"
+      is-exam-context
       @refresh="handleQuestionCreated"
     />
   </section>

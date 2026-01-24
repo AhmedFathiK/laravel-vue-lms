@@ -1,6 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   question: {
@@ -43,6 +43,7 @@ watch(() => props.modelValue, newVal => {
 watch(matches, newVal => {
   if (props.isExam) {
     // Always emit a clone so parent gets new reference and detects change
+    // Removed JSON.stringify check as it was preventing valid updates when adding/removing matches
     emit('update:modelValue', { ...newVal })
   }
 }, { deep: true })

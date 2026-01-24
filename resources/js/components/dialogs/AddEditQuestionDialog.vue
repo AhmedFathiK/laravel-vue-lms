@@ -23,6 +23,10 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  isExamContext: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
@@ -519,12 +523,12 @@ const extraData = computed(() => {
 
   // Handle audio file upload for image_with_audio
   if (audioFile.value && localQuestion.value.mediaType === 'image_with_audio' && localQuestion.value.audioInputType === 'file') {
-    data.audio_file = audioFile.value
+    data.audioFile = audioFile.value
   }
 
   // Add video source
   if (localQuestion.value.mediaType === 'video') {
-    data.video_source = localQuestion.value.videoSource
+    data.videoSource = localQuestion.value.videoSource
   }
 
   // Map camelCase to snake_case for backend
@@ -548,10 +552,45 @@ const extraData = computed(() => {
 
 const customEmit = (event, ...args) => {
   if (event === 'saved') {
-    emit('refresh', ...args)
+    const response = args[0]
+    
+    // If in exam context, we need to pass back the local points because we stripped them from the API call
+    // but the parent ExamForm needs them to update the pivot table.
+    if (props.isExamContext) {
+      const questionData = response.data?.data || response.data || response
+      
+      // Merge the points from the form into the response data passed back to parent
+      const enhancedData = {
+        ...questionData,
+        points: localQuestion.value.points,
+      }
+      
+      // Mock a response object structure if needed, or just pass the data if that's what refresh expects.
+      // Looking at ExamForm.vue: handleQuestionCreated takes 'response' and does 'response.data?.data || response.data || response'
+      // So passing the enhanced data object directly as the argument works if we wrap it or pass it.
+      // But 'refresh' usually expects the response object.
+      // Let's modify the args[0] to contain our data.
+      
+      // Easiest: Pass a structure that ExamForm can parse.
+      // If we pass { data: enhancedData }, ExamForm will use enhancedData.
+      emit('refresh', { data: enhancedData })
+    } else {
+      emit('refresh', ...args)
+    }
   } else {
     emit(event, ...args)
   }
+}
+
+// Transform form data to remove points if in exam context and editing
+const transformFormData = data => {
+  if (props.isExamContext && props.dialogMode === 'edit') {
+    const { points, ...rest } = data
+    
+    return rest
+  }
+  
+  return data
 }
 
 const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitForm } = useCrudSubmit({
@@ -564,6 +603,7 @@ const { isLoading: isSubmitting, validationErrors: formErrors, onSubmit: submitF
   emit: customEmit,
   extraData,
   isFormData: true,
+  transformFormData,
   successMessage: computed(() => props.dialogMode === 'edit' 
     ? t('questions.success.questionUpdated', 'Question updated successfully')
     : t('questions.success.questionCreated', 'Question created successfully')),
