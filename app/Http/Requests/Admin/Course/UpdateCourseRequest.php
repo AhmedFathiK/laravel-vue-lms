@@ -39,6 +39,7 @@ class UpdateCourseRequest extends FormRequest
             'entitlement_only' => 'boolean',
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'string|max:255',
+            'final_exam_id' => 'nullable|exists:exams,id',
         ];
 
         return $rules;

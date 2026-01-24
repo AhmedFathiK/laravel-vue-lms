@@ -7,9 +7,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isExam: {
+    type: Boolean,
+    default: false,
+  },
+  modelValue: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
-const emit = defineEmits(['answered'])
+const emit = defineEmits(['answered', 'update:modelValue'])
 
 const getBlanksData = () => {
   if (Array.isArray(props.question.content)) {
@@ -78,12 +86,26 @@ const blanks = computed(() => {
 
 // Initialize user answers
 const init = () => {
+  // Sync from modelValue (Exam resume)
+  if (props.isExam && props.modelValue) {
+    userAnswers.value = { ...props.modelValue }
+    
+    return
+  }
+
   blanks.value.forEach((b, i) => {
     userAnswers.value[i] = ''
   })
 }
 
 init()
+
+// Sync to modelValue
+watch(userAnswers, newVal => {
+  if (props.isExam) {
+    emit('update:modelValue', newVal)
+  }
+}, { deep: true })
 
 const submitAnswer = () => {
   isSubmitted.value = true
@@ -118,7 +140,7 @@ const submitAnswer = () => {
 defineExpose({ submitAnswer })
 
 const getFeedbackClass = index => {
-  if (isSubmitted.value) {
+  if (isSubmitted.value && !props.isExam) {
     const blank = blanks.value[index]
     const user = userAnswers.value[index] ? userAnswers.value[index].toLowerCase().trim() : ''
         
@@ -218,14 +240,14 @@ const termText = computed(() => props.question.termText)
                 density="compact"
                 class="d-inline-block mx-2"
                 style="width: 150px; text-align: center;"
-                :disabled="isSubmitted"
+                :disabled="isSubmitted && !isExam"
                 :class="getFeedbackClass(bIndex)"
                 hide-details
               />
               
               <!-- Correct answer display if wrong -->
               <div
-                v-if="isSubmitted && !getFeedbackClass(bIndex).includes('text-success')"
+                v-if="isSubmitted && !getFeedbackClass(bIndex).includes('text-success') && !isExam"
                 class="text-caption text-success mt-1"
               >
                 {{ Array.isArray(blank.answer) ? blank.answer[0] : blank.answer }}

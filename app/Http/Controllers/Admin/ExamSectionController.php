@@ -115,17 +115,35 @@ class ExamSectionController extends Controller
         $request->validate([
             'question_id' => 'required|exists:questions,id',
             'order' => 'required|integer|min:0',
+            'points' => 'nullable|integer|min:0',
         ]);
 
-        // Check if the question is already in the section
-        if ($section->questions()->where('question_id', $request->question_id)->exists()) {
+        $question = Question::findOrFail($request->question_id);
+        $exam = $section->exam;
+
+        // Verify question belongs to the same course
+        if ($question->course_id !== $exam->course_id) {
             return response()->json([
-                'message' => 'Question already exists in this section'
+                'message' => 'Question does not belong to the same course as the exam'
+            ], 422);
+        }
+
+        // Check if the question is already in any section of the exam
+        $alreadyExists = DB::table('exam_question')
+            ->join('exam_sections', 'exam_question.exam_section_id', '=', 'exam_sections.id')
+            ->where('exam_sections.exam_id', $exam->id)
+            ->where('exam_question.question_id', $request->question_id)
+            ->exists();
+
+        if ($alreadyExists) {
+            return response()->json([
+                'message' => 'Question already exists in this exam'
             ], 422);
         }
 
         $section->questions()->attach($request->question_id, [
             'order' => $request->order,
+            'points' => $request->points,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -186,18 +204,40 @@ class ExamSectionController extends Controller
     private function attachQuestions(ExamSection $section, array $questions): void
     {
         $questionData = [];
+        $exam = $section->exam;
+
+        // Get all question IDs already in this exam
+        $existingQuestionIds = DB::table('exam_question')
+            ->join('exam_sections', 'exam_question.exam_section_id', '=', 'exam_sections.id')
+            ->where('exam_sections.exam_id', $exam->id)
+            ->pluck('exam_question.question_id')
+            ->toArray();
 
         foreach ($questions as $question) {
             if (isset($question['id']) && isset($question['order'])) {
-                $questionData[$question['id']] = [
+                $questionId = $question['id'];
+
+                // Check for duplicates in the current request or already in the exam
+                if (isset($questionData[$questionId]) || in_array($questionId, $existingQuestionIds)) {
+                    continue;
+                }
+
+                // Verify course matching
+                $qModel = Question::find($questionId);
+                if (!$qModel || $qModel->course_id !== $exam->course_id) {
+                    continue;
+                }
+
+                $questionData[$questionId] = [
                     'order' => $question['order'],
+                    'points' => $question['points'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
         }
 
-        if (count($questionData) > 0) {
+        if (!empty($questionData)) {
             $section->questions()->attach($questionData);
         }
     }

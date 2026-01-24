@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class ExamResponse extends Model
 {
@@ -54,8 +55,15 @@ class ExamResponse extends Model
     {
         $question = $this->question;
 
+        if (!$question) {
+            return;
+        }
+
         // For writing questions, set as pending review
-        if ($question->type === Question::TYPE_WRITING) {
+        // Both models use the same constants, so we can access them from the instance or class
+        // But ExamQuestion constants are defined in ExamQuestion class.
+        // Let's assume types are strings and consistent.
+        if ($question->type === 'writing') {
             $this->status = self::STATUS_PENDING_REVIEW;
             $this->save();
             return;
@@ -67,25 +75,29 @@ class ExamResponse extends Model
         $isCorrect = false;
 
         switch ($question->type) {
-            case Question::TYPE_MCQ:
+            case 'mcq':
                 // Check if arrays are equal (regardless of order)
-                sort($correctAnswer);
-                sort($userAnswer);
-                $isCorrect = $correctAnswer == $userAnswer;
+                if (is_array($correctAnswer) && is_array($userAnswer)) {
+                    sort($correctAnswer);
+                    sort($userAnswer);
+                    $isCorrect = $correctAnswer == $userAnswer;
+                } elseif (!is_array($correctAnswer) && !is_array($userAnswer)) {
+                    $isCorrect = $correctAnswer == $userAnswer;
+                }
                 break;
 
-            case Question::TYPE_MATCHING:
+            case 'matching':
                 // For matching, all pairs must match exactly
                 $isCorrect = $correctAnswer == $userAnswer;
                 break;
 
-            case Question::TYPE_FILL_BLANK:
-            case Question::TYPE_FILL_BLANK_CHOICES:
+            case 'fill_blank':
+            case 'fill_blank_choices':
                 // All blanks must be filled correctly
                 $isCorrect = $correctAnswer == $userAnswer;
                 break;
 
-            case Question::TYPE_REORDERING:
+            case 'reordering':
                 // Order must match exactly
                 $isCorrect = $correctAnswer == $userAnswer;
                 break;
@@ -94,8 +106,23 @@ class ExamResponse extends Model
                 $isCorrect = false;
         }
 
+        // Determine points (check for override in pivot)
+        $points = $question->points;
+        if ($this->examAttempt) {
+            $pivot = DB::table('exam_section_questions')
+                ->join('exam_sections', 'exam_sections.id', '=', 'exam_section_questions.exam_section_id')
+                ->where('exam_sections.exam_id', $this->examAttempt->exam_id)
+                ->where('exam_section_questions.question_id', $question->id)
+                ->select('exam_section_questions.points')
+                ->first();
+
+            if ($pivot && !is_null($pivot->points)) {
+                $points = $pivot->points;
+            }
+        }
+
         $this->is_correct = $isCorrect;
-        $this->score = $isCorrect ? $question->points : 0;
+        $this->score = $isCorrect ? $points : 0;
         $this->status = self::STATUS_GRADED;
         $this->save();
     }

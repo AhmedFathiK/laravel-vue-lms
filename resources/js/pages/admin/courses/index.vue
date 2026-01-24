@@ -358,6 +358,10 @@ const navigateToQuestions = courseId => {
   router.push(`/admin/courses/${courseId}/questions`)
 }
 
+const navigateToExams = courseId => {
+  router.push(`/admin/courses/${courseId}/exams`)
+}
+
 const navigateToConcepts = courseId => {
   router.push(`/admin/courses/${courseId}/concepts`)
 }
@@ -620,6 +624,16 @@ onMounted(() => {
             <VIcon icon="tabler-help-circle" />
             <VTooltip activator="parent">
               Questions
+            </VTooltip>
+          </IconBtn>
+
+          <IconBtn
+            color="primary"
+            @click="navigateToExams(item.id)"
+          >
+            <VIcon icon="tabler-clipboard-list" />
+            <VTooltip activator="parent">
+              Exams
             </VTooltip>
           </IconBtn>
           

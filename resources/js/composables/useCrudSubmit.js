@@ -3,6 +3,37 @@ import { parseApiError } from '@/utils/apiErrorHandler'
 import { ref, unref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
+// Helper to append data recursively
+export const appendFormData = (formData, key, value) => {
+  if (value === null || value === undefined) return
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      // If item is object, recursive call with index
+      // Always use key[index] for both objects and primitives to keep the array index explicit
+      appendFormData(formData, `${key}[${index}]`, item)
+    })
+    
+    return
+  }
+
+  if (typeof value === "object" && !(value instanceof File)) {
+    Object.entries(value).forEach(([childKey, childValue]) => {
+      appendFormData(formData, `${key}[${childKey}]`, childValue)
+    })
+    
+    return
+  }
+
+  if (typeof value === "boolean") {
+    formData.append(key, value ? '1' : '0')
+
+    return
+  }
+
+  formData.append(key, value)
+}
+
 /**
  * Composable for handling standard CRUD submit operations in dialogs
  * 
@@ -40,37 +71,6 @@ export const useCrudSubmit = options => {
       validationErrors.value = {}
     }
   }, { deep: true })
-
-  // Helper to append data recursively
-  const appendFormData = (formData, key, value) => {
-    if (value === null || value === undefined) return
-
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        // If item is object, recursive call with index
-        // Always use key[index] for both objects and primitives to keep the array index explicit
-        appendFormData(formData, `${key}[${index}]`, item)
-      })
-      
-      return
-    }
-
-    if (typeof value === "object" && !(value instanceof File)) {
-      Object.entries(value).forEach(([childKey, childValue]) => {
-        appendFormData(formData, `${key}[${childKey}]`, childValue)
-      })
-      
-      return
-    }
-
-    if (typeof value === "boolean") {
-      formData.append(key, value ? '1' : '0')
-
-      return
-    }
-
-    formData.append(key, value)
-  }
 
   const onSubmit = async () => {
     // 1. Validate Form

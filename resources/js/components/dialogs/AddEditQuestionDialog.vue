@@ -43,6 +43,7 @@ const newTag = ref('')
 
 // For file uploads
 const mediaFile = ref(null)
+const audioFile = ref(null)
 
 // Get default question data
 const getDefaultQuestion = () => ({
@@ -60,7 +61,10 @@ const getDefaultQuestion = () => ({
   incorrectFeedback: '',
   mediaUrl: null,
   mediaType: 'none',
+  mediaInputType: 'file',
   audioUrl: null,
+  audioInputType: 'file',
+  videoSource: 'direct',
   blanks: [],
   matchingPairs: [],
   reorderingItems: [],
@@ -68,6 +72,7 @@ const getDefaultQuestion = () => ({
   minWords: 0,
   maxWords: 0,
   content: {}, // Add content field
+  questionContextId: null,
   termIds: [],
   conceptIds: [],
 })
@@ -92,9 +97,28 @@ const questionTypes = computed(() => [
 const mediaTypes = computed(() => [
   { title: t('questions.media.none', 'None'), value: 'none' },
   { title: t('questions.media.image', 'Image'), value: 'image' },
+  { title: t('questions.media.audio', 'Audio'), value: 'audio' },
   { title: t('questions.media.imageWithAudio', 'Image with Audio'), value: 'image_with_audio' },
   { title: t('questions.media.video', 'Video'), value: 'video' },
 ])
+
+const availableContexts = ref([])
+
+const fetchContexts = async () => {
+  try {
+    const response = await api.get(`/admin/courses/${props.courseId}/question-contexts`)
+
+    availableContexts.value = response.data || []
+  } catch (error) {
+    console.error('Error fetching contexts:', error)
+  }
+}
+
+const videoSources = [
+  { title: 'Direct Link / Upload', value: 'direct' },
+  { title: 'YouTube', value: 'youtube' },
+  { title: 'Vimeo', value: 'vimeo' },
+]
 
 const difficultyLevels = computed(() => [
   { title: t('questions.difficulty.easy', 'Easy'), value: 'easy' },
@@ -124,8 +148,10 @@ const detectedBlanks = computed(() => {
 // Watch for dialog visibility changes
 watch(
   () => props.isDialogVisible,
-  newValue => {
+  async newValue => {
     if (newValue) {
+      await fetchContexts()
+
       // formErrors reset handled by useCrudSubmit automatically on submit, but we can't access it here easily unless we extract it
       // actually validationErrors is exposed from useCrudSubmit, we can reset it if needed, but it resets on submit.
       // To reset on open, we might need to expose a reset function or just let it be.
@@ -137,6 +163,11 @@ watch(
       if (props.dialogMode === 'edit' && props.data && Object.keys(props.data).length > 0) {
         localQuestion.value = JSON.parse(JSON.stringify(props.data))
         
+        // Initialize input types based on existing URLs
+        localQuestion.value.mediaInputType = props.data.mediaUrl && !props.data.mediaUrl.startsWith('/storage/') ? 'url' : 'file'
+        localQuestion.value.audioInputType = props.data.audioUrl && !props.data.audioUrl.startsWith('/storage/') ? 'url' : 'file'
+        localQuestion.value.videoSource = props.data.videoSource || 'direct'
+
         // Map relationships to IDs and pre-selected items
         if (props.data.terms) {
           localQuestion.value.termIds = props.data.terms.map(t => t.id)
@@ -216,6 +247,49 @@ watch(() => localQuestion.value.mediaType, newValue => {
     mediaFile.value = null
   } else if (newValue !== 'image_with_audio') {
     localQuestion.value.audioUrl = null
+  }
+})
+
+// Watch for media input type changes
+watch(() => localQuestion.value.mediaInputType, newValue => {
+  if (newValue === 'file') {
+    // If it's a file, clear mediaUrl if it's not a storage URL
+    if (localQuestion.value.mediaUrl && !localQuestion.value.mediaUrl.startsWith('/storage/')) {
+      localQuestion.value.mediaUrl = null
+    }
+  } else {
+    // If it's a URL, clear mediaFile
+    mediaFile.value = null
+    if (localQuestion.value.mediaUrl && localQuestion.value.mediaUrl.startsWith('blob:')) {
+      localQuestion.value.mediaUrl = null
+    }
+  }
+})
+
+// Watch for audio input type changes
+watch(() => localQuestion.value.audioInputType, newValue => {
+  if (newValue === 'file') {
+    // If it's a file, clear audioUrl if it's not a storage URL
+    if (localQuestion.value.audioUrl && !localQuestion.value.audioUrl.startsWith('/storage/')) {
+      localQuestion.value.audioUrl = null
+    }
+  } else {
+    // If it's a URL, clear audioFile
+    audioFile.value = null
+    if (localQuestion.value.audioUrl && localQuestion.value.audioUrl.startsWith('blob:')) {
+      localQuestion.value.audioUrl = null
+    }
+  }
+})
+
+// Watch for video source changes
+watch(() => localQuestion.value.videoSource, newValue => {
+  if (newValue !== 'direct') {
+    localQuestion.value.mediaInputType = 'url'
+    mediaFile.value = null
+    if (localQuestion.value.mediaUrl && localQuestion.value.mediaUrl.startsWith('blob:')) {
+      localQuestion.value.mediaUrl = null
+    }
   }
 })
 
@@ -422,6 +496,13 @@ const handleFileUpload = file => {
   }
 }
 
+const handleAudioFileUpload = file => {
+  audioFile.value = file || null
+  if (audioFile.value) {
+    localQuestion.value.audioUrl = URL.createObjectURL(audioFile.value)
+  }
+}
+
 // Close dialog
 const closeDialog = () => {
   emit('update:isDialogVisible', false)
@@ -431,11 +512,19 @@ const closeDialog = () => {
 const extraData = computed(() => {
   const data = {}
   
-  if (
-    mediaFile.value &&
-    (localQuestion.value.mediaType === 'image' || localQuestion.value.mediaType === 'image_with_audio')
-  ) {
+  // Handle media file upload
+  if (mediaFile.value && ['image', 'image_with_audio', 'video'].includes(localQuestion.value.mediaType) && localQuestion.value.mediaInputType === 'file') {
     data.media = mediaFile.value
+  }
+
+  // Handle audio file upload for image_with_audio
+  if (audioFile.value && localQuestion.value.mediaType === 'image_with_audio' && localQuestion.value.audioInputType === 'file') {
+    data.audio_file = audioFile.value
+  }
+
+  // Add video source
+  if (localQuestion.value.mediaType === 'video') {
+    data.video_source = localQuestion.value.videoSource
   }
 
   // Map camelCase to snake_case for backend
@@ -445,6 +534,10 @@ const extraData = computed(() => {
 
   if (localQuestion.value.conceptIds) {
     data['concept_ids'] = localQuestion.value.conceptIds
+  }
+
+  if (localQuestion.value.questionContextId) {
+    data['question_context_id'] = localQuestion.value.questionContextId
   }
   
   // courseId is already in localQuestion if not edited, but let's ensure it for add mode if missing?
@@ -675,7 +768,7 @@ const removeTag = tag => {
                 cols="12"
                 md="6"
               >
-                <VSelect
+                <AppSelect
                   v-model="localQuestion.type"
                   :label="t('questions.dialog.questionType', 'Question Type')"
                   :items="questionTypes"
@@ -692,7 +785,25 @@ const removeTag = tag => {
                 cols="12"
                 md="6"
               >
-                <VSelect
+                <AppSelect
+                  v-model="localQuestion.questionContextId"
+                  :label="t('questions.dialog.context', 'Question Context')"
+                  :items="availableContexts"
+                  item-title="title"
+                  item-value="id"
+                  clearable
+                  :error-messages="formErrors.questionContextId"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="tabler-blockquote"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
                   v-model="localQuestion.difficulty"
                   :label="t('questions.dialog.difficulty', 'Difficulty')"
                   :items="difficultyLevels"
@@ -746,63 +857,147 @@ const removeTag = tag => {
                   density="comfortable"
                 />
               </VCol>
-              
+
+              <!-- Video Source Selection -->
               <VCol
-                v-if="localQuestion.mediaType === 'image' || localQuestion.mediaType === 'image_with_audio'"
+                v-if="localQuestion.mediaType === 'video'"
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="localQuestion.videoSource"
+                  :label="t('questions.context.videoSource', 'Video Source')"
+                  :items="videoSources"
+                  :rules="[requiredValidator]"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+
+              <!-- Media Input Type (Upload/URL) -->
+              <VCol
+                v-if="['image', 'audio', 'image_with_audio', 'video'].includes(localQuestion.mediaType) && (localQuestion.mediaType !== 'video' || localQuestion.videoSource === 'direct')"
+                cols="12"
+              >
+                <VLabel class="mb-1">
+                  {{ t('questions.context.mediaInputType', 'Media Input Method') }}
+                </VLabel>
+                <VRadioGroup
+                  v-model="localQuestion.mediaInputType"
+                  inline
+                >
+                  <VRadio
+                    label="Upload File"
+                    value="file"
+                  />
+                  <VRadio
+                    label="Direct URL"
+                    value="url"
+                  />
+                </VRadioGroup>
+              </VCol>
+
+              <!-- Media File Upload -->
+              <VCol
+                v-if="['image', 'audio', 'image_with_audio', 'video'].includes(localQuestion.mediaType) && (localQuestion.mediaType !== 'video' || localQuestion.videoSource === 'direct') && localQuestion.mediaInputType === 'file'"
                 cols="12"
                 md="6"
               >
                 <VFileInput
-                  :label="t('questions.dialog.uploadImage', 'Upload Image')"
-                  accept="image/*"
-                  :error-messages="formErrors.media"
-                  prepend-icon="tabler-upload"
-                  :hint="localQuestion.mediaUrl ? t('questions.dialog.imageSelected', 'Image selected') : t('questions.dialog.selectImage', 'Select an image file')"
-                  persistent-hint
+                  :label="localQuestion.mediaType === 'video' ? 'Video File' : (localQuestion.mediaType === 'audio' ? 'Audio File' : 'Image File')"
+                  :prepend-icon="localQuestion.mediaType === 'video' ? 'tabler-video' : (localQuestion.mediaType === 'audio' ? 'tabler-volume' : 'tabler-camera')"
+                  :accept="localQuestion.mediaType === 'video' ? 'video/*' : (localQuestion.mediaType === 'audio' ? 'audio/*' : 'image/*')"
                   variant="outlined"
                   density="comfortable"
-                  @update:model-value="handleFileUpload"
+                  @change="e => handleFileUpload(e.target.files[0])"
                 />
-                <div
-                  v-if="localQuestion.mediaUrl"
-                  class="mt-2"
+              </VCol>
+
+              <!-- Media URL Input -->
+              <VCol
+                v-if="['image', 'audio', 'image_with_audio', 'video'].includes(localQuestion.mediaType) && (localQuestion.mediaInputType === 'url' || (localQuestion.mediaType === 'video' && localQuestion.videoSource !== 'direct'))"
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="localQuestion.mediaUrl"
+                  :label="localQuestion.mediaType === 'video' ? 'Video URL' : (localQuestion.mediaType === 'audio' ? 'Audio URL' : 'Image URL')"
+                  :placeholder="localQuestion.mediaType === 'video' 
+                    ? (localQuestion.videoSource === 'youtube' ? 'https://youtube.com/watch?v=...' : localQuestion.videoSource === 'vimeo' ? 'https://vimeo.com/...' : 'https://example.com/video.mp4') 
+                    : (localQuestion.mediaType === 'audio' ? 'https://example.com/audio.mp3' : 'https://example.com/image.jpg')"
+                  :rules="[requiredValidator]"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+
+              <!-- Audio Input Method (for image_with_audio) -->
+              <VCol
+                v-if="localQuestion.mediaType === 'image_with_audio'"
+                cols="12"
+              >
+                <VLabel class="mb-1">
+                  {{ t('questions.context.audioInputType', 'Audio Input Method') }}
+                </VLabel>
+                <VRadioGroup
+                  v-model="localQuestion.audioInputType"
+                  inline
                 >
+                  <VRadio
+                    label="Upload File"
+                    value="file"
+                  />
+                  <VRadio
+                    label="Direct URL"
+                    value="url"
+                  />
+                </VRadioGroup>
+              </VCol>
+
+              <!-- Audio File Upload -->
+              <VCol
+                v-if="localQuestion.mediaType === 'image_with_audio' && localQuestion.audioInputType === 'file'"
+                cols="12"
+                md="6"
+              >
+                <VFileInput
+                  label="Audio File"
+                  prepend-icon="tabler-volume"
+                  accept="audio/*"
+                  variant="outlined"
+                  density="comfortable"
+                  @change="e => handleAudioFileUpload(e.target.files[0])"
+                />
+              </VCol>
+
+              <!-- Audio URL Input -->
+              <VCol
+                v-if="localQuestion.mediaType === 'image_with_audio' && localQuestion.audioInputType === 'url'"
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="localQuestion.audioUrl"
+                  label="Audio URL"
+                  placeholder="https://example.com/audio.mp3"
+                  :rules="[requiredValidator]"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+
+              <!-- Media Preview -->
+              <VCol
+                v-if="localQuestion.mediaUrl && localQuestion.mediaType === 'image'"
+                cols="12"
+              >
+                <div class="mt-2 border rounded pa-2 d-inline-block">
                   <img
                     :src="localQuestion.mediaUrl"
                     style="max-height: 150px; max-width: 100%;"
                     :alt="t('questions.dialog.imagePreview', 'Image preview')"
                   >
                 </div>
-              </VCol>
-              
-              <VCol
-                v-if="localQuestion.mediaType === 'image_with_audio'"
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="localQuestion.audioUrl"
-                  :label="t('questions.dialog.audioUrl', 'Audio URL')"
-                  :placeholder="t('questions.dialog.audioUrlPlaceholder', 'Enter URL for audio file')"
-                  :error-messages="formErrors.audioUrl"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </VCol>
-              
-              <VCol
-                v-if="localQuestion.mediaType === 'video'"
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="localQuestion.mediaUrl"
-                  :label="t('questions.dialog.videoUrl', 'Video URL')"
-                  :placeholder="t('questions.dialog.videoUrlPlaceholder', 'Enter URL for video file')"
-                  :error-messages="formErrors.mediaUrl"
-                  variant="outlined"
-                  density="comfortable"
-                />
               </VCol>
             </VRow>
           </div>

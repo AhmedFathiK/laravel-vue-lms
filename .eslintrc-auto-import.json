@@ -371,6 +371,8 @@
     "setFormErrors": true,
     "useCrudSubmit": true,
     "handleApiError": true,
-    "videojsSetup": true
+    "videojsSetup": true,
+    "useExamForm": true,
+    "appendFormData": true
   }
 }

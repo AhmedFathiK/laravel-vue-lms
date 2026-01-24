@@ -44,6 +44,11 @@ const handleItemClick = item => {
       name: 'my-courses-study-id', 
       params: { id: item.id }, 
     })
+  } else if (item.type === 'exam' || item.type === 'placement' || item.item_type === 'exam') {
+    router.push({
+      name: 'my-courses-exam-id',
+      params: { id: item.id },
+    })
   } else {
     // Fallback to modal for exams or other types
     selectedItem.value = item
@@ -146,6 +151,89 @@ const isCurrentItem = (item, level) => {
         {{ courseData.title }}
       </h1>
 
+      <!-- Placement Exam Section -->
+      <div
+        v-if="courseData.placementExam"
+        class="mb-8"
+      >
+        <h2 class="text-h5 font-weight-bold mb-4 px-2">
+          Placement Test
+        </h2>
+        <VCard
+          border
+          flat
+          class="level-card mb-4"
+        >
+          <VCardText class="pa-6">
+            <div class="timeline-container">
+              <div class="timeline-item-row">
+                <!-- Visual Column -->
+                <div class="timeline-visual d-flex flex-column align-center me-5">
+                  <div class="avatar-wrapper">
+                    <VAvatar
+                      size="64"
+                      class="item-avatar"
+                      :class="[{ 'avatar-completed': courseData.placementExam.completed, 'avatar-locked': courseData.placementExam.locked }]"
+                      @click="handleItemClick(courseData.placementExam)"
+                    >
+                      <VIcon
+                        size="28"
+                        :color="courseData.placementExam.completed ? 'success' : (courseData.placementExam.locked ? 'disabled' : 'warning')"
+                      >
+                        tabler-list-check
+                      </VIcon>
+                    </VAvatar>
+                    <div
+                      v-if="courseData.placementExam.completed"
+                      class="completion-badge"
+                    >
+                      <VIcon
+                        size="14"
+                        color="white"
+                        icon="tabler-check"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Content Column -->
+                <div 
+                  class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
+                  :class="{ 'cursor-pointer': !courseData.placementExam.locked }"
+                  @click="handleItemClick(courseData.placementExam)"
+                >
+                  <div class="d-flex align-center justify-space-between">
+                    <div class="flex-grow-1">
+                      <h3
+                        class="text-h6 font-weight-bold mb-1"
+                        :class="{ 'text-disabled': courseData.placementExam.locked }"
+                      >
+                        {{ courseData.placementExam.title }}
+                      </h3>
+                      <p
+                        class="text-body-2 mb-0"
+                        :class="courseData.placementExam.locked ? 'text-disabled' : 'text-medium-emphasis'"
+                      >
+                        {{ courseData.placementExam.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <VChip
+                    color="warning"
+                    size="x-small"
+                    class="mt-2"
+                    variant="tonal"
+                  >
+                    Placement Test
+                  </VChip>
+                </div>
+              </div>
+            </div>
+          </VCardText>
+        </VCard>
+      </div>
+
+      <!-- Levels Section -->
       <div
         v-for="(level) in courseData.levels"
         :key="level.id"
@@ -330,6 +418,181 @@ const isCurrentItem = (item, level) => {
                 </div>
                 <div class="text-body-2 text-disabled">
                   New content will be added soon.
+                </div>
+              </div>
+            </div>
+          </VCardText>
+        </VCard>
+      </div>
+
+      <!-- Final Exam Section -->
+      <div
+        v-if="courseData.finalExam"
+        class="mb-8"
+      >
+        <h2 class="text-h5 font-weight-bold mb-4 px-2">
+          Final Certification
+        </h2>
+        <VCard
+          border
+          flat
+          class="level-card mb-4"
+        >
+          <VCardText class="pa-6">
+            <div class="timeline-container">
+              <div
+                class="timeline-item-row"
+              >
+                <!-- Visual Column -->
+                <div class="timeline-visual d-flex flex-column align-center me-5">
+                  <div class="avatar-wrapper">
+                    <VAvatar
+                      size="64"
+                      class="item-avatar"
+                      :class="[{ 'avatar-completed': courseData.finalExam.completed, 'avatar-locked': courseData.finalExam.locked }]"
+                      @click="handleItemClick(courseData.finalExam)"
+                    >
+                      <VIcon
+                        size="28"
+                        :color="courseData.finalExam.completed ? 'success' : (courseData.finalExam.locked ? 'disabled' : 'primary')"
+                      >
+                        tabler-certificate
+                      </VIcon>
+                    </VAvatar>
+                    <div
+                      v-if="courseData.finalExam.completed"
+                      class="completion-badge"
+                    >
+                      <VIcon
+                        size="14"
+                        color="white"
+                        icon="tabler-check"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Content Column -->
+                <div 
+                  class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
+                  :class="{ 'cursor-pointer': !courseData.finalExam.locked }"
+                  @click="handleItemClick(courseData.finalExam)"
+                >
+                  <div class="d-flex align-center justify-space-between">
+                    <div class="flex-grow-1">
+                      <h3
+                        class="text-h6 font-weight-bold mb-1"
+                        :class="{ 'text-disabled': courseData.finalExam.locked }"
+                      >
+                        {{ courseData.finalExam.title }}
+                      </h3>
+                      <p
+                        class="text-body-2 mb-0"
+                        :class="courseData.finalExam.locked ? 'text-disabled' : 'text-medium-emphasis'"
+                      >
+                        {{ courseData.finalExam.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <VChip
+                    color="primary"
+                    size="x-small"
+                    class="mt-2"
+                    variant="tonal"
+                  >
+                    Course Certification
+                  </VChip>
+                </div>
+              </div>
+            </div>
+          </VCardText>
+        </VCard>
+      </div>
+
+      <!-- Other Course Exams Section -->
+      <div
+        v-if="courseData.other_exams && courseData.other_exams.length > 0"
+        class="mb-8"
+      >
+        <h2 class="text-h5 font-weight-bold mb-4 px-2">
+          Additional Exams
+        </h2>
+        <VCard
+          border
+          flat
+          class="level-card mb-4"
+        >
+          <VCardText class="pa-6">
+            <div class="timeline-container">
+              <div
+                v-for="(item, index) in courseData.other_exams"
+                :key="item.id + '-other'"
+                class="timeline-item-row"
+              >
+                <!-- Visual Column -->
+                <div class="timeline-visual d-flex flex-column align-center me-5">
+                  <div class="avatar-wrapper">
+                    <VAvatar
+                      size="64"
+                      class="item-avatar"
+                      :class="[{ 'avatar-completed': item.completed, 'avatar-locked': item.locked }]"
+                      @click="handleItemClick(item)"
+                    >
+                      <VIcon
+                        size="28"
+                        :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'info')"
+                      >
+                        tabler-clipboard-check
+                      </VIcon>
+                    </VAvatar>
+                    <div
+                      v-if="item.completed"
+                      class="completion-badge"
+                    >
+                      <VIcon
+                        size="14"
+                        color="white"
+                        icon="tabler-check"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    v-if="index < courseData.other_exams.length - 1"
+                    class="timeline-line"
+                    :class="{ 'line-completed': item.completed }"
+                  />
+                </div>
+
+                <!-- Content Column -->
+                <div 
+                  class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
+                  :class="{ 'cursor-pointer': !item.locked }"
+                  @click="handleItemClick(item)"
+                >
+                  <div class="d-flex align-center justify-space-between">
+                    <div class="flex-grow-1">
+                      <h3
+                        class="text-h6 font-weight-bold mb-1"
+                        :class="{ 'text-disabled': item.locked }"
+                      >
+                        {{ item.title }}
+                      </h3>
+                      <p
+                        class="text-body-2 mb-0"
+                        :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
+                      >
+                        {{ item.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <VChip
+                    color="info"
+                    size="x-small"
+                    class="mt-2"
+                    variant="tonal"
+                  >
+                    Extra Exam
+                  </VChip>
                 </div>
               </div>
             </div>

@@ -59,7 +59,9 @@ class UpdateQuestionRequest extends FormRequest
             'media_type' => [Rule::in(['none', 'image', 'image_with_audio', 'video'])],
             'media_url' => ['nullable', 'string', 'max:255'],
             'audio_url' => ['nullable', 'string', 'max:255'],
+            'video_source' => ['nullable', Rule::in(['direct', 'youtube', 'vimeo'])],
             'media' => ['nullable', 'file', 'max:10240'], // 10MB max file size
+            'audio_file' => ['nullable', 'file', 'max:10240'], // 10MB max file size
         ];
 
         // Add specific rules for different question types
@@ -150,19 +152,19 @@ class UpdateQuestionRequest extends FormRequest
                     }
                 }
 
-                // For video, check if URL is provided
-                if ($mediaType === 'video' && !$this->input('media_url') && $this->isChangingMediaType()) {
-                    $validator->errors()->add('media_url', 'A video URL is required when video media type is selected.');
+                // For video, check if URL or file is provided
+                if ($mediaType === 'video' && !$this->input('media_url') && !$this->hasFile('media') && $this->isChangingMediaType()) {
+                    $validator->errors()->add('media_url', 'A video URL or file is required when video media type is selected.');
                 }
 
-                // For image_with_audio, check if audio URL is provided
-                if ($mediaType === 'image_with_audio' && !$this->input('audio_url') && ($this->isChangingMediaType() || $this->isChangingToImageWithAudio())) {
-                    $validator->errors()->add('audio_url', 'An audio URL is required when image with audio media type is selected.');
+                // For image_with_audio, check if audio file or URL is provided
+                if ($mediaType === 'image_with_audio' && !$this->input('audio_url') && !$this->hasFile('audio_file') && ($this->isChangingMediaType() || $this->isChangingToImageWithAudio())) {
+                    $validator->errors()->add('audio_url', 'An audio file or URL is required when image with audio media type is selected.');
                 }
 
                 // If changing to an image media type but no file is uploaded and no existing media_url
                 if (($mediaType === 'image' || $mediaType === 'image_with_audio') && !$this->hasFile('media') && !$this->input('media_url') && $this->isChangingMediaType()) {
-                    $validator->errors()->add('media', 'An image file is required when changing to this media type.');
+                    $validator->errors()->add('media', 'An image file or URL is required when changing to this media type.');
                 }
             }
         });

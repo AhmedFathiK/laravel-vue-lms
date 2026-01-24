@@ -26,29 +26,38 @@ class StoreExamRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'array'],
-            'title.*' => ['required', 'string'],
-            'description' => ['nullable', 'array'],
-            'description.*' => ['nullable', 'string'],
-            'instructions' => ['nullable', 'array'],
-            'instructions.*' => ['nullable', 'string'],
-            'course_id' => ['nullable', 'exists:courses,id'],
-            'level_id' => ['nullable', 'exists:levels,id'],
-            'lesson_id' => ['nullable', 'exists:lessons,id'],
-            'type' => ['required', Rule::in([
-                Exam::TYPE_LESSON,
-                Exam::TYPE_LEVEL_END,
-                Exam::TYPE_COURSE_END,
-                Exam::TYPE_PLACEMENT,
-            ])],
+            'title' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'instructions' => ['nullable', 'string'],
+            'type' => ['required', 'string'],
             'time_limit' => ['nullable', 'integer', 'min:1'],
-            'passing_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
-            'max_attempts' => ['required', 'integer', 'min:0'],
+            'passing_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'max_attempts' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
             'randomize_questions' => ['boolean'],
             'show_answers' => ['boolean'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
+
+            // Nested Sections
+            'sections' => ['nullable', 'array'],
+            'sections.*.title' => ['required', 'string'],
+            'sections.*.description' => ['nullable', 'string'],
+            'sections.*.instructions' => ['nullable', 'string'],
+            'sections.*.order' => ['required', 'integer'],
+            'sections.*.time_limit' => ['nullable', 'integer', 'min:1'],
+
+            // Nested Questions
+            'sections.*.questions' => ['nullable', 'array'],
+            'sections.*.questions.*.id' => ['nullable', 'integer', 'exists:questions,id'],
+            'sections.*.questions.*.type' => ['required', 'string'],
+            'sections.*.questions.*.question_text' => ['required', 'string'],
+            'sections.*.questions.*.points' => ['required', 'numeric'],
+            'sections.*.questions.*.options' => ['nullable', 'array'],
+            'sections.*.questions.*.correct_answer' => ['nullable'],
+            'sections.*.questions.*.order' => ['required', 'integer'],
+            // Simple media for standalone questions
+            'sections.*.questions.*.media_url' => ['nullable', 'string'],
+            'sections.*.questions.*.media_type' => ['nullable', 'string'],
         ];
     }
-
 }

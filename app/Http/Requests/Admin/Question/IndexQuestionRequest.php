@@ -33,7 +33,8 @@ class IndexQuestionRequest extends FormRequest
             'sort_by' => 'nullable|string',
             'sort_direction' => 'nullable|in:asc,desc',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'no_context' => 'nullable|boolean',
+            'exclude_ids' => 'nullable',
         ];
     }
-
 }

@@ -13,6 +13,7 @@ declare global {
   const alphaDashValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']
   const alphaValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']
   const api: typeof import('./resources/js/utils/api.js')['default']
+  const appendFormData: typeof import('./resources/js/composables/useCrudSubmit.js')['appendFormData']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./resources/js/@core/utils/formatters.js')['avatarText']
@@ -226,6 +227,7 @@ declare global {
   const useEventBus: typeof import('@vueuse/core')['useEventBus']
   const useEventListener: typeof import('@vueuse/core')['useEventListener']
   const useEventSource: typeof import('@vueuse/core')['useEventSource']
+  const useExamForm: typeof import('./resources/js/composables/useExamForm.js')['useExamForm']
   const useEyeDropper: typeof import('@vueuse/core')['useEyeDropper']
   const useFavicon: typeof import('@vueuse/core')['useFavicon']
   const useFetch: typeof import('@vueuse/core')['useFetch']
@@ -381,6 +383,7 @@ declare module 'vue' {
     readonly alphaDashValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']>
     readonly api: UnwrapRef<typeof import('./resources/js/utils/api.js')['default']>
+    readonly appendFormData: UnwrapRef<typeof import('./resources/js/composables/useCrudSubmit.js')['appendFormData']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['avatarText']>
@@ -593,6 +596,7 @@ declare module 'vue' {
     readonly useEventBus: UnwrapRef<typeof import('@vueuse/core')['useEventBus']>
     readonly useEventListener: UnwrapRef<typeof import('@vueuse/core')['useEventListener']>
     readonly useEventSource: UnwrapRef<typeof import('@vueuse/core')['useEventSource']>
+    readonly useExamForm: UnwrapRef<typeof import('./resources/js/composables/useExamForm.js')['useExamForm']>
     readonly useEyeDropper: UnwrapRef<typeof import('@vueuse/core')['useEyeDropper']>
     readonly useFavicon: UnwrapRef<typeof import('@vueuse/core')['useFavicon']>
     readonly useFetch: UnwrapRef<typeof import('@vueuse/core')['useFetch']>

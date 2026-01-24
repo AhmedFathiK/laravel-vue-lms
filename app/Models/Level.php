@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Exam;
+use App\Models\Lesson;
+use App\Models\Course;
+use App\Models\User;
 
 class Level extends Model
 {
@@ -20,6 +24,7 @@ class Level extends Model
         'sort_order',
         'status',
         'is_unlocked',
+        'final_exam_id',
     ];
 
     public array $translatable = [
@@ -51,6 +56,16 @@ class Level extends Model
         return $attributes;
     }
 
+    /**
+     * Get the exams for this level.
+     * Note: We use hasMany even though it's a 1:1 relationship via final_exam_id
+     * to maintain compatibility with controller logic that expects a collection.
+     */
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class, 'id', 'final_exam_id');
+    }
+
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
@@ -61,9 +76,9 @@ class Level extends Model
         return $this->hasMany(Lesson::class)->orderBy('sort_order');
     }
 
-    public function exams(): HasMany
+    public function finalExam(): BelongsTo
     {
-        return $this->hasMany(Exam::class);
+        return $this->belongsTo(Exam::class, 'final_exam_id');
     }
 
     /**
@@ -83,7 +98,6 @@ class Level extends Model
                 $q->where('courses.id', $this->course_id);
             })
             ->exists();
-
     }
 
     /**

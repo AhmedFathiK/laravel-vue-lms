@@ -25,14 +25,14 @@ const vimeoConfig = computed(() => {
   const fallback = { id: '', hash: '' }
   if (props.type?.toLowerCase() !== 'vimeo' || !props.src) return fallback
 
-  // Handle vimeo.com/{id}/{hash}
+  // Handle vimeo.com/{id}/{hash} (e.g., vimeo.com/1051474442/33669020d8)
   const hashMatch = props.src.match(/vimeo\.com\/(\d+)\/([a-z0-9]+)/i)
   if (hashMatch) {
     return { id: hashMatch[1], hash: hashMatch[2] }
   }
 
   // Handle player.vimeo.com/video/{id}?h={hash}
-  const playerMatch = props.src.match(/player\.vimeo\.com\/video\/(\d+)(?:\?h=([a-z0-9]+))?/i)
+  const playerMatch = props.src.match(/player\.vimeo\.com\/video\/(\d+)(?:.*?[?&]h=([a-z0-9]+))?/i)
   if (playerMatch) {
     return { id: playerMatch[1], hash: playerMatch[2] || '' }
   }
@@ -116,18 +116,9 @@ const plyrOptions = computed(() => {
 const plyrSource = computed(() => {
   const type = props.type?.toLowerCase()
   
-  if (type === 'youtube' && youtubeId.value) {
-    return {
-      type: 'video',
-      sources: [{ src: youtubeId.value, provider: 'youtube' }],
-    }
-  }
-
-  if (type === 'vimeo' && vimeoConfig.value.id) {
-    return {
-      type: 'video',
-      sources: [{ src: vimeoConfig.value.id, provider: 'vimeo' }],
-    }
+  // For YouTube and Vimeo, we use the iframe approach in the template
+  if (type === 'youtube' || type === 'vimeo') {
+    return null
   }
 
   if (type === 'hosted' && props.src) {
@@ -138,6 +129,47 @@ const plyrSource = computed(() => {
   }
 
   return null
+})
+
+// YouTube Embed URL
+const youtubeEmbedUrl = computed(() => {
+  if (props.type?.toLowerCase() !== 'youtube' || !youtubeId.value) return ''
+  
+  const params = new URLSearchParams({
+    autoplay: props.autoplay ? '1' : '0',
+    iv_load_policy: '3', // eslint-disable-line camelcase
+    modestbranding: '1',
+    playsinline: '1',
+    showinfo: '0',
+    rel: '0',
+    enablejsapi: '1',
+  })
+
+  return `https://www.youtube.com/embed/${youtubeId.value}?${params.toString()}`
+})
+
+// Vimeo Embed URL for iframe
+const vimeoEmbedUrl = computed(() => {
+  if (props.type?.toLowerCase() !== 'vimeo' || !vimeoConfig.value.id) return ''
+  
+  // For private videos, the hash 'h' parameter is crucial and often works best when it's the first parameter
+  let url = `https://player.vimeo.com/video/${vimeoConfig.value.id}`
+  const params = []
+
+  if (vimeoConfig.value.hash) {
+    params.push(`h=${vimeoConfig.value.hash}`)
+  }
+
+  params.push(`autoplay=${props.autoplay ? '1' : '0'}`)
+  params.push('loop=0')
+  params.push('byline=0')
+  params.push('portrait=0')
+  params.push('title=0')
+  params.push('speed=1')
+  params.push('transparent=0')
+  params.push('gesture=media')
+
+  return `${url}?${params.join('&')}`
 })
 
 // Watch for source changes to update player manually if component isn't re-mounted
@@ -175,7 +207,19 @@ const onReady = event => {
       :options="plyrOptions"
       @ready="onReady"
     >
+      <div
+        v-if="type?.toLowerCase() === 'vimeo' || type?.toLowerCase() === 'youtube'"
+        class="plyr__video-embed"
+      >
+        <iframe
+          :src="type?.toLowerCase() === 'vimeo' ? vimeoEmbedUrl : youtubeEmbedUrl"
+          allowfullscreen
+          allowtransparency
+          allow="autoplay"
+        />
+      </div>
       <video
+        v-else
         playsinline
         crossorigin
       />

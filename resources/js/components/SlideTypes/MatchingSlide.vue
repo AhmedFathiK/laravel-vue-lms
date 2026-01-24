@@ -7,9 +7,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isExam: {
+    type: Boolean,
+    default: false,
+  },
+  modelValue: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
-const emit = defineEmits(['answered'])
+const emit = defineEmits(['answered', 'update:modelValue'])
 
 const getPairs = () => {
   if (Array.isArray(props.question.content)) {
@@ -23,37 +31,49 @@ const selectedLeft = ref(null)
 const matches = ref({}) // { leftIndex: rightIndex }
 const isSubmitted = ref(false)
 
+// Sync from modelValue if provided (Exam Mode)
+watch(() => props.modelValue, newVal => {
+  if (props.isExam && newVal && JSON.stringify(newVal) !== JSON.stringify(matches.value)) {
+    // Break infinite loop: only update if different
+    matches.value = { ...newVal }
+  }
+}, { immediate: true, deep: true })
+
+// Sync to modelValue (Exam Mode)
+watch(matches, newVal => {
+  if (props.isExam && JSON.stringify(newVal) !== JSON.stringify(props.modelValue)) {
+    // Break infinite loop: only emit if different from prop
+    emit('update:modelValue', newVal)
+  }
+}, { deep: true })
+
 const unmatchedRightItems = computed(() => {
   return rightItems.value.filter((item, index) => {
-    // Return true if this index is NOT found in matches values
-    return !Object.values(matches.value).includes(index)
+    // Return true if this item's originalIndex is NOT found in matches values
+    return !Object.values(matches.value).includes(item.originalIndex)
   })
 })
 
 const handleLeftClick = index => {
-  if (isSubmitted.value) return
+  if (isSubmitted.value && !props.isExam) return
   
   // If clicking an empty slot or the left item row, select it
   selectedLeft.value = index
 }
 
 const handleMatchedItemClick = leftIndex => {
-  if (isSubmitted.value) return
+  if (isSubmitted.value && !props.isExam) return
   
   // Remove match, returning item to pool
   delete matches.value[leftIndex]
 }
 
-const handleOptionClick = rightItemOriginalIndex => {
-  if (isSubmitted.value) return
-  
-  // Find the actual index in rightItems based on originalIndex or object identity?
-  // Let's rely on finding the index in the rightItems array
-  const rightIndex = rightItems.value.findIndex(i => i === rightItemOriginalIndex)
+const handleOptionClick = item => {
+  if (isSubmitted.value && !props.isExam) return
   
   if (selectedLeft.value !== null) {
-    // Assign to selected left slot
-    matches.value[selectedLeft.value] = rightIndex
+    // Assign to selected left slot using originalIndex (stable across shuffles)
+    matches.value[selectedLeft.value] = item.originalIndex
     
     // Auto-advance selection to next empty slot if available?
     // Optional improvement: find next empty left index
@@ -64,7 +84,9 @@ const handleOptionClick = rightItemOriginalIndex => {
       selectedLeft.value = null
     }
     
-    checkCompletion()
+    if (!props.isExam) {
+      checkCompletion()
+    }
   }
 }
 
@@ -79,14 +101,23 @@ const checkCompletion = () => {
 const submitAnswer = () => {
   isSubmitted.value = true
   
-  const isCorrect = Object.entries(matches.value).every(([leftIndex, rightIndex]) => {
-    return rightItems.value[rightIndex].originalIndex === parseInt(leftIndex)
+  // matches values are now originalIndices. 
+  // Correct if leftIndex == rightOriginalIndex
+  const isCorrect = Object.entries(matches.value).every(([leftIndex, rightOriginalIndex]) => {
+    return rightOriginalIndex === parseInt(leftIndex)
   })
 
   emit('answered', {
     correct: isCorrect,
     userAnswer: matches.value,
   })
+}
+
+// Helper to get text for matched item
+const getMatchedText = originalIndex => {
+  const item = rightItems.value.find(i => i.originalIndex === originalIndex)
+  
+  return item ? item.text : ''
 }
 
 // Prepare items
@@ -134,10 +165,10 @@ const getRowClass = index => {
     return `${base} border-primary bg-primary-subtle elevation-4`
   }
   
-  if (isSubmitted.value) {
-    const rightIndex = matches.value[index]
-    if (rightIndex !== undefined) {
-      const isCorrect = rightItems.value[rightIndex]?.originalIndex === index
+  if (isSubmitted.value && !props.isExam) {
+    const rightOriginalIndex = matches.value[index]
+    if (rightOriginalIndex !== undefined) {
+      const isCorrect = rightOriginalIndex === index
       
       return isCorrect 
         ? `${base} border-success bg-success-subtle` 
@@ -214,9 +245,9 @@ const getSlotClass = index => {
               style="--v-theme-overlay-multiplier: var(--v-theme-info-overlay-multiplier)"
               @click.stop="handleMatchedItemClick(index)"
             >
-              <span class="text-body-1">{{ rightItems[matches[index]].text }}</span>
+              <span class="text-body-1">{{ getMatchedText(matches[index]) }}</span>
               <VIcon
-                v-if="!isSubmitted"
+                v-if="!isSubmitted || isExam"
                 icon="tabler-x"
                 size="small"
                 class="ms-2"
@@ -250,7 +281,7 @@ const getSlotClass = index => {
           </div>
           
           <div 
-            v-if="unmatchedRightItems.length === 0 && !isSubmitted" 
+            v-if="unmatchedRightItems.length === 0 && (!isSubmitted || isExam)" 
             class="text-body-1 text-medium-emphasis font-italic py-4"
           >
             All items matched!

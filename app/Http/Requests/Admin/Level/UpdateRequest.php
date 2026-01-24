@@ -29,6 +29,7 @@ class UpdateRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status' => ['sometimes', 'string', 'in:draft,published,archived'],
             'is_unlocked' => ['nullable', 'boolean'],
+            'final_exam_id' => ['nullable', 'integer', 'exists:exams,id'],
         ];
 
         return $rules;

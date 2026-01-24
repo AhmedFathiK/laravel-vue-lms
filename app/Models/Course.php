@@ -24,6 +24,8 @@ class Course extends Model
         'main_locale',
         'leaderboard_reset_frequency',
         'prerequisites',
+        'final_exam_id',
+        'placement_exam_id',
     ];
 
     public array $translatable = [
@@ -94,6 +96,21 @@ class Course extends Model
         return $this->hasMany(Level::class)->orderBy('sort_order');
     }
 
+    public function finalExam(): BelongsTo
+    {
+        return $this->belongsTo(Exam::class, 'final_exam_id');
+    }
+
+    public function placementExam(): BelongsTo
+    {
+        return $this->belongsTo(Exam::class, 'placement_exam_id');
+    }
+
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class);
+    }
+
     public function terms(): HasMany
     {
         return $this->hasMany(Term::class);
@@ -112,6 +129,11 @@ class Course extends Model
     public function questions(): HasMany
     {
         return $this->hasMany(Question::class);
+    }
+
+    public function questionContexts(): HasMany
+    {
+        return $this->hasMany(QuestionContext::class);
     }
 
     public function enrollments(): HasMany

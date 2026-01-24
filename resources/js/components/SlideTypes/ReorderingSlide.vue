@@ -8,9 +8,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isExam: {
+    type: Boolean,
+    default: false,
+  },
+  modelValue: {
+    type: Array,
+    default: () => ([]),
+  },
 })
 
-const emit = defineEmits(['answered'])
+const emit = defineEmits(['answered', 'update:modelValue'])
 
 const getItems = () => {
   if (Array.isArray(props.question.content)) {
@@ -25,6 +33,17 @@ const isSubmitted = ref(false)
 
 // Initialize items
 const init = () => {
+  // If modelValue is provided (Exam resume), use it
+  if (props.isExam && props.modelValue && props.modelValue.length > 0) {
+    items.value = props.modelValue.map((text, i) => ({
+      text,
+      originalIndex: -1, // We don't know original index from just text, but it doesn't matter for exam resume
+      id: i,
+    }))
+    
+    return
+  }
+
   // Assuming question.items is array of strings or objects
   // If it's a reordering question, we should probably present them shuffled
   // and let the user order them.
@@ -49,11 +68,24 @@ const init = () => {
   }
     
   items.value = initial
+  
+  // Emit initial shuffled order if exam
+  if (props.isExam) {
+    emit('update:modelValue', items.value.map(i => i.text))
+  }
 }
 
 init()
 
+// Watch items to emit updates
+watch(items, newVal => {
+  if (props.isExam) {
+    emit('update:modelValue', newVal.map(i => i.text))
+  }
+}, { deep: true })
+
 const submitAnswer = () => {
+  if (isSubmitted.value) return
   isSubmitted.value = true
   
   // Check if items are in correct order (originalIndex 0, 1, 2...)
@@ -70,7 +102,7 @@ defineExpose({ submitAnswer })
 const getItemClass = index => {
   const base = 'pa-4 mb-2 bg-surface border rounded cursor-move d-flex align-center gap-2 elevation-1'
     
-  if (isSubmitted.value) {
+  if (isSubmitted.value && !props.isExam) {
     // Highlight correct positions?
     const item = items.value[index]
     const isPositionCorrect = item.originalIndex === index
@@ -124,7 +156,7 @@ const getItemClass = index => {
         v-model:list="items" 
         axis="y" 
         lock-axis="y"
-        :disabled="isSubmitted"
+        :disabled="isSubmitted && !isExam"
         class="list-group"
       >
         <SlickItem 

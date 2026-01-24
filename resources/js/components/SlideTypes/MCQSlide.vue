@@ -1,18 +1,37 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   question: {
     type: Object,
     required: true,
   },
+  isExam: {
+    type: Boolean,
+    default: false,
+  },
+  modelValue: {
+    type: [String, Number, Array],
+    default: null,
+  },
 })
 
-const emit = defineEmits(['answered'])
+const emit = defineEmits(['answered', 'update:modelValue'])
 
 const selectedOptionIndices = ref([])
 const isSubmitted = ref(false)
+
+// Sync from modelValue (Exam Mode)
+watch(() => props.modelValue, val => {
+  if (props.isExam && val !== undefined && val !== null) {
+    if (Array.isArray(val)) {
+      selectedOptionIndices.value = val.map(Number)
+    } else {
+      selectedOptionIndices.value = [Number(val)]
+    }
+  }
+}, { immediate: true })
 
 const options = computed(() => {
   const content = props.question.content || {}
@@ -62,7 +81,7 @@ const isMultiSelect = computed(() => {
 })
 
 const handleOptionClick = index => {
-  if (isSubmitted.value) return
+  if (isSubmitted.value && !props.isExam) return
 
   const i = selectedOptionIndices.value.indexOf(index)
   
@@ -74,14 +93,21 @@ const handleOptionClick = index => {
       selectedOptionIndices.value.splice(i, 1)
     }
     
-    // Auto-submit if we have selected the same number of options as correct answers
-    if (selectedOptionIndices.value.length === normalizedCorrectAnswers.value.length) {
+    if (props.isExam) {
+      emit('update:modelValue', selectedOptionIndices.value)
+    } else if (selectedOptionIndices.value.length === normalizedCorrectAnswers.value.length) {
+      // Auto-submit if we have selected the same number of options as correct answers
       submitAnswer()
     }
   } else {
     // Single select - replace selection and auto-submit
     selectedOptionIndices.value = [index]
-    submitAnswer()
+    
+    if (props.isExam) {
+      emit('update:modelValue', index)
+    } else {
+      submitAnswer()
+    }
   }
 }
 
@@ -111,7 +137,7 @@ const getCardClass = index => {
   const baseClass = 'mb-4 cursor-pointer transition-all'
   const isSelected = selectedOptionIndices.value.includes(index)
   
-  if (!isSubmitted.value) {
+  if (!isSubmitted.value || props.isExam) {
     return isSelected
       ? `${baseClass} border-primary elevation-4 bg-primary-subtle` 
       : `${baseClass} hover-elevation`
@@ -170,7 +196,7 @@ const getCardClass = index => {
         :key="index"
         :class="getCardClass(index)"
         variant="outlined"
-        :disabled="isSubmitted"
+        :disabled="isSubmitted && !isExam"
         @click="handleOptionClick(index)"
       >
         <VCardText class="d-flex align-center py-4 px-6">

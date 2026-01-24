@@ -6,25 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Translatable\HasTranslations;
 
 class Exam extends Model
 {
     use HasFactory, HasTranslations;
 
-    const TYPE_LESSON = 'lesson_quiz';
-    const TYPE_LEVEL_END = 'level_end';
-    const TYPE_COURSE_END = 'course_end';
-    const TYPE_PLACEMENT = 'placement';
+    public const TYPE_PLACEMENT = 'placement';
 
     protected $fillable = [
         'title',
         'description',
         'instructions',
         'course_id',
-        'level_id',
-        'lesson_id',
-        'type',
         'time_limit',
         'passing_percentage',
         'max_attempts',
@@ -41,12 +36,14 @@ class Exam extends Model
     ];
 
     protected $casts = [
+        'course_id' => 'integer',
         'time_limit' => 'integer',
         'passing_percentage' => 'float',
         'max_attempts' => 'integer',
         'is_active' => 'boolean',
         'randomize_questions' => 'boolean',
         'show_answers' => 'boolean',
+        'status' => 'string',
     ];
 
     public function toArray()
@@ -67,16 +64,6 @@ class Exam extends Model
         return $this->belongsTo(Course::class);
     }
 
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(Level::class);
-    }
-
-    public function lesson(): BelongsTo
-    {
-        return $this->belongsTo(Lesson::class);
-    }
-
     public function sections(): HasMany
     {
         return $this->hasMany(ExamSection::class)->orderBy('order');
@@ -85,6 +72,11 @@ class Exam extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(ExamAttempt::class);
+    }
+
+    public function level(): HasOne
+    {
+        return $this->hasOne(Level::class, 'final_exam_id');
     }
 
     /**
@@ -96,7 +88,7 @@ class Exam extends Model
 
         foreach ($this->sections as $section) {
             foreach ($section->questions as $question) {
-                $totalPoints += $question->points;
+                $totalPoints += $question->pivot->points ?? $question->points;
             }
         }
 

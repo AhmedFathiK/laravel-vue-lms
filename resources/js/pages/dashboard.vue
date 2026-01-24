@@ -1,5 +1,5 @@
 <script setup>
-import axios from 'axios'
+import api from '@/utils/api'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
@@ -21,12 +21,12 @@ const fetchDashboardData = async () => {
   loading.value = true
   try {
     const [statsResponse, trophyStatsResponse] = await Promise.all([
-      axios.get('/api/learner/statistics'),
-      axios.get('/api/gamification/trophy-statistics'),
+      api.get('/learner/statistics'),
+      api.get('/gamification/trophy-statistics'),
     ])
 
-    dashboardData.value = statsResponse.data
-    trophyStatistics.value = trophyStatsResponse.data
+    dashboardData.value = statsResponse
+    trophyStatistics.value = trophyStatsResponse
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
   } finally {

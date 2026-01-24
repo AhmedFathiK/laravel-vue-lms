@@ -52,6 +52,15 @@ class QuestionController extends Controller
             });
         }
 
+        if ($request->boolean('no_context')) {
+            $query->whereNull('question_context_id');
+        }
+
+        if ($request->has('exclude_ids')) {
+            $excludeIds = is_array($request->exclude_ids) ? $request->exclude_ids : explode(',', $request->exclude_ids);
+            $query->whereNotIn('id', $excludeIds);
+        }
+
         // Order by
         $query->orderBy($request->get('sort_by', 'created_at'), $request->get('sort_direction', 'desc'));
 
@@ -110,14 +119,9 @@ class QuestionController extends Controller
             $data['media_url'] = $this->handleMediaUpload($request->file('media'), $data['media_type']);
         }
 
-        // For video type, media_url is directly provided as a URL
-        if (isset($data['media_type']) && $data['media_type'] === 'video' && isset($data['media_url'])) {
-            // No processing needed as media_url is already set from the request
-        }
-
-        // For image_with_audio type, audio_url is directly provided
-        if (isset($data['media_type']) && $data['media_type'] === 'image_with_audio' && isset($data['audio_url'])) {
-            // No processing needed as audio_url is already set from the request
+        // Handle audio file upload if present
+        if ($request->hasFile('audio_file')) {
+            $data['audio_url'] = $this->handleMediaUpload($request->file('audio_file'), 'image_with_audio');
         }
 
         // Process question data based on type
@@ -131,6 +135,7 @@ class QuestionController extends Controller
         }
 
         $question = new Question($data);
+        $question->course_id = $course->id;
 
         if ($content) {
             $question->setTranslation('content', app()->getLocale(), $content);
@@ -174,38 +179,40 @@ class QuestionController extends Controller
         // Handle media file upload if present and media type is there
         if ($request->hasFile('media') && isset($data['media_type'])) {
             // Delete old media file if exists and different from default
-            if ($question->media_url && $question->media_type !== 'none') {
+            if ($question->media_url && $question->media_type !== 'none' && strpos($question->media_url, '/storage/') === 0) {
                 $this->deleteOldMedia($question->media_url);
             }
 
             $data['media_url'] = $this->handleMediaUpload($request->file('media'), $data['media_type']);
         }
 
-        // For video type, media_url is directly provided as a URL
-        if (isset($data['media_type']) && $data['media_type'] === 'video' && isset($data['media_url'])) {
-            // If changing from a file-based video to a URL-based video, delete the old file
-            if ($question->media_url && $question->media_type === 'video' && strpos($question->media_url, '/storage/') === 0) {
-                $this->deleteOldMedia($question->media_url);
+        // Handle audio file upload if present
+        if ($request->hasFile('audio_file')) {
+            // Delete old audio file if exists
+            if ($question->audio_url && strpos($question->audio_url, '/storage/') === 0) {
+                $this->deleteOldMedia($question->audio_url);
             }
-            // No processing needed as media_url is already set from the request
-        }
-
-        // For image_with_audio type, audio_url is directly provided
-        if (isset($data['media_type']) && $data['media_type'] === 'image_with_audio' && isset($data['audio_url'])) {
-            // No processing needed as audio_url is already set from the request
-        } else if (isset($data['media_type']) && $data['media_type'] !== 'image_with_audio') {
-            // If changing from image_with_audio to another type, clear the audio_url
-            $data['audio_url'] = null;
+            $data['audio_url'] = $this->handleMediaUpload($request->file('audio_file'), 'image_with_audio');
         }
 
         // If media type is changed to none, remove media_url and audio_url
         if (isset($data['media_type']) && $data['media_type'] === 'none') {
             // Delete old media file if exists
-            if ($question->media_url && $question->media_type !== 'none') {
+            if ($question->media_url && $question->media_type !== 'none' && strpos($question->media_url, '/storage/') === 0) {
                 $this->deleteOldMedia($question->media_url);
+            }
+            // Delete old audio file if exists
+            if ($question->audio_url && strpos($question->audio_url, '/storage/') === 0) {
+                $this->deleteOldMedia($question->audio_url);
             }
             $data['media_url'] = null;
             $data['audio_url'] = null;
+            $data['video_source'] = null;
+        }
+
+        // If not video, clear video_source
+        if (isset($data['media_type']) && $data['media_type'] !== 'video') {
+            $data['video_source'] = null;
         }
 
         // Process question data based on type
@@ -259,9 +266,12 @@ class QuestionController extends Controller
      */
     private function processQuestionDataByType(array &$data): void
     {
-        // Remove media field as it's not in the database schema
+        // Remove media fields as they are not in the database schema
         if (isset($data['media'])) {
             unset($data['media']);
+        }
+        if (isset($data['audio_file'])) {
+            unset($data['audio_file']);
         }
 
         $type = $data['type'] ?? null;

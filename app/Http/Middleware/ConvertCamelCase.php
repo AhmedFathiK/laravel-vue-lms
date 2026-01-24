@@ -19,24 +19,22 @@ class ConvertCamelCase
     {
         // Convert query parameters (GET)
         if ($request->query->count()) {
-            $snakeQuery = $this->convertToSnakeCase($request->query->all());
-            $request->query->replace($snakeQuery);
-            $request->merge($snakeQuery);
+            $request->query->replace($this->convertToSnakeCase($request->query->all()));
         }
 
         // Convert request body (POST, JSON, PUT…)
-        if ($request->request->count()) {
-            $snakeBody = $this->convertToSnakeCase($request->request->all());
-            $request->request->replace($snakeBody);
-            $request->merge($snakeBody);
+        if ($request->isJson()) {
+            $request->json()->replace($this->convertToSnakeCase($request->json()->all()));
+        } else {
+            $request->request->replace($this->convertToSnakeCase($request->request->all()));
         }
 
         // Convert files
         if ($request->files->count()) {
-            $snakeFiles = $this->convertToSnakeCase($request->files->all());
-            $request->files->replace($snakeFiles);
+            $request->files->replace($this->convertToSnakeCase($request->files->all()));
         }
 
+        // Handle sort_by specifically if it exists after conversion
         if ($request->has('sort_by')) {
             $sortBy = $request->input('sort_by');
             if (is_array($sortBy)) {
@@ -54,13 +52,6 @@ class ConvertCamelCase
                 'sort_by' => $sortBy,
             ]);
         }
-
-        if ($request->has('trigger_type')) {
-            $request->merge([
-                'trigger_type' => \Illuminate\Support\Str::snake($request->trigger_type)
-            ]);
-        }
-
 
         return $next($request);
     }

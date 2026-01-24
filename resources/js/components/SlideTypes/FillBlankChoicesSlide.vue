@@ -7,9 +7,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isExam: {
+    type: Boolean,
+    default: false,
+  },
+  modelValue: {
+    type: [Object, Array],
+    default: () => ({}),
+  },
 })
 
-const emit = defineEmits(['answered'])
+const emit = defineEmits(['answered', 'update:modelValue'])
 
 const getBlanksData = () => {
   if (Array.isArray(props.question.content)) {
@@ -22,6 +30,22 @@ const getBlanksData = () => {
 const userAnswers = ref({}) // { blankIndex: value }
 const isSubmitted = ref(false)
 const activeBlankIndex = ref(null)
+
+// Sync from modelValue if provided (Exam Mode)
+watch(() => props.modelValue, newVal => {
+  if (props.isExam && newVal && JSON.stringify(newVal) !== JSON.stringify(userAnswers.value)) {
+    // Break infinite loop: only update if different
+    userAnswers.value = { ...newVal }
+  }
+}, { immediate: true, deep: true })
+
+// Sync to modelValue (Exam Mode)
+watch(userAnswers, newVal => {
+  if (props.isExam && JSON.stringify(newVal) !== JSON.stringify(props.modelValue)) {
+    // Break infinite loop: only emit if different from prop
+    emit('update:modelValue', newVal)
+  }
+}, { deep: true })
 
 // Parse question text to find blanks
 const parts = computed(() => {
@@ -67,7 +91,7 @@ const init = () => {
 init()
 
 const handleBlankClick = index => {
-  if (isSubmitted.value) return
+  if (isSubmitted.value && !props.isExam) return
   
   // If clicking an already filled blank, clear it and make it active
   if (userAnswers.value[index]) {
@@ -78,14 +102,14 @@ const handleBlankClick = index => {
 }
 
 const selectOption = option => {
-  if (isSubmitted.value || activeBlankIndex.value === null) return
+  if ((isSubmitted.value && !props.isExam) || activeBlankIndex.value === null) return
   
   userAnswers.value[activeBlankIndex.value] = option
   activeBlankIndex.value = null // Hide choices after selection
   
   // Check if all blanks are filled
   const allFilled = blanks.value.every((_, i) => userAnswers.value[i] !== '')
-  if (allFilled) {
+  if (allFilled && !props.isExam) {
     submitAnswer()
   }
 }
@@ -120,7 +144,7 @@ defineExpose({ submitAnswer })
 const getBlankClass = index => {
   const base = 'blank-box d-inline-flex align-center justify-center mx-1 transition-all'
   
-  if (isSubmitted.value) {
+  if (isSubmitted.value && !props.isExam) {
     const blank = blanks.value[index]
     const user = userAnswers.value[index] ? userAnswers.value[index].toLowerCase().trim() : ''
     const correct = String(blank.answer).toLowerCase().trim()
@@ -149,7 +173,7 @@ const currentChoices = computed(() => {
 })
 
 const showChoicesBox = computed(() => {
-  return activeBlankIndex.value !== null && !userAnswers.value[activeBlankIndex.value] && !isSubmitted.value
+  return activeBlankIndex.value !== null && !userAnswers.value[activeBlankIndex.value] && (!isSubmitted.value || props.isExam)
 })
 
 const mediaUrl = computed(() => props.question.mediaUrl)
@@ -235,7 +259,7 @@ const termText = computed(() => props.question.termText)
               
               <!-- Correct answer hint on error -->
               <div
-                v-if="isSubmitted && !getBlankClass(bIndex).includes('is-correct')"
+                v-if="isSubmitted && !getBlankClass(bIndex).includes('is-correct') && !isExam"
                 class="correct-hint"
               >
                 {{ blank.answer }}
@@ -272,7 +296,7 @@ const termText = computed(() => props.question.termText)
         </VBtn>
       </div>
       <div
-        v-else-if="!isSubmitted"
+        v-else-if="!isSubmitted || isExam"
         class="text-body-1 text-disabled italic animate__animated animate__fadeIn"
       >
         Click a blank to see choices

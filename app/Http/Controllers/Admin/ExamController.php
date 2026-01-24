@@ -8,31 +8,21 @@ use App\Http\Requests\Admin\Exam\IndexExamRequest;
 use App\Http\Requests\Admin\Exam\ShowExamRequest;
 use App\Http\Requests\Admin\Exam\StoreExamRequest;
 use App\Http\Requests\Admin\Exam\UpdateExamRequest;
+use App\Models\Course;
 use App\Models\Exam;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class ExamController extends Controller
 {
     /**
      * Display a listing of the exams.
      */
-    public function index(IndexExamRequest $request): JsonResponse
+    public function index(Course $course, IndexExamRequest $request): JsonResponse
     {
-        $query = Exam::query();
+        $query = Exam::where('course_id', $course->id);
 
         // Apply filters
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-        }
-
-        if ($request->has('level_id')) {
-            $query->where('level_id', $request->level_id);
-        }
-
-        if ($request->has('lesson_id')) {
-            $query->where('lesson_id', $request->lesson_id);
-        }
-
         if ($request->has('type')) {
             $query->where('type', $request->type);
         }
@@ -58,43 +48,118 @@ class ExamController extends Controller
     /**
      * Store a newly created exam in storage.
      */
-    public function store(StoreExamRequest $request): JsonResponse
+    public function store(Course $course, StoreExamRequest $request): JsonResponse
     {
-        $exam = Exam::create($request->validated());
+        return DB::transaction(function () use ($course, $request) {
+            $data = $request->validated();
+            $sectionsData = $data['sections'] ?? [];
+            unset($data['sections']);
 
-        return response()->json([
-            'message' => 'Exam created successfully',
-            'exam' => $exam
-        ], 201);
+            $data['course_id'] = $course->id;
+            $exam = Exam::create($data);
+
+            $this->syncSections($exam, $sectionsData);
+
+            return response()->json([
+                'message' => 'Exam created successfully',
+                'exam' => $exam->load(['sections.examQuestions'])
+            ], 201);
+        });
     }
 
     /**
      * Display the specified exam.
      */
-    public function show(Exam $exam, ShowExamRequest $request): JsonResponse
+    public function show(Course $course, Exam $exam, ShowExamRequest $request): JsonResponse
     {
-        $exam->load('sections.questions');
+        // Load sections with canonical questions and their context
+        $exam->load(['sections.questions.context']);
 
-        return response()->json($exam);
+        return response()->json(new \App\Http\Resources\Admin\ExamResource($exam));
     }
 
     /**
      * Update the specified exam in storage.
      */
-    public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
+    public function update(Course $course, UpdateExamRequest $request, Exam $exam): JsonResponse
     {
-        $exam->update($request->validated());
+        return DB::transaction(function () use ($request, $exam) {
+            $data = $request->validated();
+            $sectionsData = $data['sections'] ?? [];
+            unset($data['sections']);
 
-        return response()->json([
-            'message' => 'Exam updated successfully',
-            'exam' => $exam
-        ]);
+            $exam->update($data);
+
+            $this->syncSections($exam, $sectionsData);
+
+            return response()->json([
+                'message' => 'Exam updated successfully',
+                'exam' => $exam->fresh()->load(['sections.questions'])
+            ]);
+        });
+    }
+
+    /**
+     * Sync sections and their questions for an exam.
+     */
+    private function syncSections(Exam $exam, array $sectionsData): void
+    {
+        $sectionIds = [];
+        $allQuestionIds = [];
+
+        foreach ($sectionsData as $index => $sectionData) {
+            $questionsData = $sectionData['questions'] ?? $sectionData['exam_questions'] ?? [];
+            
+            // Remove non-column fields
+            unset($sectionData['questions']);
+            unset($sectionData['exam_questions']);
+            unset($sectionData['context']);
+            unset($sectionData['media_type']);
+
+            $section = $exam->sections()->updateOrCreate(
+                ['id' => $sectionData['id'] ?? null],
+                $sectionData
+            );
+
+            $sectionIds[] = $section->id;
+
+            // Sync Questions for this section
+            $pivotData = [];
+            foreach ($questionsData as $qIndex => $questionData) {
+                if (isset($questionData['id'])) {
+                    $questionId = $questionData['id'];
+
+                    // Check if question already added to this exam (in any section)
+                    if (in_array($questionId, $allQuestionIds)) {
+                        continue; // Skip duplicates
+                    }
+
+                    // Verify question belongs to the same course
+                    $question = \App\Models\Question::find($questionId);
+                    if (!$question || $question->course_id !== $exam->course_id) {
+                        continue; // Skip questions from other courses
+                    }
+
+                    $pivotData[$questionId] = [
+                        'order' => $questionData['order'] ?? ($qIndex + 1),
+                        'points' => $questionData['points'] ?? null,
+                    ];
+                    $allQuestionIds[] = $questionId;
+                }
+            }
+
+            // Sync pivot table
+            $section->questions()->sync($pivotData);
+        }
+
+        // Remove sections not in the request
+        $exam->sections()->whereNotIn('id', $sectionIds)->delete();
     }
 
     /**
      * Remove the specified exam from storage.
      */
-    public function destroy(Exam $exam, DestroyExamRequest $request): JsonResponse
+    public function destroy(Course $course, Exam $exam, DestroyExamRequest $request): JsonResponse
     {
         // Check if there are any attempts for this exam
         if ($exam->attempts()->exists()) {

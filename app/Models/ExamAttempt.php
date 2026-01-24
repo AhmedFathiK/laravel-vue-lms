@@ -30,6 +30,10 @@ class ExamAttempt extends Model
         'time_spent',
     ];
 
+    protected $appends = [
+        'remaining_time',
+    ];
+
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
@@ -57,6 +61,53 @@ class ExamAttempt extends Model
     }
 
     /**
+     * Check if the attempt has exceeded the exam time limit
+     */
+    public function isExpired(): bool
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            return false;
+        }
+
+        $exam = $this->exam;
+        if (!$exam || !$exam->time_limit) {
+            return false;
+        }
+
+        $expiryTime = $this->start_time->addMinutes($exam->time_limit);
+
+        return now()->greaterThan($expiryTime);
+    }
+
+    /**
+     * Get the remaining time in seconds
+     */
+    public function getRemainingTimeAttribute(): int
+    {
+        return $this->getRemainingTime();
+    }
+
+    /**
+     * Get the remaining time in seconds
+     */
+    public function getRemainingTime(): int
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            return 0;
+        }
+
+        $exam = $this->exam;
+        if (!$exam || !$exam->time_limit) {
+            return -1; // No time limit
+        }
+
+        $expiryTime = $this->start_time->addMinutes($exam->time_limit);
+        $remaining = now()->diffInSeconds($expiryTime, false);
+
+        return (int) max(0, $remaining);
+    }
+
+    /**
      * Calculate the score for this attempt
      */
     public function calculateScore(): void
@@ -68,12 +119,24 @@ class ExamAttempt extends Model
             return;
         }
 
+        // Pre-load exam structure to get overridden points
+        $this->loadMissing(['exam.sections.questions']);
+        $pointsMap = [];
+        if ($this->exam) {
+            foreach ($this->exam->sections as $section) {
+                foreach ($section->questions as $question) {
+                    $pointsMap[$question->id] = $question->pivot->points ?? $question->points;
+                }
+            }
+        }
+
         $totalScore = 0;
         $maxScore = 0;
 
         foreach ($this->responses as $response) {
             $totalScore += $response->score ?? 0;
-            $maxScore += $response->question->points ?? 0;
+            // Use overridden points if available, else default
+            $maxScore += $pointsMap[$response->question_id] ?? $response->question->points ?? 0;
         }
 
         $this->score = $totalScore;
@@ -83,13 +146,15 @@ class ExamAttempt extends Model
         $this->status = self::STATUS_GRADED;
         $this->save();
 
-        // If this is a level-end exam and the user passed, unlock the next level
-        if ($this->exam->type === Exam::TYPE_LEVEL_END && $this->is_passed) {
+        // Check if this is a level-end exam
+        $isLevelEnd = Level::where('final_exam_id', $this->exam_id)->exists();
+        if ($isLevelEnd && $this->is_passed) {
             $this->unlockNextLevel();
         }
 
-        // If this is a placement test, unlock the appropriate level
-        if ($this->exam->type === Exam::TYPE_PLACEMENT && $this->is_passed) {
+        // Check if this is a placement test
+        $isPlacement = Course::where('placement_exam_id', $this->exam_id)->exists();
+        if ($isPlacement && $this->is_passed) {
             $this->unlockPlacementLevel();
         }
     }
@@ -99,12 +164,11 @@ class ExamAttempt extends Model
      */
     private function unlockNextLevel(): void
     {
-        $currentLevel = $this->exam->level;
-        if (!$currentLevel) return;
+        $level = Level::where('final_exam_id', $this->exam_id)->first();
+        if (!$level) return;
 
-        $courseId = $currentLevel->course_id;
-        $nextLevel = Level::where('course_id', $courseId)
-            ->where('sort_order', '>', $currentLevel->sort_order)
+        $nextLevel = Level::where('course_id', $level->course_id)
+            ->where('sort_order', '>', $level->sort_order)
             ->orderBy('sort_order')
             ->first();
 
@@ -121,7 +185,7 @@ class ExamAttempt extends Model
     {
         // Logic to determine which level to unlock based on placement score
         // This is a simple example - you would need to adjust based on your requirements
-        $course = $this->exam->course;
+        $course = Course::where('placement_exam_id', $this->exam_id)->first();
         if (!$course) return;
 
         // Find appropriate level based on score percentage

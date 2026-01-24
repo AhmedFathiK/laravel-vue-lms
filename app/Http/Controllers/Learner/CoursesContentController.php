@@ -42,7 +42,7 @@ class CoursesContentController extends Controller
             ->exists();
 
         if (!$hasEntitlement) {
-             return response()->json([
+            return response()->json([
                 "error" => "You do not have active access to this course.",
                 "course_id" => $course->id
             ], 403);
@@ -76,14 +76,14 @@ class CoursesContentController extends Controller
                     ->with(['question', 'term']);
             }
         ]);
-        
+
         // Update Enrollment Last Accessed (if exists)
         CourseEnrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->update(['last_accessed_at' => now()]);
 
         return response()->json(new LessonResource($lesson));
-}
+    }
 
     /**
      * Display a user's courses content.
@@ -93,15 +93,15 @@ class CoursesContentController extends Controller
         // Check Entitlement
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
+
         $hasEntitlement = $user->entitlements()
             ->active()
             ->whereHas('capabilities', function ($query) use ($course) {
                 $query->where('scope_type', 'App\Models\Course')
-                      ->where('scope_id', $course->id);
+                    ->where('scope_id', $course->id);
             })
             ->exists();
-        
+
         $hasEnrollment = CourseEnrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->exists();
@@ -134,10 +134,61 @@ class CoursesContentController extends Controller
                         $query->where('user_id', Auth::id())
                             ->where('is_passed', true);
                     }]);
+            },
+            'exams' => function ($query) use ($course) {
+                $query->where('status', 'published')
+                    ->where('is_active', true)
+                    ->where(function ($q) use ($course) {
+                        $q->where('id', $course->placement_exam_id)
+                            ->orWhere('id', $course->final_exam_id);
+                    })
+                    ->withCount(['attempts as is_completed' => function ($query) {
+                        $query->where('user_id', Auth::id())
+                            ->where('is_passed', true);
+                    }]);
+            },
+            'finalExam' => function ($query) {
+                $query->withCount(['attempts as is_completed' => function ($query) {
+                    $query->where('user_id', Auth::id())
+                        ->where('is_passed', true);
+                }]);
+            },
+            'placementExam' => function ($query) {
+                $query->withCount(['attempts as is_completed' => function ($query) {
+                    $query->where('user_id', Auth::id())
+                        ->where('is_passed', true);
+                }]);
             }
         ]);
 
         $courseData = $course->toArray();
+
+        // Course-wide exams
+        $placementExam = null;
+        $finalExam = null;
+
+        // Track exam IDs we've already added to course-wide sections to avoid duplicates
+        $addedExamIds = [];
+
+        // Handle Placement Exam
+        if ($course->placementExam) {
+            $exam = $course->placementExam->toArray();
+            $exam['item_type'] = 'exam';
+            $exam['completed'] = ($course->placementExam->is_completed ?? 0) > 0;
+            $exam['locked'] = false; // Placement exams are never locked
+            $placementExam = $exam;
+            $addedExamIds[] = $course->placement_exam_id;
+        }
+
+        // Handle Final Exam
+        if ($course->finalExam) {
+            $exam = $course->finalExam->toArray();
+            $exam['item_type'] = 'exam';
+            $exam['completed'] = ($course->finalExam->is_completed ?? 0) > 0;
+            // Locked status will be calculated later along with levels
+            $finalExam = $exam;
+            $addedExamIds[] = $course->final_exam_id;
+        }
 
         // Calculate locked status logic:
         // Item N is locked if Item N-1 is not completed.
@@ -147,6 +198,7 @@ class CoursesContentController extends Controller
 
         foreach ($courseData['levels'] as &$level) {
             $items = [];
+            $levelExamCompleted = false;
 
             // Add lessons
             if (isset($level['lessons'])) {
@@ -158,30 +210,43 @@ class CoursesContentController extends Controller
                 }
             }
 
-            // Add exams
+            // Add exams (Level final exam)
             if (isset($level['exams'])) {
                 foreach ($level['exams'] as $exam) {
                     $exam['type'] = 'exam';
                     $exam['completed'] = $exam['is_completed'] > 0;
+                    if ($exam['completed']) {
+                        $levelExamCompleted = true;
+                    }
                     $items[] = $exam;
                 }
             }
 
-            // Sort items. Assuming exams come after lessons as we don't have unified sort_order.
-            // If there was a unified sort_order, we would sort by it here.
-            // usort($items, function($a, $b) { return $a['sort_order'] <=> $b['sort_order']; });
-
             // Apply locked status
+            $currentLevelPreviousItemCompleted = $previousCompleted;
             foreach ($items as &$item) {
-                $item['locked'] = !$previousCompleted;
-
-                if ($item['locked']) {
-                    $previousCompleted = false;
+                if ($item['type'] === 'exam') {
+                    $item['locked'] = false; // Level exams are never locked
                 } else {
-                    $previousCompleted = $item['completed'];
+                    // It's a lesson.
+                    // Unlock if:
+                    // 1. Level exam is completed (shortcut)
+                    // 2. Previous item in sequence was completed
+                    $item['locked'] = !$levelExamCompleted && !$currentLevelPreviousItemCompleted;
+                }
+
+                // Update sequence tracker for the next item in this level
+                if ($item['completed']) {
+                    $currentLevelPreviousItemCompleted = true;
+                } else {
+                    $currentLevelPreviousItemCompleted = false;
                 }
             }
             unset($item);
+
+            // Update previousCompleted for the NEXT level
+            // Level is passed if level exam is completed OR the last lesson of the level is completed
+            $previousCompleted = $levelExamCompleted || $currentLevelPreviousItemCompleted;
 
             $level['items'] = $items;
             unset($level['lessons']);
@@ -189,6 +254,14 @@ class CoursesContentController extends Controller
         }
         unset($level);
 
-        return response()->json($courseData);
+        // Finally, set the locked status for the course final exam based on the last item of the last level
+        if ($finalExam) {
+            $finalExam['locked'] = !$previousCompleted;
+        }
+
+        return response()->json(array_merge($courseData, [
+            'placementExam' => $placementExam,
+            'finalExam' => $finalExam,
+        ]));
     }
 }

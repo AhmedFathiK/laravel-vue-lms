@@ -2,7 +2,9 @@
 import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { requiredValidator } from '@core/utils/validators'
+import api from '@/utils/api'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   isDialogVisible: {
@@ -26,6 +28,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:isDialogVisible', 'refresh'])
 
+const toast = useToast()
 const refForm = ref(null)
 
 const defaultForm = () => ({
@@ -33,9 +36,30 @@ const defaultForm = () => ({
   description: '',
   status: 'draft',
   courseId: props.courseId,
+  finalExamId: null,
 })
 
 const form = ref(defaultForm())
+const levelExams = ref([])
+const isExamsLoading = ref(false)
+
+const fetchCourseExams = async () => {
+  isExamsLoading.value = true
+  try {
+    const response = await api.get(`/admin/courses/${props.courseId}/exams`, {
+      params: {
+        'per_page': 100,
+      },
+    })
+
+    levelExams.value = response.data || response.items || []
+  } catch (error) {
+    console.error('Error fetching course exams:', error)
+    toast.error('Failed to fetch exams for this course')
+  } finally {
+    isExamsLoading.value = false
+  }
+}
 
 watch(() => props.isDialogVisible, isVisible => {
   if (isVisible) {
@@ -45,10 +69,13 @@ watch(() => props.isDialogVisible, isVisible => {
         description: props.data.description || '',
         status: props.data.status || 'draft',
         courseId: props.courseId,
+        finalExamId: props.data.finalExamId || null,
       }
     } else {
       form.value = defaultForm()
     }
+    
+    fetchCourseExams()
 
     nextTick(() => {
       refForm.value?.resetValidation()
@@ -125,6 +152,27 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 label="Status"
                 placeholder="Select Status"
                 :error-messages="validationErrors.status"
+              />
+            </VCol>
+
+            <!-- Final Exam Selection -->
+            <VCol
+              v-if="props.dialogMode === 'edit'"
+              cols="12"
+              md="6"
+            >
+              <AppSelect
+                v-model="form.finalExamId"
+                :items="levelExams"
+                item-title="title"
+                item-value="id"
+                label="Final Exam"
+                placeholder="Select Final Exam"
+                :loading="isExamsLoading"
+                clearable
+                :error-messages="validationErrors.finalExamId"
+                hint="Only exams belonging to this course are shown"
+                persistent-hint
               />
             </VCol>
 

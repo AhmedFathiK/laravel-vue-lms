@@ -22,6 +22,7 @@ class Question extends Model
 
     protected $fillable = [
         'course_id',
+        'question_context_id',
         'title',
         'question_text',
         'type',
@@ -35,6 +36,7 @@ class Question extends Model
         'media_url',
         'media_type',
         'audio_url',
+        'video_source',
     ];
 
     public array $translatable = [
@@ -48,6 +50,11 @@ class Question extends Model
     protected $casts = [
         'tags' => 'array',
     ];
+
+    public function context(): BelongsTo
+    {
+        return $this->belongsTo(QuestionContext::class, 'question_context_id');
+    }
 
     public function course(): BelongsTo
     {
@@ -82,5 +89,75 @@ class Question extends Model
     public function responses(): HasMany
     {
         return $this->hasMany(ExamResponse::class);
+    }
+
+    /**
+     * Get the correct answer from the content field.
+     */
+    public function getCorrectAnswerAttribute()
+    {
+        $content = $this->content;
+
+        // If it's still a string (though translatable usually handles it), decode it
+        if (is_string($content)) {
+            $content = json_decode($content, true);
+        }
+
+        if (!is_array($content)) {
+            return null;
+        }
+
+        // Handle explicit correct answer
+        if (isset($content['correct_answer'])) {
+            return $content['correct_answer'];
+        }
+        if (isset($content['correctAnswer'])) {
+            return $content['correctAnswer'];
+        }
+
+        // Implicit correct answers based on type
+        if ($this->type === self::TYPE_REORDERING && isset($content['items'])) {
+            // For reordering, the correct answer is the items array itself (in order)
+            return $content['items'];
+        }
+
+        if ($this->type === self::TYPE_MATCHING && isset($content['pairs'])) {
+            // For matching, the correct answer is a map where index matches index
+            // Assuming pairs are stored in matching order
+            $map = [];
+            foreach ($content['pairs'] as $index => $pair) {
+                $map[$index] = $index;
+            }
+            return $map;
+        }
+
+        if (($this->type === self::TYPE_FILL_BLANK || $this->type === self::TYPE_FILL_BLANK_CHOICES) && isset($content['blanks'])) {
+            $map = [];
+            foreach ($content['blanks'] as $index => $blank) {
+                if (isset($blank['correct_answer'])) {
+                    $map[$index] = $blank['correct_answer'];
+                }
+            }
+            return $map;
+        }
+
+        return null;
+    }
+
+    public function toArray()
+    {
+        $attributes = parent::toArray();
+
+        // Ensure translatable fields are correctly translated for the API
+        if (isset($this->translatable) && is_array($this->translatable)) {
+            foreach ($this->translatable as $field) {
+                // If the attribute exists in the array, translate it
+                if (array_key_exists($field, $attributes)) {
+                    $attributes[$field] = $this->getTranslation($field, app()->getLocale());
+                }
+            }
+        }
+
+        return $attributes;
     }
 }

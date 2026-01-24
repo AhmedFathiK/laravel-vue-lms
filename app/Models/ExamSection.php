@@ -18,8 +18,6 @@ class ExamSection extends Model
         'description',
         'instructions',
         'order',
-        'media_url',
-        'media_type',
         'time_limit',
     ];
 
@@ -55,7 +53,7 @@ class ExamSection extends Model
     public function questions(): BelongsToMany
     {
         return $this->belongsToMany(Question::class, 'exam_section_questions')
-            ->withPivot('order')
+            ->withPivot('order', 'points')
             ->orderByPivot('order');
     }
 }

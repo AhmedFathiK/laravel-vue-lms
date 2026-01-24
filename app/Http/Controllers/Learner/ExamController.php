@@ -88,24 +88,44 @@ class ExamController extends Controller
         $exam->load(['sections' => function ($query) use ($exam) {
             $query->orderBy('order');
 
-            $query->with(['questions' => function ($query) use ($exam) {
-                $query->orderByPivot('order');
-                $query->select(
+            $query->with(['questions' => function ($q) use ($exam) {
+                $q->orderByPivot('order');
+                $q->select(
                     'questions.id',
+                    'questions.question_context_id',
+                    'questions.title',
                     'questions.question_text',
                     'questions.type',
-                    'questions.options',
-                    'questions.points',
+                    'questions.content',
                     'questions.media_url',
-                    'questions.media_type'
+                    'questions.media_type',
+                    'questions.audio_url',
+                    'questions.video_source'
                 );
+                // Include pivot fields
+                $q->withPivot('order', 'points');
+                $q->with('context');
 
-                // Randomize questions if configured
                 if ($exam->randomize_questions) {
-                    $query->inRandomOrder();
+                    $q->inRandomOrder();
                 }
             }]);
         }]);
+
+        // Transform questions to include pivot points as marks and map options from content
+        $exam->duration = $exam->time_limit; // Map for frontend
+
+        $exam->sections->each(function ($section) {
+            $section->questions->each(function ($question) {
+                $question->marks = $question->pivot->points ?? $question->points; // Use pivot points or default
+                $question->order = $question->pivot->order;
+
+                // Map options from content if they exist
+                if (isset($question->content['options'])) {
+                    $question->options = $question->content['options'];
+                }
+            });
+        });
 
         return response()->json($exam);
     }
@@ -161,6 +181,9 @@ class ExamController extends Controller
             'attempt_number' => $attemptNumber,
         ]);
 
+        // Add remaining time for frontend
+        $attempt->remaining_time = $attempt->getRemainingTime();
+
         return response()->json([
             'message' => 'Exam attempt started successfully',
             'attempt' => $attempt
@@ -170,18 +193,26 @@ class ExamController extends Controller
     /**
      * Submit a response to a question in an exam.
      */
-    public function submitResponse(Request $request, ExamAttempt $attempt, Question $question): JsonResponse
+    public function submitResponse(Request $request, $attempt_id, $question_id): JsonResponse
     {
-        // Validate the request
-        $request->validate([
-            'user_answer' => 'required',
-            'section_id' => 'required|exists:exam_sections,id',
-        ]);
+        $attempt = ExamAttempt::findOrFail($attempt_id);
+        $question = Question::findOrFail($question_id);
 
         // Check if the attempt belongs to the authenticated user
         if ($attempt->user_id !== Auth::id()) {
             return response()->json([
                 'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Check if the attempt is expired (backend time limit enforcement)
+        if ($attempt->isExpired()) {
+            // Auto-complete the attempt
+            $this->completeAttempt($attempt);
+
+            return response()->json([
+                'message' => 'Time limit exceeded. Your exam has been automatically submitted.',
+                'is_expired' => true
             ], 403);
         }
 
@@ -191,6 +222,12 @@ class ExamController extends Controller
                 'message' => 'Exam attempt is already completed'
             ], 422);
         }
+
+        // Validate the request
+        $request->validate([
+            'user_answer' => 'required',
+            'section_id' => 'required|exists:exam_sections,id',
+        ]);
 
         // Check if the question belongs to the exam
         $section = ExamSection::find($request->section_id);
@@ -244,6 +281,8 @@ class ExamController extends Controller
         ], 201);
     }
 
+
+
     /**
      * Complete an exam attempt.
      */
@@ -278,7 +317,8 @@ class ExamController extends Controller
         // If show_answers is enabled for the exam, include the correct answers
         if ($attempt->exam->show_answers) {
             $attempt->setRelation('responses', $attempt->responses->each(function ($response) {
-                $response->correct_answer = $response->question->correct_answer;
+                $question = $response->question;
+                $response->correct_answer = $question ? $question->correct_answer : null;
             }));
         }
 
@@ -317,13 +357,17 @@ class ExamController extends Controller
         // Load the attempt with responses and questions
         $attempt->load(['responses.question', 'exam']);
 
+        // Add remaining time for frontend
+        $attempt->remaining_time = $attempt->getRemainingTime();
+
         // If show_answers is enabled for the exam, include the correct answers
         if ($attempt->exam->show_answers && in_array($attempt->status, [
             ExamAttempt::STATUS_COMPLETED,
             ExamAttempt::STATUS_GRADED
         ])) {
             $attempt->setRelation('responses', $attempt->responses->each(function ($response) {
-                $response->correct_answer = $response->question->correct_answer;
+                $question = $response->question;
+                $response->correct_answer = $question ? $question->correct_answer : null;
             }));
         }
 

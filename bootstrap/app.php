@@ -21,11 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
-        $middleware->append(\App\Http\Middleware\ConvertCamelCase::class);
-        $middleware->append(\App\Http\Middleware\CamelCaseResponse::class);
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\DetectLocaleFromRequest::class,
+            \App\Http\Middleware\ConvertCamelCase::class,
+            \App\Http\Middleware\CamelCaseResponse::class,
         ]);
         // Enable CORS middleware
         $middleware->web(append: [
@@ -54,7 +54,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => 'Route not found',
                     'error' => 'The requested route could not be found',
-                    'details' => $e->getMessage()
+                    'details' => $e->getMessage(),
+                    'method' => $request->method(),
+                    'path' => $request->path(),
                 ], 404);
             }
         });

@@ -22,6 +22,7 @@ class LevelResource extends JsonResource
             'status' => $this->status,
             'is_unlocked' => $this->is_unlocked,
             'course_id' => $this->course_id,
+            'final_exam_id' => $this->final_exam_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'lessons_count' => $this->whenCounted('lessons'),

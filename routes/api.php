@@ -115,6 +115,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::post('trash/empty', [\App\Http\Controllers\Admin\TrashController::class, 'emptyTrash']);
     Route::get('trash/model-types', [\App\Http\Controllers\Admin\TrashController::class, 'getModelTypes']);
 
+    // Exam Grading
+    Route::get('/exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
+    Route::get('/exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
+    Route::post('/exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
+
     // Course Structure Management
     Route::get('courses/select-fields', [CourseController::class, 'getCoursesForSelectFields']);
     Route::apiResource('courses', CourseController::class);
@@ -122,6 +127,26 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
     // Courses Content
     Route::prefix('/courses/{course}')->scopeBindings()->group(function () {
+        // Assessment System (Course-bound)
+        Route::apiResource('/exams', \App\Http\Controllers\Admin\ExamController::class);
+        Route::apiResource('/exam-sections', \App\Http\Controllers\Admin\ExamSectionController::class);
+        Route::post('/exam-sections/{section}/questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'addQuestion']);
+        Route::delete('/exam-sections/{section}/questions/{question}', [\App\Http\Controllers\Admin\ExamSectionController::class, 'removeQuestion']);
+        Route::post('/exam-sections/{section}/reorder-questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'reorderQuestions']);
+
+        // Exam Questions (Removed - Refactored to use canonical questions via pivot)
+
+
+        // Legacy / Course-bound questions
+        Route::get('/questions/types', [\App\Http\Controllers\Admin\QuestionController::class, 'getTypes']);
+        Route::get('/questions/select-fields', [\App\Http\Controllers\Admin\QuestionController::class, 'getQuestionsForSelectFields']);
+        Route::apiResource('/questions', \App\Http\Controllers\Admin\QuestionController::class);
+
+        // Question Contexts
+        Route::post('/question-contexts/{questionContext}/questions', [\App\Http\Controllers\Admin\QuestionContextController::class, 'attachQuestions']);
+        Route::delete('/question-contexts/{questionContext}/questions/{question}', [\App\Http\Controllers\Admin\QuestionContextController::class, 'detachQuestion']);
+        Route::apiResource('/question-contexts', \App\Http\Controllers\Admin\QuestionContextController::class);
+
         // Billing Plans
         Route::get('billing-plans', [BillingPlanController::class, 'index']);
         Route::post('billing-plans', [BillingPlanController::class, 'store']);
@@ -161,22 +186,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
             });
         });
 
-        // Assessment System
-        Route::get('/questions/types', [\App\Http\Controllers\Admin\QuestionController::class, 'getTypes']);
-        Route::get('/questions/select-fields', [\App\Http\Controllers\Admin\QuestionController::class, 'getQuestionsForSelectFields']);
-        Route::apiResource('/questions', \App\Http\Controllers\Admin\QuestionController::class);
-        Route::apiResource('/exams', \App\Http\Controllers\Admin\ExamController::class);
-        Route::apiResource('/exam-sections', \App\Http\Controllers\Admin\ExamSectionController::class);
-        Route::post('/exam-sections/{section}/questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'addQuestion']);
-        Route::delete('/exam-sections/{section}/questions/{question}', [\App\Http\Controllers\Admin\ExamSectionController::class, 'removeQuestion']);
-        Route::post('/exam-sections/{section}/reorder-questions', [\App\Http\Controllers\Admin\ExamSectionController::class, 'reorderQuestions']);
+        // Assessment System (Moved out)
 
-        // Exam Grading
-    Route::get('/exam-responses/pending', [\App\Http\Controllers\Admin\ExamResponseController::class, 'pendingResponses']);
-    Route::get('/exam-responses/{response}', [\App\Http\Controllers\Admin\ExamResponseController::class, 'show']);
-    Route::post('/exam-responses/{response}/grade', [\App\Http\Controllers\Admin\ExamResponseController::class, 'gradeResponse']);
-
-    // Content Management (nested under courses)
+        // Content Management (nested under courses)
         // Terms
         Route::prefix('/terms')->group(function () {
             Route::get('/', [TermController::class, 'index']);
@@ -226,7 +238,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     // Payment & Entitlement Management
     Route::apiResource('billing-plans', BillingPlanController::class);
     Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
-    
+
     Route::apiResource('payments', PaymentController::class);
     Route::get('receipts/statistics', [ReceiptController::class, 'statistics']);
     Route::apiResource('receipts', ReceiptController::class);
@@ -239,11 +251,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::post('user-entitlements/{userEntitlement}/cancel', [UserEntitlementController::class, 'cancel']);
 
     // Access Control Management
-    Route::post('courses/{course}/access-type', [CourseAccessController::class, 'setCourseAccessType']);
-    Route::post('levels/{level}/access-type', [CourseAccessController::class, 'setLevelAccessType']);
-    Route::post('lessons/{lesson}/access-type', [CourseAccessController::class, 'setLessonAccessType']);
-    Route::get('courses/{course}/free-content', [CourseAccessController::class, 'getFreeCourseContent']);
-    Route::post('batch-update-free-access', [CourseAccessController::class, 'batchUpdateFreeAccess']);
+    // Route::post('courses/{course}/access-type', [CourseAccessController::class, 'setCourseAccessType']);
+    // Route::post('levels/{level}/access-type', [CourseAccessController::class, 'setLevelAccessType']);
+    // Route::post('lessons/{lesson}/access-type', [CourseAccessController::class, 'setLessonAccessType']);
+    // Route::get('courses/{course}/free-content', [CourseAccessController::class, 'getFreeCourseContent']);
+    // Route::post('batch-update-free-access', [CourseAccessController::class, 'batchUpdateFreeAccess']);
 });
 
 /*
@@ -295,7 +307,9 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::get('exams/{exam}/attempts', [\App\Http\Controllers\Learner\ExamController::class, 'examAttempts']);
     Route::get('exam-attempts/{attempt}', [\App\Http\Controllers\Learner\ExamController::class, 'showAttempt']);
     Route::post('exam-attempts/{attempt}/complete', [\App\Http\Controllers\Learner\ExamController::class, 'completeAttempt']);
-    Route::post('exam-attempts/{attempt}/questions/{question}', [\App\Http\Controllers\Learner\ExamController::class, 'submitResponse']);
+    Route::post('exam-attempts/{attempt_id}/questions/{question_id}/response', [\App\Http\Controllers\Learner\ExamController::class, 'submitResponse']);
+
+
     Route::get('placement-test', [\App\Http\Controllers\Learner\ExamController::class, 'getPlacementTest']);
 });
 

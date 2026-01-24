@@ -2,6 +2,7 @@
 import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import DialogCloseBtn from '@core/components/DialogCloseBtn.vue'
 import { requiredValidator } from '@core/utils/validators'
+import api from '@/utils/api'
 import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -38,6 +39,7 @@ const createDefaultForm = () => ({
   leaderboardResetFrequency: 'monthly',
   prerequisites: [],
   status: 'draft',
+  finalExamId: null,
 })
 
 const form = ref(createDefaultForm())
@@ -45,6 +47,33 @@ const thumbnail = ref(null)
 const thumbnailPreview = ref(null) // For image preview
 const prerequisiteInput = ref('')
 const deleteThumbnail = ref(false) // Flag to delete thumbnail
+const courseExams = ref([])
+const isExamsLoading = ref(false)
+
+const fetchCourseExams = async courseId => {
+  if (!courseId) {
+    courseExams.value = []
+    
+    return
+  }
+  
+  isExamsLoading.value = true
+  try {
+    const response = await api.get(`/admin/courses/${courseId}/exams`, {
+      params: {
+        'per_page': 100, // Get all exams for this course
+      },
+    })
+
+    // Based on ExamController index, it returns pagination object
+    courseExams.value = response.data || response.items || []
+  } catch (error) {
+    console.error('Error fetching course exams:', error)
+    toast.error('Failed to fetch exams for this course')
+  } finally {
+    isExamsLoading.value = false
+  }
+}
 
 // Reset form values
 const resetFormValues = () => {
@@ -53,6 +82,7 @@ const resetFormValues = () => {
   thumbnailPreview.value = null
   prerequisiteInput.value = ''
   deleteThumbnail.value = false
+  courseExams.value = []
 }
 
 // Watch for changes in data prop
@@ -66,6 +96,12 @@ watch(() => props.isDialogVisible, isVisible => {
         leaderboardResetFrequency: props.data.leaderboardResetFrequency || 'monthly',
         prerequisites: props.data.prerequisites || [],
         status: props.data.status || 'draft',
+        finalExamId: props.data.finalExamId || null,
+      }
+      
+      // Fetch exams for this course if editing
+      if (props.data.id) {
+        fetchCourseExams(props.data.id)
       }
       
       // Reset thumbnail state
@@ -260,6 +296,28 @@ const statusOptions = [
                 label="Status"
                 variant="outlined"
                 :error-messages="validationErrors.status"
+              />
+            </VCol>
+
+            <!-- Final Exam Selection -->
+            <VCol
+              v-if="props.dialogMode === 'edit'"
+              cols="12"
+              md="6"
+            >
+              <VSelect
+                v-model="form.finalExamId"
+                :items="courseExams"
+                item-title="title"
+                item-value="id"
+                label="Final Exam"
+                placeholder="Select Final Exam"
+                variant="outlined"
+                :loading="isExamsLoading"
+                clearable
+                :error-messages="validationErrors.finalExamId"
+                hint="Only exams belonging to this course are shown"
+                persistent-hint
               />
             </VCol>
 

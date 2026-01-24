@@ -13,7 +13,7 @@ class ShowExamRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('view exams');
+        return $this->user()->can('view.exams');
     }
 
     /**
