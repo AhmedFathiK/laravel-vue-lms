@@ -120,28 +120,34 @@ class ExamAttempt extends Model
         }
 
         // Pre-load exam structure to get overridden points
-        $this->loadMissing(['exam.sections.questions']);
+        $this->load(['exam.sections.questions']);
         $pointsMap = [];
+        $maxScore = 0;
+        $validQuestionIds = [];
+
         if ($this->exam) {
             foreach ($this->exam->sections as $section) {
                 foreach ($section->questions as $question) {
-                    $pointsMap[$question->id] = $question->pivot->points ?? $question->points;
+                    $points = $question->pivot->points ?? $question->points ?? 0;
+                    $pointsMap[$question->id] = $points;
+                    $maxScore += $points;
+                    $validQuestionIds[] = $question->id;
                 }
             }
         }
 
         $totalScore = 0;
-        $maxScore = 0;
 
         foreach ($this->responses as $response) {
-            $totalScore += $response->score ?? 0;
-            // Use overridden points if available, else default
-            $maxScore += $pointsMap[$response->question_id] ?? $response->question->points ?? 0;
+            // Only count score if the question is still part of the exam
+            if (in_array($response->question_id, $validQuestionIds)) {
+                $totalScore += $response->score ?? 0;
+            }
         }
 
         $this->score = $totalScore;
         $this->max_score = $maxScore;
-        $this->percentage = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+        $this->percentage = $maxScore > 0 ? round(($totalScore / $maxScore) * 100, 2) : 0;
         $this->is_passed = $this->percentage >= $this->exam->passing_percentage;
         $this->status = self::STATUS_GRADED;
         $this->save();

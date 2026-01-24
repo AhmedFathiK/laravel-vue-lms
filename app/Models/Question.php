@@ -134,8 +134,17 @@ class Question extends Model
         if (($this->type === self::TYPE_FILL_BLANK || $this->type === self::TYPE_FILL_BLANK_CHOICES) && isset($content['blanks'])) {
             $map = [];
             foreach ($content['blanks'] as $index => $blank) {
-                if (isset($blank['correct_answer'])) {
-                    $map[$index] = $blank['correct_answer'];
+                $answer = $blank['correct_answer'] ?? $blank['correctAnswer'] ?? null;
+                if ($answer !== null) {
+                    // If it's a choice question and answer is an index, resolve to value
+                    if ($this->type === self::TYPE_FILL_BLANK_CHOICES && 
+                        isset($blank['options']) && 
+                        is_numeric($answer) && 
+                        isset($blank['options'][$answer])) {
+                        $map[$index] = $blank['options'][$answer];
+                    } else {
+                        $map[$index] = $answer;
+                    }
                 }
             }
             return $map;

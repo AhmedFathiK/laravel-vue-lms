@@ -8,6 +8,8 @@ import {
   computed,
 } from "vue"
 import { useRoute } from "vue-router"
+import { useToast } from "vue-toastification"
+import api from "@/utils/api"
 import { useExamForm } from "@/composables/useExamForm"
 import AddEditQuestionDialog from "@/components/dialogs/AddEditQuestionDialog.vue"
 import QuestionSearchDialog from "@/components/dialogs/QuestionSearchDialog.vue"
@@ -46,6 +48,8 @@ const {
   moveSectionDown,
   deleteQuestion,
 } = useExamForm()
+
+const toast = useToast()
 
 // Local state for dialogs
 const isQuestionSearchVisible = ref(false)
@@ -380,8 +384,30 @@ onUnmounted(() => {
                       <div class="text-body-1">
                         {{ q.questionText.replace(/<[^>]*>?/gm, '') }}
                       </div>
-                      <div class="text-caption mt-1 text-medium-emphasis">
-                        Points: {{ q.points }}
+                      <div class="d-flex align-center gap-2 mt-2">
+                        <AppTextField
+                          v-model.number="q.points"
+                          type="number"
+                          label="Points"
+                          density="compact"
+                          hide-details
+                          style="max-width: 100px"
+                          min="0"
+                        />
+                        <VBtn
+                          icon="tabler-refresh"
+                          size="x-small"
+                          variant="text"
+                          color="secondary"
+                          @click="syncQuestionPoints(sIdx, qIdx)"
+                        >
+                          <VTooltip
+                            activator="parent"
+                            location="top"
+                          >
+                            Sync points from Question Bank
+                          </VTooltip>
+                        </VBtn>
                       </div>
                     </div>
                     <div class="d-flex gap-2">

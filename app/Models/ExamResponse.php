@@ -77,13 +77,24 @@ class ExamResponse extends Model
         switch ($question->type) {
             case 'mcq':
                 // Check if arrays are equal (regardless of order)
-                if (is_array($correctAnswer) && is_array($userAnswer)) {
-                    sort($correctAnswer);
-                    sort($userAnswer);
-                    $isCorrect = $correctAnswer == $userAnswer;
-                } elseif (!is_array($correctAnswer) && !is_array($userAnswer)) {
-                    $isCorrect = $correctAnswer == $userAnswer;
-                }
+                $correct = is_array($correctAnswer) ? $correctAnswer : [$correctAnswer];
+                $user = is_array($userAnswer) ? $userAnswer : [$userAnswer];
+
+                // Recursive function to normalize values to strings
+                $normalize = function ($item) use (&$normalize) {
+                    if (is_array($item)) {
+                        return array_map($normalize, $item);
+                    }
+                    return (string) $item;
+                };
+
+                $correct = array_map($normalize, $correct);
+                $user = array_map($normalize, $user);
+
+                sort($correct);
+                sort($user);
+
+                $isCorrect = $correct == $user;
                 break;
 
             case 'matching':
@@ -94,7 +105,41 @@ class ExamResponse extends Model
             case 'fill_blank':
             case 'fill_blank_choices':
                 // All blanks must be filled correctly
-                $isCorrect = $correctAnswer == $userAnswer;
+                if (is_array($correctAnswer) && is_array($userAnswer)) {
+                    $isCorrect = true;
+                    // Check if counts match first
+                    if (count($correctAnswer) !== count($userAnswer)) {
+                        $isCorrect = false;
+                    } else {
+                        foreach ($correctAnswer as $index => $correct) {
+                            $user = $userAnswer[$index] ?? null;
+
+                            // Handle synonyms (array of correct answers)
+                            if (is_array($correct)) {
+                                // Check if user answer matches any of the synonyms (case-insensitive)
+                                $found = false;
+                                foreach ($correct as $option) {
+                                    if (strcasecmp((string)$user, (string)$option) === 0) {
+                                        $found = true;
+                                        break;
+                                    }
+                                }
+                                if (!$found) {
+                                    $isCorrect = false;
+                                    break;
+                                }
+                            } else {
+                                // Single correct answer (case-insensitive)
+                                if (strcasecmp((string)$user, (string)$correct) !== 0) {
+                                    $isCorrect = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    $isCorrect = $correctAnswer == $userAnswer;
+                }
                 break;
 
             case 'reordering':
