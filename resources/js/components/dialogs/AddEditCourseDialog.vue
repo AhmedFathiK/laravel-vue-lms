@@ -98,7 +98,7 @@ watch(() => props.isDialogVisible, isVisible => {
         description: props.data.description || '',
         courseCategoryId: props.data.courseCategoryId || props.data.categoryId || null,
         leaderboardResetFrequency: props.data.leaderboardResetFrequency || 'monthly',
-        prerequisites: props.data.prerequisites || [],
+        prerequisites: [...(props.data.prerequisites || [])],
         status: props.data.status || 'draft',
         finalExamId: props.data.finalExamId || null,
         placementExamId: props.data.placementExamId || null,

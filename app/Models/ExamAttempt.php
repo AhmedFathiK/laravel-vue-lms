@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlacementService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ class ExamAttempt extends Model
         'is_passed',
         'attempt_number',
         'time_spent',
+        'placement_outcome_level_id',
     ];
 
     protected $appends = [
@@ -58,6 +60,11 @@ class ExamAttempt extends Model
     public function responses(): HasMany
     {
         return $this->hasMany(ExamResponse::class);
+    }
+
+    public function placementOutcomeLevel(): BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'placement_outcome_level_id');
     }
 
     /**
@@ -159,9 +166,8 @@ class ExamAttempt extends Model
         }
 
         // Check if this is a placement test
-        $isPlacement = Course::where('placement_exam_id', $this->exam_id)->exists();
-        if ($isPlacement && $this->is_passed) {
-            $this->unlockPlacementLevel();
+        if ($this->exam && $this->exam->isPlacement()) {
+            (new PlacementService())->processAttempt($this);
         }
     }
 
@@ -173,40 +179,51 @@ class ExamAttempt extends Model
         $level = Level::where('final_exam_id', $this->exam_id)->first();
         if (!$level) return;
 
+        // 1. Update current level status
+        $currentProgress = UserLevelProgress::firstOrNew([
+            'user_id' => $this->user_id,
+            'course_id' => $level->course_id,
+            'level_id' => $level->id,
+        ]);
+
+        // Determine if it should be COMPLETED or SKIPPED
+        // If all published lessons in this level were studied by the user, it's COMPLETED.
+        // Otherwise, it's SKIPPED (user tested out without finishing lessons).
+        
+        $totalLessons = Lesson::where('level_id', $level->id)->where('status', 'published')->count();
+        $studiedLessons = UserStudiedLesson::where('user_id', $this->user_id)
+            ->whereIn('lesson_id', function($query) use ($level) {
+                $query->select('id')->from('lessons')->where('level_id', $level->id)->where('status', 'published');
+            })->count();
+
+        $newStatus = ($studiedLessons >= $totalLessons && $totalLessons > 0) 
+            ? UserLevelProgress::STATUS_COMPLETED 
+            : UserLevelProgress::STATUS_SKIPPED;
+
+        $currentProgress->status = $newStatus;
+        if ($newStatus === UserLevelProgress::STATUS_COMPLETED) {
+            $currentProgress->completed_at = now();
+        }
+        $currentProgress->save();
+
+        // 2. Unlock Next Level
         $nextLevel = Level::where('course_id', $level->course_id)
             ->where('sort_order', '>', $level->sort_order)
             ->orderBy('sort_order')
             ->first();
 
         if ($nextLevel) {
-            $nextLevel->is_unlocked = true;
-            $nextLevel->save();
-        }
-    }
+            $progress = UserLevelProgress::firstOrNew([
+                'user_id' => $this->user_id,
+                'course_id' => $level->course_id,
+                'level_id' => $nextLevel->id,
+            ]);
 
-    /**
-     * Unlock the appropriate level based on placement test score
-     */
-    private function unlockPlacementLevel(): void
-    {
-        // Logic to determine which level to unlock based on placement score
-        // This is a simple example - you would need to adjust based on your requirements
-        $course = Course::where('placement_exam_id', $this->exam_id)->first();
-        if (!$course) return;
-
-        // Find appropriate level based on score percentage
-        // Example: 0-20% = Level 1, 21-40% = Level 2, etc.
-        $levelIndex = floor($this->percentage / 20);
-
-        // Make sure we don't exceed the number of levels
-        $levels = $course->levels()->orderBy('sort_order')->get();
-        $maxIndex = $levels->count() - 1;
-        $levelIndex = min($levelIndex, $maxIndex);
-
-        // Unlock the determined level
-        if ($levelIndex >= 0 && isset($levels[$levelIndex])) {
-            $levels[$levelIndex]->is_unlocked = true;
-            $levels[$levelIndex]->save();
+            if ($progress->status === UserLevelProgress::STATUS_LOCKED || !$progress->exists) {
+                $progress->status = UserLevelProgress::STATUS_UNLOCKED;
+                $progress->unlocked_at = now();
+                $progress->save();
+            }
         }
     }
 }

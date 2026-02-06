@@ -32,6 +32,8 @@ const attempt = ref(null)
 const currentSectionIndex = ref(0)
 const currentQuestionIndex = ref(0)
 const userAnswers = ref({}) // Format: { questionId: answer }
+const showResult = ref(false)
+const placementOutcome = ref(null)
 
 // Timer state
 const remainingSeconds = ref(null)
@@ -68,9 +70,16 @@ const autoSubmitExam = async () => {
   
   try {
     isSubmitting.value = true
-    await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
-    alert('Time is up! Your exam has been automatically submitted.')
-    router.back()
+
+    const response = await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
+    
+    if (response.attempt && response.attempt.placement_outcome_level_id) {
+      placementOutcome.value = response.attempt
+      showResult.value = true
+    } else {
+      alert('Time is up! Your exam has been automatically submitted.')
+      router.back()
+    }
   } catch (err) {
     console.error('Error auto-submitting exam:', err)
     router.back()
@@ -225,8 +234,15 @@ const finishExam = async () => {
   
   try {
     isSubmitting.value = true
-    await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
-    router.back()
+
+    const response = await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
+    
+    if (response.attempt && response.attempt.placement_outcome_level_id) {
+      placementOutcome.value = response.attempt
+      showResult.value = true
+    } else {
+      router.back()
+    }
   } catch (err) {
     console.error('Error finishing exam:', err)
     error.value = err.response?.data?.message || 'Failed to finish exam.'
@@ -282,9 +298,65 @@ onMounted(fetchExam)
       </div>
 
       <template v-else-if="exam">
+        <!-- Placement Result Screen -->
+        <div
+          v-if="showResult"
+          class="d-flex align-center justify-center h-screen p-4"
+        >
+          <VCard
+            max-width="600"
+            class="w-100 p-8 text-center"
+          >
+            <VIcon
+              icon="tabler-trophy"
+              size="80"
+              color="warning"
+              class="mb-6"
+            />
+            
+            <h1 class="text-h3 font-weight-bold mb-2">
+              Placement Complete!
+            </h1>
+            <p class="text-body-1 text-medium-emphasis mb-8">
+              Based on your results, we have assigned you a starting level.
+            </p>
+
+            <div class="d-flex justify-center gap-8 mb-8">
+              <div class="text-center">
+                <div class="text-h2 font-weight-bold text-primary mb-1">
+                  {{ placementOutcome?.percentage }}%
+                </div>
+                <div class="text-caption text-uppercase font-weight-bold text-medium-emphasis">
+                  Score
+                </div>
+              </div>
+            </div>
+
+            <VDivider class="mb-8" />
+
+            <div class="mb-8">
+              <div class="text-body-1 mb-2">
+                You have been placed in:
+              </div>
+              <h2 class="text-h4 font-weight-bold text-primary">
+                {{ placementOutcome?.placement_outcome_level?.title || 'Level Assigned' }}
+              </h2>
+            </div>
+
+            <VBtn
+              block
+              size="x-large"
+              color="primary"
+              @click="router.back()"
+            >
+              Start Learning
+            </VBtn>
+          </VCard>
+        </div>
+
         <!-- Cover Page -->
         <div
-          v-if="!attempt"
+          v-else-if="!attempt"
           class="d-flex align-center justify-center h-screen p-4"
         >
           <VCard

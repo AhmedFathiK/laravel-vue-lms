@@ -40,6 +40,7 @@ class StoreCourseRequest extends FormRequest
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'string|max:255',
             'final_exam_id' => 'nullable|exists:exams,id',
+            'placement_exam_id' => 'nullable|exists:exams,id',
         ];
 
         return $rules;
@@ -63,5 +64,4 @@ class StoreCourseRequest extends FormRequest
             $this->merge(['main_locale' => config('app.locale', 'en')]);
         }
     }
-
 }

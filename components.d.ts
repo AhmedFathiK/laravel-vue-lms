@@ -73,6 +73,7 @@ declare module 'vue' {
     LessonNavigation: typeof import('./resources/js/components/SlideTypes/LessonNavigation.vue')['default']
     LessonProgress: typeof import('./resources/js/components/SlideTypes/LessonProgress.vue')['default']
     LessonSlide: typeof import('./resources/js/components/SlideTypes/LessonSlide.vue')['default']
+    LevelCard: typeof import('./resources/js/components/learner/LevelCard.vue')['default']
     MatchingSlide: typeof import('./resources/js/components/SlideTypes/MatchingSlide.vue')['default']
     MCQSlide: typeof import('./resources/js/components/SlideTypes/MCQSlide.vue')['default']
     MoreBtn: typeof import('./resources/js/@core/components/MoreBtn.vue')['default']

@@ -6,6 +6,7 @@ import {
   onUnmounted,
   ref,
   computed,
+  onMounted,
 } from "vue"
 import { useRoute } from "vue-router"
 import { useToast } from "vue-toastification"
@@ -178,6 +179,66 @@ const handleQuestionCreated = response => {
 
 const objectUrls = ref([])
 
+// Placement Rules Logic
+const levels = ref([])
+
+const fetchLevels = async () => {
+  if (!courseId.value) return
+  try {
+    const res = await api.get(`/admin/courses/${courseId.value}/levels`)
+
+    levels.value = res.data || res
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+onMounted(() => {
+  fetchLevels()
+})
+
+const addPlacementRule = () => {
+  if (!exam.value.placement_rules) exam.value.placement_rules = []
+  exam.value.placement_rules.push({ min: 0, max: 0, level_id: null })
+}
+
+const removePlacementRule = index => {
+  if (exam.value.placement_rules) {
+    exam.value.placement_rules.splice(index, 1)
+  }
+}
+
+const placementRuleErrors = computed(() => {
+  const rules = exam.value.placement_rules || []
+  if (rules.length === 0) return []
+
+  const errors = []
+  const sortedRules = [...rules].sort((a, b) => (a.min || 0) - (b.min || 0))
+  
+  let expectedMin = 0
+  
+  for (const rule of sortedRules) {
+    const min = parseFloat(rule.min || 0)
+    const max = parseFloat(rule.max || 0)
+    
+    if (min > expectedMin) {
+      errors.push(`Gap between ${expectedMin}% and ${min}%`)
+    }
+    
+    if (max <= min) {
+      errors.push(`Invalid range: ${min}-${max}`)
+    }
+
+    expectedMin = Math.max(expectedMin, max)
+  }
+
+  if (expectedMin < 100) {
+    errors.push(`Rules only cover up to ${expectedMin}% (must cover 100%)`)
+  }
+
+  return errors
+})
+
 onUnmounted(() => {
   objectUrls.value.forEach(url => URL.revokeObjectURL(url))
 })
@@ -276,6 +337,89 @@ onUnmounted(() => {
               :items="['draft', 'published', 'archived']"
               label="Status"
             />
+          </VCardText>
+        </VCard>
+
+        <!-- Placement Rules Card -->
+        <VCard
+          title="Placement Rules"
+          class="mb-4"
+        >
+          <VCardText>
+            <div
+              v-if="placementRuleErrors.length"
+              class="mb-4"
+            >
+              <VAlert
+                v-for="(err, i) in placementRuleErrors"
+                :key="i"
+                type="error"
+                density="compact"
+                variant="tonal"
+                class="mb-1"
+              >
+                {{ err }}
+              </VAlert>
+            </div>
+
+            <div v-if="exam.placement_rules && exam.placement_rules.length > 0">
+              <div
+                v-for="(rule, index) in exam.placement_rules"
+                :key="index"
+                class="d-flex flex-column gap-2 mb-4 p-2 border rounded"
+              >
+                <div class="d-flex gap-2">
+                  <AppTextField
+                    v-model.number="rule.min"
+                    label="Min %"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    style="width: 80px"
+                  />
+                  <AppTextField
+                    v-model.number="rule.max"
+                    label="Max %"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    style="width: 80px"
+                  />
+                  <VBtn
+                    icon="tabler-trash"
+                    size="x-small"
+                    color="error"
+                    variant="text"
+                    class="ms-auto"
+                    @click="removePlacementRule(index)"
+                  />
+                </div>
+                <AppSelect 
+                  v-model="rule.level_id" 
+                  :items="levels" 
+                  item-title="title" 
+                  item-value="id" 
+                  label="Target Level" 
+                  density="compact" 
+                  hide-details 
+                />
+              </div>
+            </div>
+            <div
+              v-else
+              class="text-caption text-medium-emphasis mb-2"
+            >
+              Add rules to configure this as a placement exam.
+            </div>
+             
+            <VBtn
+              size="small"
+              variant="tonal"
+              block
+              @click="addPlacementRule"
+            >
+              Add Rule
+            </VBtn>
           </VCardText>
         </VCard>
       </VCol>

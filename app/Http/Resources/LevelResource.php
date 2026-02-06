@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\UserLevelProgress;
 
 class LevelResource extends JsonResource
 {
@@ -20,13 +21,15 @@ class LevelResource extends JsonResource
             'description' => $this->description,
             'sort_order' => $this->sort_order,
             'status' => $this->status,
-            'is_unlocked' => $this->is_unlocked,
             'course_id' => $this->course_id,
             'final_exam_id' => $this->final_exam_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'lessons_count' => $this->whenCounted('lessons'),
             'lessons' => $this->whenLoaded('lessons'),
+            'user_status' => $this->relationLoaded('currentUserProgress') 
+                ? ($this->currentUserProgress?->status ?? UserLevelProgress::STATUS_LOCKED)
+                : UserLevelProgress::STATUS_LOCKED,
         ];
     }
 }

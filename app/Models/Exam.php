@@ -13,12 +13,14 @@ class Exam extends Model
 {
     use HasFactory, HasTranslations;
 
-    public const TYPE_PLACEMENT = 'placement';
+    // TYPE_PLACEMENT constant kept for legacy reference or logic if needed, 
+    // but the column 'type' has been removed from the database.
 
     protected $fillable = [
         'title',
         'description',
         'instructions',
+        'placement_rules',
         'course_id',
         'time_limit',
         'passing_percentage',
@@ -44,6 +46,7 @@ class Exam extends Model
         'randomize_questions' => 'boolean',
         'show_answers' => 'boolean',
         'status' => 'string',
+        'placement_rules' => 'array',
     ];
 
     public function toArray()
@@ -125,5 +128,38 @@ class Exam extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Check if this is a placement exam based on rules presence
+     */
+    public function isPlacement(): bool
+    {
+        return !empty($this->placement_rules);
+    }
+
+    /**
+     * Determine placement level ID based on percentage
+     */
+    public function determinePlacementLevel(float $percentage): ?int
+    {
+        if (!$this->placement_rules) {
+            return null;
+        }
+
+        foreach ($this->placement_rules as $rule) {
+            // Rules format: [{"min": 0, "max": 40, "level_id": 5}]
+            $min = $rule['min'] ?? 0;
+            $max = $rule['max'] ?? 100;
+            
+            // Use strict comparison for lower bound, inclusive for upper bound?
+            // Standard: min <= percentage <= max. 
+            // Overlap handling: First match wins.
+            if ($percentage >= $min && $percentage <= $max) {
+                return $rule['level_id'] ?? null;
+            }
+        }
+
+        return null;
     }
 }

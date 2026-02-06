@@ -1,7 +1,8 @@
 <script setup>
+import LevelCard from '@/components/learner/LevelCard.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import api from '@/utils/api'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 definePage({
@@ -112,6 +113,35 @@ const isCurrentItem = (item, level) => {
   
   return firstActive && firstActive.id === item.id
 }
+
+const hasPlacementExam = computed(() => {
+  return courseData.value?.placementExam !== null
+})
+
+const userHasAnyProgress = computed(() => {
+  return courseData.value?.levels.some(
+    level => level.currentUserProgress !== null,
+  )
+})
+
+const shouldOfferPlacement = computed(() => {
+  return hasPlacementExam.value
+})
+
+const startPlacementExam = () => {
+  if (!courseData.value.placementExam) return
+  router.push({ 
+    name: 'my-courses-exam-id', 
+    params: { id: courseData.value.placementExam.id }, 
+  })
+}
+
+const scrollToLevels = () => {
+  const levelsElement = document.getElementById('course-levels-list')
+  if (levelsElement) {
+    levelsElement.scrollIntoView({ behavior: 'smooth' })
+  }
+}
 </script>
 
 <template>
@@ -155,283 +185,66 @@ const isCurrentItem = (item, level) => {
         {{ courseData.title }}
       </h1>
 
-      <!-- Placement Exam Section -->
-      <div
-        v-if="courseData.placementExam"
+      <!-- Placement CTA Section -->
+      <VCard
+        v-if="shouldOfferPlacement"
+        color="primary"
+        theme="dark"
         class="mb-8"
+        elevation="4"
       >
-        <h2 class="text-h5 font-weight-bold mb-4 px-2">
-          Placement Test
-        </h2>
-        <VCard
-          border
-          flat
-          class="level-card mb-4"
-        >
-          <VCardText class="pa-6">
-            <div class="timeline-container">
-              <div class="timeline-item-row">
-                <!-- Visual Column -->
-                <div class="timeline-visual d-flex flex-column align-center me-5">
-                  <div class="avatar-wrapper">
-                    <VAvatar
-                      size="64"
-                      class="item-avatar"
-                      :class="[{ 'avatar-completed': courseData.placementExam.completed, 'avatar-locked': courseData.placementExam.locked }]"
-                      @click="handleItemClick(courseData.placementExam)"
-                    >
-                      <VIcon
-                        size="28"
-                        :color="courseData.placementExam.completed ? 'success' : (courseData.placementExam.locked ? 'disabled' : 'warning')"
-                      >
-                        tabler-list-check
-                      </VIcon>
-                    </VAvatar>
-                    <div
-                      v-if="courseData.placementExam.completed"
-                      class="completion-badge"
-                    >
-                      <VIcon
-                        size="14"
-                        color="white"
-                        icon="tabler-check"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Content Column -->
-                <div 
-                  class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
-                  :class="{ 'cursor-pointer': !courseData.placementExam.locked }"
-                  @click="handleItemClick(courseData.placementExam)"
-                >
-                  <div class="d-flex align-center justify-space-between">
-                    <div class="flex-grow-1">
-                      <h3
-                        class="text-h6 font-weight-bold mb-1"
-                        :class="{ 'text-disabled': courseData.placementExam.locked }"
-                      >
-                        {{ courseData.placementExam.title }}
-                      </h3>
-                      <p
-                        class="text-body-2 mb-0"
-                        :class="courseData.placementExam.locked ? 'text-disabled' : 'text-medium-emphasis'"
-                      >
-                        {{ courseData.placementExam.description }}
-                      </p>
-                    </div>
-                  </div>
-                  <VChip
-                    color="warning"
-                    size="x-small"
-                    class="mt-2"
-                    variant="tonal"
-                  >
-                    Placement Test
-                  </VChip>
-                </div>
-              </div>
-            </div>
-          </VCardText>
-        </VCard>
-      </div>
+        <VCardText class="d-flex flex-column flex-md-row align-center pa-6 gap-6">
+          <div class="flex-grow-1 text-center text-md-left">
+            <h2 class="text-h4 font-weight-bold mb-2">
+              Not sure where to start?
+            </h2>
+            <p class="text-body-1 mb-0 opacity-90">
+              Take a short placement test to find the right level for you.
+            </p>
+          </div>
+           
+          <div
+            class="d-flex flex-column align-center gap-3"
+            style="min-width: 250px;"
+          >
+            <VBtn
+              block
+              color="white"
+              variant="flat"
+              class="text-primary font-weight-bold"
+              size="large"
+              prepend-icon="tabler-wand"
+              @click="startPlacementExam"
+            >
+              Take Placement Test
+            </VBtn>
+              
+            <VBtn
+              block
+              variant="text"
+              color="white"
+              size="small"
+              class="opacity-80"
+              @click="scrollToLevels"
+            >
+              Skip and start from Level 1
+            </VBtn>
+          </div>
+        </VCardText>
+      </VCard>
 
       <!-- Levels Section -->
-      <div
-        v-for="(level) in courseData.levels"
-        :key="level.id"
-        class="mb-8"
-      >
-        <VCard
-          class="level-card"
-          border
-          flat
+      <div id="course-levels-list">
+        <div
+          v-for="(level) in courseData.levels"
+          :key="level.id"
+          class="mb-8"
         >
-          <VCardText class="pa-6">
-            <!-- Level Title -->
-            <h2 class="text-h5 font-weight-bold mb-2">
-              {{ level.title }}
-            </h2>
-
-            <!-- Progress Bar -->
-            <div class="mb-8">
-              <div class="text-body-2 mb-1 text-medium-emphasis">
-                Completed Lessons
-              </div>
-              <div class="d-flex align-center">
-                <VProgressLinear
-                  :model-value="getLevelProgress(level)"
-                  color="success"
-                  height="10"
-                  rounded
-                  class="flex-grow-1"
-                  bg-color="#E0E0E0"
-                  bg-opacity="1"
-                />
-                <VChip 
-                  color="success" 
-                  size="small" 
-                  class="ms-4 font-weight-bold" 
-                  variant="flat"
-                >
-                  {{ getLevelProgress(level) }}%
-                </VChip>
-              </div>
-            </div>
-
-            <!-- Timeline Items -->
-            <div class="timeline-container">
-              <template v-if="level.items && level.items.length > 0">
-                <div
-                  v-for="(item, index) in level.items"
-                  :key="item.id + '-' + item.type"
-                  class="timeline-item-row"
-                >
-                  <!-- Visual Column (Avatar + Line) -->
-                  <div class="timeline-visual d-flex flex-column align-center me-5">
-                    <div class="avatar-wrapper">
-                      <VAvatar
-                        size="64"
-                        class="item-avatar"
-                        :class="[
-                          { 
-                            'avatar-completed': item.completed, 
-                            'avatar-locked': item.locked,
-                            'avatar-current': isCurrentItem(item, level)
-                          }
-                        ]"
-                        @click="handleItemClick(item)"
-                      >
-                        <VImg
-                          v-if="item.thumbnail"
-                          :src="item.thumbnail"
-                          cover
-                        />
-                        <VIcon
-                          v-else
-                          size="28"
-                          :color="item.completed ? 'success' : (item.locked ? 'disabled' : 'primary')"
-                          :class="{ 'icon-locked': item.locked }"
-                        >
-                          {{ item.type === 'exam' ? 'tabler-certificate' : 'tabler-book' }}
-                        </VIcon>
-                      </VAvatar>
-
-                      <!-- Checkmark Badge (Now outside VAvatar) -->
-                      <div
-                        v-if="item.completed"
-                        class="completion-badge"
-                      >
-                        <VIcon
-                          size="14"
-                          color="white"
-                          icon="tabler-check"
-                        />
-                      </div>
-                    </div>
-                               
-                    <!-- Connecting Line -->
-                    <div 
-                      v-if="!isLastItem(level, index)" 
-                      class="timeline-line"
-                      :class="{ 'line-completed': item.completed }"
-                    />
-                  </div>
-
-                  <!-- Content Column -->
-                  <div 
-                    class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
-                    :class="{ 
-                      'cursor-pointer': !item.locked,
-                      'bg-light-primary': isCurrentItem(item, level)
-                    }"
-                    @click="handleItemClick(item)"
-                  >
-                    <div class="d-flex align-center justify-space-between">
-                      <div class="flex-grow-1">
-                        <h3 
-                          class="text-h6 font-weight-bold mb-1"
-                          :class="{ 
-                            'text-disabled': item.locked, 
-                            'text-primary': isCurrentItem(item, level)
-                          }"
-                        >
-                          {{ item.title }}
-                        </h3>
-                        <p 
-                          class="text-body-2 mb-0"
-                          :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
-                        >
-                          {{ item.description }}
-                        </p>
-                      </div>
-                                 
-                      <!-- Desktop Play Button -->
-                      <VBtn
-                        v-if="item.type === 'lesson' && item.videoType && !item.locked"
-                        icon
-                        variant="tonal"
-                        color="primary"
-                        size="small"
-                        class="ms-4 play-btn d-none d-sm-inline-flex"
-                        @click.stop="handlePlayClick(item)"
-                      >
-                        <VIcon
-                          icon="tabler-player-play-filled"
-                          size="20"
-                        />
-                      </VBtn>
-                    </div>
-
-                    <!-- Mobile Play Button -->
-                    <VBtn
-                      v-if="item.type === 'lesson' && item.videoType && !item.locked"
-                      block
-                      variant="tonal"
-                      color="primary"
-                      rounded="pill"
-                      size="small"
-                      class="mt-3 d-flex d-sm-none"
-                      prepend-icon="tabler-player-play-filled"
-                      @click.stop="handlePlayClick(item)"
-                    >
-                      Watch Video
-                    </VBtn>
-
-                    <VChip
-                      v-if="item.type === 'exam'"
-                      color="warning"
-                      size="x-small"
-                      class="mt-2"
-                      variant="tonal"
-                    >
-                      Exam
-                    </VChip>
-                  </div>
-                </div>
-              </template>
-
-              <div
-                v-else
-                class="d-flex flex-column align-center justify-center py-12 text-center"
-              >
-                <VIcon
-                  icon="tabler-book-off"
-                  size="48"
-                  color="disabled"
-                  class="mb-2"
-                />
-                <div class="text-h6 text-disabled">
-                  No lessons yet
-                </div>
-                <div class="text-body-2 text-disabled">
-                  New content will be added soon.
-                </div>
-              </div>
-            </div>
-          </VCardText>
-        </VCard>
+          <LevelCard 
+            :level="level" 
+            @item-click="handleItemClick"
+          />
+        </div>
       </div>
 
       <!-- Final Exam Section -->

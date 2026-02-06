@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 use App\Models\Exam;
 use App\Models\Lesson;
 use App\Models\Course;
 use App\Models\User;
+use App\Models\ExamAttempt;
 
 class Level extends Model
 {
@@ -23,7 +25,6 @@ class Level extends Model
         'description',
         'sort_order',
         'status',
-        'is_unlocked',
         'final_exam_id',
     ];
 
@@ -33,7 +34,6 @@ class Level extends Model
     ];
 
     protected $casts = [
-        'is_unlocked' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -81,6 +81,22 @@ class Level extends Model
         return $this->belongsTo(Exam::class, 'final_exam_id');
     }
 
+    public function userLevelProgress(): HasMany
+    {
+        return $this->hasMany(UserLevelProgress::class);
+    }
+
+    public function currentUserProgress(): HasOne
+    {
+        return $this->hasOne(UserLevelProgress::class)
+            ->where('user_id', auth()->id());
+    }
+
+    public function placementAttempts(): HasMany
+    {
+        return $this->hasMany(ExamAttempt::class, 'placement_outcome_level_id');
+    }
+
     /**
      * Check if this level is accessible to a user based on their entitlements.
      */
@@ -110,6 +126,9 @@ class Level extends Model
         // When a level is soft deleted, also soft delete all related lessons
         static::deleting(function ($level) {
             if (!$level->isForceDeleting()) {
+                // Pre-production Rule: Remove strict model guards.
+                // We allow deletion at the model level; safety checks are now in the controller.
+
                 // Propagate cascading flag to lessons
                 Lesson::$cascadingDelete = true;
 

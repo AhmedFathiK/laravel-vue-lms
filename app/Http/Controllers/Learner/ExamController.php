@@ -311,8 +311,8 @@ class ExamController extends Controller
         // Calculate the score
         $attempt->calculateScore();
 
-        // Load the attempt with responses
-        $attempt->load(['responses.question']);
+        // Load the attempt with responses and placement level
+        $attempt->load(['responses.question', 'placementOutcomeLevel']);
 
         // If show_answers is enabled for the exam, include the correct answers
         if ($attempt->exam->show_answers) {

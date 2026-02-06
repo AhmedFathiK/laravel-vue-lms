@@ -26,6 +26,7 @@ class CourseResource extends JsonResource
             'leaderboard_reset_frequency' => $this->leaderboard_reset_frequency,
             'prerequisites' => $this->prerequisites,
             'final_exam_id' => $this->final_exam_id,
+            'placement_exam_id' => $this->placement_exam_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'category' => new CourseCategoryResource($this->whenLoaded('category')),

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Level\UpdateRequest;
 use App\Http\Resources\LevelResource;
 use App\Models\Course;
 use App\Models\Level;
+use App\Models\Exam;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -74,7 +75,6 @@ class LevelController extends Controller
             'description' => $data['description'] ?? '',
             'sort_order' => $lastLevel ? $lastLevel->sort_order + 1 : 1,
             'status' => $data['status'],
-            'is_unlocked' => $data['is_unlocked'] ?? false,
             'final_exam_id' => $data['final_exam_id'] ?? null,
         ]);
 
@@ -117,6 +117,30 @@ class LevelController extends Controller
             abort(403);
         }
 
+        // Strict Deletion Validation
+        // 1. Check if level is used in any placement rules
+        $isReferencedInRules = Exam::whereNotNull('placement_rules')
+            ->get()
+            ->contains(function ($exam) use ($level) {
+                if (!$exam->placement_rules) return false;
+                $levelIds = array_column($exam->placement_rules, 'level_id');
+                return in_array($level->id, $levelIds);
+            });
+
+        if ($isReferencedInRules) {
+            return response()->json(['message' => 'Cannot delete level: It is referenced by placement rules in an exam.'], 422);
+        }
+
+        // 2. Check if users have progress in this level
+        if ($level->userLevelProgress()->exists()) {
+            return response()->json(['message' => 'Cannot delete level: Users have progress associated with it.'], 422);
+        }
+
+        // 3. Check if placement attempts reference this level as an outcome
+        if ($level->placementAttempts()->exists()) {
+            return response()->json(['message' => 'Cannot delete level: It is referenced by placement exam results.'], 422);
+        }
+
         $level->delete();
 
         return response()->json(null, 204);
@@ -144,20 +168,5 @@ class LevelController extends Controller
         }
 
         return response()->json(['message' => 'Order updated successfully']);
-    }
-
-    /**
-     * Toggle the unlock status of a level.
-     */
-    public function toggleUnlock(Course $course, Level $level): JsonResponse
-    {
-        if (!Gate::allows('unlock.levels')) {
-            abort(403);
-        }
-
-        $level->is_unlocked = !$level->is_unlocked;
-        $level->save();
-
-        return response()->json(new LevelResource($level));
     }
 }
