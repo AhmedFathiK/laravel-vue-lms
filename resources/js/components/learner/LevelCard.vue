@@ -6,6 +6,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  forcedCurrentItemId: {
+    type: [Number, String],
+    default: null,
+  },
 })
 
 const emit = defineEmits(['itemClick'])
@@ -41,6 +45,11 @@ const isLastItem = index => {
 }
 
 const isCurrentItem = item => {
+  // If we have a forced current item from the parent (e.g. after placement test)
+  if (props.forcedCurrentItemId && props.forcedCurrentItemId === item.id) {
+    return true
+  }
+
   if (item.completed || item.locked) return false
 
   // It is current if it's the first one that is neither completed nor locked

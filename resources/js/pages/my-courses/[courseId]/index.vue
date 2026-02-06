@@ -17,6 +17,7 @@ const courseData = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const selectedItem = ref(null)
+const forcedCurrentItem = ref(null)
 const isModalVisible = ref(false)
 const isVideoModalVisible = ref(false)
 
@@ -27,6 +28,30 @@ const fetchCourseContent = async () => {
     const response = await api.get(`/learner/my-courses/${route.params.courseId}`)
 
     courseData.value = response
+
+    // Handle target level scrolling and marking first lesson as current if present in query
+    if (route.query.targetLevel) {
+      const targetLevelId = parseInt(route.query.targetLevel)
+      const targetLevel = courseData.value.levels.find(l => l.id === targetLevelId)
+      
+      if (targetLevel && targetLevel.items && targetLevel.items.length > 0) {
+        // Find the first lesson or exam in this level to mark as current
+        const firstItem = targetLevel.items[0]
+        if (firstItem) {
+          forcedCurrentItem.value = {
+            levelId: targetLevelId,
+            itemId: firstItem.id,
+          }
+        }
+      }
+
+      setTimeout(() => {
+        const levelElement = document.getElementById(`level-${route.query.targetLevel}`)
+        if (levelElement) {
+          levelElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 500)
+    }
   } catch (err) {
     console.error(err)
     error.value = err.response?.data?.error || "Failed to load course content. Please try again later."
@@ -128,6 +153,22 @@ const shouldOfferPlacement = computed(() => {
   return hasPlacementExam.value
 })
 
+const placementResult = computed(() => {
+  if (!hasPlacementExam.value || !courseData.value.placementExam.outcome) return null
+  
+  const outcome = courseData.value.placementExam.outcome
+
+  // Fix: Access using camelCase as per middleware conversion
+  const levelId = outcome.levelId || outcome.level_id
+  const level = courseData.value.levels.find(l => l.id === levelId)
+  
+  return {
+    score: Math.round(outcome.percentage),
+    levelTitle: level ? (typeof level.title === 'object' ? (level.title.en || Object.values(level.title)[0]) : level.title) : 'Unknown Level',
+    levelId: levelId,
+  }
+})
+
 const startPlacementExam = () => {
   if (!courseData.value.placementExam) return
   router.push({ 
@@ -140,6 +181,13 @@ const scrollToLevels = () => {
   const levelsElement = document.getElementById('course-levels-list')
   if (levelsElement) {
     levelsElement.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const scrollToLevel = levelId => {
+  const levelElement = document.getElementById(`level-${levelId}`)
+  if (levelElement) {
+    levelElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
 </script>
@@ -233,15 +281,54 @@ const scrollToLevels = () => {
         </VCardText>
       </VCard>
 
+      <!-- Placement Result Section -->
+      <VCard
+        v-else-if="placementResult"
+        color="success"
+        theme="dark"
+        class="mb-8"
+        elevation="4"
+      >
+        <VCardText class="d-flex flex-column flex-md-row align-center pa-6 gap-6">
+          <div class="flex-grow-1 text-center text-md-left">
+            <h2 class="text-h4 font-weight-bold mb-2">
+              Placement Test Completed
+            </h2>
+            <p class="text-body-1 mb-0 opacity-90">
+              You scored {{ placementResult.score }}% and placed into <strong>{{ placementResult.levelTitle }}</strong>.
+            </p>
+          </div>
+           
+          <div
+            class="d-flex flex-column align-center gap-3"
+            style="min-width: 250px;"
+          >
+            <VBtn
+              block
+              color="white"
+              variant="flat"
+              class="text-success font-weight-bold"
+              size="large"
+              prepend-icon="tabler-arrow-right"
+              @click="scrollToLevel(placementResult.levelId)"
+            >
+              Go to Level
+            </VBtn>
+          </div>
+        </VCardText>
+      </VCard>
+
       <!-- Levels Section -->
       <div id="course-levels-list">
         <div
           v-for="(level) in courseData.levels"
+          :id="`level-${level.id}`"
           :key="level.id"
           class="mb-8"
         >
           <LevelCard 
             :level="level" 
+            :forced-current-item-id="forcedCurrentItem?.levelId === level.id ? forcedCurrentItem.itemId : null"
             @item-click="handleItemClick"
           />
         </div>

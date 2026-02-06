@@ -14,6 +14,7 @@ use App\Models\Lesson;
 
 use App\Http\Resources\Learner\LessonResource;
 use App\Models\UserStudiedLesson;
+use App\Models\ExamAttempt;
 use App\Services\EntitlementService;
 use Illuminate\Support\Facades\Log; // Added Log
 
@@ -56,14 +57,14 @@ class CoursesContentController extends Controller
             ->where('course_id', $course->id)
             ->where('level_id', $lesson->level_id)
             ->first();
-            
+
         $levelStatus = $levelProgress ? $levelProgress->status : null;
-        
+
         // Single Source of Truth Logic:
         // If progress exists, respect it.
         // If NO progress exists, only Level 1 (sort_order = 1) is unlocked by default.
         // Everything else is locked.
-        
+
         $isLevelUnlocked = false;
 
         if ($levelStatus) {
@@ -80,7 +81,7 @@ class CoursesContentController extends Controller
         }
 
         if (!$isLevelUnlocked) {
-             return response()->json([
+            return response()->json([
                 "error" => "This level is locked.",
                 "course_id" => $course->id
             ], 403);
@@ -89,17 +90,17 @@ class CoursesContentController extends Controller
         // Within an unlocked level, we still enforce sequential lesson access
         // UNLESS the level is skipped or completed, in which case everything is open.
         if (!in_array($levelStatus, [UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED])) {
-             $previousLesson = Lesson::where('level_id', $lesson->level_id)
+            $previousLesson = Lesson::where('level_id', $lesson->level_id)
                 ->where('sort_order', '<', $lesson->sort_order)
                 ->where('status', 'published')
                 ->orderByDesc('sort_order')
                 ->first();
-    
+
             if ($previousLesson) {
                 $isCompleted = UserStudiedLesson::where('user_id', $user->id)
                     ->where('lesson_id', $previousLesson->id)
                     ->exists();
-    
+
                 if (!$isCompleted) {
                     return response()->json([
                         "error" => "You must complete the previous lesson first.",
@@ -216,6 +217,24 @@ class CoursesContentController extends Controller
             $exam['item_type'] = 'exam';
             $exam['completed'] = ($course->placementExam->is_completed ?? 0) > 0;
             $exam['locked'] = false; // Placement exams are never locked
+
+            // Fetch the attempt that determined placement
+            $placementAttempt = ExamAttempt::where('user_id', Auth::id())
+                ->where('exam_id', $course->placement_exam_id)
+                ->whereNotNull('placement_outcome_level_id')
+                ->latest()
+                ->first();
+
+            if ($placementAttempt) {
+                $exam['outcome'] = [
+                    'level_id' => $placementAttempt->placement_outcome_level_id,
+                    'score' => $placementAttempt->score,
+                    'percentage' => $placementAttempt->percentage,
+                ];
+                // Ensure it's marked as completed if we have an outcome
+                $exam['completed'] = true;
+            }
+
             $placementExam = $exam;
             $addedExamIds[] = $course->placement_exam_id;
         }
@@ -231,11 +250,11 @@ class CoursesContentController extends Controller
         }
 
         $previousCompleted = true; // Used ONLY for lesson sequencing within a level
-        
+
         // FIX: Ensure we get the ID of the first level correctly
         $firstLevel = $course->levels->first();
         $firstLevelId = $firstLevel ? $firstLevel->id : null;
-        
+
         // Log::info("First Level ID: " . $firstLevelId);
 
         foreach ($courseData['levels'] as &$level) {
@@ -244,22 +263,36 @@ class CoursesContentController extends Controller
 
             // Determine Level Status from UserLevelProgress
             $levelStatus = $level['current_user_progress']['status'] ?? null;
-            
+
             // Log::info("Level ID: {$level['id']}, Status: " . ($levelStatus ?? 'null'));
 
             // Access Logic:
             // 1. If explicit status exists -> Use it.
             // 2. If NO status exists -> Only unlock if it's the FIRST level.
-            
+
             $isLevelUnlocked = false;
-            
+
             if ($levelStatus) {
-                 if (in_array($levelStatus, [UserLevelProgress::STATUS_UNLOCKED, UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_IN_PROGRESS])) {
+                if (in_array($levelStatus, [UserLevelProgress::STATUS_UNLOCKED, UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_IN_PROGRESS])) {
                     $isLevelUnlocked = true;
-                 }
+                }
             } else {
                 if ($level['id'] === $firstLevelId) {
                     $isLevelUnlocked = true;
+
+                    // PERSISTENCE FIX: Create the record in DB so it remains unlocked even if sort order changes
+                    UserLevelProgress::firstOrCreate(
+                        [
+                            'user_id' => Auth::id(),
+                            'course_id' => $course->id,
+                            'level_id' => $level['id']
+                        ],
+                        [
+                            'status' => UserLevelProgress::STATUS_UNLOCKED,
+                            'unlocked_at' => now()
+                        ]
+                    );
+
                     // Inject status so frontend knows it is unlocked
                     $level['current_user_progress'] = [
                         'status' => UserLevelProgress::STATUS_UNLOCKED
@@ -302,7 +335,7 @@ class CoursesContentController extends Controller
             // Apply locked status
             // Reset previousCompleted for the start of a new level (unless level logic requires previous level completion? 
             // No, the placement system overrides previous level dependencies. If a level is unlocked, you can start it.)
-            
+
             // However, within the level, lessons are sequential.
             $currentLevelPreviousItemCompleted = true; // Start of level is always accessible IF level is unlocked
 
@@ -316,11 +349,11 @@ class CoursesContentController extends Controller
                 } else {
                     // Level is unlocked/in_progress -> Enforce sequence
                     if ($item['type'] === 'exam') {
-                         // Level exams are usually unlocked if lessons are done? 
-                         // Or just unlocked? Let's say unlocked if it's the last thing.
-                         // Standard logic: Level exam is unlocked if all lessons are done?
-                         // Or just sequential.
-                         $item['locked'] = !$currentLevelPreviousItemCompleted;
+                        // Level exams are usually unlocked if lessons are done? 
+                        // Or just unlocked? Let's say unlocked if it's the last thing.
+                        // Standard logic: Level exam is unlocked if all lessons are done?
+                        // Or just sequential.
+                        $item['locked'] = !$currentLevelPreviousItemCompleted;
                     } else {
                         $item['locked'] = !$currentLevelPreviousItemCompleted;
                     }
@@ -342,10 +375,10 @@ class CoursesContentController extends Controller
             // 1. It is skipped (counts as passed)
             // 2. It is completed
             // 3. Or just checking if the last item is done?
-            
+
             // Let's rely on UserLevelProgress status for simplicity.
             // If level is skipped/completed -> Passed.
-            
+
             $level['items'] = $items;
             unset($level['lessons']);
             unset($level['exams']);
@@ -359,7 +392,7 @@ class CoursesContentController extends Controller
         if ($finalExam) {
             $lastLevel = end($courseData['levels']);
             $lastLevelStatus = $lastLevel['current_user_progress']['status'] ?? null;
-            
+
             // Unlock final exam if last level is completed or skipped
             $finalExam['locked'] = !in_array($lastLevelStatus, [UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_SKIPPED]);
         }

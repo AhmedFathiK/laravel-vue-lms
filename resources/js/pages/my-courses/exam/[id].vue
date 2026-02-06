@@ -73,7 +73,7 @@ const autoSubmitExam = async () => {
 
     const response = await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
     
-    if (response.attempt && response.attempt.placement_outcome_level_id) {
+    if (response.attempt && response.attempt.placementOutcomeLevelId) {
       placementOutcome.value = response.attempt
       showResult.value = true
     } else {
@@ -153,6 +153,20 @@ const startExam = async () => {
     error.value = err.response?.data?.message || 'Failed to start exam.'
   } finally {
     isStarting.value = false
+  }
+}
+
+const handleFinishPlacement = () => {
+  const levelId = placementOutcome.value?.placementOutcomeLevelId
+  const courseId = exam.value?.courseId
+  
+  if (levelId && courseId) {
+    router.push({
+      path: `/my-courses/${courseId}`,
+      query: { targetLevel: levelId },
+    })
+  } else {
+    router.back()
   }
 }
 
@@ -237,7 +251,7 @@ const finishExam = async () => {
 
     const response = await $api.post(`/learner/exam-attempts/${attempt.value.id}/complete`)
     
-    if (response.attempt && response.attempt.placement_outcome_level_id) {
+    if (response.attempt && response.attempt.placementOutcomeLevelId) {
       placementOutcome.value = response.attempt
       showResult.value = true
     } else {
@@ -339,7 +353,7 @@ onMounted(fetchExam)
                 You have been placed in:
               </div>
               <h2 class="text-h4 font-weight-bold text-primary">
-                {{ placementOutcome?.placement_outcome_level?.title || 'Level Assigned' }}
+                {{ placementOutcome?.placementOutcomeLevel?.title || 'Level Assigned' }}
               </h2>
             </div>
 
@@ -347,7 +361,7 @@ onMounted(fetchExam)
               block
               size="x-large"
               color="primary"
-              @click="router.back()"
+              @click="handleFinishPlacement"
             >
               Start Learning
             </VBtn>
