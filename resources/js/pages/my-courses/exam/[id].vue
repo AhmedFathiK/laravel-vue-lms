@@ -163,7 +163,7 @@ const handleFinishPlacement = () => {
   if (levelId && courseId) {
     router.push({
       path: `/my-courses/${courseId}`,
-      query: { targetLevel: levelId },
+      state: { targetLevel: levelId },
     })
   } else {
     router.back()

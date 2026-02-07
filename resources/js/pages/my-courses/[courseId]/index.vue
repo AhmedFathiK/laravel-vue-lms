@@ -29,9 +29,10 @@ const fetchCourseContent = async () => {
 
     courseData.value = response
 
-    // Handle target level scrolling and marking first lesson as current if present in query
-    if (route.query.targetLevel) {
-      const targetLevelId = parseInt(route.query.targetLevel)
+    // Handle target level scrolling and marking first lesson as current if present in state or query
+    const targetLevelId = history.state.targetLevel || (route.query.targetLevel ? parseInt(route.query.targetLevel) : null)
+
+    if (targetLevelId) {
       const targetLevel = courseData.value.levels.find(l => l.id === targetLevelId)
       
       if (targetLevel && targetLevel.items && targetLevel.items.length > 0) {
@@ -46,7 +47,7 @@ const fetchCourseContent = async () => {
       }
 
       setTimeout(() => {
-        const levelElement = document.getElementById(`level-${route.query.targetLevel}`)
+        const levelElement = document.getElementById(`level-${targetLevelId}`)
         if (levelElement) {
           levelElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
