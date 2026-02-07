@@ -12,13 +12,14 @@ import authV2LoginIllustrationLight from '@images/pages/auth-v2-login-illustrati
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
-import { themeConfig } from '@themeConfig'
+import { useSettingsStore } from '@/stores/settings'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VForm } from 'vuetify/components/VForm'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+const settingsStore = useSettingsStore()
 
 definePage({
   meta: {
@@ -152,9 +153,9 @@ watch(() => user.value, newValue => {
 <template>
   <RouterLink to="/">
     <div class="auth-logo d-flex align-center gap-x-3">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
+      <VNodeRenderer :nodes="settingsStore.appLogo" />
       <h1 class="auth-title">
-        {{ themeConfig.app.title }}
+        {{ settingsStore.appName }}
       </h1>
     </div>
   </RouterLink>

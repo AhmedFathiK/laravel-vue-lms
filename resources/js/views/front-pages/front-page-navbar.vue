@@ -1,9 +1,9 @@
 <script setup>
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { can } from '@layouts/plugins/casl'
-import { themeConfig } from '@themeConfig'
 import { useWindowScroll } from '@vueuse/core'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay } from 'vuetify'
@@ -16,6 +16,7 @@ const route = useRoute()
 const router = useRouter()
 const sidebar = ref(false)
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 // Get authentication status
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -259,9 +260,9 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
               :class="$vuetify.display.mdAndUp ? 'd-none' : 'd-block'"
             >
               <div class="app-logo">
-                <VNodeRenderer :nodes="themeConfig.app.logo" />
+                <VNodeRenderer :nodes="settingsStore.appLogo" />
                 <h1 class="app-logo-title">
-                  {{ themeConfig.app.title }}
+                  {{ settingsStore.appName }}
                 </h1>
               </div>
             </RouterLink>

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\LessonController;
 use App\Http\Controllers\Admin\LevelController;
 use App\Http\Controllers\Admin\SlideController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TermController;
 use App\Http\Controllers\Admin\TrophyController;
 use App\Http\Controllers\Admin\LeaderboardController;
@@ -94,6 +95,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
 */
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->prefix('admin')->group(function () {
+    // App Settings
+    Route::get('settings', [SettingController::class, 'index']);
+    Route::post('settings', [SettingController::class, 'update']);
+
     // User & Role Management
     Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);
     Route::apiResource('users', UserController::class);

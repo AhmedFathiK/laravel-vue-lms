@@ -9,6 +9,9 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 import NavBarI18n from '@core/components/I18n.vue'
 import { HorizontalNavLayout } from '@layouts'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 </script>
 
 <template>
@@ -19,10 +22,10 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
         to="/"
         class="app-logo d-flex align-center gap-x-3"
       >
-        <VNodeRenderer :nodes="themeConfig.app.logo" />
+        <VNodeRenderer :nodes="settingsStore.appLogo" />
 
         <h1 class="app-title font-weight-bold leading-normal text-xl text-capitalize">
-          {{ themeConfig.app.title }}
+          {{ settingsStore.appName }}
         </h1>
       </RouterLink>
       <VSpacer />

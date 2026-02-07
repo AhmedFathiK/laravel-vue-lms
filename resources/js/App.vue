@@ -8,7 +8,8 @@ import {
 } from '@core/stores/config'
 import { hexToRgb } from '@core/utils/colorConverter'
 import { initializeAuth } from '@/plugins/3.auth'
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
 const { global } = useTheme()
 
@@ -22,6 +23,18 @@ const configStore = useConfigStore()
 onMounted(async () => {
   try {
     await initializeAuth()
+    
+    // Fetch global settings
+    const settingsStore = useSettingsStore()
+
+    await settingsStore.fetchSettings()
+
+    // Update document title when appName changes
+    watch(() => settingsStore.appName, newName => {
+      if (newName) {
+        document.title = newName
+      }
+    }, { immediate: true })
   } catch (error) {
     console.error('Failed to initialize auth on app start:', error)
   }

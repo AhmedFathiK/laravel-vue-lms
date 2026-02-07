@@ -9,6 +9,7 @@ import {
 } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import { injectionKeyIsVerticalNavHovered } from '@layouts/symbols'
+import { useSettingsStore } from '@/stores/settings'
 
 const props = defineProps({
   tag: {
@@ -36,6 +37,7 @@ const isHovered = useElementHover(refNav)
 provide(injectionKeyIsVerticalNavHovered, isHovered)
 
 const configStore = useLayoutConfigStore()
+const settingsStore = useSettingsStore()
 
 const resolveNavItemComponent = item => {
   if ('heading' in item)
@@ -87,14 +89,14 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
           to="/"
           class="app-logo app-title-wrapper"
         >
-          <VNodeRenderer :nodes="layoutConfig.app.logo" />
+          <VNodeRenderer :nodes="settingsStore.appLogo" />
 
           <Transition name="vertical-nav-app-title">
             <h1
               v-show="!hideTitleAndIcon"
               class="app-logo-title"
             >
-              {{ layoutConfig.app.title }}
+              {{ settingsStore.appName }}
             </h1>
           </Transition>
         </RouterLink>

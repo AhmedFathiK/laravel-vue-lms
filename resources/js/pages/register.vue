@@ -7,12 +7,13 @@ import authV2RegisterIllustrationLight from '@images/pages/auth-v2-register-illu
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
-import { themeConfig } from '@themeConfig'
+import { useSettingsStore } from '@/stores/settings'
 import { ref } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 
 const imageVariant = useGenerateImageVariant(authV2RegisterIllustrationLight, authV2RegisterIllustrationDark, authV2RegisterIllustrationBorderedLight, authV2RegisterIllustrationBorderedDark, true)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+const settingsStore = useSettingsStore()
 
 definePage({
   meta: {

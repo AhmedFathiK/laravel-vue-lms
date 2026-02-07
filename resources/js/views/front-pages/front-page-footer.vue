@@ -74,9 +74,9 @@ const demoList = [
               :class="$vuetify.display.smAndDown ? 'w-100' : 'w-75'"
             >
               <div class="app-logo mb-6">
-                <VNodeRenderer :nodes="themeConfig.app.logo" />
+                <VNodeRenderer :nodes="settingsStore.appLogo" />
                 <h1 class="app-logo-title text-white">
-                  {{ themeConfig.app.title }}
+                  {{ settingsStore.appName }}
                 </h1>
               </div>
 

@@ -88,6 +88,13 @@ export default [
     action: 'view',
     subject: 'trash',
   },
+  {
+    title: 'Settings',
+    to: { name: 'admin-settings' },
+    icon: { icon: 'tabler-settings' },
+    action: 'access',
+    subject: 'settings',
+  },
   { 
     heading: "Gamification",
     abilities: [

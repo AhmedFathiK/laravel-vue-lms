@@ -3,7 +3,7 @@ import { useCrudSubmit } from '@/composables/useCrudSubmit'
 import keyboard from '@images/svg/keyboard.svg'
 import paper from '@images/svg/paper-send.svg'
 import rocket from '@images/svg/rocket.svg'
-import { themeConfig } from '@themeConfig'
+import { useSettingsStore } from '@/stores/settings'
 
 const props = defineProps({
   isDialogVisible: {
@@ -78,7 +78,7 @@ const copyLink = () => {
           Refer & Earn
         </h4>
         <p class="text-body-1 mb-6 text-center">
-          Invite your friend to <span class="text-capitalize">{{ themeConfig.app.title }}</span>, if they sign up, you and your friend will get 30 days free trial
+          Invite your friend to <span class="text-capitalize">{{ settingsStore.appName }}</span>, if they sign up, you and your friend will get 30 days free trial
         </p>
 
         <VRow class="text-center mt-8">
