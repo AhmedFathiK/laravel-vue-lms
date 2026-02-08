@@ -36,13 +36,11 @@ const saveSettings = async () => {
 
 onMounted(fetchSettings)
 
-const getPropsString = props => JSON.stringify(props, null, 2)
-
-const updateProps = (index, string) => {
+const updateComplexProp = (section, key, jsonString) => {
   try {
-    config.value[index].props = JSON.parse(string)
+    section.props[key] = JSON.parse(jsonString)
   } catch (e) {
-    // ignore invalid json while typing
+    // ignore parsing errors while typing
   }
 }
 </script>
@@ -62,7 +60,7 @@ const updateProps = (index, string) => {
       <div v-else>
         <VExpansionPanels multiple>
           <VExpansionPanel
-            v-for="(section, index) in config"
+            v-for="section in config"
             :key="section.id"
           >
             <VExpansionPanelTitle>
@@ -98,13 +96,68 @@ const updateProps = (index, string) => {
                     label="HTML ID"
                   />
                 </VCol>
+                            
                 <VCol cols="12">
-                  <VTextarea
-                    label="Props (JSON)"
-                    :model-value="getPropsString(section.props)"
-                    rows="10"
-                    @update:model-value="v => updateProps(index, v)"
-                  />
+                  <VDivider class="my-4" />
+                  <div class="text-subtitle-1 mb-4">
+                    Component Properties
+                  </div>
+                  <VRow>
+                    <template
+                      v-for="(value, key) in section.props"
+                      :key="key"
+                    >
+                      <!-- String Props -->
+                      <VCol
+                        v-if="typeof value === 'string'"
+                        cols="12"
+                        md="6"
+                      >
+                        <AppTextField
+                          v-model="section.props[key]"
+                          :label="key"
+                        />
+                      </VCol>
+
+                      <!-- Number Props -->
+                      <VCol
+                        v-else-if="typeof value === 'number'"
+                        cols="12"
+                        md="6"
+                      >
+                        <AppTextField
+                          v-model.number="section.props[key]"
+                          :label="key"
+                          type="number"
+                        />
+                      </VCol>
+
+                      <!-- Boolean Props -->
+                      <VCol
+                        v-else-if="typeof value === 'boolean'"
+                        cols="12"
+                        md="6"
+                      >
+                        <VSwitch
+                          v-model="section.props[key]"
+                          :label="key"
+                        />
+                      </VCol>
+
+                      <!-- Complex Props (Array/Object) -->
+                      <VCol
+                        v-else
+                        cols="12"
+                      >
+                        <VTextarea
+                          :label="`${key} (JSON)`"
+                          :model-value="JSON.stringify(value, null, 2)"
+                          rows="5"
+                          @update:model-value="v => updateComplexProp(section, key, v)"
+                        />
+                      </VCol>
+                    </template>
+                  </VRow>
                 </VCol>
               </VRow>
             </VExpansionPanelText>

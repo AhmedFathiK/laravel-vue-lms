@@ -21,9 +21,29 @@ const props = defineProps({
     type: String,
     default: 'Get early Access',
   },
-  joinCommunityText: {
+  buttonLink: {
+    type: String,
+    default: '/#pricing-plan',
+  },
+  secondaryButtonText: {
     type: String,
     default: 'Join Community',
+  },
+  secondaryButtonLink: {
+    type: String,
+    default: 'https://discord.gg/12345',
+  },
+  secondaryButtonTarget: {
+    type: Boolean,
+    default: true,
+  },
+  imageLink: {
+    type: String,
+    default: '/',
+  },
+  imageTarget: {
+    type: Boolean,
+    default: true,
   },
 })
 
@@ -57,26 +77,31 @@ const translateMouse = computed(() => {
         <VContainer>
           <div class="hero-text-box text-center px-6">
             <h1 class="hero-title mb-4">
-              One dashboard to manage all your business
+              {{ props.title }}
             </h1>
             <h6 class="mb-6 text-h6">
-              Production-ready & easy to use Admin Template
-              for Reliability and Customizability.
+              {{ props.subtitle }}
             </h6>
             <div class="position-relative">
               <h6 class="position-absolute hero-btn-item d-md-flex d-none text-h6 text-medium-emphasis">
-                Join Community
-                <VImg
-                  :src="joinArrow"
-                  class="flip-in-rtl"
-                  width="54"
-                  height="31"
-                />
+                <a
+                  :href="props.secondaryButtonLink"
+                  :target="props.secondaryButtonTarget ? '_blank' : '_self'"
+                  class="text-decoration-none text-medium-emphasis d-flex align-center"
+                >
+                  {{ props.secondaryButtonText }}
+                  <VImg
+                    :src="joinArrow"
+                    class="flip-in-rtl ms-2"
+                    width="54"
+                    height="31"
+                  />
+                </a>
               </h6>
 
               <VBtn
                 :size="$vuetify.display.smAndUp ? 'large' : 'default' "
-                :to="{ name: 'root', hash: `#pricing-plan` }"
+                :to="props.buttonLink"
                 :active="false"
               >
                 {{ props.buttonText }}
@@ -91,9 +116,9 @@ const translateMouse = computed(() => {
       <div class="position-relative">
         <div class="blank-section" />
         <div class="hero-animation-img position-absolute">
-          <RouterLink
-            :to="{ name: 'root' }"
-            target="_blank"
+          <a
+            :href="props.imageLink"
+            :target="props.imageTarget ? '_blank' : '_self'"
           >
             <div
               class="hero-dashboard-img position-relative"
@@ -112,7 +137,7 @@ const translateMouse = computed(() => {
                 style="transform: translateZ(1rem);"
               >
             </div>
-          </RouterLink>
+          </a>
         </div>
       </div>
     </VContainer>

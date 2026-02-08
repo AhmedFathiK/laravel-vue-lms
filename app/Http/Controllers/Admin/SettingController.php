@@ -69,9 +69,42 @@ class SettingController extends Controller
     {
         $setting = Setting::where('key', 'landing_page_config')->first();
 
-        $config = $setting ? json_decode($setting->value, true) : $this->getDefaultLandingPageConfig();
+        $storedConfig = $setting ? json_decode($setting->value, true) : [];
+        $defaultConfig = $this->getDefaultLandingPageConfig();
 
-        return response()->json($config);
+        if (empty($storedConfig)) {
+            return response()->json($defaultConfig);
+        }
+
+        $mergedConfig = [];
+        $storedIds = [];
+
+        // Update stored sections with any new default props
+        foreach ($storedConfig as $section) {
+            $defaultSection = collect($defaultConfig)->firstWhere('id', $section['id']);
+            if ($defaultSection) {
+                $defaultProps = (array) $defaultSection['props'];
+                $storedProps = isset($section['props']) ? (array) $section['props'] : [];
+
+                // Merge props: defaults provide structure, stored values overwrite them if key exists
+                $mergedProps = [];
+                foreach ($defaultProps as $key => $defaultValue) {
+                    $mergedProps[$key] = array_key_exists($key, $storedProps) ? $storedProps[$key] : $defaultValue;
+                }
+                $section['props'] = $mergedProps;
+            }
+            $mergedConfig[] = $section;
+            $storedIds[] = $section['id'];
+        }
+
+        // Add any missing sections from default config
+        foreach ($defaultConfig as $section) {
+            if (!in_array($section['id'], $storedIds)) {
+                $mergedConfig[] = $section;
+            }
+        }
+
+        return response()->json($mergedConfig);
     }
 
     public function updateLandingPageConfig(Request $request)
@@ -96,7 +129,17 @@ class SettingController extends Controller
                 'id' => 'home',
                 'name' => 'Hero Section',
                 'component' => 'HeroSection',
-                'props' => (object)[],
+                'props' => [
+                    'title' => 'One dashboard to manage all your business',
+                    'subtitle' => 'Production-ready & easy to use Admin Template for Reliability and Customizability.',
+                    'buttonText' => 'Get early Access',
+                    'buttonLink' => '/#pricing-plan',
+                    'secondaryButtonText' => 'Join Community',
+                    'secondaryButtonLink' => 'https://discord.gg/12345',
+                    'secondaryButtonTarget' => true,
+                    'imageLink' => '/',
+                    'imageTarget' => true,
+                ],
                 'visible' => true,
                 'wrapper_style' => []
             ],
