@@ -76,7 +76,7 @@ onMounted(fetchSettings)
             cols="12"
             md="6"
           >
-            <VTextField
+            <AppTextField
               v-model="appName"
               label="App Name"
               placeholder="Enter App Name"
@@ -105,6 +105,7 @@ onMounted(fetchSettings)
               </VAvatar>
               
               <div class="d-flex flex-column gap-2">
+                <VLabel>App Logo</VLabel>
                 <VBtn
                   color="primary"
                   tag="label"
