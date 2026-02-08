@@ -157,7 +157,7 @@ const translateMouse = computed(() => {
 .hero-animation-img {
   position: relative;
   inline-size: 90%;
-  margin-block-start: -25rem;
+  margin-block-start: -22rem;
   margin-inline: auto;
 }
 
@@ -171,7 +171,7 @@ section {
   }
 
   .hero-animation-img {
-    margin-block-start: -25rem;
+    margin-block-start: -22rem;
   }
 }
 
@@ -181,7 +181,7 @@ section {
   }
 
   .hero-animation-img {
-    margin-block-start: -17rem;
+    margin-block-start: -13rem;
   }
 }
 
@@ -191,7 +191,7 @@ section {
   }
 
   .hero-animation-img {
-    margin-block-start: -15rem;
+    margin-block-start: -12rem;
   }
 }
 
@@ -201,7 +201,7 @@ section {
   }
 
   .hero-animation-img {
-    margin-block-start: -11rem;
+    margin-block-start: -9rem;
   }
 }
 
@@ -288,6 +288,8 @@ section {
 }
 
 .hero-dashboard-img {
+  position: relative;
+  z-index: 1;
   margin-block: 0;
   margin-inline: auto;
   max-inline-size: 700px;
@@ -297,6 +299,11 @@ section {
   img {
     inline-size: 100%;
   }
+}
+
+.hero-text-box {
+  position: relative;
+  z-index: 2;
 }
 
 .feature-cards {
