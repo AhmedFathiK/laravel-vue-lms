@@ -1,10 +1,7 @@
 <script setup>
 import { useMouse } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { useGenerateImageVariant } from '@/@core/composable/useGenerateImageVariant'
 import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
-import heroDashboardImgDark from '@images/front-pages/landing-page/hero-dashboard-dark.png'
-import heroDashboardImgLight from '@images/front-pages/landing-page/hero-dashboard-light.png'
 
 const props = defineProps({
   title: {
@@ -50,11 +47,10 @@ const props = defineProps({
 })
 
 const theme = useTheme()
-const heroDashboardImg = useGenerateImageVariant(heroDashboardImgLight, heroDashboardImgDark)
 const { x, y } = useMouse({ touch: false })
 
 const activeHeroDashboardImg = computed(() => {
-  return props.heroImage ? props.heroImage : heroDashboardImg.value
+  return props.heroImage
 })
 
 const translateMouse = computed(() => {
@@ -77,7 +73,10 @@ const translateMouse = computed(() => {
     <div id="landingHero">
       <div
         class="landing-hero"
-        :class="theme.current.value.dark ? 'landing-hero-dark-bg' : 'landing-hero-light-bg'"
+        :class="[
+          theme.current.value.dark ? 'landing-hero-dark-bg' : 'landing-hero-light-bg',
+          { 'landing-hero-no-image': !activeHeroDashboardImg }
+        ]"
       >
         <VContainer>
           <div class="hero-text-box text-center px-6">
@@ -119,7 +118,10 @@ const translateMouse = computed(() => {
 
     <VContainer>
       <div class="position-relative">
-        <div class="hero-animation-img">
+        <div
+          v-if="activeHeroDashboardImg"
+          class="hero-animation-img"
+        >
           <a
             :href="props.imageLink"
             :target="props.imageTarget ? '_blank' : '_self'"
@@ -146,6 +148,10 @@ const translateMouse = computed(() => {
 .landing-hero {
   border-radius: 0 0 50px 50px;
   padding-block: 9.75rem 22rem;
+
+  &.landing-hero-no-image {
+    padding-block-end: 5rem !important;
+  }
 }
 
 .hero-animation-img {
