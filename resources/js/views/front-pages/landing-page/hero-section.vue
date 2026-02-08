@@ -5,8 +5,6 @@ import { useGenerateImageVariant } from '@/@core/composable/useGenerateImageVari
 import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
 import heroDashboardImgDark from '@images/front-pages/landing-page/hero-dashboard-dark.png'
 import heroDashboardImgLight from '@images/front-pages/landing-page/hero-dashboard-light.png'
-import heroElementsImgDark from '@images/front-pages/landing-page/hero-elements-dark.png'
-import heroElementsImgLight from '@images/front-pages/landing-page/hero-elements-light.png'
 
 const props = defineProps({
   title: {
@@ -52,7 +50,6 @@ const props = defineProps({
 })
 
 const theme = useTheme()
-const heroElementsImg = useGenerateImageVariant(heroElementsImgLight, heroElementsImgDark)
 const heroDashboardImg = useGenerateImageVariant(heroDashboardImgLight, heroDashboardImgDark)
 const { x, y } = useMouse({ touch: false })
 
@@ -122,8 +119,7 @@ const translateMouse = computed(() => {
 
     <VContainer>
       <div class="position-relative">
-        <div class="blank-section" />
-        <div class="hero-animation-img position-absolute">
+        <div class="hero-animation-img">
           <a
             :href="props.imageLink"
             :target="props.imageTarget ? '_blank' : '_self'"
@@ -137,12 +133,6 @@ const translateMouse = computed(() => {
                 :src="activeHeroDashboardImg"
                 alt="Hero Dashboard"
                 class="animation-img"
-              >
-              <img
-                :src="heroElementsImg"
-                alt="hero elements"
-                class="hero-elements-img animation-img position-absolute"
-                style="transform: translateZ(1rem);"
               >
             </div>
           </a>
@@ -159,9 +149,9 @@ const translateMouse = computed(() => {
 }
 
 .hero-animation-img {
+  position: relative;
   inline-size: 90%;
-  inset-block-start: -25rem;
-  inset-inline-start: 4.425rem;
+  margin-block-start: -25rem;
   margin-inline: auto;
 }
 
@@ -169,97 +159,63 @@ section {
   display: block;
 }
 
-.blank-section {
-  background-color: rgba(var(--v-theme-surface));
-  min-block-size: 25rem;
-}
-
 @media (min-width: 1280px) and (max-width: 1440px) {
-  .blank-section {
-    min-block-size: 18rem;
-  }
-
   .landing-hero {
     padding-block-end: 22rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -25rem;
+    margin-block-start: -25rem;
   }
 }
 
 @media (min-width: 900px) and (max-width: 1279px) {
-  .blank-section {
-    min-block-size: 13rem;
-  }
-
   .landing-hero {
     padding-block-end: 14rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -17rem;
-    inset-inline-start: 2.75rem;
+    margin-block-start: -17rem;
   }
 }
 
 @media (min-width: 768px) and (max-width: 899px) {
-  .blank-section {
-    min-block-size: 12rem;
-  }
-
   .landing-hero {
     padding-block-end: 12rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -15rem;
-    inset-inline-start: 2.5rem;
+    margin-block-start: -15rem;
   }
 }
 
 @media (min-width: 600px) and (max-width: 767px) {
-  .blank-section {
-    min-block-size: 12rem;
-  }
-
   .landing-hero {
     padding-block-end: 8rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -11rem;
-    inset-inline-start: 2rem;
+    margin-block-start: -11rem;
   }
 }
 
 @media (min-width: 425px) and (max-width: 600px) {
-  .blank-section {
-    min-block-size: 8rem;
-  }
-
   .landing-hero {
     padding-block-end: 8rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -9rem;
-    inset-inline-start: 1.7rem;
+    margin-block-start: -9rem;
   }
 }
 
 @media (min-width: 300px) and (max-width: 424px) {
-  .blank-section {
-    min-block-size: 4rem;
-  }
-
   .landing-hero {
     padding-block-end: 6rem;
   }
 
   .hero-animation-img {
-    inset-block-start: -7rem;
-    inset-inline-start: 1.25rem;
+    margin-block-start: -7rem;
   }
 }
 
@@ -328,18 +284,13 @@ section {
 .hero-dashboard-img {
   margin-block: 0;
   margin-inline: auto;
+  max-inline-size: 700px;
   transform-style: preserve-3d;
   transition: all 0.35s;
 
   img {
     inline-size: 100%;
   }
-}
-
-.hero-elements-img {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
 }
 
 .feature-cards {
