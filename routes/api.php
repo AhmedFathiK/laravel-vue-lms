@@ -104,6 +104,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     // Landing Page Settings
     Route::get('landing-page-settings', [SettingController::class, 'getLandingPageConfig']);
     Route::post('landing-page-settings', [SettingController::class, 'updateLandingPageConfig']);
+    Route::post('landing-page-settings/upload-image', [SettingController::class, 'uploadLandingPageImage']);
 
     // User & Role Management
     Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);

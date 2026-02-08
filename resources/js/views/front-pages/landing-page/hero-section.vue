@@ -45,12 +45,20 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  heroImage: {
+    type: String,
+    default: null,
+  },
 })
 
 const theme = useTheme()
 const heroElementsImg = useGenerateImageVariant(heroElementsImgLight, heroElementsImgDark)
 const heroDashboardImg = useGenerateImageVariant(heroDashboardImgLight, heroDashboardImgDark)
 const { x, y } = useMouse({ touch: false })
+
+const activeHeroDashboardImg = computed(() => {
+  return props.heroImage ? props.heroImage : heroDashboardImg.value
+})
 
 const translateMouse = computed(() => {
   if (typeof window !== 'undefined') {
@@ -126,7 +134,7 @@ const translateMouse = computed(() => {
               data-allow-mismatch
             >
               <img
-                :src="heroDashboardImg"
+                :src="activeHeroDashboardImg"
                 alt="Hero Dashboard"
                 class="animation-img"
               >

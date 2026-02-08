@@ -111,6 +111,23 @@ class SettingController extends Controller
     {
         $config = $request->input('config');
 
+        // Cleanup old images
+        $oldSetting = Setting::where('key', 'landing_page_config')->first();
+        if ($oldSetting) {
+            $oldConfig = json_decode($oldSetting->value, true);
+            $oldImages = $this->extractImagePaths($oldConfig);
+            $newImages = $this->extractImagePaths($config);
+
+            $imagesToDelete = array_diff($oldImages, $newImages);
+
+            foreach ($imagesToDelete as $imagePath) {
+                $path = str_replace('/storage/', '', $imagePath);
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        }
+
         Setting::updateOrCreate(
             ['key' => 'landing_page_config'],
             [
@@ -120,6 +137,32 @@ class SettingController extends Controller
         );
 
         return response()->json(['message' => 'Landing page settings updated successfully']);
+    }
+
+    private function extractImagePaths($config)
+    {
+        $paths = [];
+        if (!is_array($config)) return $paths;
+
+        foreach ($config as $section) {
+            if (isset($section['props']) && is_array($section['props'])) {
+                if (isset($section['props']['hero_image']) && $section['props']['hero_image']) {
+                    $paths[] = $section['props']['hero_image'];
+                }
+            }
+        }
+        return $paths;
+    }
+
+    public function uploadLandingPageImage(Request $request)
+    {
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->store('landing-page', 'public');
+            return response()->json(['path' => '/storage/' . $path]);
+        }
+
+        return response()->json(['message' => 'No file uploaded'], 400);
     }
 
     private function getDefaultLandingPageConfig()
@@ -139,6 +182,7 @@ class SettingController extends Controller
                     'secondary_button_target' => true,
                     'image_link' => '/',
                     'image_target' => true,
+                    'hero_image' => null, // null means use default hardcoded image
                 ],
                 'visible' => true,
                 'wrapper_style' => []

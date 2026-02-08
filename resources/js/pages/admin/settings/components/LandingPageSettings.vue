@@ -43,6 +43,33 @@ const updateComplexProp = (section, key, jsonString) => {
     // ignore parsing errors while typing
   }
 }
+
+const handleImageUpload = async (event, section, key) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  try {
+    isLoading.value = true
+
+    const response = await api.post('/admin/landing-page-settings/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    
+    section.props[key] = response.path
+    toast.success('Image uploaded successfully')
+  } catch (error) {
+    console.error(error)
+    toast.error('Failed to upload image')
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -107,9 +134,36 @@ const updateComplexProp = (section, key, jsonString) => {
                       v-for="(value, key) in section.props"
                       :key="key"
                     >
+                      <!-- Image Upload Prop -->
+                      <VCol
+                        v-if="key === 'hero_image' || key === 'heroImage'"
+                        cols="12"
+                        md="6"
+                      >
+                        <VFileInput
+                          :label="key"
+                          prepend-icon="tabler-camera"
+                          @change="e => handleImageUpload(e, section, key)"
+                        />
+                        <div
+                          v-if="section.props[key]"
+                          class="mt-2"
+                        >
+                          <small>Current: {{ section.props[key] }}</small>
+                          <VBtn
+                            size="x-small"
+                            color="error"
+                            variant="text"
+                            @click="section.props[key] = null"
+                          >
+                            Remove
+                          </VBtn>
+                        </div>
+                      </VCol>
+
                       <!-- String Props -->
                       <VCol
-                        v-if="typeof value === 'string'"
+                        v-else-if="typeof value === 'string' || value === null"
                         cols="12"
                         md="6"
                       >
