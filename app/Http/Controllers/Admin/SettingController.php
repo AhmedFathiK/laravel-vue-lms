@@ -64,4 +64,106 @@ class SettingController extends Controller
 
         return response()->json(['message' => 'Settings updated successfully']);
     }
+
+    public function getLandingPageConfig()
+    {
+        $setting = Setting::where('key', 'landing_page_config')->first();
+
+        $config = $setting ? json_decode($setting->value, true) : $this->getDefaultLandingPageConfig();
+
+        return response()->json($config);
+    }
+
+    public function updateLandingPageConfig(Request $request)
+    {
+        $config = $request->input('config');
+
+        Setting::updateOrCreate(
+            ['key' => 'landing_page_config'],
+            [
+                'value' => json_encode($config),
+                'group' => 'landing_page'
+            ]
+        );
+
+        return response()->json(['message' => 'Landing page settings updated successfully']);
+    }
+
+    private function getDefaultLandingPageConfig()
+    {
+        return [
+            [
+                'id' => 'home',
+                'name' => 'Hero Section',
+                'component' => 'HeroSection',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => []
+            ],
+            [
+                'id' => 'features',
+                'name' => 'Features',
+                'component' => 'Features',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
+            ],
+            [
+                'id' => 'reviews',
+                'name' => 'Customer Reviews',
+                'component' => 'CustomersReview',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
+            ],
+            [
+                'id' => 'team',
+                'name' => 'Our Team',
+                'component' => 'OurTeam',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
+            ],
+            [
+                'id' => 'pricing',
+                'name' => 'Pricing Plans',
+                'component' => 'PricingPlans',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
+            ],
+            [
+                'id' => 'stats',
+                'name' => 'Product Stats',
+                'component' => 'ProductStats',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => []
+            ],
+            [
+                'id' => 'faq',
+                'name' => 'FAQ Section',
+                'component' => 'FaqSection',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
+            ],
+            [
+                'id' => 'banner',
+                'name' => 'Banner',
+                'component' => 'Banner',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => []
+            ],
+            [
+                'id' => 'contact-us',
+                'name' => 'Contact Us',
+                'component' => 'ContactUs',
+                'props' => (object)[],
+                'visible' => true,
+                'wrapper_style' => []
+            ],
+        ];
+    }
 }

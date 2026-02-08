@@ -4,6 +4,28 @@ import ConnectImg from '@images/front-pages/landing-page/contact-customer-servic
 const name = ref('')
 const email = ref('')
 const message = ref('')
+
+const props = defineProps({
+  tag: {
+    type: String,
+    default: 'Contact Us',
+  },
+  title: {
+    type: String,
+    default: 'let\'s work together',
+  },
+  subtitle: {
+    type: String,
+    default: 'Any question or remark? just write us a message',
+  },
+  cards: {
+    type: Array,
+    default: () => [
+      { title: 'Email', icon: 'tabler-mail', color: 'primary', value: 'example@gmail.com' },
+      { title: 'Phone', icon: 'tabler-phone-call', color: 'success', value: '+1234 568 963' },
+    ],
+  },
+})
 </script>
 
 <template>
@@ -17,18 +39,17 @@ const message = ref('')
           class="mb-4"
           size="small"
         >
-          Contact Us
+          {{ props.tag }}
         </VChip>
         <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
           <div class="position-relative me-2">
             <div class="section-title">
-              let's work
+              {{ props.title }}
             </div>
           </div>
-          together
         </h4>
         <p class="text-body-1 mb-0">
-          Any question or remark? just write us a message
+          {{ props.subtitle }}
         </p>
       </div>
 
@@ -52,10 +73,7 @@ const message = ref('')
                 <VCardText class="pa-4 pb-1">
                   <div class="d-flex justify-space-between flex-wrap gap-y-4">
                     <div
-                      v-for="(item, index) in [
-                        { title: 'Email', icon: 'tabler-mail', color: 'primary', value: 'example@gmail.com' },
-                        { title: 'Phone', icon: 'tabler-phone-call', color: 'success', value: '+1234 568 963' },
-                      ]"
+                      v-for="(item, index) in props.cards"
                       :key="index"
                       class="d-flex gap-x-3 align-center"
                     >

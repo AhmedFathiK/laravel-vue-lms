@@ -21,6 +21,66 @@ import avatar3 from '@images/avatars/avatar-3.png'
 import avatar4 from '@images/avatars/avatar-4.png'
 import avatar5 from '@images/avatars/avatar-5.png'
 
+const props = defineProps({
+  reviews: {
+    type: Array,
+    default: () => [
+      {
+        desc: 'I\'ve never used a theme as versatile and flexible as Vuexy. It\'s my go to for building dashboard sites on almost any project.',
+        img: logo1,
+        rating: 5,
+        name: 'Eugenia Moore',
+        position: 'Founder of Hubspot',
+        avatar: avatar1,
+      },
+      {
+        desc: 'This template is really clean & well documented. The docs are really easy to understand and it\'s always easy to find a screenshot from their website.',
+        img: logo2,
+        rating: 5,
+        name: 'Curtis Fletcher',
+        position: 'Design Lead at Dribbble',
+        avatar: avatar2,
+      },
+      {
+        desc: 'This template is superior in so many ways. The code, the design, the regular updates, the support.. It\'s the whole package. Excellent Work.',
+        img: logo3,
+        rating: 4,
+        name: 'Eugenia Moore',
+        position: 'CTO of Airbnb',
+        avatar: avatar3,
+      },
+      {
+        desc: 'All the requirements for developers have been taken into consideration, so I\'m able to build any beautiful interface I want.',
+        img: logo4,
+        rating: 5,
+        name: 'Sara Smith',
+        position: 'Founder of Continental',
+        avatar: avatar4,
+      },
+      {
+        desc: 'Vuexy is awesome, and I particularly enjoy knowing that if I get stuck on something, there is always a helpful community to assist me.',
+        img: logo3,
+        rating: 5,
+        name: 'Tommy haffman',
+        position: 'Founder of Levis',
+        avatar: avatar5,
+      },
+    ],
+  },
+  tag: {
+    type: String,
+    default: 'Real Customers Reviews',
+  },
+  title: {
+    type: String,
+    default: 'What people say',
+  },
+  subtitle: {
+    type: String,
+    default: 'See what our customers have to say about their experience.',
+  },
+})
+
 register()
 
 const brandLogo1 = useGenerateImageVariant(logo1light, logo1dark)
@@ -29,96 +89,14 @@ const brandLogo3 = useGenerateImageVariant(logo3light, logo3dark)
 const brandLogo4 = useGenerateImageVariant(logo4light, logo4dark)
 const brandLogo5 = useGenerateImageVariant(logo5light, logo5dark)
 
-const reviewData = [
-  {
-    desc: 'I\'ve never used a theme as versatile and flexible as Vuexy. It\'s my go to for building dashboard sites on almost any project.',
-    img: logo1,
-    rating: 5,
-    name: 'Eugenia Moore',
-    position: 'Founder of Hubspot',
-    avatar: avatar1,
-  },
-  {
-    desc: 'This template is really clean & well documented. The docs are really easy to understand and it\'s always easy to find a screenshot from their website.',
-    img: logo2,
-    rating: 5,
-    name: 'Curtis Fletcher',
-    position: 'Design Lead at Dribbble',
-    avatar: avatar2,
-  },
-  {
-    desc: 'This template is superior in so many ways. The code, the design, the regular updates, the support.. It\'s the whole package. Excellent Work.',
-    img: logo3,
-    rating: 4,
-    name: 'Eugenia Moore',
-    position: 'CTO of Airbnb',
-    avatar: avatar3,
-  },
-  {
-    desc: 'All the requirements for developers have been taken into consideration, so I\'m able to build any beautiful interface I want.',
-    img: logo4,
-    rating: 5,
-    name: 'Sara Smith',
-    position: 'Founder of Continental',
-    avatar: avatar4,
-  },
-  {
-    desc: 'Vuexy is awesome, and I particularly enjoy knowing that if I get stuck on something, there is always a helpful community to assist me.',
-    img: logo3,
-    rating: 5,
-    name: 'Tommy haffman',
-    position: 'Founder of Levis',
-    avatar: avatar5,
-  },
-  {
-    desc: 'I\'ve never used a theme as versatile and flexible as Vuexy. It\'s my go to for building dashboard sites on almost any project.',
-    img: logo1,
-    rating: 5,
-    name: 'Eugenia Moore',
-    position: 'Founder of Hubspot',
-    avatar: avatar1,
-  },
-  {
-    desc: 'Vuexy is awesome, and I particularly enjoy knowing that if I get stuck on something, there is always a helpful community to assist me.',
-    img: logo2,
-    rating: 5,
-    name: 'Tommy haffman',
-    position: 'Founder of Levis',
-    avatar: avatar2,
-  },
-  {
-    desc: 'This template is superior in so many ways. The code, the design, the regular updates, the support.. It\'s the whole package. Excellent Work.',
-    img: logo3,
-    rating: 4,
-    name: 'Eugenia Moore',
-    position: 'CTO of Airbnb',
-    avatar: avatar3,
-  },
-  {
-    desc: 'All the requirements for developers have been taken into consideration, so I\'m able to build any beautiful interface I want.',
-    img: logo4,
-    rating: 4,
-    name: 'Sara Smith',
-    position: 'Founder of Continental',
-    avatar: avatar4,
-  },
-  {
-    desc: 'This template is really clean & well documented. The docs are really easy to understand and it\'s always easy to find a screenshot from their website.',
-    img: logo2,
-    rating: 5,
-    name: 'Curtis Fletcher',
-    position: 'Design Lead at Dribbble',
-    avatar: avatar5,
-  },
-]
-
 const customerReviewSwiper = ref(null)
 
 const slide = dir => {
   const swiper = customerReviewSwiper.value?.swiper
-  if (dir === 'prev')
-    swiper.slidePrev()
-  swiper.slideNext()
+  if (swiper) {
+    if (dir === 'prev') swiper.slidePrev()
+    else swiper.slideNext()
+  }
 }
 </script>
 
@@ -145,15 +123,15 @@ const slide = dir => {
                 class="mb-4"
                 size="small"
               >
-                Real Customers Reviews
+                {{ props.tag }}
               </VChip>
               <div class="position-relative mb-1 me-2">
                 <div class="section-title">
-                  What people say
+                  {{ props.title }}
                 </div>
               </div>
               <p class="text-body-1 mb-12">
-                See what our customers have to say about their experience.
+                {{ props.subtitle }}
               </p>
               <div class="position-relative">
                 <IconBtn
@@ -200,20 +178,20 @@ const slide = dir => {
                 events-prefix="swiper-"
                 :injectStyles="[
                   `
-                    .swiper{
-                      padding-block: 12px;
-                      padding-inline: 12px;
-                      margin-inline: -12px;
-                    }
-                    .swiper-button-next, .swiper-button-prev{
-                      visibility: hidden;
-                    }
-                  `,
+          .swiper{
+            padding-block: 12px;
+            padding-inline: 12px;
+            margin-inline: -12px;
+          }
+          .swiper-button-next, .swiper-button-prev{
+            visibility: hidden;
+          }
+        `,
                 ]"
                 navigation="{
-                  nextEl: '.swiper-button-next',
-                  prevEl: '.swiper-button-prev',
-                }"
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      }"
                 :breakpoints="{
                   1280: {
                     slidesPerView: 3,
@@ -230,7 +208,7 @@ const slide = dir => {
                 }"
               >
                 <swiper-slide
-                  v-for="(data, index) in reviewData"
+                  v-for="(data, index) in props.reviews"
                   :key="index"
                 >
                   <VCard class="d-flex h-100 align-stretch">
@@ -372,7 +350,7 @@ swiper-container::part(bullet) {
 
 .section-title::after {
   position: absolute;
-  background: url("../../../assets/images/front-pages/icons/section-title-icon.png") no-repeat left bottom/contain;
+  background: url("@images/front-pages/icons/section-title-icon.png") no-repeat left bottom/contain;
   background-size: contain;
   block-size: 100%;
   content: "";

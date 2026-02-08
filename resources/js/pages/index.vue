@@ -11,6 +11,7 @@ import OurTeam from '@/views/front-pages/landing-page/our-team.vue'
 import PricingPlans from '@/views/front-pages/landing-page/pricing-plans.vue'
 import ProductStats from '@/views/front-pages/landing-page/product-stats.vue'
 import { useConfigStore } from '@core/stores/config'
+import api from '@/utils/api'
 
 const store = useConfigStore()
 
@@ -23,66 +24,81 @@ definePage({
 })
 
 const activeSectionId = ref()
-const refHome = ref()
-const refFeatures = ref()
-const refTeam = ref()
-const refContact = ref()
-const refFaq = ref()
+const landingPageConfig = ref([])
+const sectionRefs = ref({})
 
-useIntersectionObserver([
-  refHome,
-  refFeatures,
-  refTeam,
-  refContact,
-  refFaq,
-], ([{ isIntersecting, target }]) => {
-  if (isIntersecting)
-    activeSectionId.value = target.id
-}, { threshold: 0.25 })
+const componentsMap = {
+  HeroSection,
+  Features,
+  CustomersReview,
+  OurTeam,
+  PricingPlans,
+  ProductStats,
+  FaqSection,
+  Banner,
+  ContactUs,
+}
+
+const fetchConfig = async () => {
+  try {
+    const response = await api.get('/public/landing-page-settings')
+
+    landingPageConfig.value = response
+  } catch (error) {
+    console.error('Failed to fetch landing page config', error)
+  }
+}
+
+onMounted(() => {
+  fetchConfig()
+})
+
+const observeSections = () => {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        activeSectionId.value = entry.target.id
+      }
+    })
+  }, { threshold: 0.25 })
+
+  // Observe all section elements
+  Object.values(sectionRefs.value).forEach(refComponent => {
+    const el = refComponent?.$el || refComponent
+    if (el && el instanceof Element) {
+      observer.observe(el)
+    }
+  })
+}
+
+watch(landingPageConfig, () => {
+  nextTick(() => {
+    observeSections()
+  })
+})
 </script>
 
 <template>
   <div class="landing-page-wrapper">
     <Navbar :active-id="activeSectionId" />
 
-    <!-- 👉 Hero Section  -->
-    <HeroSection ref="refHome" />
+    <template
+      v-for="section in landingPageConfig"
+      :key="section.id"
+    >
+      <div 
+        v-if="section.visible"
+        :style="section.wrapper_style"
+      >
+        <component
+          :is="componentsMap[section.component]"
+          :id="section.id"
+          v-bind="section.props"
+          :ref="el => sectionRefs[section.id] = el"
+        />
+      </div>
+    </template>
 
-    <!-- 👉 Useful features  -->
-    <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">
-      <Features ref="refFeatures" />
-    </div>
-
-    <!-- 👉 Customer Review -->
-    <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">
-      <CustomersReview />
-    </div>
-
-    <!-- 👉 Our Team -->
-    <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">
-      <OurTeam ref="refTeam" />
-    </div>
-
-    <!-- 👉 Pricing Plans -->
-    <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">
-      <PricingPlans />
-    </div>
-
-    <!-- 👉 Product stats -->
-    <ProductStats />
-
-    <!-- 👉 FAQ Section -->
-    <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">
-      <FaqSection ref="refFaq" />
-    </div>
-
-    <!-- 👉 Banner  -->
-    <Banner />
-
-    <!-- 👉 Contact Us  -->
-    <ContactUs ref="refContact" />
-
-    <!-- 👉 Footer -->
     <Footer />
   </div>
 </template>

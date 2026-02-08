@@ -1,5 +1,6 @@
 <script setup>
 import GeneralSettings from './components/GeneralSettings.vue'
+import LandingPageSettings from './components/LandingPageSettings.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -10,6 +11,7 @@ const activeTab = ref(route.query.tab || 'general')
 // Tabs definition
 const tabs = [
   { title: 'General', icon: 'tabler-settings', value: 'general' },
+  { title: 'Landing Page', icon: 'tabler-layout-navbar', value: 'landing_page' },
 ]
 
 const changeTab = tab => {
@@ -50,6 +52,9 @@ watch(() => route.query.tab, val => {
     >
       <VWindowItem value="general">
         <GeneralSettings />
+      </VWindowItem>
+      <VWindowItem value="landing_page">
+        <LandingPageSettings />
       </VWindowItem>
     </VWindow>
   </div>

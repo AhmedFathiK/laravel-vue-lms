@@ -4,40 +4,57 @@ import teamPerson2 from '@images/front-pages/landing-page/team-member-2.png'
 import teamPerson3 from '@images/front-pages/landing-page/team-member-3.png'
 import teamPerson4 from '@images/front-pages/landing-page/team-member-4.png'
 
-const teamData = ref([
-  {
-    name: 'Sophie Gilbert',
-    position: 'Project Manager',
-    image: teamPerson1,
-    backgroundColor: 'rgba(144, 85, 253, 0.16)',
-    borderColor: 'rgba(144, 85, 253,0.16)',
-    isHover: false,
+const props = defineProps({
+  team: {
+    type: Array,
+    default: () => [
+      {
+        name: 'Sophie Gilbert',
+        position: 'Project Manager',
+        image: teamPerson1,
+        backgroundColor: 'rgba(144, 85, 253, 0.16)',
+        borderColor: 'rgba(144, 85, 253,0.16)',
+        isHover: false,
+      },
+      {
+        name: 'Paul Miles',
+        position: 'UI Designer',
+        image: teamPerson2,
+        backgroundColor: 'rgba(22, 177, 255, 0.16)',
+        borderColor: 'rgba(22, 177, 255,0.16)',
+        isHover: false,
+      },
+      {
+        name: 'Nannie Ford',
+        position: 'Development Lead',
+        image: teamPerson3,
+        backgroundColor: 'rgba(255, 76, 81, 0.16)',
+        borderColor: 'rgba(255, 76, 81,0.16)',
+        isHover: false,
+      },
+      {
+        name: 'Chris Watkins',
+        position: 'Marketing Manager',
+        image: teamPerson4,
+        backgroundColor: 'rgba(86, 202, 0, 0.16)',
+        borderColor: 'rgba(86, 202, 0,0.16)',
+        isHover: false,
+      },
+    ],
   },
-  {
-    name: 'Paul Miles',
-    position: 'UI Designer',
-    image: teamPerson2,
-    backgroundColor: 'rgba(22, 177, 255, 0.16)',
-    borderColor: 'rgba(22, 177, 255,0.16)',
-    isHover: false,
+  tag: {
+    type: String,
+    default: 'Our Great Team',
   },
-  {
-    name: 'Nannie Ford',
-    position: 'Development Lead',
-    image: teamPerson3,
-    backgroundColor: 'rgba(255, 76, 81, 0.16)',
-    borderColor: 'rgba(255, 76, 81,0.16)',
-    isHover: false,
+  title: {
+    type: String,
+    default: 'Supported by Real People',
   },
-  {
-    name: 'Chris Watkins',
-    position: 'Marketing Manager',
-    image: teamPerson4,
-    backgroundColor: 'rgba(86, 202, 0, 0.16)',
-    borderColor: 'rgba(86, 202, 0,0.16)',
-    isHover: false,
+  subtitle: {
+    type: String,
+    default: 'Who is behind these great-looking interfaces?',
   },
-])
+})
 </script>
 
 <template>
@@ -50,26 +67,25 @@ const teamData = ref([
           class="mb-4"
           size="small"
         >
-          Our Great Team
+          {{ props.tag }}
         </VChip>
 
         <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
           <div class="position-relative me-2">
             <div class="section-title">
-              Supported
+              {{ props.title }}
             </div>
           </div>
-          by Real People
         </h4>
 
         <p class="text-center text-body-1 mb-0">
-          Who is behind these great-looking interfaces?
+          {{ props.subtitle }}
         </p>
       </div>
 
       <VRow>
         <VCol
-          v-for="(data, index) in teamData"
+          v-for="(data, index) in props.team"
           :key="index"
           cols="12"
           lg="3"

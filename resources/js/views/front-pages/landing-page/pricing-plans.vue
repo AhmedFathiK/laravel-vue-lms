@@ -134,8 +134,11 @@ const pricingPlans = [
         </div>
         <VRow>
           <VCol
-            v-for="(plan, index) in pricingPlans"
+            v-for="(plan, index) in props.plans"
             :key="index"
+            cols="12"
+            md="4"
+            sm="6"
           >
             <VCard :style="plan.current ? 'border:2px solid rgb(var(--v-theme-primary))' : ''">
               <VCardText class="pa-8 pt-12">

@@ -1,28 +1,45 @@
 <script setup>
 import boyWithLogo from '@images/front-pages/landing-page/faq-boy-with-logos.png'
 
-const faqData = [
-  {
-    question: 'Do you charge for each upgrade?',
-    answer: 'Lemon drops chocolate cake gummies carrot cake chupa chups muffin topping. Sesame snaps icing marzipan gummi bears macaroon dragée danish caramels powder. Bear claw dragée pastry topping soufflé. Wafer gummi bears marshmallow pastry pie.',
+const props = defineProps({
+  faqs: {
+    type: Array,
+    default: () => [
+      {
+        question: 'Do you charge for each upgrade?',
+        answer: 'Lemon drops chocolate cake gummies carrot cake chupa chups muffin topping. Sesame snaps icing marzipan gummi bears macaroon dragée danish caramels powder. Bear claw dragée pastry topping soufflé. Wafer gummi bears marshmallow pastry pie.',
+      },
+      {
+        question: 'Do I need to purchase a license for each website?',
+        answer: 'Dessert ice cream donut oat cake jelly-o pie sugar plum cheesecake. Bear claw dragée oat cake dragée ice cream halvah tootsie roll. Danish cake oat cake pie macaroon tart donut gummies. Jelly beans candy canes carrot cake. Fruitcake chocolate chupa chups.',
+      },
+      {
+        question: 'What is regular license?',
+        answer: 'Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly entitlement fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup). For more info on regular license you can check official description.',
+      },
+      {
+        question: 'What is extended license?',
+        answer: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis et aliquid quaerat possimus maxime! Mollitia reprehenderit neque repellat deleniti delectus architecto dolorum maxime, blanditiis earum ea, incidunt quam possimus cumque.',
+      },
+      {
+        question: 'Which license is applicable for SASS application?',
+        answer: 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sequi molestias exercitationem ab cum nemo facere voluptates veritatis quia, eveniet veniam at et repudiandae mollitia ipsam quasi labore enim architecto non!',
+      },
+    ],
   },
-  {
-    question: 'Do I need to purchase a license for each website?',
-    answer: 'Dessert ice cream donut oat cake jelly-o pie sugar plum cheesecake. Bear claw dragée oat cake dragée ice cream halvah tootsie roll. Danish cake oat cake pie macaroon tart donut gummies. Jelly beans candy canes carrot cake. Fruitcake chocolate chupa chups.',
+  tag: {
+    type: String,
+    default: 'FAQ',
   },
-  {
-    question: 'What is regular license?',
-    answer: 'Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly entitlement fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup). For more info on regular license you can check official description.',
+  title: {
+    type: String,
+    default: 'Frequently Asked questions',
   },
-  {
-    question: 'What is extended license?',
-    answer: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis et aliquid quaerat possimus maxime! Mollitia reprehenderit neque repellat deleniti delectus architecto dolorum maxime, blanditiis earum ea, incidunt quam possimus cumque.',
+  subtitle: {
+    type: String,
+    default: 'Browse through these FAQs to find answers to commonly asked questions.',
   },
-  {
-    question: 'Which license is applicable for SASS application?',
-    answer: 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sequi molestias exercitationem ab cum nemo facere voluptates veritatis quia, eveniet veniam at et repudiandae mollitia ipsam quasi labore enim architecto non!',
-  },
-]
+})
 </script>
 
 <template>
@@ -37,18 +54,17 @@ const faqData = [
             size="small"
             class="mb-4"
           >
-            FAQ
+            {{ props.tag }}
           </VChip>
           <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
-            Frequently Asked
             <div class="position-relative ms-2">
               <div class="section-title">
-                questions
+                {{ props.title }}
               </div>
             </div>
           </h4>
           <p class="text-body-1 mb-0">
-            Browse through these FAQs to find answers to commonly asked questions.
+            {{ props.subtitle }}
           </p>
         </div>
         <VRow>
@@ -70,7 +86,7 @@ const faqData = [
           >
             <VExpansionPanels class="pt-16">
               <VExpansionPanel
-                v-for="faq in faqData"
+                v-for="faq in props.faqs"
                 :key="faq.question"
               >
                 <VExpansionPanelTitle>

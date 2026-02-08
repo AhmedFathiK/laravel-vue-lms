@@ -8,6 +8,25 @@ import heroDashboardImgLight from '@images/front-pages/landing-page/hero-dashboa
 import heroElementsImgDark from '@images/front-pages/landing-page/hero-elements-dark.png'
 import heroElementsImgLight from '@images/front-pages/landing-page/hero-elements-light.png'
 
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'One dashboard to manage all your business',
+  },
+  subtitle: {
+    type: String,
+    default: 'Production-ready & easy to use Admin Template for Reliability and Customizability.',
+  },
+  buttonText: {
+    type: String,
+    default: 'Get early Access',
+  },
+  joinCommunityText: {
+    type: String,
+    default: 'Join Community',
+  },
+})
+
 const theme = useTheme()
 const heroElementsImg = useGenerateImageVariant(heroElementsImgLight, heroElementsImgDark)
 const heroDashboardImg = useGenerateImageVariant(heroDashboardImgLight, heroDashboardImgDark)
@@ -60,7 +79,7 @@ const translateMouse = computed(() => {
                 :to="{ name: 'root', hash: `#pricing-plan` }"
                 :active="false"
               >
-                Get early Access
+                {{ props.buttonText }}
               </VBtn>
             </div>
           </div>

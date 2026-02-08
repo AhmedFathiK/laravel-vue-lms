@@ -4,32 +4,37 @@ import diamond from '@images/svg/Diamond.svg'
 import laptop from '@images/svg/laptop.svg'
 import user from '@images/svg/user.svg'
 
-const statData = [
-  {
-    title: 'Support Tickets Resolved',
-    value: '7.1k+',
-    icon: laptop,
-    color: 'primary',
+const props = defineProps({
+  stats: {
+    type: Array,
+    default: () => [
+      {
+        title: 'Support Tickets Resolved',
+        value: '7.1k+',
+        icon: laptop,
+        color: 'primary',
+      },
+      {
+        title: 'Join creatives community',
+        value: '50k+',
+        icon: user,
+        color: 'success',
+      },
+      {
+        title: 'Highly Rated Products',
+        value: '4.8/5',
+        icon: diamond,
+        color: 'info',
+      },
+      {
+        title: 'Money Back Guarantee',
+        value: '100%',
+        icon: check,
+        color: 'warning',
+      },
+    ],
   },
-  {
-    title: 'Join creatives community',
-    value: '50k+',
-    icon: user,
-    color: 'success',
-  },
-  {
-    title: 'Highly Rated Products',
-    value: '4.8/5',
-    icon: diamond,
-    color: 'info',
-  },
-  {
-    title: 'Money Back Guarantee',
-    value: '100%',
-    icon: check,
-    color: 'warning',
-  },
-]
+})
 </script>
 
 <template>
@@ -38,7 +43,7 @@ const statData = [
       <div class="py-12">
         <VRow>
           <VCol
-            v-for="(product, index) in statData"
+            v-for="(product, index) in props.stats"
             :key="index"
             cols="12"
             sm="6"
