@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
@@ -37,6 +38,15 @@ class SettingController extends Controller
             foreach ($data['settings'] as $key => $value) {
                 // Check if it's a file upload
                 if ($request->hasFile("settings.$key")) {
+                    // Delete old file if exists
+                    $existingSetting = Setting::where('key', $key)->first();
+                    if ($existingSetting && $existingSetting->value) {
+                        $oldPath = str_replace('/storage/', '', $existingSetting->value);
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
+                        }
+                    }
+
                     $file = $request->file("settings.$key");
                     $path = $file->store('settings', 'public');
                     $value = '/storage/' . $path;
