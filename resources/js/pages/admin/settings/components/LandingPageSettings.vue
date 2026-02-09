@@ -239,15 +239,22 @@ const getLabel = (section, key) => {
                             v-if="section.props[key]"
                             class="mt-2"
                           >
-                            <small>Current: {{ section.props[key] }}</small>
-                            <VBtn
-                              size="x-small"
-                              color="error"
-                              variant="text"
-                              @click="section.props[key] = null"
-                            >
-                              Remove
-                            </VBtn>
+                            <VImg
+                              :src="section.props[key]"
+                              max-width="200"
+                              class="mb-2 rounded border"
+                            />
+                            <div class="d-flex align-center gap-2">
+                              <small class="text-medium-emphasis text-truncate">Current: {{ section.props[key] }}</small>
+                              <VBtn
+                                size="x-small"
+                                color="error"
+                                variant="text"
+                                @click="section.props[key] = null"
+                              >
+                                Remove
+                              </VBtn>
+                            </div>
                           </div>
                         </VCol>
 
