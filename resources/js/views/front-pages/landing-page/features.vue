@@ -122,7 +122,7 @@ const isComponent = icon => icon && typeof icon !== 'string'
           {{ props.subtitle }}
         </p>
       </div>
-      <VRow>
+      <VRow justify="center">
         <VCol
           v-for="(data, index) in props.features"
           :key="index"
