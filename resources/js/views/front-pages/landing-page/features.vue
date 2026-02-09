@@ -1,4 +1,5 @@
 <script setup>
+import { defineComponent, h, ref, watch } from 'vue'
 import check from '@images/svg/Check.svg'
 import keyboard from '@images/svg/keyboard.svg'
 import laptop from '@images/svg/laptop.svg'
@@ -56,17 +57,46 @@ const props = defineProps({
   },
 })
 
-const isIcon = icon => {
-  if (!icon) return false
+const AsyncSvg = defineComponent({
+  props: {
+    src: String,
+    size: [Number, String],
+    color: String,
+  },
+  setup(props) {
+    const content = ref('')
+    
+    watch(() => props.src, async newSrc => {
+      if (newSrc && typeof newSrc === 'string' && newSrc.toLowerCase().endsWith('.svg')) {
+        try {
+          const res = await fetch(newSrc)
+          if (res.ok) {
+            const text = await res.text()
 
-  // If it's a string, check for tabler prefix or .svg extension
-  if (typeof icon === 'string') {
-    return icon.startsWith('tabler-') || icon.toLowerCase().endsWith('.svg')
-  }
 
-  // If it's not a string (e.g. imported component), treat as icon
-  return true
-}
+            // Remove width and height attributes to allow scaling
+            content.value = text.replace(/(width|height)="[^"]*"/g, '')
+          }
+        } catch(e) { console.error(e) }
+      }
+    }, { immediate: true })
+
+    return () => h('i', {
+      class: ['v-icon', 'notranslate', 'v-theme--light', props.color ? `text-${props.color}` : ''],
+      style: { 
+        fontSize: props.size ? `${props.size}px` : undefined,
+        height: props.size ? `${props.size}px` : undefined,
+        width: props.size ? `${props.size}px` : undefined,
+      },
+      innerHTML: content.value,
+      'aria-hidden': 'true',
+    })
+  },
+})
+
+const isTabler = icon => typeof icon === 'string' && icon.startsWith('tabler-')
+const isSvgPath = icon => typeof icon === 'string' && icon.toLowerCase().endsWith('.svg')
+const isComponent = icon => icon && typeof icon !== 'string'
 </script>
 
 <template>
@@ -101,12 +131,31 @@ const isIcon = icon => {
           sm="6"
         >
           <div class="d-flex flex-column align-center justify-center gap-4 mx-auto">
+            <!-- Tabler Icon -->
             <VIcon
-              v-if="isIcon(data.icon)"
+              v-if="isTabler(data.icon)"
               :icon="data.icon"
               size="64"
               color="primary"
             />
+            
+            <!-- SVG Path (Async Fetch) -->
+            <AsyncSvg
+              v-else-if="isSvgPath(data.icon)"
+              :src="data.icon"
+              size="64"
+              color="primary"
+            />
+
+            <!-- Component (Imported SVG) -->
+            <VIcon
+              v-else-if="isComponent(data.icon)"
+              :icon="data.icon"
+              size="64"
+              color="primary"
+            />
+
+            <!-- Regular Image -->
             <VImg
               v-else
               :src="data.icon"
