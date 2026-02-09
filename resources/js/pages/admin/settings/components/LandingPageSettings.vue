@@ -21,20 +21,15 @@ const fetchSettings = async () => {
   }
 }
 
-const saveSettings = async () => {
-  try {
-    isLoading.value = true
-    await api.post('/admin/landing-page-settings', { config: config.value })
-    toast.success('Settings updated successfully')
-  } catch (error) {
-    console.error(error)
-    toast.error('Failed to save settings')
-  } finally {
-    isLoading.value = false
-  }
-}
+const pendingUploads = ref(new Map())
 
 onMounted(fetchSettings)
+
+onUnmounted(() => {
+  pendingUploads.value.forEach(({ previewUrl }) => {
+    URL.revokeObjectURL(previewUrl)
+  })
+})
 
 const updateComplexProp = (section, key, jsonString) => {
   try {
@@ -44,28 +39,73 @@ const updateComplexProp = (section, key, jsonString) => {
   }
 }
 
-const handleImageUpload = async (event, section, key) => {
+const handleImageUpload = (event, section, key) => {
   const file = event.target.files[0]
   if (!file) return
 
-  const formData = new FormData()
+  // Create local preview
+  const previewUrl = URL.createObjectURL(file)
+  
+  // Store pending upload
+  const uploadKey = `${section.id}_${key}`
+  
+  // If there was a previous pending upload for this key, revoke its URL
+  if (pendingUploads.value.has(uploadKey)) {
+    URL.revokeObjectURL(pendingUploads.value.get(uploadKey).previewUrl)
+  }
+  
+  pendingUploads.value.set(uploadKey, { 
+    file, 
+    previewUrl, 
+    sectionId: section.id, 
+    propKey: key, 
+  })
+  
+  // Update UI immediately with preview
+  section.props[key] = previewUrl
+}
 
-  formData.append('file', file)
+const removeImage = (section, key) => {
+  section.props[key] = null
+  
+  // Remove from pending uploads if exists
+  const uploadKey = `${section.id}_${key}`
+  if (pendingUploads.value.has(uploadKey)) {
+    URL.revokeObjectURL(pendingUploads.value.get(uploadKey).previewUrl)
+    pendingUploads.value.delete(uploadKey)
+  }
+}
 
+const saveSettings = async () => {
   try {
     isLoading.value = true
 
-    const response = await api.post('/admin/landing-page-settings/upload-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    
-    section.props[key] = response.path
-    toast.success('Image uploaded successfully')
+    // Process pending uploads first
+    for (const [uploadKey, data] of pendingUploads.value.entries()) {
+      const formData = new FormData()
+
+      formData.append('file', data.file)
+      
+      const response = await api.post('/admin/landing-page-settings/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      
+      // Update the config with the real path from server
+      const section = config.value.find(s => s.id === data.sectionId)
+      if (section) {
+        section.props[data.propKey] = response.path
+      }
+      
+      // Remove from pending uploads on success
+      URL.revokeObjectURL(data.previewUrl)
+      pendingUploads.value.delete(uploadKey)
+    }
+
+    await api.post('/admin/landing-page-settings', { config: config.value })
+    toast.success('Settings updated successfully')
   } catch (error) {
     console.error(error)
-    toast.error('Failed to upload image')
+    toast.error('Failed to save settings')
   } finally {
     isLoading.value = false
   }
@@ -250,7 +290,7 @@ const getLabel = (section, key) => {
                                 size="x-small"
                                 color="error"
                                 variant="text"
-                                @click="section.props[key] = null"
+                                @click="removeImage(section, key)"
                               >
                                 Remove
                               </VBtn>
