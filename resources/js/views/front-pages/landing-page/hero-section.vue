@@ -6,15 +6,15 @@ import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
 const props = defineProps({
   title: {
     type: String,
-    default: 'One dashboard to manage all your business',
+    default: 'One place to learn it all.',
   },
   subtitle: {
     type: String,
-    default: 'Production-ready & easy to use Admin Template for Reliability and Customizability.',
+    default: 'Powered by the best tools in the industry.',
   },
   buttonText: {
     type: String,
-    default: 'Get early Access',
+    default: 'Start Your Journey',
   },
   buttonLink: {
     type: String,
@@ -22,15 +22,15 @@ const props = defineProps({
   },
   secondaryButtonText: {
     type: String,
-    default: 'Join Community',
+    default: 'Join Us',
   },
   secondaryButtonLink: {
     type: String,
-    default: 'https://discord.gg/12345',
+    default: '/',
   },
   secondaryButtonTarget: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   imageLink: {
     type: String,
@@ -38,7 +38,7 @@ const props = defineProps({
   },
   imageTarget: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   heroImage: {
     type: String,
