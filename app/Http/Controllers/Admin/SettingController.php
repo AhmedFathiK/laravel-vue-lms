@@ -146,8 +146,16 @@ class SettingController extends Controller
 
         foreach ($config as $section) {
             if (isset($section['props']) && is_array($section['props'])) {
-                if (isset($section['props']['hero_image']) && $section['props']['hero_image']) {
+                if (isset($section['props']['hero_image']) && $section['props']['hero_image'] && str_starts_with($section['props']['hero_image'], '/storage/')) {
                     $paths[] = $section['props']['hero_image'];
+                }
+
+                if (isset($section['props']['features']) && is_array($section['props']['features'])) {
+                    foreach ($section['props']['features'] as $feature) {
+                        if (isset($feature['icon']) && str_starts_with($feature['icon'], '/storage/')) {
+                            $paths[] = $feature['icon'];
+                        }
+                    }
                 }
             }
         }
@@ -157,6 +165,10 @@ class SettingController extends Controller
     public function uploadLandingPageImage(Request $request)
     {
         if ($request->hasFile('file')) {
+            $request->validate([
+                'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'
+            ]);
+
             $file = $request->file('file');
             $path = $file->store('landing-page', 'public');
             return response()->json(['path' => '/storage/' . $path]);
@@ -191,7 +203,43 @@ class SettingController extends Controller
                 'id' => 'features',
                 'name' => 'Features',
                 'component' => 'Features',
-                'props' => (object)[],
+                'props' => [
+                    'tag' => 'Useful Features',
+                    'title' => 'Everything you need to start your next project',
+                    'subtitle' => 'Not just a set of tools, the package includes ready-to-deploy conceptual application.',
+                    'features' => [
+                        [
+                            'title' => 'Quality Code',
+                            'desc' => 'Code structure that all developers will easily understand and fall in love with.',
+                            'icon' => 'tabler-device-laptop',
+                        ],
+                        [
+                            'title' => 'Continuous Updates',
+                            'desc' => 'Free updates for the next 12 months, including new demos and features.',
+                            'icon' => 'tabler-rocket',
+                        ],
+                        [
+                            'title' => 'Starter Kit',
+                            'desc' => 'Start your project quickly without having to remove unnecessary features.',
+                            'icon' => 'tabler-file',
+                        ],
+                        [
+                            'title' => 'API Ready',
+                            'desc' => 'Just change the endpoint and see your own data loaded within seconds.',
+                            'icon' => 'tabler-check',
+                        ],
+                        [
+                            'title' => 'Excellent Support',
+                            'desc' => 'An easy-to-follow doc with lots of references and code examples.',
+                            'icon' => 'tabler-user',
+                        ],
+                        [
+                            'title' => 'Well Documented',
+                            'desc' => 'An easy-to-follow doc with lots of references and code examples.',
+                            'icon' => 'tabler-keyboard',
+                        ],
+                    ],
+                ],
                 'visible' => true,
                 'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
             ],

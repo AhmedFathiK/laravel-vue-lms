@@ -55,6 +55,10 @@ const props = defineProps({
     default: 'Not just a set of tools, the package includes ready-to-deploy conceptual application.',
   },
 })
+
+const isTablerIcon = icon => {
+  return icon && typeof icon === 'string' && icon.startsWith('tabler-')
+}
 </script>
 
 <template>
@@ -90,9 +94,17 @@ const props = defineProps({
         >
           <div class="d-flex flex-column align-center justify-center gap-4 mx-auto">
             <VIcon
+              v-if="isTablerIcon(data.icon)"
               :icon="data.icon"
               size="64"
               color="primary"
+            />
+            <VImg
+              v-else
+              :src="data.icon"
+              height="64"
+              width="64"
+              class="mx-auto"
             />
             <div class="text-center">
               <h5 class="text-h5 mb-2">
