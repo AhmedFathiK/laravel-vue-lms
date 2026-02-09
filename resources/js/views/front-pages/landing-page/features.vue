@@ -56,8 +56,16 @@ const props = defineProps({
   },
 })
 
-const isTablerIcon = icon => {
-  return icon && typeof icon === 'string' && icon.startsWith('tabler-')
+const isIcon = icon => {
+  if (!icon) return false
+
+  // If it's a string, check for tabler prefix or .svg extension
+  if (typeof icon === 'string') {
+    return icon.startsWith('tabler-') || icon.toLowerCase().endsWith('.svg')
+  }
+
+  // If it's not a string (e.g. imported component), treat as icon
+  return true
 }
 </script>
 
@@ -94,7 +102,7 @@ const isTablerIcon = icon => {
         >
           <div class="d-flex flex-column align-center justify-center gap-4 mx-auto">
             <VIcon
-              v-if="isTablerIcon(data.icon)"
+              v-if="isIcon(data.icon)"
               :icon="data.icon"
               size="64"
               color="primary"
