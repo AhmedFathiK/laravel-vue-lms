@@ -25,37 +25,48 @@ watch(() => route.query.tab, val => {
 </script>
 
 <template>
-  <div>
-    <VTabs
-      v-model="activeTab"
-      show-arrows
-      class="v-tabs-pill mb-6"
+  <VRow>
+    <VCol
+      cols="12"
+      md="4"
     >
-      <VTab
-        v-for="tab in tabs"
-        :key="tab.value"
-        :value="tab.value"
-        @click="changeTab(tab.value)"
-      >
-        <VIcon
-          start
-          :icon="tab.icon"
-        />
-        {{ tab.title }}
-      </VTab>
-    </VTabs>
+      <h5 class="text-h5 mb-4">
+        Settings
+      </h5>
 
-    <VWindow
-      v-model="activeTab"
-      class="disable-tab-transition"
-      :touch="false"
+      <VTabs
+        v-model="activeTab"
+        direction="vertical"
+        class="v-tabs-pill disable-tab-transition"
+      >
+        <VTab
+          v-for="tab in tabs"
+          :key="tab.value"
+          :value="tab.value"
+          :prepend-icon="tab.icon"
+          @click="changeTab(tab.value)"
+        >
+          {{ tab.title }}
+        </VTab>
+      </VTabs>
+    </VCol>
+
+    <VCol
+      cols="12"
+      md="8"
     >
-      <VWindowItem value="general">
-        <GeneralSettings />
-      </VWindowItem>
-      <VWindowItem value="landing_page">
-        <LandingPageSettings />
-      </VWindowItem>
-    </VWindow>
-  </div>
+      <VWindow
+        v-model="activeTab"
+        class="disable-tab-transition"
+        :touch="false"
+      >
+        <VWindowItem value="general">
+          <GeneralSettings />
+        </VWindowItem>
+        <VWindowItem value="landing_page">
+          <LandingPageSettings />
+        </VWindowItem>
+      </VWindow>
+    </VCol>
+  </VRow>
 </template>
