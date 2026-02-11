@@ -88,24 +88,26 @@ const saveSettings = async () => {
   try {
     isLoading.value = true
 
-    // Process pending uploads
-    for (const section of config.value) {
+    // Find current section
+    const currentSection = config.value.find(section => section.id === activeTab.value)
+    
+    if (currentSection) {
       // 1. Check section level props (e.g. Hero Image)
-      if (section.props._pendingFile) {
+      if (currentSection.props._pendingFile) {
         try {
-          const path = await uploadFile(section.props._pendingFile)
+          const path = await uploadFile(currentSection.props._pendingFile)
 
-          section.props[section.props._pendingKey] = path
+          currentSection.props[currentSection.props._pendingKey] = path
         } catch (e) {
           console.error('Failed to upload section image', e)
         }
-        delete section.props._pendingFile
-        delete section.props._pendingKey
+        delete currentSection.props._pendingFile
+        delete currentSection.props._pendingKey
       }
 
       // 2. Check features array
-      if (section.props.features && Array.isArray(section.props.features)) {
-        for (const feature of section.props.features) {
+      if (currentSection.props.features && Array.isArray(currentSection.props.features)) {
+        for (const feature of currentSection.props.features) {
           if (feature._pendingFile) {
             try {
               const path = await uploadFile(feature._pendingFile)
@@ -121,8 +123,8 @@ const saveSettings = async () => {
       }
 
       // 3. Check reviews array
-      if (section.props.reviews && Array.isArray(section.props.reviews)) {
-        for (const review of section.props.reviews) {
+      if (currentSection.props.reviews && Array.isArray(currentSection.props.reviews)) {
+        for (const review of currentSection.props.reviews) {
           if (review._pendingFile) {
             try {
               const path = await uploadFile(review._pendingFile)
@@ -138,8 +140,8 @@ const saveSettings = async () => {
       }
 
       // 4. Check team array
-      if (section.props.team && Array.isArray(section.props.team)) {
-        for (const member of section.props.team) {
+      if (currentSection.props.team && Array.isArray(currentSection.props.team)) {
+        for (const member of currentSection.props.team) {
           if (member._pendingFile) {
             try {
               const path = await uploadFile(member._pendingFile)
@@ -155,8 +157,8 @@ const saveSettings = async () => {
       }
 
       // 5. Check pricing plans
-      if (section.props.plans && Array.isArray(section.props.plans)) {
-        for (const plan of section.props.plans) {
+      if (currentSection.props.plans && Array.isArray(currentSection.props.plans)) {
+        for (const plan of currentSection.props.plans) {
           if (plan._pendingFile) {
             try {
               const path = await uploadFile(plan._pendingFile)
@@ -172,11 +174,15 @@ const saveSettings = async () => {
       }
     }
 
-    // Clone config to remove any internal properties before sending
-    // (Though we deleted _pendingFile, this is extra safety if we add more internal props later)
-    const configToSend = JSON.parse(JSON.stringify(config.value))
+    // Clone current section to remove any internal properties before sending
+    const currentSectionToSend = currentSection ? JSON.parse(JSON.stringify(currentSection)) : null
+    
+    // Prepare payload based on whether we found a specific section
+    const payload = currentSectionToSend 
+      ? { sectionId: currentSectionToSend.id, sectionData: currentSectionToSend }
+      : { config: JSON.parse(JSON.stringify(config.value)) }
 
-    await api.post('/admin/landing-page-settings', { config: configToSend })
+    await api.post('/admin/landing-page-settings', payload)
     toast.success('Settings updated successfully')
   } catch (error) {
     console.error(error)
@@ -1347,17 +1353,17 @@ const getLabel = (section, key) => {
                   </VRow>
                 </VCol>
               </VRow>
+
+              <div class="mt-4 d-flex justify-end">
+                <VBtn
+                  :loading="isLoading"
+                  @click="saveSettings"
+                >
+                  Save Changes
+                </VBtn>
+              </div>
             </VWindowItem>
           </VWindow>
-        </div>
-
-        <div class="mt-4 d-flex justify-end">
-          <VBtn
-            :loading="isLoading"
-            @click="saveSettings"
-          >
-            Save Changes
-          </VBtn>
         </div>
       </div>
     </VCardText>

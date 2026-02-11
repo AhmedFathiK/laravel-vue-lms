@@ -110,20 +110,54 @@ class SettingController extends Controller
     public function updateLandingPageConfig(Request $request)
     {
         $config = $request->input('config');
+        $sectionId = $request->input('section_id');
+        $sectionData = $request->input('section_data');
 
-        // Cleanup old images
-        $oldSetting = Setting::where('key', 'landing_page_config')->first();
-        if ($oldSetting) {
-            $oldConfig = json_decode($oldSetting->value, true);
-            $oldImages = $this->extractImagePaths($oldConfig);
-            $newImages = $this->extractImagePaths($config);
+        // Fetch existing setting
+        $existingSetting = Setting::where('key', 'landing_page_config')->first();
+        $storedConfig = $existingSetting ? json_decode($existingSetting->value, true) : [];
 
-            $imagesToDelete = array_diff($oldImages, $newImages);
+        if ($sectionId && $sectionData) {
+            // Partial update mode
+            $found = false;
+            foreach ($storedConfig as &$section) {
+                if ($section['id'] === $sectionId) {
+                    // Extract old images for this section only to cleanup
+                    $oldImages = $this->extractImagePaths([$section]);
+                    $newImages = $this->extractImagePaths([$sectionData]);
 
-            foreach ($imagesToDelete as $imagePath) {
-                $path = str_replace('/storage/', '', $imagePath);
-                if (Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->delete($path);
+                    $imagesToDelete = array_diff($oldImages, $newImages);
+                    foreach ($imagesToDelete as $imagePath) {
+                        $path = str_replace('/storage/', '', $imagePath);
+                        if (Storage::disk('public')->exists($path)) {
+                            Storage::disk('public')->delete($path);
+                        }
+                    }
+
+                    $section = $sectionData;
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $storedConfig[] = $sectionData;
+            }
+
+            $config = $storedConfig;
+        } else {
+            // Full update mode (legacy)
+            if ($existingSetting) {
+                $oldConfig = json_decode($existingSetting->value, true);
+                $oldImages = $this->extractImagePaths($oldConfig);
+                $newImages = $this->extractImagePaths($config);
+
+                $imagesToDelete = array_diff($oldImages, $newImages);
+
+                foreach ($imagesToDelete as $imagePath) {
+                    $path = str_replace('/storage/', '', $imagePath);
+                    if (Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
                 }
             }
         }
