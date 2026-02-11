@@ -27,6 +27,10 @@ const props = defineProps({
       },
     ],
   },
+  faqImage: {
+    type: String,
+    default: boyWithLogo,
+  },
   tag: {
     type: String,
     default: 'FAQ',
@@ -92,7 +96,7 @@ const props = defineProps({
           >
             <div class="pt-10 d-flex align-center justify-center h-100">
               <VImg
-                :src="boyWithLogo"
+                :src="props.faqImage"
                 height="330"
                 width="330"
               />

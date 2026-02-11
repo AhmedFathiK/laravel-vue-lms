@@ -332,6 +332,7 @@ class SettingController extends Controller
                     'tag' => 'FAQ',
                     'title' => 'Frequently Asked questions',
                     'subtitle' => 'Browse through these FAQs to find answers to commonly asked questions.',
+                    'faq_image' => null,
                     'faqs' => [
                         [
                             'question' => 'Do you charge for each upgrade?',

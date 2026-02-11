@@ -395,7 +395,7 @@ const getLabel = (section, key) => {
                       >
                         <!-- Image Upload Prop -->
                         <VCol
-                          v-if="key === 'hero_image' || key === 'heroImage'"
+                          v-if="key === 'hero_image' || key === 'heroImage' || key === 'faq_image' || key === 'faqImage'"
                           cols="12"
                           md="6"
                         >
@@ -403,6 +403,7 @@ const getLabel = (section, key) => {
                             {{ getLabel(section, key) }}
                           </VLabel>
                           <VFileInput
+                            :label="getLabel(section, key)"
                             prepend-icon="tabler-camera"
                             accept="image/*"
                             @change="e => handleFileUpload(e, section.props, key)"
@@ -508,6 +509,7 @@ const getLabel = (section, key) => {
                                       Icon
                                     </VLabel>
                                     <VFileInput
+                                      label="Icon"
                                       prepend-icon="tabler-camera"
                                       accept="image/*"
                                       @change="e => handleFileUpload(e, feature, 'icon')"
@@ -620,6 +622,9 @@ const getLabel = (section, key) => {
                                     cols="12"
                                     md="6"
                                   >
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                      Avatar
+                                    </VLabel>
                                     <VFileInput
                                       label="Avatar"
                                       prepend-icon="tabler-camera"
