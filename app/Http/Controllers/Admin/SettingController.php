@@ -150,10 +150,22 @@ class SettingController extends Controller
                     $paths[] = $section['props']['hero_image'];
                 }
 
+                if (isset($section['props']['faq_image']) && $section['props']['faq_image'] && str_starts_with($section['props']['faq_image'], '/storage/')) {
+                    $paths[] = $section['props']['faq_image'];
+                }
+
                 if (isset($section['props']['features']) && is_array($section['props']['features'])) {
                     foreach ($section['props']['features'] as $feature) {
-                        if (isset($feature['icon']) && str_starts_with($feature['icon'], '/storage/')) {
+                        if (isset($feature['icon']) && $feature['icon'] && str_starts_with($feature['icon'], '/storage/')) {
                             $paths[] = $feature['icon'];
+                        }
+                    }
+                }
+
+                if (isset($section['props']['team']) && is_array($section['props']['team'])) {
+                    foreach ($section['props']['team'] as $member) {
+                        if (isset($member['image']) && $member['image'] && str_starts_with($member['image'], '/storage/')) {
+                            $paths[] = $member['image'];
                         }
                     }
                 }
@@ -304,7 +316,41 @@ class SettingController extends Controller
                 'id' => 'team',
                 'name' => 'Our Team',
                 'component' => 'OurTeam',
-                'props' => (object)[],
+                'props' => [
+                    'tag' => 'Our Great Team',
+                    'title' => 'Supported by Real People',
+                    'subtitle' => 'Who is behind these great-looking interfaces?',
+                    'team' => [
+                        [
+                            'name' => 'Sophie Gilbert',
+                            'position' => 'Project Manager',
+                            'image' => null,
+                            'backgroundColor' => 'rgba(144, 85, 253, 0.16)',
+                            'borderColor' => 'rgba(144, 85, 253,0.16)',
+                        ],
+                        [
+                            'name' => 'Paul Miles',
+                            'position' => 'UI Designer',
+                            'image' => null,
+                            'backgroundColor' => 'rgba(22, 177, 255, 0.16)',
+                            'borderColor' => 'rgba(22, 177, 255,0.16)',
+                        ],
+                        [
+                            'name' => 'Nannie Ford',
+                            'position' => 'Development Lead',
+                            'image' => null,
+                            'backgroundColor' => 'rgba(255, 76, 81, 0.16)',
+                            'borderColor' => 'rgba(255, 76, 81,0.16)',
+                        ],
+                        [
+                            'name' => 'Chris Watkins',
+                            'position' => 'Marketing Manager',
+                            'image' => null,
+                            'backgroundColor' => 'rgba(86, 202, 0, 0.16)',
+                            'borderColor' => 'rgba(86, 202, 0,0.16)',
+                        ],
+                    ],
+                ],
                 'visible' => true,
                 'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
             ],

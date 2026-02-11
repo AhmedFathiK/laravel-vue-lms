@@ -132,6 +132,23 @@ const saveSettings = async () => {
           }
         }
       }
+
+      // 4. Check team array
+      if (section.props.team && Array.isArray(section.props.team)) {
+        for (const member of section.props.team) {
+          if (member._pendingFile) {
+            try {
+              const path = await uploadFile(member._pendingFile)
+
+              member[member._pendingKey] = path
+            } catch (e) {
+              console.error('Failed to upload team member image', e)
+            }
+            delete member._pendingFile
+            delete member._pendingKey
+          }
+        }
+      }
     }
 
     // Clone config to remove any internal properties before sending
@@ -235,6 +252,24 @@ const sectionConfigs = {
       faqs: 'Questions & Answers',
     },
   },
+  OurTeam: {
+    groups: [
+      {
+        name: 'Header',
+        fields: ['tag', 'title', 'subtitle'],
+      },
+      {
+        name: 'Team Members',
+        fields: ['team'],
+      },
+    ],
+    labels: {
+      tag: 'Section Tag',
+      title: 'Main Title',
+      subtitle: 'Subtitle Description',
+      team: 'Team Members',
+    },
+  },
 }
 
 const addFeature = section => {
@@ -275,6 +310,21 @@ const addFaq = section => {
 
 const removeFaq = (section, index) => {
   section.props.faqs.splice(index, 1)
+}
+
+const addTeamMember = section => {
+  if (!section.props.team) section.props.team = []
+  section.props.team.push({
+    name: 'New Member',
+    position: 'Position',
+    image: null,
+    backgroundColor: 'rgba(144, 85, 253, 0.16)',
+    borderColor: 'rgba(144, 85, 253,0.16)',
+  })
+}
+
+const removeTeamMember = (section, index) => {
+  section.props.team.splice(index, 1)
 }
 
 const getGroups = section => {
@@ -721,6 +771,165 @@ const getLabel = (section, key) => {
                               @click="addFaq(section)"
                             >
                               Add FAQ
+                            </VBtn>
+                          </div>
+                        </VCol>
+
+                        <!-- Team Members List Prop -->
+                        <VCol
+                          v-else-if="key === 'team' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VCard
+                              v-for="(member, index) in section.props[key]"
+                              :key="index"
+                              variant="outlined"
+                              class="mb-2"
+                            >
+                              <VCardText>
+                                <div class="d-flex justify-space-between align-start mb-4">
+                                  <span class="text-subtitle-2">Member {{ index + 1 }}</span>
+                                  <VBtn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    icon="tabler-trash"
+                                    @click="removeTeamMember(section, index)"
+                                  />
+                                </div>
+                                <VRow>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="member.name"
+                                      label="Name"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="member.position"
+                                      label="Position"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="member.backgroundColor"
+                                      label="Background Color"
+                                      placeholder="rgba(0,0,0,0.5)"
+                                    >
+                                      <template #append-inner>
+                                        <div
+                                          class="cursor-pointer border rounded"
+                                          :style="{
+                                            backgroundColor: member.backgroundColor,
+                                            width: '24px',
+                                            height: '24px',
+                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                          }"
+                                        >
+                                          <VMenu
+                                            activator="parent"
+                                            :close-on-content-click="false"
+                                            location="bottom end"
+                                          >
+                                            <VColorPicker
+                                              v-model="member.backgroundColor"
+                                              mode="rgba"
+                                              :modes="['rgba', 'hex', 'hsla']"
+                                            />
+                                          </VMenu>
+                                        </div>
+                                      </template>
+                                    </AppTextField>
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="member.borderColor"
+                                      label="Border Color"
+                                      placeholder="rgba(0,0,0,0.5)"
+                                    >
+                                      <template #append-inner>
+                                        <div
+                                          class="cursor-pointer border rounded"
+                                          :style="{
+                                            backgroundColor: member.borderColor,
+                                            width: '24px',
+                                            height: '24px',
+                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                          }"
+                                        >
+                                          <VMenu
+                                            activator="parent"
+                                            :close-on-content-click="false"
+                                            location="bottom end"
+                                          >
+                                            <VColorPicker
+                                              v-model="member.borderColor"
+                                              mode="rgba"
+                                              :modes="['rgba', 'hex', 'hsla']"
+                                            />
+                                          </VMenu>
+                                        </div>
+                                      </template>
+                                    </AppTextField>
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                      Photo
+                                    </VLabel>
+                                    <VFileInput
+                                      label="Photo"
+                                      prepend-icon="tabler-camera"
+                                      accept="image/*"
+                                      @change="e => handleFileUpload(e, member, 'image')"
+                                    />
+                                    <div
+                                      v-if="member.image"
+                                      class="mt-2"
+                                    >
+                                      <div class="d-flex align-center gap-4">
+                                        <VImg
+                                          :src="member.image"
+                                          max-width="80"
+                                          max-height="80"
+                                          class="rounded border"
+                                        />
+                                        <VBtn
+                                          size="x-small"
+                                          color="error"
+                                          variant="text"
+                                          @click="removeImage(member, 'image')"
+                                        >
+                                          Remove Photo
+                                        </VBtn>
+                                      </div>
+                                    </div>
+                                  </VCol>
+                                </VRow>
+                              </VCardText>
+                            </VCard>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addTeamMember(section)"
+                            >
+                              Add Member
                             </VBtn>
                           </div>
                         </VCol>

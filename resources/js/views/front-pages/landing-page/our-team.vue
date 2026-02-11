@@ -1,46 +1,50 @@
-<script setup>
+<script>
 import teamPerson1 from '@images/front-pages/landing-page/team-member-1.png'
 import teamPerson2 from '@images/front-pages/landing-page/team-member-2.png'
 import teamPerson3 from '@images/front-pages/landing-page/team-member-3.png'
 import teamPerson4 from '@images/front-pages/landing-page/team-member-4.png'
 
+const defaultTeamData = [
+  {
+    name: 'Sophie Gilbert',
+    position: 'Project Manager',
+    image: teamPerson1,
+    backgroundColor: 'rgba(144, 85, 253, 0.16)',
+    borderColor: 'rgba(144, 85, 253,0.16)',
+    isHover: false,
+  },
+  {
+    name: 'Paul Miles',
+    position: 'UI Designer',
+    image: teamPerson2,
+    backgroundColor: 'rgba(22, 177, 255, 0.16)',
+    borderColor: 'rgba(22, 177, 255,0.16)',
+    isHover: false,
+  },
+  {
+    name: 'Nannie Ford',
+    position: 'Development Lead',
+    image: teamPerson3,
+    backgroundColor: 'rgba(255, 76, 81, 0.16)',
+    borderColor: 'rgba(255, 76, 81,0.16)',
+    isHover: false,
+  },
+  {
+    name: 'Chris Watkins',
+    position: 'Marketing Manager',
+    image: teamPerson4,
+    backgroundColor: 'rgba(86, 202, 0, 0.16)',
+    borderColor: 'rgba(86, 202, 0,0.16)',
+    isHover: false,
+  },
+]
+</script>
+
+<script setup>
 const props = defineProps({
   team: {
     type: Array,
-    default: () => [
-      {
-        name: 'Sophie Gilbert',
-        position: 'Project Manager',
-        image: teamPerson1,
-        backgroundColor: 'rgba(144, 85, 253, 0.16)',
-        borderColor: 'rgba(144, 85, 253,0.16)',
-        isHover: false,
-      },
-      {
-        name: 'Paul Miles',
-        position: 'UI Designer',
-        image: teamPerson2,
-        backgroundColor: 'rgba(22, 177, 255, 0.16)',
-        borderColor: 'rgba(22, 177, 255,0.16)',
-        isHover: false,
-      },
-      {
-        name: 'Nannie Ford',
-        position: 'Development Lead',
-        image: teamPerson3,
-        backgroundColor: 'rgba(255, 76, 81, 0.16)',
-        borderColor: 'rgba(255, 76, 81,0.16)',
-        isHover: false,
-      },
-      {
-        name: 'Chris Watkins',
-        position: 'Marketing Manager',
-        image: teamPerson4,
-        backgroundColor: 'rgba(86, 202, 0, 0.16)',
-        borderColor: 'rgba(86, 202, 0,0.16)',
-        isHover: false,
-      },
-    ],
+    default: () => defaultTeamData,
   },
   tag: {
     type: String,
@@ -55,6 +59,8 @@ const props = defineProps({
     default: 'Who is behind these great-looking interfaces?',
   },
 })
+
+const defaultTeam = defaultTeamData
 </script>
 
 <template>
@@ -98,7 +104,7 @@ const props = defineProps({
           >
             <div :style="{ maxHeight: '185px', minHeight: '185px', borderRadius: '90px 20px 0 0', backgroundColor: `${data.backgroundColor}`, border: `1px solid ${data.borderColor}`, borderBottom: 'none' }">
               <VImg
-                :src="data.image"
+                :src="data.image || defaultTeam[index % 4].image"
                 height="240"
                 class="team-image"
               />
