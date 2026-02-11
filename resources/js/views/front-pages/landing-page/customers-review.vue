@@ -1,20 +1,7 @@
 <script setup>
 import { register } from 'swiper/element/bundle'
 import { useGenerateImageVariant } from '@/@core/composable/useGenerateImageVariant'
-import logo1dark from '@images/front-pages/branding/logo-1-dark.png'
-import logo1light from '@images/front-pages/branding/logo-1-light.png'
-import logo1 from '@images/front-pages/branding/logo-1.png'
-import logo2dark from '@images/front-pages/branding/logo-2-dark.png'
-import logo2light from '@images/front-pages/branding/logo-2-light.png'
-import logo2 from '@images/front-pages/branding/logo-2.png'
-import logo3dark from '@images/front-pages/branding/logo-3-dark.png'
-import logo3light from '@images/front-pages/branding/logo-3-light.png'
-import logo3 from '@images/front-pages/branding/logo-3.png'
-import logo4dark from '@images/front-pages/branding/logo-4-dark.png'
-import logo4light from '@images/front-pages/branding/logo-4-light.png'
-import logo4 from '@images/front-pages/branding/logo-4.png'
-import logo5dark from '@images/front-pages/branding/logo-5-dark.png'
-import logo5light from '@images/front-pages/branding/logo-5-light.png'
+
 import avatar1 from '@images/avatars/avatar-1.png'
 import avatar2 from '@images/avatars/avatar-2.png'
 import avatar3 from '@images/avatars/avatar-3.png'
@@ -78,11 +65,7 @@ const props = defineProps({
 
 register()
 
-const brandLogo1 = useGenerateImageVariant(logo1light, logo1dark)
-const brandLogo2 = useGenerateImageVariant(logo2light, logo2dark)
-const brandLogo3 = useGenerateImageVariant(logo3light, logo3dark)
-const brandLogo4 = useGenerateImageVariant(logo4light, logo4dark)
-const brandLogo5 = useGenerateImageVariant(logo5light, logo5dark)
+
 
 const customerReviewSwiper = ref(null)
 
@@ -242,41 +225,6 @@ const slide = dir => {
             </div>
           </VCol>
         </VRow>
-      </VContainer>
-
-      <VDivider class="w-100 swiper-divider" />
-
-      <VContainer>
-        <!-- 👉 Brand-logo Swiper  -->
-        <div class="swiper-brands-carousel">
-          <swiper-container
-            slides-per-view="2"
-            :space-between="10"
-            events-prefix="swiper-"
-            :autoplay="{
-              delay: 3000,
-              disableOnInteraction: true,
-            }"
-            :breakpoints="{
-              992: {
-                slidesPerView: 5,
-              },
-              768: {
-                slidesPerView: 3,
-              },
-            }"
-          >
-            <swiper-slide
-              v-for="(img, index) in [brandLogo1, brandLogo2, brandLogo3, brandLogo4, brandLogo5]"
-              :key="index"
-            >
-              <VImg
-                :src="img"
-                height="38"
-              />
-            </swiper-slide>
-          </swiper-container>
-        </div>
       </VContainer>
     </div>
   </div>
