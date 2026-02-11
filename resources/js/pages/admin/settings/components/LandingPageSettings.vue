@@ -4,6 +4,7 @@ import api from '@/utils/api'
 
 const toast = useToast()
 const isLoading = ref(false)
+const isSaving = ref(false)
 const config = ref([])
 const activeTab = ref(null)
 
@@ -86,7 +87,7 @@ const uploadFile = async file => {
 
 const saveSettings = async () => {
   try {
-    isLoading.value = true
+    isSaving.value = true
 
     // Find current section
     const currentSection = config.value.find(section => section.id === activeTab.value)
@@ -188,7 +189,7 @@ const saveSettings = async () => {
     console.error(error)
     toast.error('Failed to save settings')
   } finally {
-    isLoading.value = false
+    isSaving.value = false
   }
 }
 
@@ -1381,7 +1382,8 @@ const getLabel = (section, key) => {
 
               <div class="mt-4 d-flex justify-end">
                 <VBtn
-                  :loading="isLoading"
+                  :loading="isSaving"
+                  :disabled="isSaving"
                   @click="saveSettings"
                 >
                   Save Changes
