@@ -633,103 +633,110 @@ const getLabel = (section, key) => {
                           v-else-if="key === 'stats' && Array.isArray(section.props[key])"
                           cols="12"
                         >
-                          <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(stat, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
-                            >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <span class="text-subtitle-2">Stat {{ index + 1 }}</span>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removeStat(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
+                          <VExpansionPanels>
+                            <VExpansionPanel>
+                              <VExpansionPanelTitle>Manage Statistics ({{ section.props[key].length }})</VExpansionPanelTitle>
+                              <VExpansionPanelText>
+                                <div class="d-flex flex-column gap-4 pt-4">
+                                  <VCard
+                                    v-for="(stat, index) in section.props[key]"
+                                    :key="index"
+                                    variant="outlined"
+                                    class="mb-2"
                                   >
-                                    <AppTextField
-                                      v-model="stat.title"
-                                      label="Title"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="stat.value"
-                                      label="Value"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="stat.icon"
-                                      label="Tabler Icon"
-                                      placeholder="tabler-chart-bar"
-                                    >
-                                      <template #append-inner>
-                                        <VIcon :icon="stat.icon" />
-                                      </template>
-                                    </AppTextField>
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="stat.color"
-                                      label="Color"
-                                      placeholder="primary"
-                                    >
-                                      <template #append-inner>
-                                        <div
-                                          class="cursor-pointer border rounded"
-                                          :style="{
-                                            backgroundColor: stat.color,
-                                            width: '24px',
-                                            height: '24px',
-                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
-                                          }"
+                                    <VCardText>
+                                      <div class="d-flex justify-space-between align-start mb-4">
+                                        <span class="text-subtitle-2">Stat {{ index + 1 }}</span>
+                                        <VBtn
+                                          color="error"
+                                          variant="text"
+                                          size="small"
+                                          icon="tabler-trash"
+                                          @click="removeStat(section, index)"
+                                        />
+                                      </div>
+                                      <VRow>
+                                        <VCol
+                                          cols="12"
+                                          md="6"
                                         >
-                                          <VMenu
-                                            activator="parent"
-                                            :close-on-content-click="false"
-                                            location="bottom end"
+                                          <AppTextField
+                                            v-model="stat.title"
+                                            label="Title"
+                                          />
+                                        </VCol>
+                                        <VCol
+                                          cols="12"
+                                          md="6"
+                                        >
+                                          <AppTextField
+                                            v-model="stat.value"
+                                            label="Value"
+                                          />
+                                        </VCol>
+                                        <VCol
+                                          cols="12"
+                                          md="6"
+                                        >
+                                          <AppTextField
+                                            v-model="stat.icon"
+                                            label="Tabler Icon"
+                                            placeholder="tabler-chart-bar"
                                           >
-                                            <VColorPicker
-                                              v-model="stat.color"
-                                              mode="hex"
-                                              :modes="['hex', 'rgba', 'hsla']"
-                                            />
-                                          </VMenu>
-                                        </div>
-                                      </template>
-                                    </AppTextField>
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
-                            
-                            <VBtn
-                              variant="tonal"
-                              prepend-icon="tabler-plus"
-                              @click="addStat(section)"
-                            >
-                              Add Stat
-                            </VBtn>
-                          </div>
+                                            <template #append-inner>
+                                              <VIcon :icon="stat.icon" />
+                                            </template>
+                                          </AppTextField>
+                                        </VCol>
+                                        <VCol
+                                          cols="12"
+                                          md="6"
+                                        >
+                                          <AppTextField
+                                            v-model="stat.color"
+                                            label="Color"
+                                            placeholder="primary"
+                                          >
+                                            <template #append-inner>
+                                              <div
+                                                class="cursor-pointer border rounded"
+                                                :style="{
+                                                  backgroundColor: stat.color,
+                                                  width: '24px',
+                                                  height: '24px',
+                                                  borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                                }"
+                                              >
+                                                <VMenu
+                                                  activator="parent"
+                                                  :close-on-content-click="false"
+                                                  location="bottom end"
+                                                >
+                                                  <VColorPicker
+                                                    v-model="stat.color"
+                                                    mode="hex"
+                                                    :modes="['hex', 'rgba', 'hsla']"
+                                                  />
+                                                </VMenu>
+                                              </div>
+                                            </template>
+                                          </AppTextField>
+                                        </VCol>
+                                      </VRow>
+                                    </VCardText>
+                                  </VCard>
+                                  
+                                  <VBtn
+                                    variant="tonal"
+                                    prepend-icon="tabler-plus"
+                                    @click="addStat(section)"
+                                  >
+                                    Add Stat
+                                  </VBtn>
+                                </div>
+                              </VExpansionPanelText>
+                            </VExpansionPanel>
+                          </VExpansionPanels>
                         </VCol>
 
                         <!-- Features List Prop -->
@@ -738,85 +745,91 @@ const getLabel = (section, key) => {
                           cols="12"
                         >
                           <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(feature, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
                             >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <span class="text-subtitle-2">Feature {{ index + 1 }}</span>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removeFeature(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="feature.title"
-                                      label="Title"
+                              <VExpansionPanel
+                                v-for="(feature, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ feature.title || `Feature ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeFeature(section, index)"
                                     />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                      Icon
-                                    </VLabel>
-                                    <VFileInput
-                                      label="Icon"
-                                      prepend-icon="tabler-camera"
-                                      accept="image/*"
-                                      @change="e => handleFileUpload(e, feature, 'icon')"
-                                    />
-                                    <div
-                                      v-if="feature.icon"
-                                      class="mt-2"
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <div class="d-flex align-center gap-4">
-                                        <VIcon
-                                          v-if="isTablerIcon(feature.icon)"
-                                          :icon="feature.icon"
-                                          size="40"
-                                        />
-                                        <VImg
-                                          v-else
-                                          :src="feature.icon"
-                                          max-width="80"
-                                          max-height="80"
-                                          class="rounded border"
-                                        />
-                                        <VBtn
-                                          size="x-small"
-                                          color="error"
-                                          variant="text"
-                                          @click="removeImage(feature, 'icon')"
-                                        >
-                                          Remove Icon
-                                        </VBtn>
+                                      <AppTextField
+                                        v-model="feature.title"
+                                        label="Title"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                        Icon
+                                      </VLabel>
+                                      <VFileInput
+                                        label="Icon"
+                                        prepend-icon="tabler-camera"
+                                        accept="image/*"
+                                        @change="e => handleFileUpload(e, feature, 'icon')"
+                                      />
+                                      <div
+                                        v-if="feature.icon"
+                                        class="mt-2"
+                                      >
+                                        <div class="d-flex align-center gap-4">
+                                          <VIcon
+                                            v-if="isTablerIcon(feature.icon)"
+                                            :icon="feature.icon"
+                                            size="40"
+                                          />
+                                          <VImg
+                                            v-else
+                                            :src="feature.icon"
+                                            max-width="80"
+                                            max-height="80"
+                                            class="rounded border"
+                                          />
+                                          <VBtn
+                                            size="x-small"
+                                            color="error"
+                                            variant="text"
+                                            @click="removeImage(feature, 'icon')"
+                                          >
+                                            Remove Icon
+                                          </VBtn>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </VCol>
-                                  <VCol cols="12">
-                                    <VTextarea
-                                      v-model="feature.desc"
-                                      label="Description"
-                                      rows="2"
-                                      auto-grow
-                                    />
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
+                                    </VCol>
+                                    <VCol cols="12">
+                                      <VTextarea
+                                        v-model="feature.desc"
+                                        label="Description"
+                                        rows="2"
+                                        auto-grow
+                                      />
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
                             
                             <VBtn
                               variant="tonal"
@@ -834,98 +847,104 @@ const getLabel = (section, key) => {
                           cols="12"
                         >
                           <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(review, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
                             >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <span class="text-subtitle-2">Review {{ index + 1 }}</span>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removeReview(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="review.name"
-                                      label="Reviewer Name"
+                              <VExpansionPanel
+                                v-for="(review, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ review.name || `Review ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeReview(section, index)"
                                     />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="review.position"
-                                      label="Position/Title"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model.number="review.rating"
-                                      label="Rating (1-5)"
-                                      type="number"
-                                      min="1"
-                                      max="5"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                      Avatar
-                                    </VLabel>
-                                    <VFileInput
-                                      label="Avatar"
-                                      prepend-icon="tabler-camera"
-                                      accept="image/*"
-                                      @change="e => handleFileUpload(e, review, 'avatar')"
-                                    />
-                                    <div
-                                      v-if="review.avatar"
-                                      class="mt-2"
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <div class="d-flex align-center gap-4">
-                                        <VAvatar
-                                          :image="review.avatar"
-                                          size="40"
-                                        />
-                                        <VBtn
-                                          size="x-small"
-                                          color="error"
-                                          variant="text"
-                                          @click="removeImage(review, 'avatar')"
-                                        >
-                                          Remove Avatar
-                                        </VBtn>
+                                      <AppTextField
+                                        v-model="review.name"
+                                        label="Reviewer Name"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="review.position"
+                                        label="Position/Title"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model.number="review.rating"
+                                        label="Rating (1-5)"
+                                        type="number"
+                                        min="1"
+                                        max="5"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                        Avatar
+                                      </VLabel>
+                                      <VFileInput
+                                        label="Avatar"
+                                        prepend-icon="tabler-camera"
+                                        accept="image/*"
+                                        @change="e => handleFileUpload(e, review, 'avatar')"
+                                      />
+                                      <div
+                                        v-if="review.avatar"
+                                        class="mt-2"
+                                      >
+                                        <div class="d-flex align-center gap-4">
+                                          <VAvatar
+                                            :image="review.avatar"
+                                            size="40"
+                                          />
+                                          <VBtn
+                                            size="x-small"
+                                            color="error"
+                                            variant="text"
+                                            @click="removeImage(review, 'avatar')"
+                                          >
+                                            Remove Avatar
+                                          </VBtn>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </VCol>
-                                  <VCol cols="12">
-                                    <VTextarea
-                                      v-model="review.desc"
-                                      label="Comment"
-                                      rows="3"
-                                      auto-grow
-                                    />
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
+                                    </VCol>
+                                    <VCol cols="12">
+                                      <VTextarea
+                                        v-model="review.desc"
+                                        label="Comment"
+                                        rows="3"
+                                        auto-grow
+                                      />
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
                             
                             <VBtn
                               variant="tonal"
