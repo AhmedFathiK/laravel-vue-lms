@@ -115,6 +115,23 @@ const saveSettings = async () => {
           }
         }
       }
+
+      // 3. Check reviews array
+      if (section.props.reviews && Array.isArray(section.props.reviews)) {
+        for (const review of section.props.reviews) {
+          if (review._pendingFile) {
+            try {
+              const path = await uploadFile(review._pendingFile)
+
+              review[review._pendingKey] = path
+            } catch (e) {
+              console.error('Failed to upload review avatar', e)
+            }
+            delete review._pendingFile
+            delete review._pendingKey
+          }
+        }
+      }
     }
 
     // Clone config to remove any internal properties before sending
@@ -182,6 +199,42 @@ const sectionConfigs = {
       features: 'Features List',
     },
   },
+  CustomersReview: {
+    groups: [
+      {
+        name: 'Header',
+        fields: ['tag', 'title', 'subtitle'],
+      },
+      {
+        name: 'Reviews List',
+        fields: ['reviews'],
+      },
+    ],
+    labels: {
+      tag: 'Section Tag',
+      title: 'Main Title',
+      subtitle: 'Subtitle Description',
+      reviews: 'Customer Reviews',
+    },
+  },
+  FaqSection: {
+    groups: [
+      {
+        name: 'Header',
+        fields: ['tag', 'title', 'subtitle'],
+      },
+      {
+        name: 'FAQ List',
+        fields: ['faqs'],
+      },
+    ],
+    labels: {
+      tag: 'Section Tag',
+      title: 'Main Title',
+      subtitle: 'Subtitle Description',
+      faqs: 'Questions & Answers',
+    },
+  },
 }
 
 const addFeature = section => {
@@ -195,6 +248,33 @@ const addFeature = section => {
 
 const removeFeature = (section, index) => {
   section.props.features.splice(index, 1)
+}
+
+const addReview = section => {
+  if (!section.props.reviews) section.props.reviews = []
+  section.props.reviews.push({
+    name: 'New Reviewer',
+    position: 'Position',
+    desc: 'Review comment...',
+    rating: 5,
+    avatar: null,
+  })
+}
+
+const removeReview = (section, index) => {
+  section.props.reviews.splice(index, 1)
+}
+
+const addFaq = section => {
+  if (!section.props.faqs) section.props.faqs = []
+  section.props.faqs.push({
+    question: 'New Question',
+    answer: 'Answer goes here...',
+  })
+}
+
+const removeFaq = (section, index) => {
+  section.props.faqs.splice(index, 1)
 }
 
 const getGroups = section => {
@@ -424,8 +504,10 @@ const getLabel = (section, key) => {
                                     cols="12"
                                     md="6"
                                   >
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                      Icon
+                                    </VLabel>
                                     <VFileInput
-                                      label="Icon"
                                       prepend-icon="tabler-camera"
                                       accept="image/*"
                                       @change="e => handleFileUpload(e, feature, 'icon')"
@@ -476,6 +558,164 @@ const getLabel = (section, key) => {
                               @click="addFeature(section)"
                             >
                               Add Feature
+                            </VBtn>
+                          </div>
+                        </VCol>
+
+                        <!-- Reviews List Prop -->
+                        <VCol
+                          v-else-if="key === 'reviews' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VCard
+                              v-for="(review, index) in section.props[key]"
+                              :key="index"
+                              variant="outlined"
+                              class="mb-2"
+                            >
+                              <VCardText>
+                                <div class="d-flex justify-space-between align-start mb-4">
+                                  <span class="text-subtitle-2">Review {{ index + 1 }}</span>
+                                  <VBtn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    icon="tabler-trash"
+                                    @click="removeReview(section, index)"
+                                  />
+                                </div>
+                                <VRow>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="review.name"
+                                      label="Reviewer Name"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="review.position"
+                                      label="Position/Title"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model.number="review.rating"
+                                      label="Rating (1-5)"
+                                      type="number"
+                                      min="1"
+                                      max="5"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <VFileInput
+                                      label="Avatar"
+                                      prepend-icon="tabler-camera"
+                                      accept="image/*"
+                                      @change="e => handleFileUpload(e, review, 'avatar')"
+                                    />
+                                    <div
+                                      v-if="review.avatar"
+                                      class="mt-2"
+                                    >
+                                      <div class="d-flex align-center gap-4">
+                                        <VAvatar
+                                          :image="review.avatar"
+                                          size="40"
+                                        />
+                                        <VBtn
+                                          size="x-small"
+                                          color="error"
+                                          variant="text"
+                                          @click="removeImage(review, 'avatar')"
+                                        >
+                                          Remove Avatar
+                                        </VBtn>
+                                      </div>
+                                    </div>
+                                  </VCol>
+                                  <VCol cols="12">
+                                    <VTextarea
+                                      v-model="review.desc"
+                                      label="Comment"
+                                      rows="3"
+                                      auto-grow
+                                    />
+                                  </VCol>
+                                </VRow>
+                              </VCardText>
+                            </VCard>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addReview(section)"
+                            >
+                              Add Review
+                            </VBtn>
+                          </div>
+                        </VCol>
+
+                        <!-- FAQs List Prop -->
+                        <VCol
+                          v-else-if="key === 'faqs' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VCard
+                              v-for="(faq, index) in section.props[key]"
+                              :key="index"
+                              variant="outlined"
+                              class="mb-2"
+                            >
+                              <VCardText>
+                                <div class="d-flex justify-space-between align-start mb-4">
+                                  <span class="text-subtitle-2">FAQ {{ index + 1 }}</span>
+                                  <VBtn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    icon="tabler-trash"
+                                    @click="removeFaq(section, index)"
+                                  />
+                                </div>
+                                <VRow>
+                                  <VCol cols="12">
+                                    <AppTextField
+                                      v-model="faq.question"
+                                      label="Question"
+                                    />
+                                  </VCol>
+                                  <VCol cols="12">
+                                    <VTextarea
+                                      v-model="faq.answer"
+                                      label="Answer"
+                                      rows="3"
+                                      auto-grow
+                                    />
+                                  </VCol>
+                                </VRow>
+                              </VCardText>
+                            </VCard>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addFaq(section)"
+                            >
+                              Add FAQ
                             </VBtn>
                           </div>
                         </VCol>

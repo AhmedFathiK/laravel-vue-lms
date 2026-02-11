@@ -70,18 +70,6 @@ const props = defineProps({
         <VRow>
           <VCol
             cols="12"
-            md="5"
-          >
-            <div class="pt-10 d-flex align-center justify-center h-100">
-              <VImg
-                :src="boyWithLogo"
-                height="330"
-                width="330"
-              />
-            </div>
-          </VCol>
-          <VCol
-            cols="12"
             md="7"
           >
             <VExpansionPanels class="pt-16">
@@ -97,6 +85,18 @@ const props = defineProps({
                 </VExpansionPanelText>
               </VExpansionPanel>
             </VExpansionPanels>
+          </VCol>
+          <VCol
+            cols="12"
+            md="5"
+          >
+            <div class="pt-10 d-flex align-center justify-center h-100">
+              <VImg
+                :src="boyWithLogo"
+                height="330"
+                width="330"
+              />
+            </div>
           </VCol>
         </VRow>
       </div>

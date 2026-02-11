@@ -27,7 +27,6 @@ const props = defineProps({
     default: () => [
       {
         desc: 'I\'ve never used a theme as versatile and flexible as Vuexy. It\'s my go to for building dashboard sites on almost any project.',
-        img: logo1,
         rating: 5,
         name: 'Eugenia Moore',
         position: 'Founder of Hubspot',
@@ -35,7 +34,6 @@ const props = defineProps({
       },
       {
         desc: 'This template is really clean & well documented. The docs are really easy to understand and it\'s always easy to find a screenshot from their website.',
-        img: logo2,
         rating: 5,
         name: 'Curtis Fletcher',
         position: 'Design Lead at Dribbble',
@@ -43,7 +41,6 @@ const props = defineProps({
       },
       {
         desc: 'This template is superior in so many ways. The code, the design, the regular updates, the support.. It\'s the whole package. Excellent Work.',
-        img: logo3,
         rating: 4,
         name: 'Eugenia Moore',
         position: 'CTO of Airbnb',
@@ -51,7 +48,6 @@ const props = defineProps({
       },
       {
         desc: 'All the requirements for developers have been taken into consideration, so I\'m able to build any beautiful interface I want.',
-        img: logo4,
         rating: 5,
         name: 'Sara Smith',
         position: 'Founder of Continental',
@@ -59,7 +55,6 @@ const props = defineProps({
       },
       {
         desc: 'Vuexy is awesome, and I particularly enjoy knowing that if I get stuck on something, there is always a helpful community to assist me.',
-        img: logo3,
         rating: 5,
         name: 'Tommy haffman',
         position: 'Founder of Levis',
@@ -212,27 +207,11 @@ const slide = dir => {
                   :key="index"
                 >
                   <VCard class="d-flex h-100 align-stretch">
-                    <VCardText class="pa-6 d-flex flex-column justify-space-between align-start">
-                      <img
-                        :src="data.img"
-                        style="block-size: 1.375rem;"
-                        class="mb-3"
-                      >
-                      <p class="text-body-1">
-                        {{ data.desc }}
-                      </p>
-
-                      <VRating
-                        :model-value="data.rating"
-                        color="warning"
-                        density="compact"
-                        class="mb-4"
-                        readonly
-                      />
-                      <div class="d-flex align-center gap-x-3">
+                    <VCardText class="pa-6 d-flex flex-column align-start">
+                      <div class="d-flex align-center gap-x-3 mb-3">
                         <VAvatar
                           :image="data.avatar"
-                          size="32"
+                          size="42"
                         />
                         <div>
                           <h6 class="text-h6">
@@ -244,6 +223,18 @@ const slide = dir => {
                           </div>
                         </div>
                       </div>
+
+                      <VRating
+                        :model-value="data.rating"
+                        color="warning"
+                        density="compact"
+                        class="mb-3"
+                        readonly
+                      />
+
+                      <p class="text-body-1">
+                        {{ data.desc }}
+                      </p>
                     </VCardText>
                   </VCard>
                 </swiper-slide>
