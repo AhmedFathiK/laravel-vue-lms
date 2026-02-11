@@ -149,6 +149,23 @@ const saveSettings = async () => {
           }
         }
       }
+
+      // 5. Check pricing plans
+      if (section.props.plans && Array.isArray(section.props.plans)) {
+        for (const plan of section.props.plans) {
+          if (plan._pendingFile) {
+            try {
+              const path = await uploadFile(plan._pendingFile)
+
+              plan[plan._pendingKey] = path
+            } catch (e) {
+              console.error('Failed to upload plan image', e)
+            }
+            delete plan._pendingFile
+            delete plan._pendingKey
+          }
+        }
+      }
     }
 
     // Clone config to remove any internal properties before sending
@@ -270,6 +287,49 @@ const sectionConfigs = {
       team: 'Team Members',
     },
   },
+  PricingPlans: {
+    groups: [
+      {
+        name: 'Header',
+        fields: ['tag', 'title', 'subtitle'],
+      },
+      {
+        name: 'Plans',
+        fields: ['plans'],
+      },
+    ],
+    labels: {
+      tag: 'Section Tag',
+      title: 'Main Title',
+      subtitle: 'Subtitle Description',
+      plans: 'Pricing Plans',
+    },
+  },
+  ProductStats: {
+    groups: [
+      {
+        name: 'Statistics',
+        fields: ['stats'],
+      },
+    ],
+    labels: {
+      stats: 'Product Statistics',
+    },
+  },
+}
+
+const addStat = section => {
+  if (!section.props.stats) section.props.stats = []
+  section.props.stats.push({
+    title: 'New Stat',
+    value: '0',
+    icon: 'tabler-chart-bar',
+    color: 'primary',
+  })
+}
+
+const removeStat = (section, index) => {
+  section.props.stats.splice(index, 1)
 }
 
 const addFeature = section => {
@@ -325,6 +385,34 @@ const addTeamMember = section => {
 
 const removeTeamMember = (section, index) => {
   section.props.team.splice(index, 1)
+}
+
+const addPricingPlan = section => {
+  if (!section.props.plans) section.props.plans = []
+  section.props.plans.push({
+    title: 'New Plan',
+    image: null,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    features: ['Feature 1', 'Feature 2'],
+    supportType: 'Standard',
+    supportMedium: 'Email',
+    respondTime: '24h',
+    current: false,
+  })
+}
+
+const removePricingPlan = (section, index) => {
+  section.props.plans.splice(index, 1)
+}
+
+const addPlanFeature = plan => {
+  if (!plan.features) plan.features = []
+  plan.features.push('New Feature')
+}
+
+const removePlanFeature = (plan, index) => {
+  plan.features.splice(index, 1)
 }
 
 const getGroups = section => {
@@ -516,6 +604,110 @@ const getLabel = (section, key) => {
                             v-model="section.props[key]"
                             :label="getLabel(section, key)"
                           />
+                        </VCol>
+
+                        <!-- Product Stats List Prop -->
+                        <VCol
+                          v-else-if="key === 'stats' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VCard
+                              v-for="(stat, index) in section.props[key]"
+                              :key="index"
+                              variant="outlined"
+                              class="mb-2"
+                            >
+                              <VCardText>
+                                <div class="d-flex justify-space-between align-start mb-4">
+                                  <span class="text-subtitle-2">Stat {{ index + 1 }}</span>
+                                  <VBtn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    icon="tabler-trash"
+                                    @click="removeStat(section, index)"
+                                  />
+                                </div>
+                                <VRow>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="stat.title"
+                                      label="Title"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="stat.value"
+                                      label="Value"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="stat.icon"
+                                      label="Tabler Icon"
+                                      placeholder="tabler-chart-bar"
+                                    >
+                                      <template #append-inner>
+                                        <VIcon :icon="stat.icon" />
+                                      </template>
+                                    </AppTextField>
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="stat.color"
+                                      label="Color"
+                                      placeholder="primary"
+                                    >
+                                      <template #append-inner>
+                                        <div
+                                          class="cursor-pointer border rounded"
+                                          :style="{
+                                            backgroundColor: stat.color,
+                                            width: '24px',
+                                            height: '24px',
+                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                          }"
+                                        >
+                                          <VMenu
+                                            activator="parent"
+                                            :close-on-content-click="false"
+                                            location="bottom end"
+                                          >
+                                            <VColorPicker
+                                              v-model="stat.color"
+                                              mode="hex"
+                                              :modes="['hex', 'rgba', 'hsla']"
+                                            />
+                                          </VMenu>
+                                        </div>
+                                      </template>
+                                    </AppTextField>
+                                  </VCol>
+                                </VRow>
+                              </VCardText>
+                            </VCard>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addStat(section)"
+                            >
+                              Add Stat
+                            </VBtn>
+                          </div>
                         </VCol>
 
                         <!-- Features List Prop -->
@@ -930,6 +1122,194 @@ const getLabel = (section, key) => {
                               @click="addTeamMember(section)"
                             >
                               Add Member
+                            </VBtn>
+                          </div>
+                        </VCol>
+
+                        <!-- Pricing Plans List Prop -->
+                        <VCol
+                          v-else-if="key === 'plans' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VCard
+                              v-for="(plan, index) in section.props[key]"
+                              :key="index"
+                              variant="outlined"
+                              class="mb-2"
+                              :style="plan.current ? 'border-color: rgb(var(--v-theme-primary))' : ''"
+                            >
+                              <VCardText>
+                                <div class="d-flex justify-space-between align-start mb-4">
+                                  <div class="d-flex align-center gap-2">
+                                    <span class="text-subtitle-2">Plan {{ index + 1 }}</span>
+                                    <VChip
+                                      v-if="plan.current"
+                                      color="primary"
+                                      size="x-small"
+                                    >
+                                      Popular
+                                    </VChip>
+                                  </div>
+                                  <VBtn
+                                    color="error"
+                                    variant="text"
+                                    size="small"
+                                    icon="tabler-trash"
+                                    @click="removePricingPlan(section, index)"
+                                  />
+                                </div>
+                                <VRow>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model="plan.title"
+                                      label="Plan Title"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <VSwitch
+                                      v-model="plan.current"
+                                      label="Mark as Popular"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model.number="plan.monthlyPrice"
+                                      label="Monthly Price"
+                                      type="number"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <AppTextField
+                                      v-model.number="plan.yearlyPrice"
+                                      label="Yearly Price"
+                                      type="number"
+                                    />
+                                  </VCol>
+                                  
+                                  <!-- Support Details -->
+                                  <VCol
+                                    cols="12"
+                                    md="4"
+                                  >
+                                    <AppTextField
+                                      v-model="plan.supportType"
+                                      label="Support Type"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="4"
+                                  >
+                                    <AppTextField
+                                      v-model="plan.supportMedium"
+                                      label="Support Medium"
+                                    />
+                                  </VCol>
+                                  <VCol
+                                    cols="12"
+                                    md="4"
+                                  >
+                                    <AppTextField
+                                      v-model="plan.respondTime"
+                                      label="Response Time"
+                                    />
+                                  </VCol>
+
+                                  <VCol
+                                    cols="12"
+                                    md="6"
+                                  >
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                      Plan Image
+                                    </VLabel>
+                                    <VFileInput
+                                      label="Plan Image"
+                                      prepend-icon="tabler-camera"
+                                      accept="image/*"
+                                      @change="e => handleFileUpload(e, plan, 'image')"
+                                    />
+                                    <div
+                                      v-if="plan.image"
+                                      class="mt-2"
+                                    >
+                                      <div class="d-flex align-center gap-4">
+                                        <VImg
+                                          :src="plan.image"
+                                          max-width="80"
+                                          max-height="80"
+                                          class="rounded border"
+                                        />
+                                        <VBtn
+                                          size="x-small"
+                                          color="error"
+                                          variant="text"
+                                          @click="removeImage(plan, 'image')"
+                                        >
+                                          Remove Image
+                                        </VBtn>
+                                      </div>
+                                    </div>
+                                  </VCol>
+
+                                  <!-- Features List -->
+                                  <VCol cols="12">
+                                    <VLabel class="mb-2 text-subtitle-2">
+                                      Features
+                                    </VLabel>
+                                    <div class="d-flex flex-column gap-2 ps-4 border-s-lg">
+                                      <div 
+                                        v-for="(feature, fIndex) in plan.features" 
+                                        :key="fIndex"
+                                        class="d-flex align-center gap-2"
+                                      >
+                                        <AppTextField
+                                          v-model="plan.features[fIndex]"
+                                          placeholder="Feature description"
+                                          density="compact"
+                                          hide-details
+                                        />
+                                        <VBtn
+                                          color="error"
+                                          variant="text"
+                                          icon="tabler-x"
+                                          size="small"
+                                          @click="removePlanFeature(plan, fIndex)"
+                                        />
+                                      </div>
+                                      <VBtn
+                                        variant="text"
+                                        size="small"
+                                        prepend-icon="tabler-plus"
+                                        class="justify-start px-0"
+                                        @click="addPlanFeature(plan)"
+                                      >
+                                        Add Feature
+                                      </VBtn>
+                                    </div>
+                                  </VCol>
+                                </VRow>
+                              </VCardText>
+                            </VCard>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addPricingPlan(section)"
+                            >
+                              Add Pricing Plan
                             </VBtn>
                           </div>
                         </VCol>

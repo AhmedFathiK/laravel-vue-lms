@@ -177,6 +177,14 @@ class SettingController extends Controller
                         }
                     }
                 }
+
+                if (isset($section['props']['plans']) && is_array($section['props']['plans'])) {
+                    foreach ($section['props']['plans'] as $plan) {
+                        if (isset($plan['image']) && $plan['image'] && str_starts_with($plan['image'], '/storage/')) {
+                            $paths[] = $plan['image'];
+                        }
+                    }
+                }
             }
         }
         return $paths;
@@ -358,7 +366,70 @@ class SettingController extends Controller
                 'id' => 'pricing',
                 'name' => 'Pricing Plans',
                 'component' => 'PricingPlans',
-                'props' => (object)[],
+                'props' => [
+                    'tag' => 'Pricing Plans',
+                    'title' => 'Tailored design plans designed for you',
+                    'subtitle' => 'All plans include 40+ advanced tools and features to boost your product. Choose the best plan to fit your needs.',
+                    'plans' => [
+                        [
+                            'title' => 'Basic',
+                            'image' => null,
+                            'monthlyPrice' => 19,
+                            'yearlyPrice' => 168,
+                            'features' => [
+                                'Timeline',
+                                'Basic search',
+                                'Live chat widget',
+                                'Email marketing',
+                                'Custom Forms',
+                                'Traffic analytics',
+                                'Basic Support',
+                            ],
+                            'supportType' => 'Basic',
+                            'supportMedium' => 'Only Email',
+                            'respondTime' => 'AVG. Time: 24h',
+                            'current' => false,
+                        ],
+                        [
+                            'title' => 'Favourite',
+                            'image' => null,
+                            'monthlyPrice' => 29,
+                            'yearlyPrice' => 264,
+                            'features' => [
+                                'Everything in basic',
+                                'Timeline with database',
+                                'Advanced search',
+                                'Marketing automation',
+                                'Advanced chatbot',
+                                'Campaign management',
+                                'Collaboration tools',
+                            ],
+                            'supportType' => 'Standard',
+                            'supportMedium' => 'Email & Chat',
+                            'respondTime' => 'AVG. Time: 6h',
+                            'current' => true,
+                        ],
+                        [
+                            'title' => 'Standard',
+                            'image' => null,
+                            'monthlyPrice' => 49,
+                            'yearlyPrice' => 444,
+                            'features' => [
+                                'Campaign management',
+                                'Timeline with database',
+                                'Fuzzy search',
+                                'A/B testing sanbox',
+                                'Custom permissions',
+                                'Social media automation',
+                                'Sales automation tools',
+                            ],
+                            'supportType' => 'Exclusive',
+                            'supportMedium' => 'Email, Chat & Google Meet',
+                            'respondTime' => 'Live Support',
+                            'current' => false,
+                        ],
+                    ],
+                ],
                 'visible' => true,
                 'wrapper_style' => ['background-color' => 'rgb(var(--v-theme-surface))']
             ],
@@ -366,7 +437,34 @@ class SettingController extends Controller
                 'id' => 'stats',
                 'name' => 'Product Stats',
                 'component' => 'ProductStats',
-                'props' => (object)[],
+                'props' => [
+                    'stats' => [
+                        [
+                            'title' => 'Support Tickets Resolved',
+                            'value' => '7.1k+',
+                            'icon' => 'tabler-device-laptop',
+                            'color' => 'primary',
+                        ],
+                        [
+                            'title' => 'Join creatives community',
+                            'value' => '50k+',
+                            'icon' => 'tabler-user',
+                            'color' => 'success',
+                        ],
+                        [
+                            'title' => 'Highly Rated Products',
+                            'value' => '4.8/5',
+                            'icon' => 'tabler-diamond',
+                            'color' => 'info',
+                        ],
+                        [
+                            'title' => 'Money Back Guarantee',
+                            'value' => '100%',
+                            'icon' => 'tabler-check',
+                            'color' => 'warning',
+                        ],
+                    ],
+                ],
                 'visible' => true,
                 'wrapper_style' => []
             ],

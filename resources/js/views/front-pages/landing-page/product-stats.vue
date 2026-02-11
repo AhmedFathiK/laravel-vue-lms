@@ -1,9 +1,4 @@
 <script setup>
-import check from '@images/svg/Check.svg'
-import diamond from '@images/svg/Diamond.svg'
-import laptop from '@images/svg/laptop.svg'
-import user from '@images/svg/user.svg'
-
 const props = defineProps({
   stats: {
     type: Array,
@@ -11,25 +6,25 @@ const props = defineProps({
       {
         title: 'Support Tickets Resolved',
         value: '7.1k+',
-        icon: laptop,
+        icon: 'tabler-device-laptop',
         color: 'primary',
       },
       {
         title: 'Join creatives community',
         value: '50k+',
-        icon: user,
+        icon: 'tabler-user',
         color: 'success',
       },
       {
         title: 'Highly Rated Products',
         value: '4.8/5',
-        icon: diamond,
+        icon: 'tabler-diamond',
         color: 'info',
       },
       {
         title: 'Money Back Guarantee',
         value: '100%',
-        icon: check,
+        icon: 'tabler-check',
         color: 'warning',
       },
     ],
@@ -51,7 +46,7 @@ const props = defineProps({
           >
             <VCard
               flat
-              :style="{ border: `1px solid rgba(var(--v-theme-${product.color}))` }"
+              :style="{ border: `1px solid ${['primary', 'secondary', 'success', 'info', 'warning', 'error'].includes(product.color) ? `rgba(var(--v-theme-${product.color}))` : product.color}` }"
             >
               <VCardText class="text-center">
                 <VIcon
