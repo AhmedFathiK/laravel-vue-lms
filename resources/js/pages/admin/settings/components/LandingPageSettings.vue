@@ -1014,148 +1014,154 @@ const getLabel = (section, key) => {
                           cols="12"
                         >
                           <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(member, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
                             >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <span class="text-subtitle-2">Member {{ index + 1 }}</span>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removeTeamMember(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="member.name"
-                                      label="Name"
+                              <VExpansionPanel
+                                v-for="(member, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ member.name || `Member ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeTeamMember(section, index)"
                                     />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="member.position"
-                                      label="Position"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="member.backgroundColor"
-                                      label="Background Color"
-                                      placeholder="rgba(0,0,0,0.5)"
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <template #append-inner>
-                                        <div
-                                          class="cursor-pointer border rounded"
-                                          :style="{
-                                            backgroundColor: member.backgroundColor,
-                                            width: '24px',
-                                            height: '24px',
-                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
-                                          }"
-                                        >
-                                          <VMenu
-                                            activator="parent"
-                                            :close-on-content-click="false"
-                                            location="bottom end"
+                                      <AppTextField
+                                        v-model="member.name"
+                                        label="Name"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="member.position"
+                                        label="Position"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="member.backgroundColor"
+                                        label="Background Color"
+                                        placeholder="rgba(0,0,0,0.5)"
+                                      >
+                                        <template #append-inner>
+                                          <div
+                                            class="cursor-pointer border rounded"
+                                            :style="{
+                                              backgroundColor: member.backgroundColor,
+                                              width: '24px',
+                                              height: '24px',
+                                              borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                            }"
                                           >
-                                            <VColorPicker
-                                              v-model="member.backgroundColor"
-                                              mode="rgba"
-                                              :modes="['rgba', 'hex', 'hsla']"
-                                            />
-                                          </VMenu>
-                                        </div>
-                                      </template>
-                                    </AppTextField>
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="member.borderColor"
-                                      label="Border Color"
-                                      placeholder="rgba(0,0,0,0.5)"
+                                            <VMenu
+                                              activator="parent"
+                                              :close-on-content-click="false"
+                                              location="bottom end"
+                                            >
+                                              <VColorPicker
+                                                v-model="member.backgroundColor"
+                                                mode="rgba"
+                                                :modes="['rgba', 'hex', 'hsla']"
+                                              />
+                                            </VMenu>
+                                          </div>
+                                        </template>
+                                      </AppTextField>
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <template #append-inner>
-                                        <div
-                                          class="cursor-pointer border rounded"
-                                          :style="{
-                                            backgroundColor: member.borderColor,
-                                            width: '24px',
-                                            height: '24px',
-                                            borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
-                                          }"
-                                        >
-                                          <VMenu
-                                            activator="parent"
-                                            :close-on-content-click="false"
-                                            location="bottom end"
+                                      <AppTextField
+                                        v-model="member.borderColor"
+                                        label="Border Color"
+                                        placeholder="rgba(0,0,0,0.5)"
+                                      >
+                                        <template #append-inner>
+                                          <div
+                                            class="cursor-pointer border rounded"
+                                            :style="{
+                                              backgroundColor: member.borderColor,
+                                              width: '24px',
+                                              height: '24px',
+                                              borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                            }"
                                           >
-                                            <VColorPicker
-                                              v-model="member.borderColor"
-                                              mode="rgba"
-                                              :modes="['rgba', 'hex', 'hsla']"
-                                            />
-                                          </VMenu>
-                                        </div>
-                                      </template>
-                                    </AppTextField>
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                      Photo
-                                    </VLabel>
-                                    <VFileInput
-                                      label="Photo"
-                                      prepend-icon="tabler-camera"
-                                      accept="image/*"
-                                      @change="e => handleFileUpload(e, member, 'image')"
-                                    />
-                                    <div
-                                      v-if="member.image"
-                                      class="mt-2"
+                                            <VMenu
+                                              activator="parent"
+                                              :close-on-content-click="false"
+                                              location="bottom end"
+                                            >
+                                              <VColorPicker
+                                                v-model="member.borderColor"
+                                                mode="rgba"
+                                                :modes="['rgba', 'hex', 'hsla']"
+                                              />
+                                            </VMenu>
+                                          </div>
+                                        </template>
+                                      </AppTextField>
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <div class="d-flex align-center gap-4">
-                                        <VImg
-                                          :src="member.image"
-                                          max-width="80"
-                                          max-height="80"
-                                          class="rounded border"
-                                        />
-                                        <VBtn
-                                          size="x-small"
-                                          color="error"
-                                          variant="text"
-                                          @click="removeImage(member, 'image')"
-                                        >
-                                          Remove Photo
-                                        </VBtn>
+                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                        Photo
+                                      </VLabel>
+                                      <VFileInput
+                                        label="Photo"
+                                        prepend-icon="tabler-camera"
+                                        accept="image/*"
+                                        @change="e => handleFileUpload(e, member, 'image')"
+                                      />
+                                      <div
+                                        v-if="member.image"
+                                        class="mt-2"
+                                      >
+                                        <div class="d-flex align-center gap-4">
+                                          <VImg
+                                            :src="member.image"
+                                            max-width="80"
+                                            max-height="80"
+                                            class="rounded border"
+                                          />
+                                          <VBtn
+                                            size="x-small"
+                                            color="error"
+                                            variant="text"
+                                            @click="removeImage(member, 'image')"
+                                          >
+                                            Remove Photo
+                                          </VBtn>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
                             
                             <VBtn
                               variant="tonal"
