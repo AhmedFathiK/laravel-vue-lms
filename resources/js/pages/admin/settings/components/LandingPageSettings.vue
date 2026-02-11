@@ -5,6 +5,7 @@ import api from '@/utils/api'
 const toast = useToast()
 const isLoading = ref(false)
 const config = ref([])
+const activeTab = ref(null)
 
 const fetchSettings = async () => {
   try {
@@ -13,6 +14,9 @@ const fetchSettings = async () => {
     const data = await api.get('/admin/landing-page-settings')
 
     config.value = data
+    if (data.length > 0 && !activeTab.value) {
+      activeTab.value = data[0].id
+    }
   } catch (error) {
     console.error(error)
     toast.error('Failed to fetch settings')
@@ -467,25 +471,37 @@ const getLabel = (section, key) => {
         />
       </div>
       <div v-else>
-        <VExpansionPanels multiple>
-          <VExpansionPanel
-            v-for="section in config"
-            :key="section.id"
+        <div class="d-flex flex-column gap-4">
+          <VTabs
+            v-model="activeTab"
+            show-arrows
+            class="mb-4"
           >
-            <VExpansionPanelTitle>
-              <div class="d-flex align-center gap-4 w-100">
+            <VTab
+              v-for="section in config"
+              :key="section.id"
+              :value="section.id"
+            >
+              {{ section.name }}
+            </VTab>
+          </VTabs>
+
+          <VWindow v-model="activeTab">
+            <VWindowItem
+              v-for="section in config"
+              :key="section.id"
+              :value="section.id"
+            >
+              <div class="d-flex align-center gap-4 w-100 mb-6">
                 <VSwitch
                   v-model="section.visible"
                   hide-details
                   density="compact"
                   label="Visible"
                   class="me-4"
-                  @click.stop
                 />
-                <span>{{ section.name }} ({{ section.component }})</span>
+                <span class="text-caption text-medium-emphasis">{{ section.name }} ({{ section.component }})</span>
               </div>
-            </VExpansionPanelTitle>
-            <VExpansionPanelText>
               <VRow>
                 <VCol
                   cols="12"
@@ -1331,9 +1347,9 @@ const getLabel = (section, key) => {
                   </VRow>
                 </VCol>
               </VRow>
-            </VExpansionPanelText>
-          </VExpansionPanel>
-        </VExpansionPanels>
+            </VWindowItem>
+          </VWindow>
+        </div>
 
         <div class="mt-4 d-flex justify-end">
           <VBtn

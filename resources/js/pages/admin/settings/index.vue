@@ -28,7 +28,7 @@ watch(() => route.query.tab, val => {
   <VRow>
     <VCol
       cols="12"
-      md="4"
+      md="3"
     >
       <h5 class="text-h5 mb-4">
         Settings
@@ -53,7 +53,7 @@ watch(() => route.query.tab, val => {
 
     <VCol
       cols="12"
-      md="8"
+      md="9"
     >
       <VWindow
         v-model="activeTab"
