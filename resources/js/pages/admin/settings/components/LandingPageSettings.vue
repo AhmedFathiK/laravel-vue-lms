@@ -635,110 +635,109 @@ const getLabel = (section, key) => {
                           v-else-if="key === 'stats' && Array.isArray(section.props[key])"
                           cols="12"
                         >
-                          <VExpansionPanels>
-                            <VExpansionPanel>
-                              <VExpansionPanelTitle>Manage Statistics ({{ section.props[key].length }})</VExpansionPanelTitle>
-                              <VExpansionPanelText>
-                                <div class="d-flex flex-column gap-4 pt-4">
-                                  <VCard
-                                    v-for="(stat, index) in section.props[key]"
-                                    :key="index"
-                                    variant="outlined"
-                                    class="mb-2"
-                                  >
-                                    <VCardText>
-                                      <div class="d-flex justify-space-between align-start mb-4">
-                                        <span class="text-subtitle-2">Stat {{ index + 1 }}</span>
-                                        <VBtn
-                                          color="error"
-                                          variant="text"
-                                          size="small"
-                                          icon="tabler-trash"
-                                          @click="removeStat(section, index)"
-                                        />
-                                      </div>
-                                      <VRow>
-                                        <VCol
-                                          cols="12"
-                                          md="6"
-                                        >
-                                          <AppTextField
-                                            v-model="stat.title"
-                                            label="Title"
-                                          />
-                                        </VCol>
-                                        <VCol
-                                          cols="12"
-                                          md="6"
-                                        >
-                                          <AppTextField
-                                            v-model="stat.value"
-                                            label="Value"
-                                          />
-                                        </VCol>
-                                        <VCol
-                                          cols="12"
-                                          md="6"
-                                        >
-                                          <AppTextField
-                                            v-model="stat.icon"
-                                            label="Tabler Icon"
-                                            placeholder="tabler-chart-bar"
+                          <div class="d-flex flex-column gap-4">
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
+                            >
+                              <VExpansionPanel
+                                v-for="(stat, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ stat.title || `Stat ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeStat(section, index)"
+                                    />
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="stat.title"
+                                        label="Title"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="stat.value"
+                                        label="Value"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="stat.icon"
+                                        label="Tabler Icon"
+                                        placeholder="tabler-chart-bar"
+                                      >
+                                        <template #append-inner>
+                                          <VIcon :icon="stat.icon" />
+                                        </template>
+                                      </AppTextField>
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="stat.color"
+                                        label="Color"
+                                        placeholder="primary"
+                                      >
+                                        <template #append-inner>
+                                          <div
+                                            class="cursor-pointer border rounded"
+                                            :style="{
+                                              backgroundColor: stat.color,
+                                              width: '24px',
+                                              height: '24px',
+                                              borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                            }"
                                           >
-                                            <template #append-inner>
-                                              <VIcon :icon="stat.icon" />
-                                            </template>
-                                          </AppTextField>
-                                        </VCol>
-                                        <VCol
-                                          cols="12"
-                                          md="6"
-                                        >
-                                          <AppTextField
-                                            v-model="stat.color"
-                                            label="Color"
-                                            placeholder="primary"
-                                          >
-                                            <template #append-inner>
-                                              <div
-                                                class="cursor-pointer border rounded"
-                                                :style="{
-                                                  backgroundColor: stat.color,
-                                                  width: '24px',
-                                                  height: '24px',
-                                                  borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
-                                                }"
-                                              >
-                                                <VMenu
-                                                  activator="parent"
-                                                  :close-on-content-click="false"
-                                                  location="bottom end"
-                                                >
-                                                  <VColorPicker
-                                                    v-model="stat.color"
-                                                    mode="hex"
-                                                    :modes="['hex', 'rgba', 'hsla']"
-                                                  />
-                                                </VMenu>
-                                              </div>
-                                            </template>
-                                          </AppTextField>
-                                        </VCol>
-                                      </VRow>
-                                    </VCardText>
-                                  </VCard>
-                                  
-                                  <VBtn
-                                    variant="tonal"
-                                    prepend-icon="tabler-plus"
-                                    @click="addStat(section)"
-                                  >
-                                    Add Stat
-                                  </VBtn>
-                                </div>
-                              </VExpansionPanelText>
-                            </VExpansionPanel>
-                          </VExpansionPanels>
+                                            <VMenu
+                                              activator="parent"
+                                              :close-on-content-click="false"
+                                              location="bottom end"
+                                            >
+                                              <VColorPicker
+                                                v-model="stat.color"
+                                                mode="hex"
+                                                :modes="['hex', 'rgba', 'hsla']"
+                                              />
+                                            </VMenu>
+                                          </div>
+                                        </template>
+                                      </AppTextField>
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addStat(section)"
+                            >
+                              Add Stat
+                            </VBtn>
+                          </div>
                         </VCol>
 
                         <!-- Features List Prop -->

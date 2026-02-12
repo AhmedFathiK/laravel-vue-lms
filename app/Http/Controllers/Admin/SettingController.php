@@ -404,6 +404,7 @@ class SettingController extends Controller
                     'tag' => 'Pricing Plans',
                     'title' => 'Tailored design plans designed for you',
                     'subtitle' => 'All plans include 40+ advanced tools and features to boost your product. Choose the best plan to fit your needs.',
+                    'saveText' => 'Save 25%',
                     'plans' => [
                         [
                             'title' => 'Basic',
