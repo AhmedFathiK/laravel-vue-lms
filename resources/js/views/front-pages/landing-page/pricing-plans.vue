@@ -5,68 +5,89 @@ import plane from '@images/front-pages/icons/plane.png'
 import pricingPlanArrow from '@images/front-pages/icons/pricing-plans-arrow.png'
 import shuttleRocket from '@images/front-pages/icons/shuttle-rocket.png'
 
+const props = defineProps({
+  tag: {
+    type: String,
+    default: 'Pricing Plans',
+  },
+  title: {
+    type: String,
+    default: 'Tailored design plans designed for you',
+  },
+  subtitle: {
+    type: String,
+    default: 'All plans include 40+ advanced tools and features to boost your product.\nChoose the best plan to fit your needs.',
+  },
+  saveText: {
+    type: String,
+    default: 'Save 25%',
+  },
+  plans: {
+    type: Array,
+    default: () => [
+      {
+        title: 'Basic',
+        image: paperPlane,
+        monthlyPrice: 19,
+        yearlyPrice: 168,
+        features: [
+          'Timeline',
+          'Basic search',
+          'Live chat widget',
+          'Email marketing',
+          'Custom Forms',
+          'Traffic analytics',
+          'Basic Support',
+        ],
+        supportType: 'Basic',
+        supportMedium: 'Only Email',
+        respondTime: 'AVG. Time: 24h',
+        current: false,
+      },
+      {
+        title: 'Favourite',
+        image: plane,
+        monthlyPrice: 29,
+        yearlyPrice: 264,
+        features: [
+          'Everything in basic',
+          'Timeline with database',
+          'Advanced search',
+          'Marketing automation',
+          'Advanced chatbot',
+          'Campaign management',
+          'Collaboration tools',
+        ],
+        supportType: 'Standard',
+        supportMedium: 'Email & Chat',
+        respondTime: 'AVG. Time: 6h',
+        current: true,
+      },
+      {
+        title: 'Standard',
+        image: shuttleRocket,
+        monthlyPrice: 49,
+        yearlyPrice: 444,
+        features: [
+          'Campaign management',
+          'Timeline with database',
+          'Fuzzy search',
+          'A/B testing sanbox',
+          'Custom permissions',
+          'Social media automation',
+          'Sales automation tools',
+        ],
+        supportType: 'Exclusive',
+        supportMedium: 'Email, Chat & Google Meet',
+        respondTime: 'Live Support',
+        current: false,
+      },
+    ],
+  },
+})
+
 const annualMonthlyPlanPriceToggler = ref(true)
 const defaultCurrency = import.meta.env.VITE_DEFAULT_CURRENCY || 'EGP'
-
-const pricingPlans = [
-  {
-    title: 'Basic',
-    image: paperPlane,
-    monthlyPrice: 19,
-    yearlyPrice: 168,
-    features: [
-      'Timeline',
-      'Basic search',
-      'Live chat widget',
-      'Email marketing',
-      'Custom Forms',
-      'Traffic analytics',
-      'Basic Support',
-    ],
-    supportType: 'Basic',
-    supportMedium: 'Only Email',
-    respondTime: 'AVG. Time: 24h',
-    current: false,
-  },
-  {
-    title: 'Favourite',
-    image: plane,
-    monthlyPrice: 29,
-    yearlyPrice: 264,
-    features: [
-      'Everything in basic',
-      'Timeline with database',
-      'Advanced search',
-      'Marketing automation',
-      'Advanced chatbot',
-      'Campaign management',
-      'Collaboration tools',
-    ],
-    supportType: 'Standard',
-    supportMedium: 'Email & Chat',
-    respondTime: 'AVG. Time: 6h',
-    current: true,
-  },
-  {
-    title: 'Standard',
-    image: shuttleRocket,
-    monthlyPrice: 49,
-    yearlyPrice: 444,
-    features: [
-      'Campaign management',
-      'Timeline with database',
-      'Fuzzy search',
-      'A/B testing sanbox',
-      'Custom permissions',
-      'Social media automation',
-      'Sales automation tools',
-    ],
-    supportType: 'Exclusive',
-    supportMedium: 'Email, Chat & Google Meet',
-    respondTime: 'Live Support',
-    current: false,
-  },
-]
 </script>
 
 <template>
@@ -81,22 +102,18 @@ const pricingPlans = [
             class="mb-4"
             size="small"
           >
-            Pricing Plans
+            {{ props.tag }}
           </VChip>
           <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
             <div class="position-relative me-2">
               <div class="section-title">
-                Tailored design plans
+                {{ props.title }}
               </div>
             </div>
-            designed for you
           </h4>
           <div class="text-center text-body-1">
             <p class="mb-0">
-              All plans include 40+ advanced tools and features to boost your product.
-            </p>
-            <p class="mb-0">
-              Choose the best plan to fit your needs.
+              {{ props.subtitle }}
             </p>
           </div>
         </div>
@@ -127,7 +144,7 @@ const pricingPlans = [
                 height="42"
               />
               <div class="text-no-wrap text-body-1 font-weight-medium">
-                Save 25%
+                {{ props.saveText }}
               </div>
             </div>
           </div>

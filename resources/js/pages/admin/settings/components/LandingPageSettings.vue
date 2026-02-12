@@ -302,7 +302,7 @@ const sectionConfigs = {
     groups: [
       {
         name: 'Header',
-        fields: ['tag', 'title', 'subtitle'],
+        fields: ['tag', 'title', 'subtitle', 'saveText'],
       },
       {
         name: 'Plans',
@@ -313,6 +313,7 @@ const sectionConfigs = {
       tag: 'Section Tag',
       title: 'Main Title',
       subtitle: 'Subtitle Description',
+      saveText: 'Annual Savings Text',
       plans: 'Pricing Plans',
     },
   },
@@ -433,7 +434,7 @@ const getGroups = section => {
   if (config && config.groups) {
     const configuredGroups = config.groups.map(group => ({
       ...group,
-      fields: group.fields.filter(f => allKeys.includes(f)),
+      fields: group.fields,
     })).filter(g => g.fields.length > 0)
 
     const groupedKeys = configuredGroups.flatMap(g => g.fields)
@@ -594,7 +595,7 @@ const getLabel = (section, key) => {
 
                         <!-- String Props -->
                         <VCol
-                          v-else-if="typeof section.props[key] === 'string' || section.props[key] === null"
+                          v-else-if="key === 'saveText' || typeof section.props[key] === 'string' || section.props[key] === null"
                           cols="12"
                           md="6"
                         >
@@ -1180,177 +1181,182 @@ const getLabel = (section, key) => {
                           cols="12"
                         >
                           <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(plan, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
-                              :style="plan.current ? 'border-color: rgb(var(--v-theme-primary))' : ''"
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
                             >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <div class="d-flex align-center gap-2">
-                                    <span class="text-subtitle-2">Plan {{ index + 1 }}</span>
-                                    <VChip
-                                      v-if="plan.current"
-                                      color="primary"
-                                      size="x-small"
-                                    >
-                                      Popular
-                                    </VChip>
+                              <VExpansionPanel
+                                v-for="(plan, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <div class="d-flex align-center gap-2">
+                                      <span class="text-subtitle-2">{{ plan.title || `Plan ${index + 1}` }}</span>
+                                      <VChip
+                                        v-if="plan.current"
+                                        color="primary"
+                                        size="x-small"
+                                      >
+                                        Popular
+                                      </VChip>
+                                    </div>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removePricingPlan(section, index)"
+                                    />
                                   </div>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removePricingPlan(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model="plan.title"
-                                      label="Plan Title"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <VSwitch
-                                      v-model="plan.current"
-                                      label="Mark as Popular"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model.number="plan.monthlyPrice"
-                                      label="Monthly Price"
-                                      type="number"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <AppTextField
-                                      v-model.number="plan.yearlyPrice"
-                                      label="Yearly Price"
-                                      type="number"
-                                    />
-                                  </VCol>
-                                  
-                                  <!-- Support Details -->
-                                  <VCol
-                                    cols="12"
-                                    md="4"
-                                  >
-                                    <AppTextField
-                                      v-model="plan.supportType"
-                                      label="Support Type"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="4"
-                                  >
-                                    <AppTextField
-                                      v-model="plan.supportMedium"
-                                      label="Support Medium"
-                                    />
-                                  </VCol>
-                                  <VCol
-                                    cols="12"
-                                    md="4"
-                                  >
-                                    <AppTextField
-                                      v-model="plan.respondTime"
-                                      label="Response Time"
-                                    />
-                                  </VCol>
-
-                                  <VCol
-                                    cols="12"
-                                    md="6"
-                                  >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                      Plan Image
-                                    </VLabel>
-                                    <VFileInput
-                                      label="Plan Image"
-                                      prepend-icon="tabler-camera"
-                                      accept="image/*"
-                                      @change="e => handleFileUpload(e, plan, 'image')"
-                                    />
-                                    <div
-                                      v-if="plan.image"
-                                      class="mt-2"
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol
+                                      cols="12"
+                                      md="6"
                                     >
-                                      <div class="d-flex align-center gap-4">
-                                        <VImg
-                                          :src="plan.image"
-                                          max-width="80"
-                                          max-height="80"
-                                          class="rounded border"
-                                        />
-                                        <VBtn
-                                          size="x-small"
-                                          color="error"
-                                          variant="text"
-                                          @click="removeImage(plan, 'image')"
+                                      <AppTextField
+                                        v-model="plan.title"
+                                        label="Plan Title"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <VSwitch
+                                        v-model="plan.current"
+                                        label="Mark as Popular"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model.number="plan.monthlyPrice"
+                                        label="Monthly Price"
+                                        type="number"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model.number="plan.yearlyPrice"
+                                        label="Yearly Price"
+                                        type="number"
+                                      />
+                                    </VCol>
+                                    
+                                    <!-- Support Details -->
+                                    <VCol
+                                      cols="12"
+                                      md="4"
+                                    >
+                                      <AppTextField
+                                        v-model="plan.supportType"
+                                        label="Support Type"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="4"
+                                    >
+                                      <AppTextField
+                                        v-model="plan.supportMedium"
+                                        label="Support Medium"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="4"
+                                    >
+                                      <AppTextField
+                                        v-model="plan.respondTime"
+                                        label="Response Time"
+                                      />
+                                    </VCol>
+
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                        Plan Image
+                                      </VLabel>
+                                      <VFileInput
+                                        label="Plan Image"
+                                        prepend-icon="tabler-camera"
+                                        accept="image/*"
+                                        @change="e => handleFileUpload(e, plan, 'image')"
+                                      />
+                                      <div
+                                        v-if="plan.image"
+                                        class="mt-2"
+                                      >
+                                        <div class="d-flex align-center gap-4">
+                                          <VImg
+                                            :src="plan.image"
+                                            max-width="80"
+                                            max-height="80"
+                                            class="rounded border"
+                                          />
+                                          <VBtn
+                                            size="x-small"
+                                            color="error"
+                                            variant="text"
+                                            @click="removeImage(plan, 'image')"
+                                          >
+                                            Remove Image
+                                          </VBtn>
+                                        </div>
+                                      </div>
+                                    </VCol>
+
+                                    <!-- Features List -->
+                                    <VCol cols="12">
+                                      <VLabel class="mb-2 text-subtitle-2">
+                                        Features
+                                      </VLabel>
+                                      <div class="d-flex flex-column gap-2 ps-4 border-s-lg">
+                                        <div 
+                                          v-for="(feature, fIndex) in plan.features" 
+                                          :key="fIndex"
+                                          class="d-flex align-center gap-2"
                                         >
-                                          Remove Image
+                                          <AppTextField
+                                            v-model="plan.features[fIndex]"
+                                            placeholder="Feature description"
+                                            density="compact"
+                                            hide-details
+                                          />
+                                          <VBtn
+                                            color="error"
+                                            variant="text"
+                                            icon="tabler-x"
+                                            size="small"
+                                            @click="removePlanFeature(plan, fIndex)"
+                                          />
+                                        </div>
+                                        <VBtn
+                                          variant="text"
+                                          size="small"
+                                          prepend-icon="tabler-plus"
+                                          class="justify-start px-0"
+                                          @click="addPlanFeature(plan)"
+                                        >
+                                          Add Feature
                                         </VBtn>
                                       </div>
-                                    </div>
-                                  </VCol>
-
-                                  <!-- Features List -->
-                                  <VCol cols="12">
-                                    <VLabel class="mb-2 text-subtitle-2">
-                                      Features
-                                    </VLabel>
-                                    <div class="d-flex flex-column gap-2 ps-4 border-s-lg">
-                                      <div 
-                                        v-for="(feature, fIndex) in plan.features" 
-                                        :key="fIndex"
-                                        class="d-flex align-center gap-2"
-                                      >
-                                        <AppTextField
-                                          v-model="plan.features[fIndex]"
-                                          placeholder="Feature description"
-                                          density="compact"
-                                          hide-details
-                                        />
-                                        <VBtn
-                                          color="error"
-                                          variant="text"
-                                          icon="tabler-x"
-                                          size="small"
-                                          @click="removePlanFeature(plan, fIndex)"
-                                        />
-                                      </div>
-                                      <VBtn
-                                        variant="text"
-                                        size="small"
-                                        prepend-icon="tabler-plus"
-                                        class="justify-start px-0"
-                                        @click="addPlanFeature(plan)"
-                                      >
-                                        Add Feature
-                                      </VBtn>
-                                    </div>
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
                             
                             <VBtn
                               variant="tonal"
