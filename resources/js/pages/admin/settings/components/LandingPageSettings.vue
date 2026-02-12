@@ -173,6 +173,23 @@ const saveSettings = async () => {
           }
         }
       }
+
+      // 6. Check product stats
+      if (currentSection.props.stats && Array.isArray(currentSection.props.stats)) {
+        for (const stat of currentSection.props.stats) {
+          if (stat._pendingFile) {
+            try {
+              const path = await uploadFile(stat._pendingFile)
+
+              stat[stat._pendingKey] = path
+            } catch (e) {
+              console.error('Failed to upload stat icon', e)
+            }
+            delete stat._pendingFile
+            delete stat._pendingKey
+          }
+        }
+      }
     }
 
     // Clone current section to remove any internal properties before sending
@@ -681,15 +698,42 @@ const getLabel = (section, key) => {
                                       cols="12"
                                       md="6"
                                     >
-                                      <AppTextField
-                                        v-model="stat.icon"
-                                        label="Tabler Icon"
-                                        placeholder="tabler-chart-bar"
+                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                                        Icon Image
+                                      </VLabel>
+                                      <VFileInput
+                                        label="Icon Image"
+                                        prepend-icon="tabler-camera"
+                                        accept="image/*"
+                                        @change="e => handleFileUpload(e, stat, 'icon')"
+                                      />
+                                      <div
+                                        v-if="stat.icon"
+                                        class="mt-2"
                                       >
-                                        <template #append-inner>
-                                          <VIcon :icon="stat.icon" />
-                                        </template>
-                                      </AppTextField>
+                                        <div class="d-flex align-center gap-4">
+                                          <VIcon
+                                            v-if="isTablerIcon(stat.icon)"
+                                            :icon="stat.icon"
+                                            size="40"
+                                          />
+                                          <VImg
+                                            v-else
+                                            :src="stat.icon"
+                                            max-width="80"
+                                            max-height="80"
+                                            class="rounded border"
+                                          />
+                                          <VBtn
+                                            size="x-small"
+                                            color="error"
+                                            variant="text"
+                                            @click="removeImage(stat, 'icon')"
+                                          >
+                                            Remove Icon
+                                          </VBtn>
+                                        </div>
+                                      </div>
                                     </VCol>
                                     <VCol
                                       cols="12"

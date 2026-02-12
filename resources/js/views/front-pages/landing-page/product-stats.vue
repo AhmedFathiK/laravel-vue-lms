@@ -30,6 +30,10 @@ const props = defineProps({
     ],
   },
 })
+
+const isTablerIcon = icon => {
+  return icon && typeof icon === 'string' && icon.startsWith('tabler-')
+}
 </script>
 
 <template>
@@ -49,12 +53,21 @@ const props = defineProps({
               :style="{ border: `1px solid ${['primary', 'secondary', 'success', 'info', 'warning', 'error'].includes(product.color) ? `rgba(var(--v-theme-${product.color}))` : product.color}` }"
             >
               <VCardText class="text-center">
-                <VIcon
-                  :color="product.color"
-                  :icon="product.icon"
-                  size="64"
-                  class="mb-4"
-                />
+                <div class="mb-4 d-flex justify-center">
+                  <VIcon
+                    v-if="isTablerIcon(product.icon)"
+                    :color="product.color"
+                    :icon="product.icon"
+                    size="64"
+                  />
+                  <VImg
+                    v-else
+                    :src="product.icon"
+                    height="64"
+                    width="64"
+                    class="mx-auto"
+                  />
+                </div>
                 <h3 class="text-h3">
                   {{ product.value }}
                 </h3>
