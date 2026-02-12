@@ -1,5 +1,6 @@
 <script setup>
 import { useToast } from 'vue-toastification'
+import IconSelectionDialog from '@/components/dialogs/IconSelectionDialog.vue'
 import api from '@/utils/api'
 
 const toast = useToast()
@@ -7,6 +8,26 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 const config = ref([])
 const activeTab = ref(null)
+
+const isIconDialogVisible = ref(false)
+const currentIconTarget = ref(null)
+
+const openIconDialog = targetObj => {
+  currentIconTarget.value = targetObj
+  isIconDialogVisible.value = true
+}
+
+const handleIconSelect = icon => {
+  if (currentIconTarget.value) {
+    currentIconTarget.value.icon = icon
+
+    // Clear any pending file upload if exists
+    if (currentIconTarget.value._pendingFile) {
+      delete currentIconTarget.value._pendingFile
+      delete currentIconTarget.value._pendingKey
+    }
+  }
+}
 
 const fetchSettings = async () => {
   try {
@@ -698,9 +719,20 @@ const getLabel = (section, key) => {
                                       cols="12"
                                       md="6"
                                     >
-                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                        Icon Image
-                                      </VLabel>
+                                      <div class="d-flex justify-space-between align-center mb-1">
+                                        <VLabel class="text-body-2 text-high-emphasis">
+                                          Icon Image
+                                        </VLabel>
+                                        <VBtn
+                                          size="small"
+                                          variant="text"
+                                          color="primary"
+                                          prepend-icon="tabler-search"
+                                          @click="openIconDialog(stat)"
+                                        >
+                                          Select Icon
+                                        </VBtn>
+                                      </div>
                                       <VFileInput
                                         label="Icon Image"
                                         prepend-icon="tabler-camera"
@@ -826,9 +858,20 @@ const getLabel = (section, key) => {
                                       cols="12"
                                       md="6"
                                     >
-                                      <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                                        Icon
-                                      </VLabel>
+                                      <div class="d-flex justify-space-between align-center mb-1">
+                                        <VLabel class="text-body-2 text-high-emphasis">
+                                          Icon
+                                        </VLabel>
+                                        <VBtn
+                                          size="small"
+                                          variant="text"
+                                          color="primary"
+                                          prepend-icon="tabler-search"
+                                          @click="openIconDialog(feature)"
+                                        >
+                                          Select Icon
+                                        </VBtn>
+                                      </div>
                                       <VFileInput
                                         label="Icon"
                                         prepend-icon="tabler-camera"
@@ -1444,4 +1487,9 @@ const getLabel = (section, key) => {
       </div>
     </VCardText>
   </VCard>
+
+  <IconSelectionDialog
+    v-model:is-dialog-visible="isIconDialogVisible"
+    @select="handleIconSelect"
+  />
 </template>

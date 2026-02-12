@@ -70,6 +70,7 @@ declare module 'vue' {
     FillBlankChoicesSlide: typeof import('./resources/js/components/SlideTypes/FillBlankChoicesSlide.vue')['default']
     FillBlankSlide: typeof import('./resources/js/components/SlideTypes/FillBlankSlide.vue')['default']
     I18n: typeof import('./resources/js/@core/components/I18n.vue')['default']
+    IconSelectionDialog: typeof import('./resources/js/components/dialogs/IconSelectionDialog.vue')['default']
     LessonNavigation: typeof import('./resources/js/components/SlideTypes/LessonNavigation.vue')['default']
     LessonProgress: typeof import('./resources/js/components/SlideTypes/LessonProgress.vue')['default']
     LessonSlide: typeof import('./resources/js/components/SlideTypes/LessonSlide.vue')['default']
