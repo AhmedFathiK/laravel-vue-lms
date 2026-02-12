@@ -1050,41 +1050,47 @@ const getLabel = (section, key) => {
                           cols="12"
                         >
                           <div class="d-flex flex-column gap-4">
-                            <VCard
-                              v-for="(faq, index) in section.props[key]"
-                              :key="index"
-                              variant="outlined"
-                              class="mb-2"
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
                             >
-                              <VCardText>
-                                <div class="d-flex justify-space-between align-start mb-4">
-                                  <span class="text-subtitle-2">FAQ {{ index + 1 }}</span>
-                                  <VBtn
-                                    color="error"
-                                    variant="text"
-                                    size="small"
-                                    icon="tabler-trash"
-                                    @click="removeFaq(section, index)"
-                                  />
-                                </div>
-                                <VRow>
-                                  <VCol cols="12">
-                                    <AppTextField
-                                      v-model="faq.question"
-                                      label="Question"
+                              <VExpansionPanel
+                                v-for="(faq, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ faq.question || `FAQ ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeFaq(section, index)"
                                     />
-                                  </VCol>
-                                  <VCol cols="12">
-                                    <VTextarea
-                                      v-model="faq.answer"
-                                      label="Answer"
-                                      rows="3"
-                                      auto-grow
-                                    />
-                                  </VCol>
-                                </VRow>
-                              </VCardText>
-                            </VCard>
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol cols="12">
+                                      <AppTextField
+                                        v-model="faq.question"
+                                        label="Question"
+                                      />
+                                    </VCol>
+                                    <VCol cols="12">
+                                      <VTextarea
+                                        v-model="faq.answer"
+                                        label="Answer"
+                                        rows="3"
+                                        auto-grow
+                                      />
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
                             
                             <VBtn
                               variant="tonal"
