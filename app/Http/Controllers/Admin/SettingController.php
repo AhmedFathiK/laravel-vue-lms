@@ -248,7 +248,7 @@ class SettingController extends Controller
         return [
             [
                 'id' => 'home',
-                'name' => 'Hero Section',
+                'name' => 'Home Cover',
                 'component' => 'HeroSection',
                 'props' => [
                     'title' => 'One dashboard to manage all your business',

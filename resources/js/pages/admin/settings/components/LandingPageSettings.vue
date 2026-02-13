@@ -607,15 +607,6 @@ const getLabel = (section, key) => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="section.name"
-                    label="Section Name"
-                  />
-                </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
-                  <AppTextField
                     v-model="section.id"
                     label="HTML ID"
                   />
