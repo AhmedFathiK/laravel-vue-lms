@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateLandingPageSettingRequest;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -110,7 +111,7 @@ class SettingController extends Controller
         return response()->json($mergedConfig);
     }
 
-    public function updateLandingPageConfig(Request $request)
+    public function updateLandingPageConfig(UpdateLandingPageSettingRequest $request)
     {
         $config = $request->input('config');
         $sectionId = $request->input('section_id');
