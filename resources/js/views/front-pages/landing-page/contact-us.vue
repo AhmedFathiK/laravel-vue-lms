@@ -25,6 +25,10 @@ const props = defineProps({
       { title: 'Phone', icon: 'tabler-phone-call', color: 'success', value: '+1234 568 963' },
     ],
   },
+  image: {
+    type: String,
+    default: null,
+  },
 })
 </script>
 
@@ -67,7 +71,7 @@ const props = defineProps({
                 :style="{ borderRadius: '3.75rem 0.375rem 0.375rem 0.375rem' }"
               >
                 <VImg
-                  :src="ConnectImg"
+                  :src="props.image || ConnectImg"
                   :style="{ borderRadius: '3.75rem 0.375rem 0.375rem 0.375rem' }"
                 />
                 <VCardText class="pa-4 pb-1">

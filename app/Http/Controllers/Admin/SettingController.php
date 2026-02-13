@@ -188,6 +188,10 @@ class SettingController extends Controller
                     $paths[] = $section['props']['faq_image'];
                 }
 
+                if (isset($section['props']['image']) && $section['props']['image'] && str_starts_with($section['props']['image'], '/storage/')) {
+                    $paths[] = $section['props']['image'];
+                }
+
                 if (isset($section['props']['features']) && is_array($section['props']['features'])) {
                     foreach ($section['props']['features'] as $feature) {
                         if (isset($feature['icon']) && $feature['icon'] && str_starts_with($feature['icon'], '/storage/')) {
@@ -542,7 +546,12 @@ class SettingController extends Controller
                 'id' => 'banner',
                 'name' => 'Banner',
                 'component' => 'Banner',
-                'props' => (object)[],
+                'props' => [
+                    'title' => 'Ready to Get Started?',
+                    'subtitle' => 'Start your project with a 14-day free trial',
+                    'button_text' => 'Get Started',
+                    'image' => null,
+                ],
                 'visible' => true,
                 'wrapper_style' => []
             ],
@@ -550,7 +559,26 @@ class SettingController extends Controller
                 'id' => 'contact-us',
                 'name' => 'Contact Us',
                 'component' => 'ContactUs',
-                'props' => (object)[],
+                'props' => [
+                    'tag' => 'Contact Us',
+                    'title' => 'let\'s work together',
+                    'subtitle' => 'Any question or remark? just write us a message',
+                    'image' => null,
+                    'cards' => [
+                        [
+                            'title' => 'Email',
+                            'icon' => 'tabler-mail',
+                            'color' => 'primary',
+                            'value' => 'example@gmail.com'
+                        ],
+                        [
+                            'title' => 'Phone',
+                            'icon' => 'tabler-phone-call',
+                            'color' => 'success',
+                            'value' => '+1234 568 963'
+                        ],
+                    ],
+                ],
                 'visible' => true,
                 'wrapper_style' => []
             ],

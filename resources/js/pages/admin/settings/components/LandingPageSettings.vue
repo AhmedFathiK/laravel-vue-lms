@@ -304,7 +304,7 @@ const sectionConfigs = {
     groups: [
       {
         name: 'Header',
-        fields: ['tag', 'title', 'subtitle'],
+        fields: ['tag', 'title', 'subtitle', 'faqImage'],
       },
       {
         name: 'FAQ List',
@@ -315,6 +315,7 @@ const sectionConfigs = {
       tag: 'Section Tag',
       title: 'Main Title',
       subtitle: 'Subtitle Description',
+      faqImage: 'FAQ Image',
       faqs: 'Questions & Answers',
     },
   },
@@ -364,6 +365,43 @@ const sectionConfigs = {
     ],
     labels: {
       stats: 'Product Statistics',
+    },
+  },
+  Banner: {
+    groups: [
+      {
+        name: 'Main Content',
+        fields: ['title', 'subtitle', 'image'],
+      },
+      {
+        name: 'Button',
+        fields: ['buttonText'],
+      },
+    ],
+    labels: {
+      title: 'Title',
+      subtitle: 'Subtitle',
+      image: 'Banner Image',
+      buttonText: 'Button Text',
+    },
+  },
+  ContactUs: {
+    groups: [
+      {
+        name: 'Header',
+        fields: ['tag', 'title', 'subtitle', 'image'],
+      },
+      {
+        name: 'Contact Cards',
+        fields: ['cards'],
+      },
+    ],
+    labels: {
+      tag: 'Section Tag',
+      title: 'Main Title',
+      subtitle: 'Subtitle',
+      image: 'Section Image',
+      cards: 'Contact Cards',
     },
   },
 }
@@ -465,9 +503,23 @@ const removePlanFeature = (plan, index) => {
   plan.features.splice(index, 1)
 }
 
+const addContactCard = section => {
+  if (!section.props.cards) section.props.cards = []
+  section.props.cards.push({
+    title: 'New Card',
+    icon: 'tabler-info-circle',
+    color: 'primary',
+    value: 'Value',
+  })
+}
+
+const removeContactCard = (section, index) => {
+  section.props.cards.splice(index, 1)
+}
+
 const getGroups = section => {
   const config = sectionConfigs[section.component]
-  const allKeys = Object.keys(section.props)
+  const allKeys = Object.keys(section.props).filter(key => !key.startsWith('_'))
 
   if (config && config.groups) {
     const configuredGroups = config.groups.map(group => ({
@@ -595,7 +647,7 @@ const getLabel = (section, key) => {
                       >
                         <!-- Image Upload Prop -->
                         <VCol
-                          v-if="key === 'hero_image' || key === 'heroImage' || key === 'faq_image' || key === 'faqImage'"
+                          v-if="key === 'hero_image' || key === 'heroImage' || key === 'faq_image' || key === 'faqImage' || key === 'image'"
                           cols="12"
                           md="6"
                         >
@@ -1456,6 +1508,130 @@ const getLabel = (section, key) => {
                               @click="addPricingPlan(section)"
                             >
                               Add Pricing Plan
+                            </VBtn>
+                          </div>
+                        </VCol>
+
+                        <!-- Contact Cards List Prop -->
+                        <VCol
+                          v-else-if="key === 'cards' && Array.isArray(section.props[key])"
+                          cols="12"
+                        >
+                          <div class="d-flex flex-column gap-4">
+                            <VExpansionPanels
+                              variant="accordion"
+                              class="expansion-panels-width-border"
+                            >
+                              <VExpansionPanel
+                                v-for="(card, index) in section.props[key]"
+                                :key="index"
+                              >
+                                <VExpansionPanelTitle>
+                                  <div class="d-flex justify-space-between align-center w-100">
+                                    <span class="text-subtitle-2">{{ card.title || `Card ${index + 1}` }}</span>
+                                    <VBtn
+                                      color="error"
+                                      variant="text"
+                                      size="small"
+                                      icon="tabler-trash"
+                                      class="me-2"
+                                      @click.stop="removeContactCard(section, index)"
+                                    />
+                                  </div>
+                                </VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                  <VRow class="mt-2">
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="card.title"
+                                        label="Title"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="card.value"
+                                        label="Value"
+                                      />
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <div class="d-flex justify-space-between align-center mb-1">
+                                        <VLabel class="text-body-2 text-high-emphasis">
+                                          Icon
+                                        </VLabel>
+                                        <VBtn
+                                          size="small"
+                                          variant="text"
+                                          color="primary"
+                                          prepend-icon="tabler-search"
+                                          @click="openIconDialog(card)"
+                                        >
+                                          Select Icon
+                                        </VBtn>
+                                      </div>
+                                      <VTextField
+                                        v-model="card.icon"
+                                        label="Icon Class"
+                                        prepend-inner-icon="tabler-icons"
+                                      >
+                                        <template #append>
+                                          <VIcon :icon="card.icon" />
+                                        </template>
+                                      </VTextField>
+                                    </VCol>
+                                    <VCol
+                                      cols="12"
+                                      md="6"
+                                    >
+                                      <AppTextField
+                                        v-model="card.color"
+                                        label="Color"
+                                        placeholder="primary"
+                                      >
+                                        <template #append-inner>
+                                          <div
+                                            class="cursor-pointer border rounded"
+                                            :style="{
+                                              backgroundColor: card.color,
+                                              width: '24px',
+                                              height: '24px',
+                                              borderColor: 'rgba(var(--v-border-color), var(--v-border-opacity)) !important'
+                                            }"
+                                          >
+                                            <VMenu
+                                              activator="parent"
+                                              :close-on-content-click="false"
+                                              location="bottom end"
+                                            >
+                                              <VColorPicker
+                                                v-model="card.color"
+                                                mode="hex"
+                                                :modes="['hex', 'rgba', 'hsla']"
+                                              />
+                                            </VMenu>
+                                          </div>
+                                        </template>
+                                      </AppTextField>
+                                    </VCol>
+                                  </VRow>
+                                </VExpansionPanelText>
+                              </VExpansionPanel>
+                            </VExpansionPanels>
+                            
+                            <VBtn
+                              variant="tonal"
+                              prepend-icon="tabler-plus"
+                              @click="addContactCard(section)"
+                            >
+                              Add Contact Card
                             </VBtn>
                           </div>
                         </VCol>

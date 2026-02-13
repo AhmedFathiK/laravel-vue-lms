@@ -14,6 +14,10 @@ const props = defineProps({
     type: String,
     default: 'Get Started',
   },
+  image: {
+    type: String,
+    default: null,
+  },
 })
 </script>
 
@@ -42,7 +46,7 @@ const props = defineProps({
 
         <div class="banner-img">
           <img
-            :src="ctaDashborad"
+            :src="props.image || ctaDashborad"
             class="w-100"
           >
         </div>
@@ -59,6 +63,8 @@ const props = defineProps({
 
 .banner-img {
   margin-block-end: -22px;
+  max-inline-size: 500px;
+  width: 100%;
 }
 
 .banner-title {
