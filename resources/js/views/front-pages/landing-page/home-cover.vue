@@ -40,7 +40,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  heroImage: {
+  image: {
     type: String,
     default: null,
   },
@@ -49,8 +49,8 @@ const props = defineProps({
 const theme = useTheme()
 const { x, y } = useMouse({ touch: false })
 
-const activeHeroDashboardImg = computed(() => {
-  return props.heroImage
+const activeDashboardImg = computed(() => {
+  return props.image
 })
 
 const translateMouse = computed(() => {
@@ -70,24 +70,24 @@ const translateMouse = computed(() => {
     id="home"
     :style="{ background: 'rgb(var(--v-theme-surface))' }"
   >
-    <div id="landingHero">
+    <div id="landingHomeCover">
       <div
-        class="landing-hero"
+        class="landing-home-cover"
         :class="[
-          theme.current.value.dark ? 'landing-hero-dark-bg' : 'landing-hero-light-bg',
-          { 'landing-hero-no-image': !activeHeroDashboardImg }
+          theme.current.value.dark ? 'landing-home-cover-dark-bg' : 'landing-home-cover-light-bg',
+          { 'landing-home-cover-no-image': !activeDashboardImg }
         ]"
       >
         <VContainer>
-          <div class="hero-text-box text-center px-6">
-            <h1 class="hero-title mb-4">
+          <div class="home-cover-text-box text-center px-6">
+            <h1 class="home-cover-title mb-4">
               {{ props.title }}
             </h1>
             <h6 class="mb-6 text-h6">
               {{ props.subtitle }}
             </h6>
             <div class="position-relative">
-              <h6 class="position-absolute hero-btn-item d-md-flex d-none text-h6 text-medium-emphasis">
+              <h6 class="position-absolute home-cover-btn-item d-md-flex d-none text-h6 text-medium-emphasis">
                 <a
                   :href="props.secondaryButtonLink"
                   :target="props.secondaryButtonTarget ? '_blank' : '_self'"
@@ -119,21 +119,21 @@ const translateMouse = computed(() => {
     <VContainer>
       <div class="position-relative">
         <div
-          v-if="activeHeroDashboardImg"
-          class="hero-animation-img"
+          v-if="activeDashboardImg"
+          class="home-cover-animation-img"
         >
           <a
             :href="props.imageLink"
             :target="props.imageTarget ? '_blank' : '_self'"
           >
             <div
-              class="hero-dashboard-img position-relative"
+              class="home-cover-dashboard-img position-relative"
               :style="translateMouse"
               data-allow-mismatch
             >
               <img
-                :src="activeHeroDashboardImg"
-                alt="Hero Dashboard"
+                :src="activeDashboardImg"
+                alt="Home Cover Dashboard"
                 class="animation-img"
               >
             </div>
@@ -145,16 +145,16 @@ const translateMouse = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.landing-hero {
+.landing-home-cover {
   border-radius: 0 0 50px 50px;
   padding-block: 9.75rem 22rem;
 
-  &.landing-hero-no-image {
+  &.landing-home-cover-no-image {
     padding-block-end: 5rem !important;
   }
 }
 
-.hero-animation-img {
+.home-cover-animation-img {
   position: relative;
   inline-size: 90%;
   margin-block-start: -22rem;
@@ -166,87 +166,87 @@ section {
 }
 
 @media (min-width: 1280px) and (max-width: 1440px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 22rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -22rem;
   }
 }
 
 @media (min-width: 900px) and (max-width: 1279px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 14rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -13rem;
   }
 }
 
 @media (min-width: 768px) and (max-width: 899px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 12rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -12rem;
   }
 }
 
 @media (min-width: 600px) and (max-width: 767px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 8rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -9rem;
   }
 }
 
 @media (min-width: 425px) and (max-width: 600px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 8rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -9rem;
   }
 }
 
 @media (min-width: 300px) and (max-width: 424px) {
-  .landing-hero {
+  .landing-home-cover {
     padding-block-end: 6rem;
   }
 
-  .hero-animation-img {
+  .home-cover-animation-img {
     margin-block-start: -7rem;
   }
 }
 
-.landing-hero::before {
+.landing-home-cover::before {
   position: absolute;
   background-repeat: no-repeat;
   inset-block: 0;
   opacity: 0.5;
 }
 
-.landing-hero-dark-bg {
+.landing-home-cover-dark-bg {
   background-color: #25293c;
-  background-image: url("@images/front-pages/backgrounds/hero-bg.png");
+  background-image: url("@images/front-pages/backgrounds/home-cover-bg.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
 }
 
-.landing-hero-light-bg {
-  background: url("@images/front-pages/backgrounds/hero-bg.png") center no-repeat, linear-gradient(138.18deg, #eae8fd 0%, #fce5e6 94.44%);
+.landing-home-cover-light-bg {
+  background: url("@images/front-pages/backgrounds/home-cover-bg.png") center no-repeat, linear-gradient(138.18deg, #eae8fd 0%, #fce5e6 94.44%);
   background-size: cover;
 }
 
 @media (min-width: 650px) {
-  .hero-text-box {
+  .home-cover-text-box {
     inline-size: 38rem;
     margin-block-end: 1rem;
     margin-inline: auto;
@@ -254,13 +254,13 @@ section {
 }
 
 @media (max-width: 599px) {
-  .hero-title {
+  .home-cover-title {
     font-size: 1.5rem !important;
     line-height: 2.375rem !important;
   }
 }
 
-.hero-title {
+.home-cover-title {
   animation: shine 2s ease-in-out infinite alternate;
   background: linear-gradient(135deg, #28c76f 0%, #5a4aff 47.92%, #ff3739 100%);
   //  stylelint-disable-next-line property-no-vendor-prefix
@@ -287,7 +287,7 @@ section {
   }
 }
 
-.hero-dashboard-img {
+.home-cover-dashboard-img {
   position: relative;
   z-index: 1;
   margin-block: 0;
@@ -301,7 +301,7 @@ section {
   }
 }
 
-.hero-text-box {
+.home-cover-text-box {
   position: relative;
   z-index: 2;
 }
@@ -310,7 +310,7 @@ section {
   margin-block-start: 6.25rem;
 }
 
-.hero-btn-item {
+.home-cover-btn-item {
   inset-block-start: 80%;
   inset-inline-start: 5%;
 }

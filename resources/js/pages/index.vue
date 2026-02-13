@@ -6,7 +6,7 @@ import ContactUs from '@/views/front-pages/landing-page/contact-us.vue'
 import CustomersReview from '@/views/front-pages/landing-page/customers-review.vue'
 import FaqSection from '@/views/front-pages/landing-page/faq-section.vue'
 import Features from '@/views/front-pages/landing-page/features.vue'
-import HeroSection from '@/views/front-pages/landing-page/hero-section.vue'
+import HomeCover from '@/views/front-pages/landing-page/home-cover.vue'
 import OurTeam from '@/views/front-pages/landing-page/our-team.vue'
 import PricingPlans from '@/views/front-pages/landing-page/pricing-plans.vue'
 import ProductStats from '@/views/front-pages/landing-page/product-stats.vue'
@@ -28,7 +28,7 @@ const landingPageConfig = ref([])
 const sectionRefs = ref({})
 
 const componentsMap = {
-  HeroSection,
+  HomeCover,
   Features,
   CustomersReview,
   OurTeam,

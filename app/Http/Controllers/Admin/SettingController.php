@@ -83,6 +83,9 @@ class SettingController extends Controller
         foreach ($storedConfig as $section) {
             $defaultSection = collect($defaultConfig)->firstWhere('id', $section['id']);
             if ($defaultSection) {
+                // Ensure name is always up to date from code
+                $section['name'] = $defaultSection['name'];
+
                 $defaultProps = (array) $defaultSection['props'];
                 $storedProps = isset($section['props']) ? (array) $section['props'] : [];
 
@@ -180,10 +183,6 @@ class SettingController extends Controller
 
         foreach ($config as $section) {
             if (isset($section['props']) && is_array($section['props'])) {
-                if (isset($section['props']['hero_image']) && $section['props']['hero_image'] && str_starts_with($section['props']['hero_image'], '/storage/')) {
-                    $paths[] = $section['props']['hero_image'];
-                }
-
                 if (isset($section['props']['faq_image']) && $section['props']['faq_image'] && str_starts_with($section['props']['faq_image'], '/storage/')) {
                     $paths[] = $section['props']['faq_image'];
                 }
@@ -249,7 +248,7 @@ class SettingController extends Controller
             [
                 'id' => 'home',
                 'name' => 'Home Cover',
-                'component' => 'HeroSection',
+                'component' => 'HomeCover',
                 'props' => [
                     'title' => 'One dashboard to manage all your business',
                     'subtitle' => 'Production-ready & easy to use Admin Template for Reliability and Customizability.',
@@ -260,7 +259,7 @@ class SettingController extends Controller
                     'secondary_button_target' => true,
                     'image_link' => '/',
                     'image_target' => true,
-                    'hero_image' => null, // null means use default hardcoded image
+                    'image' => null, // null means use default hardcoded image
                 ],
                 'visible' => true,
                 'wrapper_style' => []

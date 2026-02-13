@@ -114,7 +114,7 @@ const saveSettings = async () => {
     const currentSection = config.value.find(section => section.id === activeTab.value)
     
     if (currentSection) {
-      // 1. Check section level props (e.g. Hero Image)
+      // 1. Check section level props (e.g. Home Cover Image)
       if (currentSection.props._pendingFile) {
         try {
           const path = await uploadFile(currentSection.props._pendingFile)
@@ -232,7 +232,7 @@ const saveSettings = async () => {
 }
 
 const sectionConfigs = {
-  HeroSection: {
+  HomeCover: {
     groups: [
       {
         name: 'Main Content',
@@ -247,16 +247,16 @@ const sectionConfigs = {
         fields: ['secondaryButtonText', 'secondaryButtonLink', 'secondaryButtonTarget'],
       },
       {
-        name: 'Hero Image',
-        fields: ['heroImage', 'imageLink', 'imageTarget'],
+        name: 'Cover Image',
+        fields: ['image', 'imageLink', 'imageTarget'],
       },
     ],
     labels: {
-      heroImage: 'Hero Image',
+      image: 'Cover Image',
       secondaryButtonTarget: 'Open in new tab',
       imageTarget: 'Open image link in new tab',
-      title: 'Hero Title',
-      subtitle: 'Hero Subtitle',
+      title: 'Title',
+      subtitle: 'Subtitle',
       buttonText: 'Primary Button Text',
       buttonLink: 'Primary Button Link',
       secondaryButtonText: 'Secondary Button Text',
