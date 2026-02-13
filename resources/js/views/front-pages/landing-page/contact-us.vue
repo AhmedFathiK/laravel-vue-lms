@@ -1,10 +1,6 @@
 <script setup>
 import ConnectImg from '@images/front-pages/landing-page/contact-customer-service.png'
 
-const name = ref('')
-const email = ref('')
-const message = ref('')
-
 const props = defineProps({
   tag: {
     type: String,
@@ -29,7 +25,15 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  formDescription: {
+    type: String,
+    default: 'If you would like to discuss anything related to payment, account, licensing, partnerships, or have pre-sales questions, you’re at the right place.',
+  },
 })
+
+const name = ref('')
+const email = ref('')
+const message = ref('')
 </script>
 
 <template>
@@ -123,7 +127,7 @@ const props = defineProps({
 
               <VCardText>
                 <p class="mb-6">
-                  If you would like to discuss anything related to payment, account, licensing, partnerships, or have pre-sales questions, you’re at the right place.
+                  {{ props.formDescription }}
                 </p>
                 <VForm @submit.prevent="() => {}">
                   <VRow>

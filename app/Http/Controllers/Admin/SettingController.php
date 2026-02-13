@@ -563,6 +563,7 @@ class SettingController extends Controller
                     'tag' => 'Contact Us',
                     'title' => 'let\'s work together',
                     'subtitle' => 'Any question or remark? just write us a message',
+                    'form_description' => 'If you would like to discuss anything related to payment, account, licensing, partnerships, or have pre-sales questions, you’re at the right place.',
                     'image' => null,
                     'cards' => [
                         [

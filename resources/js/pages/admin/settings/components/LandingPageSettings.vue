@@ -389,7 +389,7 @@ const sectionConfigs = {
     groups: [
       {
         name: 'Header',
-        fields: ['tag', 'title', 'subtitle', 'image'],
+        fields: ['tag', 'title', 'subtitle', 'formDescription', 'image'],
       },
       {
         name: 'Contact Cards',
@@ -400,6 +400,7 @@ const sectionConfigs = {
       tag: 'Section Tag',
       title: 'Main Title',
       subtitle: 'Subtitle',
+      formDescription: 'Form Description',
       image: 'Section Image',
       cards: 'Contact Cards',
     },
@@ -681,6 +682,19 @@ const getLabel = (section, key) => {
                               </VBtn>
                             </div>
                           </div>
+                        </VCol>
+
+                        <!-- Textarea Props -->
+                        <VCol
+                          v-else-if="key === 'formDescription'"
+                          cols="12"
+                        >
+                          <VTextarea
+                            v-model="section.props[key]"
+                            :label="getLabel(section, key)"
+                            rows="3"
+                            auto-grow
+                          />
                         </VCol>
 
                         <!-- String Props -->
