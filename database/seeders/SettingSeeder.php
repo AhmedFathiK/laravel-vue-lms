@@ -363,9 +363,20 @@ class SettingSeeder extends Seeder
             ]
         );
 
-        // 2. Add other settings here if needed in the future
-        // Example: General settings, Email settings, etc.
-        // $generalSettings = [...];
-        // Setting::updateOrCreate(['key' => 'general_settings'], ['value' => json_encode($generalSettings), 'group' => 'general']);
+        // 2. General Settings
+        $generalSettings = [
+            'app_name' => 'Laravel Vue LMS',
+            'app_logo' => null,
+        ];
+
+        foreach ($generalSettings as $key => $value) {
+            Setting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'group' => 'general',
+                ]
+            );
+        }
     }
 }

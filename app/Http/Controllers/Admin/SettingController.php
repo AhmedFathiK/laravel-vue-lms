@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateLandingPageSettingRequest;
+use App\Http\Requests\Admin\UpdateSettingRequest;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,25 +15,57 @@ class SettingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function show(string $group): JsonResponse
     {
-        $query = Setting::query();
-
-        if ($request->has('group')) {
-            $query->where('group', $request->group);
+        if ($group === 'landing-page') {
+            return $this->getLandingPageSettings();
         }
 
-        $settings = $query->get()->pluck('value', 'key');
-
+        // Default behavior for other groups (general, payment, etc.)
+        $settings = Setting::where('group', $group)->pluck('value', 'key');
         return response()->json($settings);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, string $group): JsonResponse
     {
-        $data = $request->all();
+        if ($group === 'landing-page') {
+            // Resolve validation manually for landing page
+            $validatedRequest = app(UpdateLandingPageSettingRequest::class);
+            return $this->updateLandingPageSettings($validatedRequest);
+        }
+
+        // Manually resolve generic validation
+        // Merge route group into request for validation if needed
+        $request->merge(['group' => $group]);
+        $validatedRequest = app(UpdateSettingRequest::class);
+
+        return $this->updateGenericSettings($validatedRequest);
+    }
+
+    public function upload(Request $request, string $group): JsonResponse
+    {
+        if ($group === 'landing-page') {
+            return $this->uploadLandingPageImage($request);
+        }
+
+        // Generic upload logic if needed
+        return response()->json(['message' => 'Upload not implemented for this group'], 501);
+    }
+
+    /**
+     * Public access for landing page settings (no auth required)
+     */
+    public function getPublicLandingPageSettings(): JsonResponse
+    {
+        return $this->getLandingPageSettings();
+    }
+
+    private function updateGenericSettings(UpdateSettingRequest $request): JsonResponse
+    {
+        $data = $request->validated();
         $group = $data['group'] ?? 'general';
 
         if (isset($data['settings']) && is_array($data['settings'])) {
@@ -66,7 +99,7 @@ class SettingController extends Controller
         return response()->json(['message' => 'Settings updated successfully']);
     }
 
-    public function getLandingPageConfig()
+    private function getLandingPageSettings()
     {
         $setting = Setting::where('key', 'landing_page_config')->first();
 
@@ -111,7 +144,7 @@ class SettingController extends Controller
         return response()->json($mergedConfig);
     }
 
-    public function updateLandingPageConfig(UpdateLandingPageSettingRequest $request)
+    private function updateLandingPageSettings(UpdateLandingPageSettingRequest $request)
     {
         $validated = $request->validated();
         $config = $validated['config'] ?? null;

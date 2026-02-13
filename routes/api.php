@@ -94,17 +94,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
 |--------------------------------------------------------------------------
 */
 
-Route::get('public/landing-page-settings', [SettingController::class, 'getLandingPageConfig']);
+Route::get('public/landing-page-settings', [SettingController::class, 'getPublicLandingPageSettings']);
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->prefix('admin')->group(function () {
     // App Settings
-    Route::get('settings', [SettingController::class, 'index']);
-    Route::post('settings', [SettingController::class, 'update']);
-
-    // Landing Page Settings
-    Route::get('landing-page-settings', [SettingController::class, 'getLandingPageConfig']);
-    Route::post('landing-page-settings', [SettingController::class, 'updateLandingPageConfig']);
-    Route::post('landing-page-settings/upload-image', [SettingController::class, 'uploadLandingPageImage']);
+    Route::get('settings/{group}', [SettingController::class, 'show']);
+    Route::post('settings/{group}', [SettingController::class, 'update']);
+    Route::post('settings/{group}/upload', [SettingController::class, 'upload']);
 
     // User & Role Management
     Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);
