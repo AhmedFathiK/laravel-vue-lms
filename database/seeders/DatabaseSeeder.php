@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             // DevelopmentSeeder::class, // Factory-based random data
             LanguageCourseSeeder::class, // Real language course data
+            SettingSeeder::class, // General Settings
         ]);
     }
 }
