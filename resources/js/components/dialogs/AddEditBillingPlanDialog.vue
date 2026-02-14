@@ -339,7 +339,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
                 cols="12"
                 sm="6"
               >
-                <VTextField
+                <AppTextField
                   v-model.number="localPlan.accessDurationDays"
                   label="Duration (days)"
                   type="number"
@@ -357,7 +357,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
                 cols="12"
                 sm="6"
               >
-                <VTextField
+                <AppTextField
                   v-model.number="localPlan.price"
                   label="Price"
                   type="number"

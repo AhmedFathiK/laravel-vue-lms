@@ -13,6 +13,21 @@ const elementId = computed(() => {
 })
 
 const label = computed(() => useAttrs().label)
+
+const attrs = useAttrs()
+
+const onKeydown = e => {
+  if (attrs.type === 'number' && (e.key === 'e' || e.key === 'E'))
+    e.preventDefault()
+}
+
+const onPaste = e => {
+  if (attrs.type === 'number') {
+    const pastedData = (e.clipboardData || window.clipboardData).getData('text')
+    if (/e/i.test(pastedData))
+      e.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -35,6 +50,8 @@ const label = computed(() => useAttrs().label)
         variant: 'outlined',
         id: elementId,
       }"
+      @keydown="onKeydown"
+      @paste="onPaste"
     >
       <template
         v-for="(_, name) in $slots"
