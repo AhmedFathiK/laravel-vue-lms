@@ -77,13 +77,14 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
         switch ($sectionId) {
             case 'home':
+                $requiredSafeUrl = ['required', 'string', 'not_regex:/^javascript:/i'];
                 $rules = [
                     "{$props}.title" => ['required', 'string'],
                     "{$props}.subtitle" => ['required', 'string'],
-                    "{$props}.button_text" => ['nullable', 'string'],
-                    "{$props}.button_link" => $safeUrl,
-                    "{$props}.secondary_button_text" => ['nullable', 'string'],
-                    "{$props}.secondary_button_link" => $safeUrl,
+                    "{$props}.button_text" => ['required', 'string'],
+                    "{$props}.button_link" => $requiredSafeUrl,
+                    "{$props}.secondary_button_text" => ['required', 'string'],
+                    "{$props}.secondary_button_link" => $requiredSafeUrl,
                     "{$props}.secondary_button_target" => ['nullable', 'boolean'],
                     "{$props}.image_link" => $safeUrl,
                     "{$props}.image_target" => ['nullable', 'boolean'],

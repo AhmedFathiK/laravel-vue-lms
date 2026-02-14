@@ -66,12 +66,16 @@ const isTablerIcon = icon => {
   return icon && typeof icon === 'string' && icon.startsWith('tabler-')
 }
 
-const getFieldRules = key => {
-  if (['title', 'subtitle', 'tag'].includes(key)) {
-    return [requiredValidator]
-  }
+const getFieldRules = (section, key) => {
+  const config = sectionConfigs[section.component]
   
-  return []
+  return config?.rules?.[key] || []
+}
+
+const getItemRules = (section, listKey, fieldKey) => {
+  const config = sectionConfigs[section.component]
+  
+  return config?.itemRules?.[listKey]?.[fieldKey] || []
 }
 
 const updateComplexProp = (section, key, jsonString) => {
@@ -292,6 +296,14 @@ const sectionConfigs = {
       secondaryButtonLink: 'Secondary Button Link',
       imageLink: 'Image Link',
     },
+    rules: {
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+      buttonText: [requiredValidator],
+      buttonLink: [requiredValidator],
+      secondaryButtonText: [requiredValidator],
+      secondaryButtonLink: [requiredValidator],
+    },
   },
   Features: {
     groups: [
@@ -310,6 +322,17 @@ const sectionConfigs = {
       subtitle: 'Subtitle Description',
       features: 'Features List',
     },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      features: {
+        title: [requiredValidator],
+        desc: [requiredValidator],
+      },
+    },
   },
   CustomersReview: {
     groups: [
@@ -327,6 +350,19 @@ const sectionConfigs = {
       title: 'Main Title',
       subtitle: 'Subtitle Description',
       reviews: 'Customer Reviews',
+    },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      reviews: {
+        name: [requiredValidator],
+        position: [requiredValidator],
+        rating: [requiredValidator, val => betweenValidator(val, 1, 5)],
+        desc: [requiredValidator],
+      },
     },
   },
   FaqSection: {
@@ -347,6 +383,17 @@ const sectionConfigs = {
       faqImage: 'FAQ Image',
       faqs: 'Questions & Answers',
     },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      faqs: {
+        question: [requiredValidator],
+        answer: [requiredValidator],
+      },
+    },
   },
   OurTeam: {
     groups: [
@@ -364,6 +411,17 @@ const sectionConfigs = {
       title: 'Main Title',
       subtitle: 'Subtitle Description',
       team: 'Team Members',
+    },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      team: {
+        name: [requiredValidator],
+        position: [requiredValidator],
+      },
     },
   },
   PricingPlans: {
@@ -384,6 +442,18 @@ const sectionConfigs = {
       saveText: 'Annual Savings Text',
       plans: 'Pricing Plans',
     },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      plans: {
+        title: [requiredValidator],
+        monthlyPrice: [requiredValidator],
+        yearlyPrice: [requiredValidator],
+      },
+    },
   },
   ProductStats: {
     groups: [
@@ -394,6 +464,13 @@ const sectionConfigs = {
     ],
     labels: {
       stats: 'Product Statistics',
+    },
+    rules: {},
+    itemRules: {
+      stats: {
+        title: [requiredValidator],
+        value: [requiredValidator],
+      },
     },
   },
   Banner: {
@@ -412,6 +489,11 @@ const sectionConfigs = {
       subtitle: 'Subtitle',
       image: 'Banner Image',
       buttonText: 'Button Text',
+    },
+    rules: {
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+      buttonText: [requiredValidator],
     },
   },
   ContactUs: {
@@ -432,6 +514,17 @@ const sectionConfigs = {
       formDescription: 'Form Description',
       image: 'Section Image',
       cards: 'Contact Cards',
+    },
+    rules: {
+      tag: [requiredValidator],
+      title: [requiredValidator],
+      subtitle: [requiredValidator],
+    },
+    itemRules: {
+      cards: {
+        title: [requiredValidator],
+        value: [requiredValidator],
+      },
     },
   },
 }
@@ -731,7 +824,7 @@ const getLabel = (section, key) => {
                             <AppTextField
                               v-model="section.props[key]"
                               :label="getLabel(section, key)"
-                              :rules="getFieldRules(key)"
+                              :rules="getFieldRules(section, key)"
                             />
                           </VCol>
 
@@ -796,6 +889,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="stat.title"
                                           label="Title"
+                                          :rules="getItemRules(section, 'stats', 'title')"
                                         />
                                       </VCol>
                                       <VCol
@@ -805,6 +899,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="stat.value"
                                           label="Value"
+                                          :rules="getItemRules(section, 'stats', 'value')"
                                         />
                                       </VCol>
                                       <VCol
@@ -944,6 +1039,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="feature.title"
                                           label="Title"
+                                          :rules="getItemRules(section, 'features', 'title')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1004,6 +1100,7 @@ const getLabel = (section, key) => {
                                           label="Description"
                                           rows="2"
                                           auto-grow
+                                          :rules="getItemRules(section, 'features', 'desc')"
                                         />
                                       </VCol>
                                     </VRow>
@@ -1057,7 +1154,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="review.name"
                                           label="Reviewer Name"
-                                          :rules="[requiredValidator]"
+                                          :rules="getItemRules(section, 'reviews', 'name')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1067,7 +1164,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="review.position"
                                           label="Position/Title"
-                                          :rules="[requiredValidator]"
+                                          :rules="getItemRules(section, 'reviews', 'position')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1080,7 +1177,7 @@ const getLabel = (section, key) => {
                                           type="number"
                                           min="1"
                                           max="5"
-                                          :rules="[requiredValidator, val => betweenValidator(val, 1, 5)]"
+                                          :rules="getItemRules(section, 'reviews', 'rating')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1123,7 +1220,7 @@ const getLabel = (section, key) => {
                                           label="Comment"
                                           rows="3"
                                           auto-grow
-                                          :rules="[requiredValidator]"
+                                          :rules="getItemRules(section, 'reviews', 'desc')"
                                         />
                                       </VCol>
                                     </VRow>
@@ -1174,6 +1271,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="faq.question"
                                           label="Question"
+                                          :rules="getItemRules(section, 'faqs', 'question')"
                                         />
                                       </VCol>
                                       <VCol cols="12">
@@ -1182,6 +1280,7 @@ const getLabel = (section, key) => {
                                           label="Answer"
                                           rows="3"
                                           auto-grow
+                                          :rules="getItemRules(section, 'faqs', 'answer')"
                                         />
                                       </VCol>
                                     </VRow>
@@ -1235,6 +1334,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="member.name"
                                           label="Name"
+                                          :rules="getItemRules(section, 'team', 'name')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1244,6 +1344,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="member.position"
                                           label="Position"
+                                          :rules="getItemRules(section, 'team', 'position')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1409,6 +1510,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="plan.title"
                                           label="Plan Title"
+                                          :rules="getItemRules(section, 'plans', 'title')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1428,6 +1530,7 @@ const getLabel = (section, key) => {
                                           v-model.number="plan.monthlyPrice"
                                           label="Monthly Price"
                                           type="number"
+                                          :rules="getItemRules(section, 'plans', 'monthlyPrice')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1438,6 +1541,7 @@ const getLabel = (section, key) => {
                                           v-model.number="plan.yearlyPrice"
                                           label="Yearly Price"
                                           type="number"
+                                          :rules="getItemRules(section, 'plans', 'yearlyPrice')"
                                         />
                                       </VCol>
                                     
@@ -1593,6 +1697,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="card.title"
                                           label="Title"
+                                          :rules="getItemRules(section, 'cards', 'title')"
                                         />
                                       </VCol>
                                       <VCol
@@ -1602,6 +1707,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="card.value"
                                           label="Value"
+                                          :rules="getItemRules(section, 'cards', 'value')"
                                         />
                                       </VCol>
                                       <VCol
