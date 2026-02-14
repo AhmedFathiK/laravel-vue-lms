@@ -17,14 +17,14 @@ const label = computed(() => useAttrs().label)
 const attrs = useAttrs()
 
 const onKeydown = e => {
-  if (attrs.type === 'number' && (e.key === 'e' || e.key === 'E'))
+  if (attrs.type === 'number' && ['e', 'E', '+', '-'].includes(e.key))
     e.preventDefault()
 }
 
 const onPaste = e => {
   if (attrs.type === 'number') {
     const pastedData = (e.clipboardData || window.clipboardData).getData('text')
-    if (/e/i.test(pastedData))
+    if (/[e+-]/i.test(pastedData))
       e.preventDefault()
   }
 }
