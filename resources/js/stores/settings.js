@@ -11,7 +11,7 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     async fetchSettings() {
       try {
-        const data = await api.get('/admin/settings', { params: { group: 'general' } })
+        const data = await api.get('/admin/settings/general')
         
         if (data.appName) this.appName = data.appName
         

@@ -33,7 +33,7 @@ const fetchSettings = async () => {
   try {
     isLoading.value = true
 
-    const data = await api.get('/admin/landing-page-settings')
+    const data = await api.get('/admin/settings/landing-page')
 
     config.value = data
     if (data.length > 0 && !activeTab.value) {
@@ -98,7 +98,7 @@ const uploadFile = async file => {
 
   formData.append('file', file)
   
-  const response = await api.post('/admin/landing-page-settings/upload-image', formData, {
+  const response = await api.post('/admin/settings/landing-page/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 
@@ -211,18 +211,15 @@ const saveSettings = async () => {
           }
         }
       }
+      
+      // Perform partial update
+      await api.post('/admin/settings/landing-page', {
+        sectionId: currentSection.id,
+        sectionData: currentSection,
+      })
+      
+      toast.success('Settings saved successfully')
     }
-
-    // Clone current section to remove any internal properties before sending
-    const currentSectionToSend = currentSection ? JSON.parse(JSON.stringify(currentSection)) : null
-    
-    // Prepare payload based on whether we found a specific section
-    const payload = currentSectionToSend 
-      ? { sectionId: currentSectionToSend.id, sectionData: currentSectionToSend }
-      : { config: JSON.parse(JSON.stringify(config.value)) }
-
-    await api.post('/admin/landing-page-settings', payload)
-    toast.success('Settings updated successfully')
   } catch (error) {
     console.error(error)
     toast.error('Failed to save settings')

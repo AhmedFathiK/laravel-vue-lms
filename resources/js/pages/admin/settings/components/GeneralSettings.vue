@@ -14,7 +14,7 @@ const fetchSettings = async () => {
   try {
     isLoading.value = true
 
-    const data = await api.get('/admin/settings', { params: { group: 'general' } })
+    const data = await api.get('/admin/settings/general')
 
     appName.value = data.appName || settingsStore.appName || ''
     appLogoPreview.value = data.appLogo || ''
@@ -40,13 +40,12 @@ const saveSettings = async () => {
     
     const formData = new FormData()
 
-    formData.append('group', 'general')
     formData.append('settings[app_name]', appName.value)
     if (appLogo.value) {
       formData.append('settings[app_logo]', appLogo.value)
     }
 
-    await api.post('/admin/settings', formData, {
+    await api.post('/admin/settings/general', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
