@@ -42,8 +42,8 @@ const fetchSettings = async () => {
     const data = await api.get('/admin/settings/landing-page')
 
     config.value = data
-    if (data.length > 0 && !activeTab.value) {
-      activeTab.value = data[0].id
+    if (data.length > 0 && activeTab.value === null) {
+      activeTab.value = 0
     }
   } catch (error) {
     console.error(error)
@@ -64,6 +64,14 @@ onUnmounted(() => {
 
 const isTablerIcon = icon => {
   return icon && typeof icon === 'string' && icon.startsWith('tabler-')
+}
+
+const getFieldRules = key => {
+  if (['title', 'subtitle', 'tag'].includes(key)) {
+    return [requiredValidator]
+  }
+  
+  return []
 }
 
 const updateComplexProp = (section, key, jsonString) => {
@@ -124,7 +132,7 @@ const saveSettings = async () => {
     isSaving.value = true
 
     // Find current section
-    const currentSection = config.value.find(section => section.id === activeTab.value)
+    const currentSection = config.value[activeTab.value]
     
     if (currentSection) {
       // 1. Check section level props (e.g. Home Cover Image)
@@ -598,9 +606,9 @@ const getLabel = (section, key) => {
             class="mb-4"
           >
             <VTab
-              v-for="section in config"
-              :key="section.id"
-              :value="section.id"
+              v-for="(section, index) in config"
+              :key="index"
+              :value="index"
             >
               {{ section.name }}
             </VTab>
@@ -608,12 +616,12 @@ const getLabel = (section, key) => {
 
           <VWindow v-model="activeTab">
             <VWindowItem
-              v-for="section in config"
-              :key="section.id"
-              :value="section.id"
+              v-for="(section, index) in config"
+              :key="index"
+              :value="index"
             >
               <VForm
-                :ref="el => setFormRef(el, section.id)"
+                :ref="el => setFormRef(el, index)"
                 @submit.prevent="saveSettings"
               >
                 <div class="d-flex align-center gap-4 w-100 mb-6">
@@ -723,6 +731,7 @@ const getLabel = (section, key) => {
                             <AppTextField
                               v-model="section.props[key]"
                               :label="getLabel(section, key)"
+                              :rules="getFieldRules(key)"
                             />
                           </VCol>
 

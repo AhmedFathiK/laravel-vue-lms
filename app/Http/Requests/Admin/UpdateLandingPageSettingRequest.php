@@ -78,8 +78,8 @@ class UpdateLandingPageSettingRequest extends FormRequest
         switch ($sectionId) {
             case 'home':
                 $rules = [
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.button_text" => ['nullable', 'string'],
                     "{$props}.button_link" => $safeUrl,
                     "{$props}.secondary_button_text" => ['nullable', 'string'],
@@ -93,9 +93,9 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
             case 'features':
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.features" => ['nullable', 'array'],
                     "{$props}.features.*.title" => ['required', 'string'],
                     "{$props}.features.*.desc" => ['nullable', 'string'],
@@ -106,9 +106,9 @@ class UpdateLandingPageSettingRequest extends FormRequest
             case 'reviews':
                 $requiredSafeUrl = ['required', 'string', 'not_regex:/^javascript:/i'];
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.reviews" => ['nullable', 'array'],
                     "{$props}.reviews.*.name" => ['required', 'string'],
                     "{$props}.reviews.*.position" => ['required', 'string'],
@@ -120,9 +120,9 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
             case 'team':
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.team" => ['nullable', 'array'],
                     "{$props}.team.*.name" => ['required', 'string'],
                     "{$props}.team.*.position" => ['nullable', 'string'],
@@ -134,9 +134,9 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
             case 'pricing':
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.save_text" => ['nullable', 'string'],
                     "{$props}.plans" => ['nullable', 'array'],
                     "{$props}.plans.*.title" => ['required', 'string'],
@@ -164,9 +164,9 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
             case 'faq':
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.faq_image" => $safeUrl,
                     "{$props}.faqs" => ['nullable', 'array'],
                     "{$props}.faqs.*.question" => ['required', 'string'],
