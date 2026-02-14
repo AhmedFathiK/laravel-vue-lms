@@ -8,15 +8,43 @@ import { useWindowScroll } from '@vueuse/core'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay } from 'vuetify'
 
-const props = defineProps({ activeId: String })
+const props = defineProps({ 
+  activeId: String,
+  config: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
 const display = useDisplay()
 const { y } = useWindowScroll()
-const route = useRoute()
 const router = useRouter()
-const sidebar = ref(false)
+const isMenuOpen = ref(false)
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
+
+const navItems = computed(() => {
+  if (props.config?.menuItems && props.config.menuItems.length > 0) {
+    return props.config.menuItems.map(item => ({
+      name: item.name,
+      to: item.isHash ? { name: 'index', hash: `#${item.to}` } : item.to,
+      target: item.target || '_self',
+      isActive: item.isHash && props.activeId === item.to,
+    }))
+  }
+  
+  // Legacy support for snake_case if middleware didn't convert for some reason
+  if (props.config?.menu_items && props.config.menu_items.length > 0) {
+    return props.config.menu_items.map(item => ({
+      name: item.name,
+      to: (item.is_hash || item.isHash) ? { name: 'index', hash: `#${item.to}` } : item.to,
+      target: item.target || '_self',
+      isActive: (item.is_hash || item.isHash) && props.activeId === item.to,
+    }))
+  }
+  
+  return []
+})
 
 // Get authentication status
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -35,97 +63,14 @@ const handleLogout = async () => {
 }
 
 watch(() => display, () => {
-  return display.mdAndUp ? sidebar.value = false : sidebar.value
+  return display.mdAndUp ? isMenuOpen.value = false : isMenuOpen.value
 }, { deep: true })
-
-const isMenuOpen = ref(false)
-const isMegaMenuOpen = ref(false)
-
-const menuItems = [
-  {
-    listTitle: 'Pages',
-    listIcon: 'tabler-layout-grid',
-    navItems: [
-      {
-        name: 'Login',
-        to: { name: 'login' },
-        showWhen: 'unauthenticated',
-      },
-      {
-        name: 'Register',
-        to: { name: 'register' },
-        showWhen: 'unauthenticated',
-      },
-      {
-        name: 'Forgot Password',
-        to: { name: 'forgot-password' },
-        showWhen: 'unauthenticated',
-      },
-      {
-        name: 'Pricing',
-        to: { name: 'pricing' },
-      },
-      {
-        name: 'Help Center',
-        to: { name: 'help-center' },
-      },
-      {
-        name: 'Payment',
-        to: { name: 'payment' },
-      },
-      {
-        name: 'Checkout',
-        to: { name: 'checkout' },
-      },
-    ],
-  },
-  {
-    listTitle: 'System',
-    listIcon: 'tabler-lock-open',
-    navItems: [
-      {
-        name: 'Access Control',
-        to: { name: 'access-control' },
-        showWhen: 'authenticated',
-      },
-      {
-        name: 'Not Authorized',
-        to: { name: 'not-authorized' },
-      },
-    ],
-  },
-]
-
-// Filter menu items based on authentication status
-const filteredMenuItems = computed(() => {
-  return menuItems.map(category => {
-    return {
-      ...category,
-      navItems: category.navItems.filter(item => {
-        if (item.showWhen === 'authenticated') return isAuthenticated.value
-        if (item.showWhen === 'unauthenticated') return !isAuthenticated.value
-
-        return true
-      }),
-    }
-  }).filter(category => category.navItems.length > 0)
-})
-
-const isCurrentRoute = to => {
-  return route.matched.some(_route => _route.path.startsWith(router.resolve(to).path))
-
-  // ℹ️ Below is much accurate approach if you don't have any nested routes
-
-// return route.matched.some(_route => _route.path === router.resolve(to).path)
-}
-
-const isPageActive = computed(() => menuItems.some(item => item.navItems.some(listItem => isCurrentRoute(listItem.to))))
 </script>
 
 <template>
   <!-- 👉 Navigation drawer for mobile devices  -->
   <VNavigationDrawer
-    v-model="sidebar"
+    v-model="isMenuOpen"
     width="275"
     data-allow-mismatch
     disable-resize-watcher
@@ -138,69 +83,15 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
       <div>
         <div class="d-flex flex-column gap-y-4 pa-4">
           <RouterLink
-            v-for="(item, index) in ['Home', 'Features', 'Team', 'FAQ', 'Contact us']"
+            v-for="(item, index) in navItems"
             :key="index"
-            :to="{ name: 'index', hash: `#${item.toLowerCase().replace(' ', '-')}` }"
+            :to="item.to"
+            :target="item.target"
             class="nav-link font-weight-medium"
-            :class="[props.activeId?.toLocaleLowerCase().replace('-', ' ') === item.toLocaleLowerCase() ? 'active-link' : '']"
+            :class="[item.isActive ? 'active-link' : '']"
           >
-            {{ item }}
+            {{ item.name }}
           </RouterLink>
-
-          <div class="font-weight-medium cursor-pointer">
-            <div
-              :class="[isMenuOpen ? 'mb-6 active-link' : '', isPageActive ? 'active-link' : '']"
-              style="color: rgba(var(--v-theme-on-surface));"
-              class="page-link"
-              @click="isMenuOpen = !isMenuOpen"
-            >
-              Pages <VIcon :icon="isMenuOpen ? 'tabler-chevron-up' : 'tabler-chevron-down'" />
-            </div>
-
-            <div
-              class="px-4"
-              :class="isMenuOpen ? 'd-block' : 'd-none'"
-            >
-              <div
-                v-for="(item, index) in filteredMenuItems"
-                :key="index"
-              >
-                <div class="d-flex align-center gap-x-3 mb-4">
-                  <VAvatar
-                    variant="tonal"
-                    color="primary"
-                    rounded
-                    :icon="item.listIcon"
-                  />
-                  <div class="text-body-1 text-high-emphasis font-weight-medium">
-                    {{ item.listTitle }}
-                  </div>
-                </div>
-                <ul class="mb-6">
-                  <li
-                    v-for="listItem in item.navItems"
-                    :key="listItem.name"
-                    style="list-style: none;"
-                    class="text-body-1 mb-4 text-no-wrap"
-                  >
-                    <RouterLink
-                      :to="listItem.to"
-                      :target="item.listTitle === 'External' ? '_blank' : '_self'"
-                      class="mega-menu-item"
-                      :class="isCurrentRoute(listItem.to) ? 'active-link' : 'text-high-emphasis'"
-                    >
-                      <VIcon
-                        icon="tabler-circle"
-                        :size="10"
-                        class="me-2"
-                      />
-                      <span>{{ listItem.name }}</span>
-                    </RouterLink>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
 
           <RouterLink
             v-if="isAuthenticated"
@@ -226,7 +117,7 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
         id="navigation-drawer-close-btn"
         icon="tabler-x"
         size="20"
-        @click="sidebar = !sidebar"
+        @click="isMenuOpen = !isMenuOpen"
       />
     </PerfectScrollbar>
   </VNavigationDrawer>
@@ -243,7 +134,7 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
         <IconBtn
           id="vertical-nav-toggle-btn"
           class="ms-n3 me-2 d-inline-block d-md-none"
-          @click="sidebar = !sidebar"
+          @click="isMenuOpen = !isMenuOpen"
         >
           <VIcon
             size="26"
@@ -271,13 +162,14 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
           <!-- landing page sections -->
           <div class="text-base align-center d-none d-md-flex">
             <RouterLink
-              v-for="(item, index) in ['Home', 'Features', 'Team', 'FAQ', 'Contact us']"
+              v-for="(item, index) in navItems"
               :key="index"
-              :to="{ name: 'index', hash: `#${item.toLowerCase().replace(' ', '-')}` }"
+              :to="item.to"
+              :target="item.target"
               class="nav-link font-weight-medium py-2 px-2 px-lg-4"
-              :class="[props.activeId?.toLocaleLowerCase().replace('-', ' ') === item.toLocaleLowerCase() ? 'active-link' : '']"
+              :class="[item.isActive ? 'active-link' : '']"
             >
-              {{ item }}
+              {{ item.name }}
             </RouterLink>
 
             <RouterLink
@@ -303,60 +195,26 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
         <div class="d-flex gap-x-4 align-center">
           <NavbarThemeSwitcher />
 
-          <!-- User avatar and menu when authenticated -->
-          <template v-if="isAuthenticated">
-            <div
-              v-if="$vuetify.display.lgAndUp"
-              class="me-2"
-            >
-              Welcome, {{ userName }}
-            </div>
-            
-            <VBtn
-              v-if="$vuetify.display.lgAndUp"
-              prepend-icon="tabler-logout"
-              variant="elevated"
-              color="error"
-              @click="handleLogout"
-            >
-              Logout
-            </VBtn>
+          <VBtn
+            v-if="!isAuthenticated"
+            prepend-icon="tabler-lock-open"
+            variant="elevated"
+            color="primary"
+            :to="{ name: 'login' }"
+            target="_blank"
+          >
+            Login
+          </VBtn>
 
-            <VBtn
-              v-else
-              rounded
-              icon
-              variant="elevated"
-              color="error"
-              @click="handleLogout"
-            >
-              <VIcon icon="tabler-logout" />
-            </VBtn>
-          </template>
-
-          <!-- Login button when not authenticated -->
-          <template v-else>
-            <VBtn
-              v-if="$vuetify.display.lgAndUp"
-              prepend-icon="tabler-lock-open"
-              variant="elevated"
-              color="primary"
-              to="/login"
-            >
-              Login
-            </VBtn>
-
-            <VBtn
-              v-else
-              rounded
-              icon
-              variant="elevated"
-              color="primary"
-              to="/login"
-            >
-              <VIcon icon="tabler-lock-open" />
-            </VBtn>
-          </template>
+          <VBtn
+            v-else
+            prepend-icon="tabler-logout"
+            variant="elevated"
+            color="error"
+            @click="handleLogout"
+          >
+            Logout
+          </VBtn>
         </div>
       </VAppBar>
     </div>
@@ -372,12 +230,6 @@ const isPageActive = computed(() => menuItems.some(item => item.navItems.some(li
 .nav-link {
   &:not(:hover) {
     color: rgb(var(--v-theme-on-surface));
-  }
-}
-
-.page-link {
-  &:hover {
-    color: rgb(var(--v-theme-primary)) !important;
   }
 }
 

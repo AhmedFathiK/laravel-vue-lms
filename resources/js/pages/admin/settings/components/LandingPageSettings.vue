@@ -41,6 +41,37 @@ const fetchSettings = async () => {
 
     const data = await api.get('/admin/settings/landing-page')
 
+    // Normalize Navbar menuItems
+    const navbar = data.find(s => s.id === 'navbar')
+    if (navbar && navbar.props) {
+      // Handle potential legacy snake_case from DB/Seeder if middleware didn't convert
+      if (navbar.props.menu_items && !navbar.props.menuItems) {
+        navbar.props.menuItems = navbar.props.menu_items
+        delete navbar.props.menu_items
+      }
+
+      if (navbar.props.menuItems) {
+        if (typeof navbar.props.menuItems === 'string') {
+          try {
+            navbar.props.menuItems = JSON.parse(navbar.props.menuItems)
+          } catch (e) {
+            console.error('Failed to parse menuItems', e)
+            navbar.props.menuItems = []
+          }
+        }
+        
+        if (Array.isArray(navbar.props.menuItems)) {
+          navbar.props.menuItems.forEach(item => {
+            // Fix camelCase from potential previous saves or DB
+            if (item.is_hash !== undefined && item.isHash === undefined) {
+              item.isHash = item.is_hash
+              delete item.is_hash
+            }
+          })
+        }
+      }
+    }
+
     config.value = data
     if (data.length > 0 && activeTab.value === null) {
       activeTab.value = 0
@@ -265,6 +296,24 @@ const saveSettings = async () => {
 }
 
 const sectionConfigs = {
+  Navbar: {
+    groups: [
+      {
+        name: 'Menu Items',
+        fields: ['menuItems'],
+      },
+    ],
+    labels: {
+      menuItems: 'Navigation Links',
+    },
+    rules: {},
+    itemRules: {
+      menuItems: {
+        name: [requiredValidator],
+        to: [requiredValidator],
+      },
+    },
+  },
   HomeCover: {
     groups: [
       {
@@ -640,6 +689,20 @@ const removeContactCard = (section, index) => {
   section.props.cards.splice(index, 1)
 }
 
+const addMenuItem = section => {
+  if (!section.props.menuItems) section.props.menuItems = []
+  section.props.menuItems.push({
+    name: 'New Link',
+    to: 'home',
+    isHash: true,
+    target: '_self',
+  })
+}
+
+const removeMenuItem = (section, index) => {
+  section.props.menuItems.splice(index, 1)
+}
+
 const getGroups = section => {
   const config = sectionConfigs[section.component]
   const allKeys = Object.keys(section.props).filter(key => !key.startsWith('_'))
@@ -853,6 +916,92 @@ const getLabel = (section, key) => {
                             />
                           </VCol>
 
+                          <!-- Navbar Menu Items Prop -->
+                          <VCol
+                            v-else-if="key === 'menuItems'"
+                            cols="12"
+                          >
+                            <div class="d-flex flex-column gap-4">
+                              <VExpansionPanels
+                                variant="accordion"
+                                class="expansion-panels-width-border"
+                              >
+                                <VExpansionPanel
+                                  v-for="(item, itemIndex) in section.props[key]"
+                                  :key="itemIndex"
+                                >
+                                  <VExpansionPanelTitle>
+                                    <div class="d-flex justify-space-between align-center w-100">
+                                      <span class="text-subtitle-2">{{ item.name || `Link ${itemIndex + 1}` }}</span>
+                                      <VBtn
+                                        color="error"
+                                        variant="text"
+                                        size="small"
+                                        icon="tabler-trash"
+                                        class="me-2"
+                                        @click.stop="removeMenuItem(section, itemIndex)"
+                                      />
+                                    </div>
+                                  </VExpansionPanelTitle>
+                                  <VExpansionPanelText>
+                                    <VRow class="mt-2">
+                                      <VCol
+                                        cols="12"
+                                        md="6"
+                                      >
+                                        <AppTextField
+                                          v-model="item.name"
+                                          label="Link Text"
+                                          :rules="getItemRules(section, 'menuItems', 'name')"
+                                        />
+                                      </VCol>
+                                      <VCol
+                                        cols="12"
+                                        md="6"
+                                      >
+                                        <AppTextField
+                                          v-model="item.to"
+                                          label="Target Section ID (or URL)"
+                                          :rules="getItemRules(section, 'menuItems', 'to')"
+                                        />
+                                      </VCol>
+                                      <VCol
+                                        cols="12"
+                                        md="6"
+                                      >
+                                        <VSwitch
+                                          v-model="item.isHash"
+                                          label="Is Hash Link (Section)"
+                                        />
+                                      </VCol>
+                                      <VCol
+                                        cols="12"
+                                        md="6"
+                                      >
+                                        <AppSelect
+                                          v-model="item.target"
+                                          label="Open In"
+                                          :items="[
+                                            { title: 'Same Tab', value: '_self' },
+                                            { title: 'New Tab', value: '_blank' },
+                                          ]"
+                                        />
+                                      </VCol>
+                                    </VRow>
+                                  </VExpansionPanelText>
+                                </VExpansionPanel>
+                              </VExpansionPanels>
+                            
+                              <VBtn
+                                variant="tonal"
+                                prepend-icon="tabler-plus"
+                                @click="addMenuItem(section)"
+                              >
+                                Add Link
+                              </VBtn>
+                            </div>
+                          </VCol>
+
                           <!-- Product Stats List Prop -->
                           <VCol
                             v-else-if="key === 'stats' && Array.isArray(section.props[key])"
@@ -864,19 +1013,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(stat, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(stat, statIndex) in section.props[key]"
+                                  :key="statIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ stat.title || `Stat ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ stat.title || `Stat ${statIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeStat(section, index)"
+                                        @click.stop="removeStat(section, statIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1014,19 +1163,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(feature, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(feature, featureIndex) in section.props[key]"
+                                  :key="featureIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ feature.title || `Feature ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ feature.title || `Feature ${featureIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeFeature(section, index)"
+                                        @click.stop="removeFeature(section, featureIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1129,19 +1278,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(review, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(review, reviewIndex) in section.props[key]"
+                                  :key="reviewIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ review.name || `Review ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ review.name || `Review ${reviewIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeReview(section, index)"
+                                        @click.stop="removeReview(section, reviewIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1249,19 +1398,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(faq, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(faq, faqIndex) in section.props[key]"
+                                  :key="faqIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ faq.question || `FAQ ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ faq.question || `FAQ ${faqIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeFaq(section, index)"
+                                        @click.stop="removeFaq(section, faqIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1309,19 +1458,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(member, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(member, memberIndex) in section.props[key]"
+                                  :key="memberIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ member.name || `Member ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ member.name || `Member ${memberIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeTeamMember(section, index)"
+                                        @click.stop="removeTeamMember(section, memberIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1476,13 +1625,13 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(plan, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(plan, planIndex) in section.props[key]"
+                                  :key="planIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
                                       <div class="d-flex align-center gap-2">
-                                        <span class="text-subtitle-2">{{ plan.title || `Plan ${index + 1}` }}</span>
+                                        <span class="text-subtitle-2">{{ plan.title || `Plan ${planIndex + 1}` }}</span>
                                         <VChip
                                           v-if="plan.current"
                                           color="primary"
@@ -1497,7 +1646,7 @@ const getLabel = (section, key) => {
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removePricingPlan(section, index)"
+                                        @click.stop="removePricingPlan(section, planIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>
@@ -1672,19 +1821,19 @@ const getLabel = (section, key) => {
                                 class="expansion-panels-width-border"
                               >
                                 <VExpansionPanel
-                                  v-for="(card, index) in section.props[key]"
-                                  :key="index"
+                                  v-for="(card, cardIndex) in section.props[key]"
+                                  :key="cardIndex"
                                 >
                                   <VExpansionPanelTitle>
                                     <div class="d-flex justify-space-between align-center w-100">
-                                      <span class="text-subtitle-2">{{ card.title || `Card ${index + 1}` }}</span>
+                                      <span class="text-subtitle-2">{{ card.title || `Card ${cardIndex + 1}` }}</span>
                                       <VBtn
                                         color="error"
                                         variant="text"
                                         size="small"
                                         icon="tabler-trash"
                                         class="me-2"
-                                        @click.stop="removeContactCard(section, index)"
+                                        @click.stop="removeContactCard(section, cardIndex)"
                                       />
                                     </div>
                                   </VExpansionPanelTitle>

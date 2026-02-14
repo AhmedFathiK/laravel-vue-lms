@@ -17,6 +17,22 @@ class SettingSeeder extends Seeder
         // Keeping them in sync ensures the seeder provides the same starting point as the code fallback.
         $landingPageConfig = [
             [
+                'id' => 'navbar',
+                'name' => 'Navbar',
+                'component' => 'Navbar',
+                'props' => [
+                    'menu_items' => [
+                        ['name' => 'Home', 'to' => 'home', 'is_hash' => true, 'target' => '_self'],
+                        ['name' => 'Features', 'to' => 'features', 'is_hash' => true, 'target' => '_self'],
+                        ['name' => 'Team', 'to' => 'team', 'is_hash' => true, 'target' => '_self'],
+                        ['name' => 'FAQ', 'to' => 'faq', 'is_hash' => true, 'target' => '_self'],
+                        ['name' => 'Contact us', 'to' => 'contact-us', 'is_hash' => true, 'target' => '_self'],
+                    ],
+                ],
+                'visible' => true,
+                'wrapper_style' => []
+            ],
+            [
                 'id' => 'home',
                 'name' => 'Home Cover',
                 'component' => 'HomeCover',

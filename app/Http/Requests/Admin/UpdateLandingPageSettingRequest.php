@@ -76,6 +76,16 @@ class UpdateLandingPageSettingRequest extends FormRequest
         $safeUrl = ['nullable', 'string', 'not_regex:/^javascript:/i'];
 
         switch ($sectionId) {
+            case 'navbar':
+                $rules = [
+                    "{$props}.menu_items" => ['required', 'array'],
+                    "{$props}.menu_items.*.name" => ['required', 'string'],
+                    "{$props}.menu_items.*.to" => ['required', 'string'],
+                    "{$props}.menu_items.*.is_hash" => ['boolean'],
+                    "{$props}.menu_items.*.target" => ['nullable', 'string', 'in:_self,_blank'],
+                ];
+                break;
+
             case 'home':
                 $requiredSafeUrl = ['required', 'string', 'not_regex:/^javascript:/i'];
                 $rules = [

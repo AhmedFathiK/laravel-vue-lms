@@ -27,6 +27,10 @@ const activeSectionId = ref()
 const landingPageConfig = ref([])
 const sectionRefs = ref({})
 
+const navbarConfig = computed(() => {
+  return landingPageConfig.value.find(section => section.component === 'Navbar')
+})
+
 const componentsMap = {
   HomeCover,
   Features,
@@ -80,7 +84,10 @@ watch(landingPageConfig, () => {
 
 <template>
   <div class="landing-page-wrapper">
-    <Navbar :active-id="activeSectionId" />
+    <Navbar 
+      :active-id="activeSectionId" 
+      :config="navbarConfig?.props"
+    />
 
     <template
       v-for="section in landingPageConfig"
