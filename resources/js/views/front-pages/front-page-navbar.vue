@@ -148,11 +148,13 @@ watch(() => display, () => {
             <RouterLink
               to="/"
               class="d-flex gap-x-4"
-              :class="$vuetify.display.mdAndUp ? 'd-none' : 'd-block'"
             >
               <div class="app-logo">
                 <VNodeRenderer :nodes="settingsStore.appLogo" />
-                <h1 class="app-logo-title">
+                <h1
+                  class="app-logo-title"
+                  :class="$vuetify.display.lgAndUp ? 'd-block' : 'd-none'"
+                >
                   {{ settingsStore.appName }}
                 </h1>
               </div>
