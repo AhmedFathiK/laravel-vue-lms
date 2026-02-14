@@ -115,19 +115,9 @@ const uploadFile = async file => {
 const saveSettings = async () => {
   const currentForm = formRefs.value[activeTab.value]
   
-  console.log('Active Tab:', activeTab.value)
-  console.log('Form Refs Keys:', Object.keys(formRefs.value))
-  console.log('Current Form:', currentForm)
-
   if (currentForm) {
-    const { valid, errors } = await currentForm.validate()
-
-    console.log('Validation Result:', valid)
-    console.log('Validation Errors:', errors)
-    
+    const { valid } = await currentForm.validate()
     if (!valid) return
-  } else {
-    console.warn('Form reference not found for active tab')
   }
 
   try {
@@ -1058,6 +1048,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="review.name"
                                           label="Reviewer Name"
+                                          :rules="[requiredValidator]"
                                         />
                                       </VCol>
                                       <VCol
@@ -1067,6 +1058,7 @@ const getLabel = (section, key) => {
                                         <AppTextField
                                           v-model="review.position"
                                           label="Position/Title"
+                                          :rules="[requiredValidator]"
                                         />
                                       </VCol>
                                       <VCol
@@ -1079,7 +1071,7 @@ const getLabel = (section, key) => {
                                           type="number"
                                           min="1"
                                           max="5"
-                                          :rules="[val => betweenValidator(val, 1, 5)]"
+                                          :rules="[requiredValidator, val => betweenValidator(val, 1, 5)]"
                                         />
                                       </VCol>
                                       <VCol
@@ -1093,6 +1085,7 @@ const getLabel = (section, key) => {
                                           label="Avatar"
                                           prepend-icon="tabler-camera"
                                           accept="image/*"
+                                          :rules="[() => !!review.avatar || 'Avatar is required']"
                                           @change="e => handleFileUpload(e, review, 'avatar')"
                                         />
                                         <div
@@ -1121,6 +1114,7 @@ const getLabel = (section, key) => {
                                           label="Comment"
                                           rows="3"
                                           auto-grow
+                                          :rules="[requiredValidator]"
                                         />
                                       </VCol>
                                     </VRow>

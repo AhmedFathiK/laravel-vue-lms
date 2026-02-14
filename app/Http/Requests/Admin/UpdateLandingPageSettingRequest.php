@@ -71,7 +71,7 @@ class UpdateLandingPageSettingRequest extends FormRequest
     {
         $rules = [];
         $props = "{$prefix}.props";
-        
+
         // Common rule for URLs and images to prevent XSS (blocks javascript: protocol)
         $safeUrl = ['nullable', 'string', 'not_regex:/^javascript:/i'];
 
@@ -104,16 +104,17 @@ class UpdateLandingPageSettingRequest extends FormRequest
                 break;
 
             case 'reviews':
+                $requiredSafeUrl = ['required', 'string', 'not_regex:/^javascript:/i'];
                 $rules = [
                     "{$props}.tag" => ['nullable', 'string'],
                     "{$props}.title" => ['nullable', 'string'],
                     "{$props}.subtitle" => ['nullable', 'string'],
                     "{$props}.reviews" => ['nullable', 'array'],
                     "{$props}.reviews.*.name" => ['required', 'string'],
-                    "{$props}.reviews.*.position" => ['nullable', 'string'],
-                    "{$props}.reviews.*.desc" => ['nullable', 'string'],
-                    "{$props}.reviews.*.rating" => ['nullable', 'numeric', 'min:0', 'max:5'],
-                    "{$props}.reviews.*.avatar" => $safeUrl,
+                    "{$props}.reviews.*.position" => ['required', 'string'],
+                    "{$props}.reviews.*.desc" => ['required', 'string'],
+                    "{$props}.reviews.*.rating" => ['required', 'numeric', 'min:1', 'max:5'],
+                    "{$props}.reviews.*.avatar" => $requiredSafeUrl,
                 ];
                 break;
 
