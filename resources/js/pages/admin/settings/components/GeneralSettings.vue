@@ -1,5 +1,6 @@
 <script setup>
 import { useToast } from 'vue-toastification'
+import { requiredValidator } from '@core/utils/validators'
 import api from '@/utils/api'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -9,6 +10,7 @@ const isLoading = ref(false)
 const appName = ref('')
 const appLogo = ref(null)
 const appLogoPreview = ref(null)
+const refForm = ref()
 
 const fetchSettings = async () => {
   try {
@@ -35,6 +37,11 @@ const onFileChange = e => {
 }
 
 const saveSettings = async () => {
+  const { valid } = await refForm.value?.validate()
+
+  if (!valid)
+    return
+
   try {
     isLoading.value = true
     
@@ -57,7 +64,18 @@ const saveSettings = async () => {
     await settingsStore.fetchSettings()
   } catch (error) {
     console.error(error)
-    toast.error('Failed to save settings')
+    if (error.response && error.response.status === 422) {
+      const data = error.response.data
+      if (data.errors) {
+        const firstErrorKey = Object.keys(data.errors)[0]
+
+        toast.error(data.errors[firstErrorKey][0])
+      } else {
+        toast.error(data.message || 'Validation failed')
+      }
+    } else {
+      toast.error('Failed to save settings')
+    }
   } finally {
     isLoading.value = false
   }
@@ -69,7 +87,10 @@ onMounted(fetchSettings)
 <template>
   <VCard title="General Settings">
     <VCardText>
-      <VForm @submit.prevent="saveSettings">
+      <VForm
+        ref="refForm"
+        @submit.prevent="saveSettings"
+      >
         <VRow>
           <VCol
             cols="12"
@@ -79,6 +100,7 @@ onMounted(fetchSettings)
               v-model="appName"
               label="App Name"
               placeholder="Enter App Name"
+              :rules="[requiredValidator]"
             />
           </VCol>
           
