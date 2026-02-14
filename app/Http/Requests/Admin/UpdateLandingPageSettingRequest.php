@@ -99,7 +99,7 @@ class UpdateLandingPageSettingRequest extends FormRequest
                     "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.features" => ['nullable', 'array'],
                     "{$props}.features.*.title" => ['required', 'string'],
-                    "{$props}.features.*.desc" => ['nullable', 'string'],
+                    "{$props}.features.*.desc" => ['required', 'string'],
                     "{$props}.features.*.icon" => $safeUrl,
                 ];
                 break;
@@ -126,7 +126,7 @@ class UpdateLandingPageSettingRequest extends FormRequest
                     "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.team" => ['nullable', 'array'],
                     "{$props}.team.*.name" => ['required', 'string'],
-                    "{$props}.team.*.position" => ['nullable', 'string'],
+                    "{$props}.team.*.position" => ['required', 'string'],
                     "{$props}.team.*.image" => $safeUrl,
                     "{$props}.team.*.background_color" => ['nullable', 'string'], // Backend uses snake_case, frontend sends camelCase, middleware converts
                     "{$props}.team.*.border_color" => ['nullable', 'string'],
@@ -142,8 +142,8 @@ class UpdateLandingPageSettingRequest extends FormRequest
                     "{$props}.plans" => ['nullable', 'array'],
                     "{$props}.plans.*.title" => ['required', 'string'],
                     "{$props}.plans.*.image" => $safeUrl,
-                    "{$props}.plans.*.monthly_price" => ['nullable', 'numeric'],
-                    "{$props}.plans.*.yearly_price" => ['nullable', 'numeric'],
+                    "{$props}.plans.*.monthly_price" => ['required', 'numeric'],
+                    "{$props}.plans.*.yearly_price" => ['required', 'numeric'],
                     "{$props}.plans.*.features" => ['nullable', 'array'],
                     "{$props}.plans.*.features.*" => ['string'],
                     "{$props}.plans.*.support_type" => ['nullable', 'string'],
@@ -177,18 +177,18 @@ class UpdateLandingPageSettingRequest extends FormRequest
 
             case 'banner':
                 $rules = [
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
-                    "{$props}.button_text" => ['nullable', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
+                    "{$props}.button_text" => ['required', 'string'],
                     "{$props}.image" => $safeUrl,
                 ];
                 break;
 
             case 'contact-us':
                 $rules = [
-                    "{$props}.tag" => ['nullable', 'string'],
-                    "{$props}.title" => ['nullable', 'string'],
-                    "{$props}.subtitle" => ['nullable', 'string'],
+                    "{$props}.tag" => ['required', 'string'],
+                    "{$props}.title" => ['required', 'string'],
+                    "{$props}.subtitle" => ['required', 'string'],
                     "{$props}.form_description" => ['nullable', 'string'],
                     "{$props}.image" => $safeUrl,
                     "{$props}.cards" => ['nullable', 'array'],
