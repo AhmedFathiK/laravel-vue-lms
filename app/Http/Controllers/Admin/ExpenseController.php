@@ -58,13 +58,13 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'currency' => 'required|string|size:3',
             'date' => 'required|date',
             'category_id' => 'required|exists:expense_categories,id',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,completed',
         ]);
 
+        $validated['currency'] = config('services.payment.default_currency', 'EGP');
         $validated['user_id'] = Auth::id();
 
         $expense = Expense::create($validated);
@@ -84,12 +84,13 @@ class ExpenseController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'currency' => 'required|string|size:3',
             'date' => 'required|date',
             'category_id' => 'required|exists:expense_categories,id',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,completed',
         ]);
+
+        $validated['currency'] = config('services.payment.default_currency', 'EGP');
 
         $expense->update($validated);
 

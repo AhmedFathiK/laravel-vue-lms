@@ -29,7 +29,6 @@ const refForm = ref(null)
 
 const defaultForm = {
   amount: '',
-  currency: 'USD',
   date: new Date().toISOString().substr(0, 10),
   categoryId: null,
   description: '',
@@ -46,7 +45,6 @@ watch(
       if (props.data) {
         form.value = {
           amount: props.data.amount,
-          currency: props.data.currency,
           date: props.data.date,
           categoryId: props.data.category_id,
           description: props.data.description,
@@ -103,20 +101,6 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 :rules="[requiredValidator, val => val >= 0.01 || 'Amount must be greater than 0']"
                 placeholder="0.00"
                 :error-messages="validationErrors.amount"
-              />
-            </VCol>
-
-            <!-- Currency -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="form.currency"
-                label="Currency"
-                :rules="[requiredValidator]"
-                placeholder="USD"
-                :error-messages="validationErrors.currency"
               />
             </VCol>
 
