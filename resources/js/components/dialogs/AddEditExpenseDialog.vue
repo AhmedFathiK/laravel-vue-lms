@@ -45,8 +45,8 @@ watch(
       if (props.data) {
         form.value = {
           amount: props.data.amount,
-          date: props.data.date,
-          categoryId: props.data.category_id,
+          date: props.data.date ? props.data.date.substring(0, 10) : new Date().toISOString().substring(0, 10),
+          categoryId: props.data.categoryId || (props.data.category ? props.data.category.id : null),
           description: props.data.description,
           status: props.data.status,
         }
