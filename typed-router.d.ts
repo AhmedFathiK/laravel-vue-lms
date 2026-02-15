@@ -37,7 +37,6 @@ declare module 'vue-router/auto-routes' {
     'admin-courses-categories': RouteRecordInfo<'admin-courses-categories', '/admin/courses/categories', Record<never, never>, Record<never, never>>,
     'admin-expenses': RouteRecordInfo<'admin-expenses', '/admin/expenses', Record<never, never>, Record<never, never>>,
     'admin-expenses-categories': RouteRecordInfo<'admin-expenses-categories', '/admin/expenses/categories', Record<never, never>, Record<never, never>>,
-    'admin-financial-dashboard': RouteRecordInfo<'admin-financial-dashboard', '/admin/financial-dashboard', Record<never, never>, Record<never, never>>,
     'admin-receipts': RouteRecordInfo<'admin-receipts', '/admin/receipts', Record<never, never>, Record<never, never>>,
     'admin-roles': RouteRecordInfo<'admin-roles', '/admin/roles', Record<never, never>, Record<never, never>>,
     'admin-settings': RouteRecordInfo<'admin-settings', '/admin/settings', Record<never, never>, Record<never, never>>,

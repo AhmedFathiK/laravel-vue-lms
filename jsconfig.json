@@ -3,7 +3,8 @@
     "./vite.config.*",
     "./resources/js/**/*",
     "./resources/js/**/*.vue",
-    "./themeConfig.js"
+    "./themeConfig.js",
+    "./typed-router.d.ts"
   ],
   "exclude": [
     "./dist",

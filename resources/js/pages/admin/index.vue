@@ -1,14 +1,35 @@
 <script setup>
 import CardStatisticsVerticalSimple from '@core/components/CardStatisticsVerticalSimple.vue'
 import AnalyticsEarningReportsWeeklyOverview from '@/views/admin/AnalyticsEarningReportsWeeklyOverview.vue'
+import FinancialTrendChart from '@/components/charts/FinancialTrendChart.vue'
 import api from '@/utils/api'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 const usersCount = ref('0')
 const coursesCount = ref('0')
 const totalRevenue = ref('0')
 const recentUsers = ref([])
 const isLoading = ref(true)
+
+// Financial Dashboard State
+const financialStats = ref({
+  totalIncome: 0,
+  totalExpenses: 0,
+  netProfit: 0,
+  currency: '',
+})
+
+const financialChartData = ref({
+  labels: [],
+  datasets: [],
+})
+
+const isFinancialLoading = ref(false)
+
+const dateRange = ref({
+  fromDate: null,
+  toDate: null,
+})
 
 const fetchStats = async () => {
   isLoading.value = true
@@ -43,7 +64,52 @@ const fetchStats = async () => {
   }
 }
 
-onMounted(fetchStats)
+const fetchFinancialStats = async () => {
+  try {
+    const params = {
+      fromDate: dateRange.value.fromDate,
+      toDate: dateRange.value.toDate,
+    }
+
+    const response = await api.get('/admin/financial-analytics/stats', { params })
+
+    financialStats.value = response
+  } catch (error) {
+    console.error('Error fetching financial stats:', error)
+  }
+}
+
+const fetchFinancialChartData = async () => {
+  isFinancialLoading.value = true
+  try {
+    const params = {
+      fromDate: dateRange.value.fromDate,
+      toDate: dateRange.value.toDate,
+    }
+
+    const response = await api.get('/admin/financial-analytics/chart-data', { params })
+
+    financialChartData.value = response
+  } catch (error) {
+    console.error('Error fetching chart data:', error)
+  } finally {
+    isFinancialLoading.value = false
+  }
+}
+
+const refreshFinancialData = () => {
+  fetchFinancialStats()
+  fetchFinancialChartData()
+}
+
+watch(dateRange, () => {
+  refreshFinancialData()
+}, { deep: true })
+
+onMounted(() => {
+  fetchStats()
+  refreshFinancialData()
+})
 
 const headers = [
   { title: 'User', key: 'fullName' },
@@ -107,6 +173,152 @@ const headers = [
       />
     </VCol>
 
+    <!-- Financial Management Section -->
+    <VCol cols="12">
+      <VDivider class="my-4" />
+      <h2 class="text-h5 mb-4">
+        Financial Overview
+      </h2>
+    </VCol>
+
+    <!-- Financial Filters -->
+    <VCol cols="12">
+      <VCard title="Filters">
+        <VCardText>
+          <VRow>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppDateTimePicker
+                v-model="dateRange.fromDate"
+                label="From Date"
+                clearable
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppDateTimePicker
+                v-model="dateRange.toDate"
+                label="To Date"
+                clearable
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <!-- Financial Summary Cards -->
+    <VCol
+      cols="12"
+      md="4"
+    >
+      <VCard>
+        <VCardText class="d-flex align-center justify-space-between">
+          <div>
+            <h6 class="text-h6 mb-2">
+              Total Income
+            </h6>
+            <h4 class="text-h4 text-success">
+              {{ financialStats.currency }} {{ financialStats.totalIncome }}
+            </h4>
+          </div>
+          <VAvatar
+            color="success"
+            variant="tonal"
+            size="42"
+          >
+            <VIcon
+              icon="tabler-arrow-up"
+              size="26"
+            />
+          </VAvatar>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <VCol
+      cols="12"
+      md="4"
+    >
+      <VCard>
+        <VCardText class="d-flex align-center justify-space-between">
+          <div>
+            <h6 class="text-h6 mb-2">
+              Total Expenses
+            </h6>
+            <h4 class="text-h4 text-error">
+              {{ financialStats.currency }} {{ financialStats.totalExpenses }}
+            </h4>
+          </div>
+          <VAvatar
+            color="error"
+            variant="tonal"
+            size="42"
+          >
+            <VIcon
+              icon="tabler-arrow-down"
+              size="26"
+            />
+          </VAvatar>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <VCol
+      cols="12"
+      md="4"
+    >
+      <VCard>
+        <VCardText class="d-flex align-center justify-space-between">
+          <div>
+            <h6 class="text-h6 mb-2">
+              Net Profit
+            </h6>
+            <h4 class="text-h4 text-primary">
+              {{ financialStats.currency }} {{ financialStats.netProfit }}
+            </h4>
+          </div>
+          <VAvatar
+            color="primary"
+            variant="tonal"
+            size="42"
+          >
+            <VIcon
+              icon="tabler-chart-pie"
+              size="26"
+            />
+          </VAvatar>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <!-- Trend Chart -->
+    <VCol cols="12">
+      <VCard title="Financial Trends">
+        <VCardText style="height: 400px">
+          <FinancialTrendChart
+            v-if="!isFinancialLoading && financialChartData.datasets.length"
+            :chart-data="financialChartData"
+          />
+          <div
+            v-else
+            class="d-flex align-center justify-center h-100"
+          >
+            <VProgressCircular
+              v-if="isFinancialLoading"
+              indeterminate
+              color="primary"
+            />
+            <span v-else>No data available</span>
+          </div>
+        </VCardText>
+      </VCard>
+    </VCol>
+
     <!-- Earning Reports -->
     <VCol
       cols="12"
@@ -150,7 +362,7 @@ const headers = [
                 v-for="role in item.roles"
                 :key="role.id"
                 size="small"
-                class="me-1"
+                class="me-1 text-capitalize"
                 color="primary"
                 variant="tonal"
               >

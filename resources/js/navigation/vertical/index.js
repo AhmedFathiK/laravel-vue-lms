@@ -57,13 +57,6 @@ export default [
     ],
   },
   {
-    title: 'Financial Dashboard',
-    to: { name: 'admin-financial-dashboard' },
-    icon: { icon: 'tabler-chart-pie' },
-    action: 'view',
-    subject: 'financial_dashboard',
-  },
-  {
     title: 'Expenses',
     icon: { icon: 'tabler-report-money' },
     children: [
