@@ -19,10 +19,10 @@ class FinancialAnalyticsController extends Controller
 
     public function getWeeklyStats(Request $request): JsonResponse
     {
-        // Default to current week (Monday to Sunday)
+        // Default to current week (Saturday to Friday)
         $now = Carbon::now();
-        $startOfWeek = $now->copy()->startOfWeek();
-        $endOfWeek = $now->copy()->endOfWeek();
+        $startOfWeek = $now->copy()->startOfWeek(Carbon::SATURDAY);
+        $endOfWeek = $now->copy()->endOfWeek(Carbon::FRIDAY);
 
         $startOfLastWeek = $startOfWeek->copy()->subWeek();
         $endOfLastWeek = $endOfWeek->copy()->subWeek();
@@ -63,7 +63,7 @@ class FinancialAnalyticsController extends Controller
             ->toArray();
 
         $chartData = [];
-        $days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        $days = ['Sa', 'Su', 'Mo', 'Tu', 'We', 'Th', 'Fr'];
 
         for ($i = 0; $i < 7; $i++) {
             $date = $startOfWeek->copy()->addDays($i)->format('Y-m-d');

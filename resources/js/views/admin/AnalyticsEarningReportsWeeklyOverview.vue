@@ -77,13 +77,13 @@ const chartOptions = computed(() => {
     legend: { show: false },
     xaxis: {
       categories: [
+        'Sa',
+        'Su',
         'Mo',
         'Tu',
         'We',
         'Th',
         'Fr',
-        'Sa',
-        'Su',
       ],
       axisBorder: { show: false },
       axisTicks: { show: false },
@@ -154,7 +154,7 @@ const moreList = [
           </div>
 
           <span class="text-sm text-medium-emphasis">
-            You informed of this week compared to last week
+            This week compared to last week.
           </span>
         </VCol>
 
