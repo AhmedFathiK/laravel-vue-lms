@@ -43,6 +43,7 @@ class FinancialAnalyticsController extends Controller
             'total_income' => round($totalIncome, 2),
             'total_expenses' => round($totalExpenses, 2),
             'net_profit' => round($netProfit, 2),
+            'currency' => config('services.payment.default_currency', 'USD'),
         ]);
     }
 

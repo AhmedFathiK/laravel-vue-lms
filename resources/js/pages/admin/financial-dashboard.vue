@@ -7,6 +7,7 @@ const stats = ref({
   totalIncome: 0,
   totalExpenses: 0,
   netProfit: 0,
+  currency: '',
 })
 
 const chartData = ref({
@@ -112,7 +113,7 @@ onMounted(() => {
               Total Income
             </h6>
             <h4 class="text-h4 text-success">
-              ${{ stats.totalIncome }}
+              {{ stats.currency }} {{ stats.totalIncome }}
             </h4>
           </div>
           <VAvatar
@@ -140,7 +141,7 @@ onMounted(() => {
               Total Expenses
             </h6>
             <h4 class="text-h4 text-error">
-              ${{ stats.totalExpenses }}
+              {{ stats.currency }} {{ stats.totalExpenses }}
             </h4>
           </div>
           <VAvatar
@@ -168,7 +169,7 @@ onMounted(() => {
               Net Profit
             </h6>
             <h4 class="text-h4 text-primary">
-              ${{ stats.netProfit }}
+              {{ stats.currency }} {{ stats.netProfit }}
             </h4>
           </div>
           <VAvatar
