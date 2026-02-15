@@ -28,5 +28,7 @@ export default [
     title: 'Admin Dashboard',
     to: { name: 'admin-users' },
     icon: { icon: 'tabler-device-ipad-cog' },
+    subject: 'admin_panel',
+    action: 'access',
   },
 ]

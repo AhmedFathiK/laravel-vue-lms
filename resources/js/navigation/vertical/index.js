@@ -9,8 +9,8 @@ export default [
   { 
     heading: "Users",
     abilities: [
-      { subject: 'users', action: ['view'] },
-      { subject: 'admin_panel', action: ['access'] },
+      { subject: 'users', action: ['view'] }, 
+      { subject: 'roles', action: ['view'] },
     ],
   },
   {
