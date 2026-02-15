@@ -1,5 +1,5 @@
 <script setup>
-import CardStatisticsVerticalSimple from '@core/components/CardStatisticsVerticalSimple.vue'
+import CardStatisticsHorizontal from '@core/components/cards/CardStatisticsHorizontal.vue'
 import AnalyticsEarningReportsWeeklyOverview from '@/views/admin/AnalyticsEarningReportsWeeklyOverview.vue'
 import FinancialTrendChart from '@/components/charts/FinancialTrendChart.vue'
 import api from '@/utils/api'
@@ -43,19 +43,21 @@ const fetchStats = async () => {
       },
     })
 
-    usersCount.value = usersRes.data.total.toString()
-    recentUsers.value = usersRes.data.data
+    usersCount.value = usersRes.total.toString()
+    recentUsers.value = usersRes.data
 
     // Courses
     const coursesRes = await api.get('/admin/courses', { params: { 'per_page': 1 } })
 
-    coursesCount.value = coursesRes.data.stats.total.toString()
+    coursesCount.value = coursesRes.stats.total.toString()
 
     // Revenue
     const revenueRes = await api.get('/admin/receipts/statistics')
 
     // Format revenue with currency if needed, assuming it returns a number
-    totalRevenue.value = `$${Number(revenueRes.data.total_revenue).toFixed(2)}`
+    const currency = revenueRes.currency || '$'
+
+    totalRevenue.value = `${currency}${Number(revenueRes.totalRevenue).toFixed(2)}`
     
   } catch (e) {
     console.error('Error fetching admin stats:', e)
@@ -141,7 +143,7 @@ const headers = [
       sm="6"
       md="4"
     >
-      <CardStatisticsVerticalSimple
+      <CardStatisticsHorizontal
         title="Total Users"
         :stats="usersCount"
         icon="tabler-users"
@@ -153,7 +155,7 @@ const headers = [
       sm="6"
       md="4"
     >
-      <CardStatisticsVerticalSimple
+      <CardStatisticsHorizontal
         title="Total Courses"
         :stats="coursesCount"
         icon="tabler-book"
@@ -165,7 +167,7 @@ const headers = [
       sm="6"
       md="4"
     >
-      <CardStatisticsVerticalSimple
+      <CardStatisticsHorizontal
         title="Total Revenue"
         :stats="totalRevenue"
         icon="tabler-currency-dollar"
@@ -173,42 +175,29 @@ const headers = [
       />
     </VCol>
 
-    <!-- Financial Management Section -->
+    <!-- Financial Overview Header & Filters -->
     <VCol cols="12">
-      <VDivider class="my-4" />
-      <h2 class="text-h5 mb-4">
-        Financial Overview
-      </h2>
-    </VCol>
-
-    <!-- Financial Filters -->
-    <VCol cols="12">
-      <VCard title="Filters">
-        <VCardText>
-          <VRow>
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppDateTimePicker
-                v-model="dateRange.fromDate"
-                label="From Date"
-                clearable
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppDateTimePicker
-                v-model="dateRange.toDate"
-                label="To Date"
-                clearable
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-      </VCard>
+      <div class="d-flex flex-wrap align-center justify-space-between gap-4 my-4">
+        <h2 class="text-h5">
+          Financial Overview
+        </h2>
+        <div class="d-flex gap-4">
+          <AppDateTimePicker
+            v-model="dateRange.fromDate"
+            label="From Date"
+            clearable
+            density="compact"
+            style="width: 200px;"
+          />
+          <AppDateTimePicker
+            v-model="dateRange.toDate"
+            label="To Date"
+            clearable
+            density="compact"
+            style="width: 200px;"
+          />
+        </div>
+      </div>
     </VCol>
 
     <!-- Financial Summary Cards -->
@@ -216,84 +205,36 @@ const headers = [
       cols="12"
       md="4"
     >
-      <VCard>
-        <VCardText class="d-flex align-center justify-space-between">
-          <div>
-            <h6 class="text-h6 mb-2">
-              Total Income
-            </h6>
-            <h4 class="text-h4 text-success">
-              {{ financialStats.currency }} {{ financialStats.totalIncome }}
-            </h4>
-          </div>
-          <VAvatar
-            color="success"
-            variant="tonal"
-            size="42"
-          >
-            <VIcon
-              icon="tabler-arrow-up"
-              size="26"
-            />
-          </VAvatar>
-        </VCardText>
-      </VCard>
+      <CardStatisticsHorizontal
+        title="Total Income"
+        :stats="`${financialStats.currency} ${financialStats.totalIncome}`"
+        icon="tabler-arrow-up"
+        color="success"
+      />
     </VCol>
 
     <VCol
       cols="12"
       md="4"
     >
-      <VCard>
-        <VCardText class="d-flex align-center justify-space-between">
-          <div>
-            <h6 class="text-h6 mb-2">
-              Total Expenses
-            </h6>
-            <h4 class="text-h4 text-error">
-              {{ financialStats.currency }} {{ financialStats.totalExpenses }}
-            </h4>
-          </div>
-          <VAvatar
-            color="error"
-            variant="tonal"
-            size="42"
-          >
-            <VIcon
-              icon="tabler-arrow-down"
-              size="26"
-            />
-          </VAvatar>
-        </VCardText>
-      </VCard>
+      <CardStatisticsHorizontal
+        title="Total Expenses"
+        :stats="`${financialStats.currency} ${financialStats.totalExpenses}`"
+        icon="tabler-arrow-down"
+        color="error"
+      />
     </VCol>
 
     <VCol
       cols="12"
       md="4"
     >
-      <VCard>
-        <VCardText class="d-flex align-center justify-space-between">
-          <div>
-            <h6 class="text-h6 mb-2">
-              Net Profit
-            </h6>
-            <h4 class="text-h4 text-primary">
-              {{ financialStats.currency }} {{ financialStats.netProfit }}
-            </h4>
-          </div>
-          <VAvatar
-            color="primary"
-            variant="tonal"
-            size="42"
-          >
-            <VIcon
-              icon="tabler-chart-pie"
-              size="26"
-            />
-          </VAvatar>
-        </VCardText>
-      </VCard>
+      <CardStatisticsHorizontal
+        title="Net Profit"
+        :stats="`${financialStats.currency} ${financialStats.netProfit}`"
+        icon="tabler-chart-pie"
+        color="primary"
+      />
     </VCol>
 
     <!-- Trend Chart -->

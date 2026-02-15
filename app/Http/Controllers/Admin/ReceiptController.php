@@ -212,14 +212,17 @@ class ReceiptController extends Controller
      */
     public function statistics(Request $request): JsonResponse
     {
-        $totalRevenue = Receipt::sum('amount');
-        $totalReceipts = Receipt::count();
-        $averageAmount = $totalReceipts > 0 ? $totalRevenue / $totalReceipts : 0;
+        $totalRevenue = Receipt::whereNull('voided_at')->sum('total_amount');
+        
+        $currentMonthRevenue = Receipt::whereNull('voided_at')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total_amount');
 
         return response()->json([
             'total_revenue' => $totalRevenue,
-            'total_receipts' => $totalReceipts,
-            'average_amount' => round($averageAmount, 2),
+            'current_month_revenue' => $currentMonthRevenue,
+            'currency' => config('services.payment.default_currency', 'USD'),
         ]);
     }
 

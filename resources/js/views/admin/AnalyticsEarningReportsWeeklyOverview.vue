@@ -1,22 +1,39 @@
 <script setup>
 import { useTheme } from 'vuetify'
 import { hexToRgb } from '@layouts/utils'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import MoreBtn from '@core/components/MoreBtn.vue'
+import api from '@/utils/api'
 
 const vuetifyTheme = useTheme()
 
-const series = [{
-  data: [
-    40,
-    65,
-    50,
-    45,
-    90,
-    55,
-    70,
-  ],
-}]
+const totalEarnings = ref(0)
+const percentageChange = ref(0)
+const currency = ref('$')
+const earningsReports = ref([])
+const chartData = ref([0, 0, 0, 0, 0, 0, 0])
+
+const series = computed(() => [{
+  data: chartData.value,
+}])
+
+const fetchWeeklyStats = async () => {
+  try {
+    const response = await api.get('/admin/financial-analytics/weekly-stats')
+    
+    totalEarnings.value = response.totalEarnings
+    percentageChange.value = response.percentageChange
+    currency.value = response.currency
+    chartData.value = response.chartData
+    earningsReports.value = response.breakdown
+  } catch (error) {
+    console.error('Error fetching weekly stats:', error)
+  }
+}
+
+onMounted(() => {
+  fetchWeeklyStats()
+})
 
 const chartOptions = computed(() => {
   const currentTheme = vuetifyTheme.current.value.colors
@@ -87,30 +104,6 @@ const chartOptions = computed(() => {
   }
 })
 
-const earningsReports = [
-  {
-    color: 'primary',
-    icon: 'tabler-currency-dollar',
-    title: 'Earnings',
-    amount: '$545.69',
-    progress: '55',
-  },
-  {
-    color: 'info',
-    icon: 'tabler-chart-pie-2',
-    title: 'Profit',
-    amount: '$256.34',
-    progress: '25',
-  },
-  {
-    color: 'error',
-    icon: 'tabler-brand-paypal',
-    title: 'Expense',
-    amount: '$74.19',
-    progress: '65',
-  },
-]
-
 const moreList = [
   {
     title: 'View More',
@@ -149,14 +142,14 @@ const moreList = [
         >
           <div class="d-flex align-center gap-2 mb-3 flex-wrap">
             <h2 class="text-h2">
-              $468
+              {{ currency }}{{ totalEarnings }}
             </h2>
             <VChip
               label
               size="small"
-              color="success"
+              :color="percentageChange >= 0 ? 'success' : 'error'"
             >
-              +4.2%
+              {{ percentageChange >= 0 ? '+' : '' }}{{ percentageChange }}%
             </VChip>
           </div>
 
@@ -200,17 +193,17 @@ const moreList = [
                 />
               </VAvatar>
 
-              <h6 class="text-base font-weight-regular">
+              <h6 class="text-base font-weight-medium">
                 {{ report.title }}
               </h6>
             </div>
-            <h6 class="text-h4 my-2">
-              {{ report.amount }}
-            </h6>
+            <h4 class="text-h4 my-3">
+              {{ currency }}{{ report.amount }}
+            </h4>
             <VProgressLinear
               :model-value="report.progress"
               :color="report.color"
-              height="4"
+              height="8"
               rounded
               rounded-bar
             />

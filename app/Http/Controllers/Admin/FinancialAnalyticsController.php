@@ -17,6 +17,99 @@ class FinancialAnalyticsController extends Controller
         $this->middleware('permission:view.financial_dashboard');
     }
 
+    public function getWeeklyStats(Request $request): JsonResponse
+    {
+        // Default to current week (Monday to Sunday)
+        $now = Carbon::now();
+        $startOfWeek = $now->copy()->startOfWeek();
+        $endOfWeek = $now->copy()->endOfWeek();
+
+        $startOfLastWeek = $startOfWeek->copy()->subWeek();
+        $endOfLastWeek = $endOfWeek->copy()->subWeek();
+
+        // Current Week Totals
+        $currentWeekIncome = Payment::where('status', 'completed')
+            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
+            ->sum('amount');
+
+        $currentWeekExpense = Expense::where('status', 'completed')
+            ->whereBetween('date', [$startOfWeek, $endOfWeek])
+            ->sum('amount');
+
+        $currentWeekProfit = $currentWeekIncome - $currentWeekExpense;
+
+        // Last Week Totals (for comparison)
+        $lastWeekIncome = Payment::where('status', 'completed')
+            ->whereBetween('created_at', [$startOfLastWeek, $endOfLastWeek])
+            ->sum('amount');
+
+        // Calculate Percentage Change
+        $percentageChange = 0;
+        if ($lastWeekIncome > 0) {
+            $percentageChange = (($currentWeekIncome - $lastWeekIncome) / $lastWeekIncome) * 100;
+        } elseif ($currentWeekIncome > 0) {
+            $percentageChange = 100; // If last week was 0 and this week is > 0, it's a 100% increase (or technically infinite)
+        }
+
+        // Daily Breakdown for Chart
+        $dailyIncome = Payment::select(
+            DB::raw("DATE_FORMAT(created_at, '%Y-%m-%d') as date"),
+            DB::raw('SUM(amount) as total')
+        )
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->toArray();
+
+        $chartData = [];
+        $days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+        for ($i = 0; $i < 7; $i++) {
+            $date = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
+            $chartData[] = round($dailyIncome[$date] ?? 0, 2);
+        }
+
+        // Calculate progress percentages (example logic: relative to total income + expense)
+        // You might want to adjust this based on what "progress" means in your UI context.
+        // Here I'll just use a simple ratio for demonstration, or you can keep it as visual flair.
+        // Let's make it relative to the highest value among the three to show scale.
+        $maxVal = max($currentWeekIncome, $currentWeekProfit, $currentWeekExpense);
+        $incomeProgress = $maxVal > 0 ? ($currentWeekIncome / $maxVal) * 100 : 0;
+        $profitProgress = $maxVal > 0 ? ($currentWeekProfit / $maxVal) * 100 : 0;
+        $expenseProgress = $maxVal > 0 ? ($currentWeekExpense / $maxVal) * 100 : 0;
+
+        return response()->json([
+            'total_earnings' => round($currentWeekIncome, 2),
+            'percentage_change' => round($percentageChange, 1),
+            'chart_data' => $chartData,
+            'breakdown' => [
+                [
+                    'title' => 'Earnings',
+                    'amount' => round($currentWeekIncome, 2),
+                    'progress' => round($incomeProgress),
+                    'color' => 'primary',
+                    'icon' => 'tabler-currency-dollar',
+                ],
+                [
+                    'title' => 'Profit',
+                    'amount' => round($currentWeekProfit, 2),
+                    'progress' => round($profitProgress),
+                    'color' => 'info',
+                    'icon' => 'tabler-chart-pie-2',
+                ],
+                [
+                    'title' => 'Expense',
+                    'amount' => round($currentWeekExpense, 2),
+                    'progress' => round($expenseProgress),
+                    'color' => 'error',
+                    'icon' => 'tabler-brand-paypal',
+                ],
+            ],
+            'currency' => config('services.payment.default_currency', 'USD'),
+        ]);
+    }
+
     public function getStats(Request $request): JsonResponse
     {
         $fromDate = $request->input('from_date');

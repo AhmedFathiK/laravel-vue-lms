@@ -262,6 +262,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     // Financial Analytics
     Route::get('financial-analytics/stats', [\App\Http\Controllers\Admin\FinancialAnalyticsController::class, 'getStats']);
     Route::get('financial-analytics/chart-data', [\App\Http\Controllers\Admin\FinancialAnalyticsController::class, 'getChartData']);
+    Route::get('financial-analytics/weekly-stats', [\App\Http\Controllers\Admin\FinancialAnalyticsController::class, 'getWeeklyStats']);
 
     Route::apiResource('user-entitlements', UserEntitlementController::class);
     Route::post('user-entitlements/{userEntitlement}/cancel', [UserEntitlementController::class, 'cancel']);
