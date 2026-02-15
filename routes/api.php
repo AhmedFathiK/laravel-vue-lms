@@ -255,6 +255,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::post('receipts/{receipt}/regenerate-pdf', [\App\Http\Controllers\Admin\ReceiptController::class, 'regeneratePdf']);
     Route::post('receipts/{receipt}/void', [\App\Http\Controllers\Admin\ReceiptController::class, 'void']);
 
+    // Expense Management
+    Route::apiResource('expenses', \App\Http\Controllers\Admin\ExpenseController::class);
+    Route::apiResource('expense-categories', \App\Http\Controllers\Admin\ExpenseCategoryController::class);
+
+    // Financial Analytics
+    Route::get('financial-analytics/stats', [\App\Http\Controllers\Admin\FinancialAnalyticsController::class, 'getStats']);
+    Route::get('financial-analytics/chart-data', [\App\Http\Controllers\Admin\FinancialAnalyticsController::class, 'getChartData']);
+
     Route::apiResource('user-entitlements', UserEntitlementController::class);
     Route::post('user-entitlements/{userEntitlement}/cancel', [UserEntitlementController::class, 'cancel']);
 

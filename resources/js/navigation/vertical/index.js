@@ -52,6 +52,33 @@ export default [
     heading: "Finance",
     abilities: [
       { subject: 'payments', action: ['view'] },
+      { subject: 'expenses', action: ['view'] },
+      { subject: 'financial_dashboard', action: ['view'] },
+    ],
+  },
+  {
+    title: 'Financial Dashboard',
+    to: { name: 'admin-financial-dashboard' },
+    icon: { icon: 'tabler-chart-pie' },
+    action: 'view',
+    subject: 'financial_dashboard',
+  },
+  {
+    title: 'Expenses',
+    icon: { icon: 'tabler-report-money' },
+    children: [
+      {
+        title: 'All Expenses',
+        to: { name: 'admin-expenses' },
+        action: 'view',
+        subject: 'expenses',
+      },
+      {
+        title: 'Categories',
+        to: { name: 'admin-expenses-categories' },
+        action: 'manage',
+        subject: 'expense_categories',
+      },
     ],
   },
   {

@@ -147,6 +147,16 @@ class PermissionSeeder extends Seeder
             'restore.trash',
             'delete.trash',
 
+            // Expense Management
+            'view.expenses',
+            'create.expenses',
+            'edit.expenses',
+            'delete.expenses',
+            'manage.expense_categories',
+
+            // Financial Dashboard
+            'view.financial_dashboard',
+
             // Admin Panel
             'access.admin_panel',
         ];
