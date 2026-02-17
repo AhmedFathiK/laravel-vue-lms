@@ -96,7 +96,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
 
 Route::get('public/landing-page-settings', [SettingController::class, 'getPublicLandingPageSettings']);
 
+use App\Http\Controllers\Admin\DashboardController;
+
 Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->prefix('admin')->group(function () {
+    // Dashboard Stats
+    Route::get('/dashboard/stats', [DashboardController::class, 'index']);
+
     // App Settings
     Route::get('settings/{group}', [SettingController::class, 'show']);
     Route::post('settings/{group}', [SettingController::class, 'update']);

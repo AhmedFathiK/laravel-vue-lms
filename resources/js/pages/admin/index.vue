@@ -1,86 +1,38 @@
 <script setup>
-import CardStatisticsHorizontal from '@core/components/cards/CardStatisticsHorizontal.vue'
-import AnalyticsEarningReportsWeeklyOverview from '@/views/admin/AnalyticsEarningReportsWeeklyOverview.vue'
-import FinancialTrendChart from '@/components/charts/FinancialTrendChart.vue'
+import { ref, onMounted, computed } from 'vue'
+import { useTheme } from 'vuetify'
 import api from '@/utils/api'
-import { onMounted, ref, watch } from 'vue'
+import CardStatisticsHorizontal from '@core/components/cards/CardStatisticsHorizontal.vue'
+import FinancialTrendChart from '@/components/charts/FinancialTrendChart.vue'
 
-const usersCount = ref('0')
-const coursesCount = ref('0')
-const totalRevenue = ref('0')
-const recentUsers = ref([])
+// State
+const stats = ref({
+  financials: { totalRevenue: 0, totalExpenses: 0, netProfit: 0, currency: 'EGP' },
+  users: { totalStudents: 0, activeStudents: 0 },
+  courses: { total: 0, active: 0, completionRate: 0, topPerforming: [], recentEnrollments: [] },
+  charts: { enrollments: [], revenueByCourse: [] },
+})
+
 const isLoading = ref(true)
-
-// Financial Dashboard State
-const financialStats = ref({
-  totalIncome: 0,
-  totalExpenses: 0,
-  netProfit: 0,
-  currency: '',
-})
-
-const financialChartData = ref({
-  labels: [],
-  datasets: [],
-})
-
 const isFinancialLoading = ref(false)
+const financialChartData = ref({ labels: [], datasets: [] })
+const dateRange = ref({ fromDate: null, toDate: null })
 
-const dateRange = ref({
-  fromDate: null,
-  toDate: null,
-})
-
-const fetchStats = async () => {
+// Fetch Consolidated Stats
+const fetchDashboardStats = async () => {
   isLoading.value = true
   try {
-    // Users (Total and Recent)
-    const usersRes = await api.get('/admin/users', { 
-      params: { 
-        'per_page': 5, 
-        'sort_by': 'created_at', 
-        'order_by': 'desc',
-      },
-    })
+    const response = await api.get('/admin/dashboard/stats')
 
-    usersCount.value = usersRes.total.toString()
-    recentUsers.value = usersRes.data
-
-    // Courses
-    const coursesRes = await api.get('/admin/courses', { params: { 'per_page': 1 } })
-
-    coursesCount.value = coursesRes.stats.total.toString()
-
-    // Revenue
-    const revenueRes = await api.get('/admin/receipts/statistics')
-
-    // Format revenue with currency if needed, assuming it returns a number
-    const currency = revenueRes.currency || '$'
-
-    totalRevenue.value = `${currency}${Number(revenueRes.totalRevenue).toFixed(2)}`
-    
-  } catch (e) {
-    console.error('Error fetching admin stats:', e)
+    stats.value = response
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error)
   } finally {
     isLoading.value = false
   }
 }
 
-const fetchFinancialStats = async () => {
-  try {
-    const params = {
-      fromDate: dateRange.value.fromDate,
-      toDate: dateRange.value.toDate,
-    }
-
-    const response = await api.get('/admin/financial-analytics/stats', { params })
-
-    financialStats.value = response
-  } catch (error) {
-    console.error('Error fetching financial stats:', error)
-  }
-}
-
+// Fetch Financial Chart Data
 const fetchFinancialChartData = async () => {
   isFinancialLoading.value = true
   try {
@@ -99,25 +51,51 @@ const fetchFinancialChartData = async () => {
   }
 }
 
-const refreshFinancialData = () => {
-  fetchFinancialStats()
-  fetchFinancialChartData()
-}
-
-watch(dateRange, () => {
-  refreshFinancialData()
-}, { deep: true })
-
 onMounted(() => {
-  fetchStats()
-  refreshFinancialData()
+  fetchDashboardStats()
+  fetchFinancialChartData()
 })
 
-const headers = [
-  { title: 'User', key: 'fullName' },
-  { title: 'Email', key: 'email' },
-  { title: 'Role', key: 'role' },
-  { title: 'Joined At', key: 'created_at' },
+// Enrollment Chart Options
+const vuetifyTheme = useTheme()
+
+const enrollmentChartOptions = computed(() => {
+  const currentTheme = vuetifyTheme.current.value.colors
+  
+  return {
+    chart: { type: 'area', toolbar: { show: false }, sparkline: { enabled: true } },
+    colors: [currentTheme.primary],
+    stroke: { curve: 'smooth', width: 2 },
+    fill: { opacity: 0.3 },
+    xaxis: { 
+      categories: stats.value.charts?.enrollments?.map(e => e.date) || [],
+      labels: { show: false },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { show: false },
+    grid: { show: false, padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+    tooltip: { x: { show: true }, y: { formatter: val => `${val} Enrollments` } },
+  }
+})
+
+const enrollmentChartSeries = computed(() => [{
+  name: 'Enrollments',
+  data: stats.value.charts?.enrollments?.map(e => e.count) || [],
+}])
+
+// Tables Headers
+const courseHeaders = [
+  { title: 'Course', key: 'title' },
+  { title: 'Enrollments', key: 'enrollmentsCount' },
+  { title: 'Category', key: 'category' },
+]
+
+const enrollmentHeaders = [
+  { title: 'Student', key: 'studentName' },
+  { title: 'Course', key: 'courseTitle' },
+  { title: 'Status', key: 'status' },
+  { title: 'Date', key: 'enrolledAt' },
 ]
 </script>
 
@@ -128,121 +106,95 @@ const headers = [
       <div class="d-flex align-center justify-space-between mb-4">
         <div>
           <h1 class="text-h4 mb-1">
-            Welcome back, Admin! 👋
+            Admin Dashboard
           </h1>
           <p class="text-body-1 text-medium-emphasis">
-            Here's what's happening with your platform today.
+            Overview of platform performance and key metrics.
           </p>
+        </div>
+        <div class="d-flex gap-4">
+          <!-- Global Date Filter for Financials could go here if applies to all -->
         </div>
       </div>
     </VCol>
 
-    <!-- Stats Cards -->
+    <!-- Key Metrics Row -->
     <VCol
       cols="12"
       sm="6"
-      md="4"
-    >
-      <CardStatisticsHorizontal
-        title="Total Users"
-        :stats="usersCount"
-        icon="tabler-users"
-        color="primary"
-      />
-    </VCol>
-    <VCol
-      cols="12"
-      sm="6"
-      md="4"
-    >
-      <CardStatisticsHorizontal
-        title="Total Courses"
-        :stats="coursesCount"
-        icon="tabler-book"
-        color="success"
-      />
-    </VCol>
-    <VCol
-      cols="12"
-      sm="6"
-      md="4"
+      md="3"
     >
       <CardStatisticsHorizontal
         title="Total Revenue"
-        :stats="totalRevenue"
+        :stats="`${stats.financials?.currency || '$'}${stats.financials?.totalRevenue || 0}`"
         icon="tabler-currency-dollar"
-        color="warning"
-      />
-    </VCol>
-
-    <!-- Financial Overview Header & Filters -->
-    <VCol cols="12">
-      <div class="d-flex flex-wrap align-center justify-space-between gap-4 my-4">
-        <h2 class="text-h5">
-          Financial Overview
-        </h2>
-        <div class="d-flex gap-4">
-          <AppDateTimePicker
-            v-model="dateRange.fromDate"
-            label="From Date"
-            clearable
-            density="compact"
-            style="width: 200px;"
-          />
-          <AppDateTimePicker
-            v-model="dateRange.toDate"
-            label="To Date"
-            clearable
-            density="compact"
-            style="width: 200px;"
-          />
-        </div>
-      </div>
-    </VCol>
-
-    <!-- Financial Summary Cards -->
-    <VCol
-      cols="12"
-      md="4"
-    >
-      <CardStatisticsHorizontal
-        title="Total Income"
-        :stats="`${financialStats.currency} ${financialStats.totalIncome}`"
-        icon="tabler-arrow-up"
         color="success"
       />
     </VCol>
-
     <VCol
       cols="12"
-      md="4"
-    >
-      <CardStatisticsHorizontal
-        title="Total Expenses"
-        :stats="`${financialStats.currency} ${financialStats.totalExpenses}`"
-        icon="tabler-arrow-down"
-        color="error"
-      />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="4"
+      sm="6"
+      md="3"
     >
       <CardStatisticsHorizontal
         title="Net Profit"
-        :stats="`${financialStats.currency} ${financialStats.netProfit}`"
+        :stats="`${stats.financials?.currency || '$'}${stats.financials?.netProfit || 0}`"
         icon="tabler-chart-pie"
         color="primary"
       />
     </VCol>
+    <VCol
+      cols="12"
+      sm="6"
+      md="3"
+    >
+      <CardStatisticsHorizontal
+        title="Active Students"
+        :stats="stats.users?.activeStudents?.toString() || '0'"
+        icon="tabler-users"
+        color="info"
+      />
+    </VCol>
+    <VCol
+      cols="12"
+      sm="6"
+      md="3"
+    >
+      <CardStatisticsHorizontal
+        title="Course Completion"
+        :stats="`${stats.courses?.completionRate || 0}%`"
+        icon="tabler-certificate"
+        color="warning"
+      />
+    </VCol>
 
-    <!-- Trend Chart -->
-    <VCol cols="12">
+    <!-- Financial Trends -->
+    <VCol
+      cols="12"
+      md="8"
+    >
       <VCard title="Financial Trends">
-        <VCardText style="height: 400px">
+        <template #append>
+          <div class="d-flex gap-2">
+            <AppDateTimePicker
+              v-model="dateRange.fromDate"
+              label="From"
+              density="compact"
+              style="width: 120px;"
+              @update:model-value="fetchFinancialChartData"
+            />
+            <AppDateTimePicker
+              v-model="dateRange.toDate"
+              label="To"
+              density="compact"
+              style="width: 120px;"
+              @update:model-value="fetchFinancialChartData"
+            />
+          </div>
+        </template>
+        <VCardText style="height: 350px">
           <FinancialTrendChart
-            v-if="!isFinancialLoading && financialChartData.datasets.length"
+            v-if="!isFinancialLoading && financialChartData.datasets && financialChartData.datasets.length"
             :chart-data="financialChartData"
           />
           <div
@@ -260,63 +212,64 @@ const headers = [
       </VCard>
     </VCol>
 
-    <!-- Earning Reports -->
+    <!-- Enrollment Trends -->
     <VCol
       cols="12"
-      md="6"
+      md="4"
     >
-      <AnalyticsEarningReportsWeeklyOverview />
+      <VCard title="Enrollment Trend (30 Days)">
+        <VCardText>
+          <VueApexCharts
+            type="area"
+            height="300"
+            :options="enrollmentChartOptions"
+            :series="enrollmentChartSeries"
+          />
+          <div class="d-flex align-center justify-space-between mt-4">
+            <h4 class="text-h4">
+              {{ stats.users?.totalStudents || 0 }}
+            </h4>
+            <span class="text-body-2">Total Students</span>
+          </div>
+        </VCardText>
+      </VCard>
     </VCol>
 
-    <!-- Recent Users Table -->
+    <!-- Top Courses & Recent Enrollments -->
     <VCol
       cols="12"
       md="6"
     >
-      <VCard title="Recent Users">
+      <VCard title="Top Performing Courses">
         <VDataTable
-          :headers="headers"
-          :items="recentUsers"
-          :loading="isLoading"
+          :headers="courseHeaders"
+          :items="stats.courses?.topPerforming || []"
+          hide-default-footer
+          class="text-no-wrap"
+        />
+      </VCard>
+    </VCol>
+    <VCol
+      cols="12"
+      md="6"
+    >
+      <VCard title="Recent Enrollments">
+        <VDataTable
+          :headers="enrollmentHeaders"
+          :items="stats.courses?.recentEnrollments || []"
           hide-default-footer
           class="text-no-wrap"
         >
-          <template #[`item.fullName`]="{ item }">
-            <div class="d-flex align-center">
-              <VAvatar
-                size="32"
-                color="primary"
-                variant="tonal"
-                class="me-2"
-              >
-                <span>{{ item.first_name ? item.first_name.charAt(0) : '' }}{{ item.last_name ? item.last_name.charAt(0) : '' }}</span>
-              </VAvatar>
-              <div class="d-flex flex-column">
-                <span class="font-weight-medium">{{ item.first_name }} {{ item.last_name }}</span>
-                <span class="text-xs text-medium-emphasis">ID: {{ item.id }}</span>
-              </div>
-            </div>
+          <template #[`item.enrolledAt`]="{ item }">
+            {{ new Date(item.enrolledAt).toLocaleDateString() }}
           </template>
-          <template #[`item.role`]="{ item }">
-            <div v-if="item.roles && item.roles.length">
-              <VChip
-                v-for="role in item.roles"
-                :key="role.id"
-                size="small"
-                class="me-1 text-capitalize"
-                color="primary"
-                variant="tonal"
-              >
-                {{ role.name }}
-              </VChip>
-            </div>
-            <span
-              v-else
-              class="text-medium-emphasis"
-            >-</span>
-          </template>
-          <template #[`item.created_at`]="{ item }">
-            {{ new Date(item.created_at).toLocaleDateString() }}
+          <template #[`item.status`]="{ item }">
+            <VChip
+              size="small"
+              :color="item.status === 'Completed' ? 'success' : 'info'"
+            >
+              {{ item.status }}
+            </VChip>
           </template>
         </VDataTable>
       </VCard>
