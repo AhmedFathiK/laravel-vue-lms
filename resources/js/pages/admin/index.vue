@@ -126,8 +126,8 @@ const enrollmentHeaders = [
     >
       <CardStatisticsHorizontal
         title="Total Revenue"
-        :stats="`${stats.financials?.currency || '$'}${stats.financials?.totalRevenue || 0}`"
-        icon="tabler-currency-dollar"
+        :stats="`${stats.financials?.currency || 'EGP'} ${stats.financials?.totalRevenue || 0}`"
+        icon="tabler-currency-pound"
         color="success"
       />
     </VCol>
@@ -138,7 +138,7 @@ const enrollmentHeaders = [
     >
       <CardStatisticsHorizontal
         title="Net Profit"
-        :stats="`${stats.financials?.currency || '$'}${stats.financials?.netProfit || 0}`"
+        :stats="`${stats.financials?.currency || 'EGP'} ${stats.financials?.netProfit || 0}`"
         icon="tabler-chart-pie"
         color="primary"
       />

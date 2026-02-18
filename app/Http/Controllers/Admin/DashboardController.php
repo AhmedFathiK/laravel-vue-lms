@@ -40,7 +40,7 @@ class DashboardController extends Controller
 
         // Course Completion Rate
         $totalEnrollments = CourseEnrollment::count();
-        $completedEnrollments = CourseEnrollment::where('is_completed', true)->count();
+        $completedEnrollments = CourseEnrollment::whereNotNull('completed_at')->count();
         $completionRate = $totalEnrollments > 0 ? ($completedEnrollments / $totalEnrollments) * 100 : 0;
 
         // 4. Revenue Breakdown by Category (Simplified)
@@ -99,7 +99,7 @@ class DashboardController extends Controller
                     'student_name' => $enrollment->user ? $enrollment->user->full_name : 'Unknown',
                     'course_title' => $enrollment->course ? $enrollment->course->title : 'Unknown',
                     'enrolled_at' => $enrollment->enrolled_at,
-                    'status' => $enrollment->is_completed ? 'Completed' : 'In Progress',
+                    'status' => $enrollment->completed_at ? 'Completed' : 'In Progress',
                 ];
             });
 
