@@ -1,3 +1,8 @@
+<route lang="yaml">
+meta:
+  layout: learners
+</route>
+
 <template>
   <VContainer
     v-if="loading"

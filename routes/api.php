@@ -296,6 +296,8 @@ Route::prefix('learner')->group(function () {
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
+    Route::get('course-content', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'show']);
+    Route::get('dashboard/active-stats', [LearnerDashboardController::class, 'getActiveStats']);
     Route::get('my-courses', [LearnerEntitlementController::class, 'myCourses']);
     Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
