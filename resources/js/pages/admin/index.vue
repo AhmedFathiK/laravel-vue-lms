@@ -103,7 +103,7 @@ const enrollmentHeaders = [
   <VRow>
     <!-- Welcome Header -->
     <VCol cols="12">
-      <div class="d-flex align-center justify-space-between mb-4">
+      <div class="d-flex align-center justify-space-between">
         <div>
           <h1 class="text-h4 mb-1">
             Admin Dashboard
@@ -111,9 +111,6 @@ const enrollmentHeaders = [
           <p class="text-body-1 text-medium-emphasis">
             Overview of platform performance and key metrics.
           </p>
-        </div>
-        <div class="d-flex gap-4">
-          <!-- Global Date Filter for Financials could go here if applies to all -->
         </div>
       </div>
     </VCol>
