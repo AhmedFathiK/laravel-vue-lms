@@ -96,6 +96,11 @@ class Course extends Model
         return $this->hasMany(Level::class)->orderBy('sort_order');
     }
 
+    public function lessons(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(Lesson::class, Level::class);
+    }
+
     public function finalExam(): BelongsTo
     {
         return $this->belongsTo(Exam::class, 'final_exam_id');
