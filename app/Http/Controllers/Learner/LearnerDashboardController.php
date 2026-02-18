@@ -25,9 +25,9 @@ class LearnerDashboardController extends Controller
         $userId = $user->id;
 
         // 1. Get enrolled courses via active entitlements
-        $accessibleCourseIds = Course::whereHas('billingPlans.entitlements', function($q) use ($userId) {
+        $accessibleCourseIds = Course::whereHas('billingPlans.entitlements', function ($q) use ($userId) {
             $q->where('user_id', $userId)
-              ->active();
+                ->active();
         })->pluck('id');
 
         $enrolledCourses = Course::whereIn('id', $accessibleCourseIds)
@@ -88,6 +88,64 @@ class LearnerDashboardController extends Controller
             'global' => $globalStats,
             'courses' => $courseStats,
             'next_best_action' => $nba,
+        ]);
+    }
+
+    /**
+     * Get statistics specifically for the active course dashboard.
+     */
+    public function getActiveStats(Request $request): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $courseId = $user->active_course_id;
+
+        if (!$courseId) {
+            return response()->json(['error' => 'No active course selected'], 400);
+        }
+
+        // 1. Streak
+        $streak = $user->streaks()->where('course_id', $courseId)->first();
+        $streakCount = $streak ? $streak->current_streak : 0;
+
+        // 2. XP
+        $xp = $user->points()->where('course_id', $courseId)->sum('points');
+
+        // 3. Due Reviews
+        $dueReviews = RevisionItem::where('user_id', $user->id)
+            ->where('due_date', '<=', now())
+            ->whereHasMorph(
+                'revisionable',
+                [Term::class, Concept::class],
+                function ($query) use ($courseId) {
+                    $query->where('course_id', $courseId);
+                }
+            )->count();
+
+        // 4. Progress %
+        // Need total lessons vs completed lessons
+        $course = Course::withCount(['lessons'])->find($courseId); // simple count? No, lessons are nested in levels.
+
+        // Better count via levels
+        $totalLessons = \App\Models\Lesson::whereHas('level', function ($q) use ($courseId) {
+            $q->where('course_id', $courseId)->where('status', 'published');
+        })->where('status', 'published')->count();
+
+        $completedLessons = UserStudiedLesson::where('user_id', $user->id)
+            ->where('course_id', $courseId)
+            ->distinct('lesson_id')
+            ->count();
+
+        $progress = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
+
+        return response()->json([
+            'streak' => $streakCount,
+            'xp' => $xp,
+            'due_reviews' => $dueReviews,
+            'progress' => $progress,
+            'total_lessons' => $totalLessons,
+            'completed_lessons' => $completedLessons,
+            'course_title' => $course ? $course->title : '',
         ]);
     }
 

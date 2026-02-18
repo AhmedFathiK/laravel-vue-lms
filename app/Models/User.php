@@ -27,6 +27,7 @@ class User extends Authenticatable
         'phone_number',
         'password',
         'interface_language',
+        'active_course_id',
     ];
 
     /**
@@ -123,6 +124,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all course enrollments for this user.
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
+    }
+
+    /**
      * Get all entitlements for this user.
      */
     public function entitlements(): HasMany
@@ -136,5 +145,21 @@ class User extends Authenticatable
     public function capabilities()
     {
         return $this->hasManyThrough(UserCapability::class, UserEntitlement::class);
+    }
+
+    /**
+     * Get the user's active course.
+     */
+    public function activeCourse()
+    {
+        return $this->belongsTo(Course::class, 'active_course_id');
+    }
+
+    /**
+     * Get all streaks for this user.
+     */
+    public function streaks(): HasMany
+    {
+        return $this->hasMany(UserStreak::class);
     }
 }
