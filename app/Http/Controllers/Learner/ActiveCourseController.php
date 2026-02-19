@@ -7,16 +7,17 @@ use App\Http\Resources\Learner\CourseResource;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Learner\CoursesContentController;
 
 class ActiveCourseController extends Controller
 {
     /**
      * Get the currently active course for the user.
      */
-    public function show()
+    public function show(Request $request)
     {
         $user = Auth::user();
-        
+
         if (!$user->active_course_id) {
             return response()->json(null);
         }
@@ -30,17 +31,10 @@ class ActiveCourseController extends Controller
             return response()->json(null);
         }
 
-        // Load necessary relations for dashboard structure
-        // We load levels and lessons to build the tree
-        $course->load(['levels' => function ($query) {
-            $query->where('status', 'published')
-                  ->orderBy('sort_order');
-        }, 'levels.lessons' => function ($query) {
-            $query->where('status', 'published')
-                  ->orderBy('sort_order');
-        }, 'category']);
-
-        return new CourseResource($course);
+        // Delegate to CoursesContentController to ensure consistent response structure
+        // This ensures the dashboard sees exactly the same content/progress as the course page
+        $controller = app(CoursesContentController::class);
+        return $controller->show($request, $course);
     }
 
     /**
