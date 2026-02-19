@@ -104,7 +104,7 @@ const login = async () => {
       })
       
       // Redirect to intended page or dashboard
-      const redirectTo = route.query.to ? String(route.query.to) : '/'
+      const redirectTo = route.query.to ? String(route.query.to) : '/dashboard'
       
       await nextTick(() => {
         router.replace(redirectTo)
