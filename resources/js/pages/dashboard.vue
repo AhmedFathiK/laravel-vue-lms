@@ -256,10 +256,9 @@ const scrollToLevel = levelId => {
       <!-- Placement CTA Section -->
       <VCard
         v-if="shouldOfferPlacement"
+        variant="tonal"
         color="primary"
-        theme="dark"
         class="mb-8"
-        elevation="4"
       >
         <VCardText class="d-flex flex-column flex-md-row align-center pa-6 gap-6">
           <div class="flex-grow-1 text-center text-md-left">
@@ -277,9 +276,9 @@ const scrollToLevel = levelId => {
           >
             <VBtn
               block
-              color="white"
+              color="primary"
               variant="flat"
-              class="text-primary font-weight-bold"
+              class="font-weight-bold"
               size="large"
               prepend-icon="tabler-wand"
               @click="startPlacementExam"
@@ -290,7 +289,7 @@ const scrollToLevel = levelId => {
             <VBtn
               block
               variant="text"
-              color="white"
+              color="primary"
               size="small"
               class="opacity-80"
               @click="scrollToLevels"
@@ -304,10 +303,9 @@ const scrollToLevel = levelId => {
       <!-- Placement Result Section -->
       <VCard
         v-else-if="placementResult"
+        variant="tonal"
         color="success"
-        theme="dark"
         class="mb-8"
-        elevation="4"
       >
         <VCardText class="d-flex flex-column flex-md-row align-center pa-6 gap-6">
           <div class="flex-grow-1 text-center text-md-left">
@@ -325,9 +323,9 @@ const scrollToLevel = levelId => {
           >
             <VBtn
               block
-              color="white"
+              color="success"
               variant="flat"
-              class="text-success font-weight-bold"
+              class="font-weight-bold"
               size="large"
               prepend-icon="tabler-arrow-right"
               @click="scrollToLevel(placementResult.levelId)"
