@@ -5,6 +5,7 @@ import { themeConfig } from '@themeConfig'
 // Components
 import Footer from '@/layouts/components/Footer.vue'
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
+import NavbarCourseLink from '@/layouts/components/NavbarCourseLink.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import NavBarI18n from '@core/components/I18n.vue'
 import { HorizontalNavLayout } from '@layouts'
@@ -29,6 +30,8 @@ const settingsStore = useSettingsStore()
         </h1>
       </RouterLink>
       <VSpacer />
+
+      <NavbarCourseLink />
 
       <NavBarI18n
         v-if="themeConfig.app.i18n.enable && themeConfig.app.i18n.langConfig?.length"
