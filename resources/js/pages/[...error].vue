@@ -24,7 +24,7 @@ definePage({
     />
 
     <VBtn
-      to="/"
+      to="/dashboard"
       class="mb-11"
     >
       Back to Home
