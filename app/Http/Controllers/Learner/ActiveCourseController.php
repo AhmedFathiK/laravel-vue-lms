@@ -18,23 +18,53 @@ class ActiveCourseController extends Controller
     {
         $user = Auth::user();
 
+        \Illuminate\Support\Facades\Log::info('ActiveCourseController::show called for user ' . $user->id . ' | active_course_id: ' . $user->active_course_id);
+
         if (!$user->active_course_id) {
+            \Illuminate\Support\Facades\Log::info('No active_course_id, returning null');
             return response()->json(null);
         }
 
         $course = $user->activeCourse;
 
         if (!$course) {
+            \Illuminate\Support\Facades\Log::info('Active course model not found for ID ' . $user->active_course_id . ', clearing ID');
             // Cleanup invalid reference
             $user->active_course_id = null;
             $user->save();
             return response()->json(null);
         }
 
+        \Illuminate\Support\Facades\Log::info('Delegating to CoursesContentController for course ' . $course->id);
+
         // Delegate to CoursesContentController to ensure consistent response structure
         // This ensures the dashboard sees exactly the same content/progress as the course page
-        $controller = app(CoursesContentController::class);
-        return $controller->show($request, $course);
+        try {
+            $controller = app(CoursesContentController::class);
+            $response = $controller->show($request, $course);
+
+            \Illuminate\Support\Facades\Log::info('CoursesContentController returned status: ' . $response->status());
+
+            // Check for error response from controller (it might return JsonResponse with 403)
+            if ($response->status() === 403) {
+                \Illuminate\Support\Facades\Log::info('Received 403 from delegate, clearing active course');
+                $user->active_course_id = null;
+                $user->save();
+                return response()->json(null);
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Exception in ActiveCourseController: ' . $e->getMessage());
+            // If exception has 403 code
+            if ($e->getCode() == 403) {
+                \Illuminate\Support\Facades\Log::info('Exception code 403 caught, clearing active course');
+                $user->active_course_id = null;
+                $user->save();
+                return response()->json(null);
+            }
+            throw $e;
+        }
     }
 
     /**

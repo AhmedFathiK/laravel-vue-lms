@@ -52,6 +52,13 @@ const fetchCourses = async () => {
         enrollmentId: e.id,
       }))
     
+    // If no courses found, redirect to select course page
+    if (courses.value.length === 0) {
+      router.push('/courses/select')
+      
+      return
+    }
+
     // If no course selected and we have courses, select the first one
     if (!selectedCourseId.value && courses.value.length > 0) {
       selectedCourseId.value = courses.value[0].id

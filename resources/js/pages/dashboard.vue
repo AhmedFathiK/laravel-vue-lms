@@ -24,30 +24,61 @@ const isModalVisible = ref(false)
 const isVideoModalVisible = ref(false)
 
 const fetchCourseContent = async () => {
+  console.log('fetchCourseContent called')
   loading.value = true
   error.value = null
 
+  console.log('Current activeCourseId:', activeCourseStore.activeCourseId)
+
   if (!activeCourseStore.activeCourseId) {
+    console.log('No activeCourseId, fetching...')
     await activeCourseStore.fetchActiveCourse()
+    console.log('After fetch, activeCourseId:', activeCourseStore.activeCourseId)
     if (!activeCourseStore.activeCourseId) {
+      console.log('Still no activeCourseId, redirecting to select')
       router.push('/courses/select')
-      loading.value = false
+      loading.value = false // Ensure loading is stopped
       
       return
     }
   }
 
   try {
+    console.log('Calling API /learner/course-content')
+
     const response = await api.get('/learner/course-content')
+
+    console.log('API response received', response)
+
+    if (!response) {
+      console.log('Response is null/falsey')
+
+      // If content is null but we have an active course ID, it might be invalid
+      // Let's clear it and redirect
+      activeCourseStore.clearActiveCourse()
+      router.push('/courses/select')
+      loading.value = false // Ensure loading is stopped
+      
+      return
+    }
 
     courseData.value = response
 
     // Auto-scroll to next lesson logic
     findNextLesson()
   } catch (err) {
-    console.error(err)
+    console.error('Error in fetchCourseContent', err)
+    if (err.response?.status === 404) {
+      // If course not found, clear and redirect
+      activeCourseStore.clearActiveCourse()
+      router.push('/courses/select')
+      loading.value = false // Ensure loading is stopped
+      
+      return
+    }
     error.value = err.response?.data?.error || "Failed to load course content. Please try again later."
   } finally {
+    console.log('fetchCourseContent finally block, setting loading = false')
     loading.value = false
   }
 }
@@ -169,9 +200,9 @@ const hasPlacementExam = computed(() => {
 })
 
 const userHasAnyProgress = computed(() => {
-  return courseData.value?.levels.some(
+  return courseData.value?.levels?.some(
     level => level.currentUserProgress !== null,
-  )
+  ) ?? false
 })
 
 const shouldOfferPlacement = computed(() => {

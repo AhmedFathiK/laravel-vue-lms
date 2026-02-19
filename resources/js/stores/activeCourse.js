@@ -3,6 +3,8 @@ import api from '@/utils/api'
 
 export const useActiveCourse = defineStore('activeCourse', {
   state: () => ({
+    // Initialize from localStorage BUT validate it later
+    // We should not blindly trust localStorage if the API says otherwise
     activeCourseId: localStorage.getItem('active_course_id') ? parseInt(localStorage.getItem('active_course_id')) : null,
     activeCourse: null,
     isLoading: false,
@@ -11,12 +13,17 @@ export const useActiveCourse = defineStore('activeCourse', {
 
   actions: {
     async fetchActiveCourse() {
+      console.log('Store: fetchActiveCourse called')
       this.isLoading = true
       this.error = null
       try {
         const response = await api.get('/user/active-course')
+
+        console.log('Store: API response', response)
         
+        // Handle null response explicitly (user has no active course)
         if (!response) {
+          console.log('Store: Response null, clearing state')
           this.activeCourse = null
           this.activeCourseId = null
           localStorage.removeItem('active_course_id')
@@ -28,16 +35,20 @@ export const useActiveCourse = defineStore('activeCourse', {
         const course = response.data || response 
 
         if (course && course.id) {
+          console.log('Store: Valid course found', course.id)
           this.activeCourse = course
           this.activeCourseId = course.id
           localStorage.setItem('active_course_id', course.id)
         } else {
+          console.log('Store: Course object invalid or missing ID', course)
           this.activeCourse = null
           this.activeCourseId = null
           localStorage.removeItem('active_course_id')
         }
       } catch (error) {
         console.error('Failed to fetch active course:', error)
+
+        // If 404 or other error, assume no active course
         this.error = error
         this.activeCourse = null
         this.activeCourseId = null
