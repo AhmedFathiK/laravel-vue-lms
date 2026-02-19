@@ -1,4 +1,5 @@
 <script setup>
+import { useActiveCourse } from '@/stores/activeCourse'
 import $api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -13,12 +14,10 @@ definePage({
 const route = useRoute()
 const router = useRouter()
 const vuetifyTheme = useTheme()
+const activeCourseStore = useActiveCourse()
 
 const activeTab = ref('concepts') // 'concepts' or 'terms'
 const loading = ref(true)
-const courses = ref([])
-const selectedCourseId = ref(route.query.courseId ? parseInt(route.query.courseId) : null)
-const coursesLoading = ref(false)
 
 const stats = ref({
   concepts: {
@@ -37,63 +36,49 @@ const stats = ref({
 const categories = ref([])
 const categoriesLoading = ref(false)
 
-const fetchCourses = async () => {
-  coursesLoading.value = true
-  try {
-    const res = await $api.get('/learner/my-courses')
-
-    // The endpoint returns enrollments, we need to extract the course objects
-    const enrollments = res.data || res
-
-    courses.value = enrollments
-      .filter(e => e.course)
-      .map(e => ({
-        ...e.course,
-        enrollmentId: e.id,
-      }))
+const initializePage = async () => {
+  loading.value = true
+  
+  if (!activeCourseStore.activeCourseId) {
+    await activeCourseStore.fetchActiveCourse()
     
-    // If no courses found, redirect to select course page
-    if (courses.value.length === 0) {
+    if (!activeCourseStore.activeCourseId) {
       router.push('/courses/select')
       
       return
     }
-
-    // If no course selected and we have courses, select the first one
-    if (!selectedCourseId.value && courses.value.length > 0) {
-      selectedCourseId.value = courses.value[0].id
-    }
-  } catch (e) {
-    console.error('Error fetching courses:', e)
-  } finally {
-    coursesLoading.value = false
   }
+
+  // Fetch data
+  await Promise.all([
+    fetchStats(),
+    fetchCategories(),
+  ])
+  
+  loading.value = false
 }
 
 const fetchStats = async () => {
-  if (!selectedCourseId.value) return
+  if (!activeCourseStore.activeCourseId) return
   
-  loading.value = true
   try {
     const res = await $api.get('/revision/statistics', {
-      params: { courseId: selectedCourseId.value },
+      params: { courseId: activeCourseStore.activeCourseId },
     })
 
     stats.value = res
   } catch (e) {
     console.error(e)
-  } finally {
-    loading.value = false
   }
 }
 
 const fetchCategories = async () => {
-  if (activeTab.value !== 'concepts' || !selectedCourseId.value) return
+  if (activeTab.value !== 'concepts' || !activeCourseStore.activeCourseId) return
   
   categoriesLoading.value = true
   try {
     const res = await $api.get('/revision/grammar-topics', {
-      params: { courseId: selectedCourseId.value },
+      params: { courseId: activeCourseStore.activeCourseId },
     })
 
     categories.value = res
@@ -104,24 +89,25 @@ const fetchCategories = async () => {
   }
 }
 
-const selectedCourse = computed(() => {
-  return courses.value.find(c => c.id === selectedCourseId.value)
+watch(() => activeCourseStore.activeCourseId, newVal => {
+  if (newVal) {
+    initializePage()
+  } else {
+    router.push('/courses/select')
+  }
 })
 
-watch(selectedCourseId, newId => {
-  if (newId) {
-    // Update URL without reloading
-    router.replace({ query: { ...route.query, courseId: newId } })
-    fetchStats()
+watch(activeTab, () => {
+  if (activeTab.value === 'concepts') {
     fetchCategories()
   }
 })
 
-onMounted(async () => {
-  await fetchCourses()
-  fetchStats()
-  fetchCategories()
+onMounted(() => {
+  initializePage()
 })
+
+const selectedCourse = computed(() => activeCourseStore.activeCourse)
 
 const startReview = (early = false) => {
   router.push({ 
@@ -129,7 +115,7 @@ const startReview = (early = false) => {
     query: { 
       type: activeTab.value === 'concepts' ? 'concept' : 'term',
       earlyReview: early ? '1' : undefined,
-      courseId: selectedCourseId.value,
+      courseId: activeCourseStore.activeCourseId,
     }, 
   })
 }
@@ -227,45 +213,43 @@ const toggleAll = () => {
 
 <template>
   <VContainer>
-    <!-- Course Selector -->
-    <VRow>
+    <!-- Top Section: Course Selection (Removed as we use Active Course) -->
+    <!--
+      <VRow class="mb-6">
       <VCol
-        cols="12"
-        md="6"
-        lg="4"
+      cols="12"
+      md="4"
       >
-        <VSelect
-          v-model="selectedCourseId"
-          :items="courses"
-          item-title="title"
-          item-value="id"
-          label="Select Course"
-          variant="outlined"
-          density="comfortable"
-          :loading="coursesLoading"
-          prepend-inner-icon="tabler-book"
-        >
-          <template #item="{ props, item }">
-            <VListItem
-              v-bind="props"
-              :prepend-avatar="item.raw.thumbnail"
-            >
-              <template #title>
-                {{ item.raw.title }}
-              </template>
-            </VListItem>
-          </template>
-        </VSelect>
+      <VSelect
+      v-model="selectedCourseId"
+      :items="courses"
+      item-title="title"
+      item-value="id"
+      label="Select Course"
+      variant="outlined"
+      density="comfortable"
+      :loading="coursesLoading"
+      prepend-inner-icon="tabler-book"
+      >
+      <template #item="{ props, item }">
+      <VListItem
+      v-bind="props"
+      :prepend-avatar="item.raw.thumbnail"
+      >
+      <template #title>
+      {{ item.raw.title }}
+      </template>
+      </VListItem>
+      </template>
+      </VSelect>
       </VCol>
-    </VRow>
+      </VRow> 
+    -->
 
     <VRow>
       <VCol cols="12">
         <div class="d-flex align-center gap-4 mb-4">
-          <VTabs
-            v-model="activeTab"
-            @update:model-value="fetchCategories"
-          >
+          <VTabs v-model="activeTab">
             <VTab value="concepts">
               Grammar
             </VTab>
