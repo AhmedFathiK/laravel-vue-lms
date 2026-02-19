@@ -86,6 +86,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
     });
 
     Route::post('/user/locale', [LearnerUserController::class, 'updateLocale']);
+    Route::post('/user/active-course', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'update']);
+    Route::get('/user/active-course', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'show']);
 });
 
 /*

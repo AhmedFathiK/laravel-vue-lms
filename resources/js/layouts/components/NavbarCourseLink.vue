@@ -11,8 +11,8 @@ const activeCourseStore = useActiveCourse()
   >
     <VAvatar
       size="26"
-      :color="activeCourseStore.activeCourse ? undefined : 'primary'"
-      :variant="activeCourseStore.activeCourse ? undefined : 'tonal'"
+      :color="activeCourseStore.activeCourse?.thumbnail ? undefined : 'primary'"
+      :variant="activeCourseStore.activeCourse?.thumbnail ? undefined : 'tonal'"
     >
       <VImg
         v-if="activeCourseStore.activeCourse?.thumbnail"
