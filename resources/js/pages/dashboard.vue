@@ -57,6 +57,11 @@ const findNextLesson = () => {
     
   // Find first unlocked level with incomplete items
   for (const level of courseData.value.levels) {
+    const status = level.currentUserProgress?.status
+
+    // Skip levels that are completed or skipped
+    if (status === 'completed' || status === 'skipped') continue
+
     if (level.items) {
       const firstActive = level.items.find(i => !i.completed && !i.locked)
       if (firstActive) {
