@@ -16,6 +16,7 @@ class ActiveCourseController extends Controller
      */
     public function show(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         \Illuminate\Support\Facades\Log::info('ActiveCourseController::show called for user ' . $user->id . ' | active_course_id: ' . $user->active_course_id);
@@ -76,6 +77,7 @@ class ActiveCourseController extends Controller
             'course_id' => 'required|exists:courses,id'
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $courseId = $request->course_id;
 
@@ -100,9 +102,6 @@ class ActiveCourseController extends Controller
         $user->active_course_id = $courseId;
         $user->save();
 
-        return response()->json([
-            'message' => 'Active course updated successfully.',
-            'active_course_id' => $courseId
-        ]);
+        return response()->json(['message' => 'Active course updated']);
     }
 }
