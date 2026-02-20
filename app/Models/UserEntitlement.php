@@ -20,8 +20,13 @@ class UserEntitlement extends Model
     const STATUS_REVOKED = 'revoked';
 
     protected $fillable = [
-        'user_id', 'billing_plan_id', 'payment_id',
-        'starts_at', 'ends_at', 'status', 'auto_renew'
+        'user_id',
+        'billing_plan_id',
+        'payment_id',
+        'starts_at',
+        'ends_at',
+        'status',
+        'auto_renew'
     ];
 
     protected $casts = [
@@ -44,7 +49,7 @@ class UserEntitlement extends Model
     {
         return $this->belongsTo(Payment::class);
     }
-    
+
     public function capabilities(): HasMany
     {
         return $this->hasMany(UserCapability::class);
@@ -66,26 +71,23 @@ class UserEntitlement extends Model
 
         $durationInDays = $this->starts_at->diffInDays($this->ends_at);
         $calculatedGraceDays = ($durationInDays * $percentage) / 100;
-        
+
         // Final grace period is the minimum of calculated percentage and max absolute days
         $effectiveGraceDays = min($calculatedGraceDays, $maxDays);
 
         return $this->ends_at->copy()->addDays($effectiveGraceDays)->isFuture();
     }
-    
+
     public function scopeActive($query)
     {
+        // Use conservative approach for SQL scope to ensure no valid entitlements are missed.
+        // Strict percentage-based grace period is enforced in PHP via isActive().
+        $maxDays = config('entitlement.grace_period.max_days', 7);
+
         return $query->whereIn('status', [self::STATUS_ACTIVE, self::STATUS_PAST_DUE])
-            ->where(function($q) {
+            ->where(function ($q) use ($maxDays) {
                 $q->whereNull('ends_at')
-                  ->orWhere(function($sq) {
-                      // We need to use a subquery to calculate the dynamic grace period for each row
-                      // Since SQL doesn't easily handle this dynamic calculation without raw queries,
-                      // we'll use a conservative approach for the scope (max_days) and rely on 
-                      // PHP-level isActive() for precise checks if needed.
-                      $maxDays = config('entitlement.grace_period.max_days', 7);
-                      $sq->where('ends_at', '>', now()->subDays($maxDays));
-                  });
+                  ->orWhere('ends_at', '>', now()->subDays($maxDays));
             });
     }
 }

@@ -37,12 +37,17 @@ class CoursesContentController extends Controller
         }
 
         // 2. Enforce Entitlement (Strict)
-        $hasEntitlement = $user->entitlements()
+        // Retrieve entitlements first, then filter using PHP logic to ensure accurate grace period calculation
+        $entitlements = $user->entitlements()
             ->active()
             ->whereHas('billingPlan.courses', function ($query) use ($course) {
                 $query->where('courses.id', $course->id);
             })
-            ->exists();
+            ->get();
+
+        $hasEntitlement = $entitlements->filter(function ($entitlement) {
+            return $entitlement->isActive();
+        })->isNotEmpty();
 
         if (!$hasEntitlement) {
             return response()->json([
@@ -135,13 +140,18 @@ class CoursesContentController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $hasEntitlement = $user->entitlements()
+        // Check Entitlement (Strict)
+        $entitlements = $user->entitlements()
             ->active()
             ->whereHas('capabilities', function ($query) use ($course) {
                 $query->where('scope_type', 'App\Models\Course')
                     ->where('scope_id', $course->id);
             })
-            ->exists();
+            ->get();
+
+        $hasEntitlement = $entitlements->filter(function ($entitlement) {
+            return $entitlement->isActive();
+        })->isNotEmpty();
 
         $hasEnrollment = CourseEnrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)

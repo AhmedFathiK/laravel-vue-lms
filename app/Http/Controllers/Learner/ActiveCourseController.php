@@ -22,8 +22,8 @@ class ActiveCourseController extends Controller
         \Illuminate\Support\Facades\Log::info('ActiveCourseController::show called for user ' . $user->id . ' | active_course_id: ' . $user->active_course_id);
 
         if (!$user->active_course_id) {
-            \Illuminate\Support\Facades\Log::info('No active_course_id, returning null');
-            return response()->json(null);
+            \Illuminate\Support\Facades\Log::info('No active_course_id, returning 404');
+            return response()->json(['message' => 'No active course selected.'], 404);
         }
 
         $course = $user->activeCourse;
@@ -33,7 +33,7 @@ class ActiveCourseController extends Controller
             // Cleanup invalid reference
             $user->active_course_id = null;
             $user->save();
-            return response()->json(null);
+            return response()->json(['message' => 'Active course not found.'], 404);
         }
 
         \Illuminate\Support\Facades\Log::info('Delegating to CoursesContentController for course ' . $course->id);
@@ -51,7 +51,8 @@ class ActiveCourseController extends Controller
                 \Illuminate\Support\Facades\Log::info('Received 403 from delegate, clearing active course');
                 $user->active_course_id = null;
                 $user->save();
-                return response()->json(null);
+                // Return the error response so the frontend knows why
+                return $response;
             }
 
             return $response;
@@ -62,7 +63,7 @@ class ActiveCourseController extends Controller
                 \Illuminate\Support\Facades\Log::info('Exception code 403 caught, clearing active course');
                 $user->active_course_id = null;
                 $user->save();
-                return response()->json(null);
+                return response()->json(['error' => $e->getMessage()], 403);
             }
             throw $e;
         }
@@ -88,12 +89,16 @@ class ActiveCourseController extends Controller
             ->exists();
 
         // Check 2: Active Entitlement (Subscription/Plan)
-        $hasEntitlement = $user->entitlements()
+        $entitlements = $user->entitlements()
             ->active()
             ->whereHas('billingPlan.courses', function ($q) use ($courseId) {
                 $q->where('courses.id', $courseId);
             })
-            ->exists();
+            ->get();
+
+        $hasEntitlement = $entitlements->filter(function ($entitlement) {
+            return $entitlement->isActive();
+        })->isNotEmpty();
 
         if (!$isEnrolled && !$hasEntitlement) {
             return response()->json(['message' => 'You do not have access to this course.'], 403);
