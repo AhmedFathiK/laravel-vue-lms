@@ -3,8 +3,13 @@ import { useGenerateImageVariant } from '@core/composable/useGenerateImageVarian
 import misc404 from '@images/pages/404.png'
 import miscMaskDark from '@images/pages/misc-mask-dark.png'
 import miscMaskLight from '@images/pages/misc-mask-light.png'
+import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
 
 const authThemeMask = useGenerateImageVariant(miscMaskLight, miscMaskDark)
+const authStore = useAuthStore()
+
+const homeLink = computed(() => authStore.isAuthenticated ? '/dashboard' : '/')
 
 definePage({
   alias: '/pages/misc/not-found/:error(.*)',
@@ -24,7 +29,7 @@ definePage({
     />
 
     <VBtn
-      to="/dashboard"
+      :to="homeLink"
       class="mb-11"
     >
       Back to Home
