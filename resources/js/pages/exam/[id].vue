@@ -156,13 +156,15 @@ const startExam = async () => {
   }
 }
 
-const handleFinishPlacement = () => {
+const handleFinishPlacement = async () => {
   const levelId = placementOutcome.value?.placementOutcomeLevelId
   const courseId = exam.value?.courseId
   
   if (levelId && courseId) {
+    const activeCourseStore = useActiveCourse()
+    await activeCourseStore.setActiveCourse(courseId)
     router.push({
-      path: `/my-courses/${courseId}`,
+      path: '/dashboard',
       state: { targetLevel: levelId },
     })
   } else {

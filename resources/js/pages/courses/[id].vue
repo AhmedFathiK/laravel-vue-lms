@@ -3,6 +3,7 @@ import api from '@/utils/api'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useActiveCourse } from '@/stores/activeCourse'
 
 definePage({
   meta: {
@@ -50,14 +51,33 @@ const fetchCourseDetails = async () => {
   }
 }
 
+const handleContinueLearning = async () => {
+  if (courseDetails.value?.id) {
+    const activeCourseStore = useActiveCourse()
+
+    await activeCourseStore.setActiveCourse(courseDetails.value.id)
+    router.push('/dashboard')
+  }
+}
+
 onMounted(async () => {
   await fetchCourseDetails()
   await fetchBillingPlans()
   
+  // Check for resume request
+  if (route.query.resume && courseDetails.value?.hasActiveAccess) {
+    await handleContinueLearning()
+    
+    return
+  }
+  
   // Check for payment success and redirect if enrolled
   if (route.query.payment === 'success' && courseDetails.value?.hasActiveAccess) {
     // Optional: Show a toast here
-    router.push(`/my-courses/${courseDetails.value.id}`)
+    const activeCourseStore = useActiveCourse()
+
+    await activeCourseStore.setActiveCourse(courseDetails.value.id)
+    router.push('/dashboard')
   } else if (route.query.payment === 'failed') {
     if (route.query.payment_id) {
       error.value = 'Entitlement payment failed. Please try again or contact support.'
@@ -131,7 +151,7 @@ const confirmFreeEnrollment = async () => {
     await fetchCourseDetails()
 
     if (courseDetails.value?.hasActiveAccess) {
-      router.push(`/my-courses/${courseDetails.value.id}`)
+      await handleContinueLearning()
     }
   } catch (err) {
     console.error('Free enrollment error', err)
@@ -458,7 +478,7 @@ if (route.query.payment === 'success') {
                 <VBtn
                   block
                   color="success"
-                  :to="`/my-courses/${courseDetails.id}`"
+                  @click="handleContinueLearning"
                 >
                   Continue Learning
                 </VBtn>

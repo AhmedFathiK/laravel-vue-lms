@@ -52,14 +52,11 @@ declare module 'vue-router/auto-routes' {
     'courses-id': RouteRecordInfo<'courses-id', '/courses/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'courses-select': RouteRecordInfo<'courses-select', '/courses/select', Record<never, never>, Record<never, never>>,
     'dashboard': RouteRecordInfo<'dashboard', '/dashboard', Record<never, never>, Record<never, never>>,
+    'exam-id': RouteRecordInfo<'exam-id', '/exam/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'help-center': RouteRecordInfo<'help-center', '/help-center', Record<never, never>, Record<never, never>>,
     'help-center-article-title': RouteRecordInfo<'help-center-article-title', '/help-center/article/:title', { title: ParamValue<true> }, { title: ParamValue<false> }>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
-    'my-courses': RouteRecordInfo<'my-courses', '/my-courses', Record<never, never>, Record<never, never>>,
-    'my-courses-course-id': RouteRecordInfo<'my-courses-course-id', '/my-courses/:courseId', { courseId: ParamValue<true> }, { courseId: ParamValue<false> }>,
-    'my-courses-exam-id': RouteRecordInfo<'my-courses-exam-id', '/my-courses/exam/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    'my-courses-study-id': RouteRecordInfo<'my-courses-study-id', '/my-courses/study/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'payment': RouteRecordInfo<'payment', '/payment', Record<never, never>, Record<never, never>>,
     'pricing': RouteRecordInfo<'pricing', '/pricing', Record<never, never>, Record<never, never>>,
@@ -68,5 +65,6 @@ declare module 'vue-router/auto-routes' {
     'revisions-session': RouteRecordInfo<'revisions-session', '/revisions/session', Record<never, never>, Record<never, never>>,
     'revisions-summary': RouteRecordInfo<'revisions-summary', '/revisions/summary', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
+    'study-id': RouteRecordInfo<'study-id', '/study/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
   }
 }

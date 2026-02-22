@@ -5,11 +5,6 @@ export default [
     icon: { icon: 'tabler-dashboard' },
   },
   {
-    title: 'My Courses',
-    to: { name: 'my-courses' },
-    icon: { icon: 'tabler-books' },
-  },
-  {
     title: 'Revisions',
     to: { name: 'revisions' },
     icon: { icon: 'tabler-refresh' },

@@ -124,12 +124,12 @@ const handleItemClick = item => {
 
   if (item.type === 'lesson') {
     router.push({ 
-      name: 'my-courses-study-id', 
+      name: 'study-id', 
       params: { id: item.id }, 
     })
   } else if (item.type === 'exam' || item.type === 'placement' || item.item_type === 'exam') {
     router.push({
-      name: 'my-courses-exam-id',
+      name: 'exam-id',
       params: { id: item.id },
     })
   } else {
@@ -228,7 +228,7 @@ const placementResult = computed(() => {
 const startPlacementExam = () => {
   if (!courseData.value.placementExam) return
   router.push({ 
-    name: 'my-courses-exam-id', 
+    name: 'exam-id', 
     params: { id: courseData.value.placementExam.id }, 
   })
 }

@@ -4,6 +4,7 @@ import $api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
+import { useActiveCourse } from '@/stores/activeCourse'
 
 definePage({
   meta: {
@@ -184,10 +185,13 @@ const handleExit = () => {
   showExitDialog.value = true
 }
 
-const confirmExit = () => {
+const confirmExit = async () => {
   showExitDialog.value = false
   if (lesson.value && lesson.value.courseId) {
-    router.push(`/my-courses/${lesson.value.courseId}`)
+    const activeCourseStore = useActiveCourse()
+
+    await activeCourseStore.setActiveCourse(lesson.value.courseId)
+    router.push('/dashboard')
   } else {
     router.back()
   }
@@ -267,10 +271,12 @@ const finishLesson = async () => {
     // Redirect to course page
     if (lesson.value?.courseId) {
       const cId = lesson.value?.courseId
-
-      router.push(`/my-courses/${cId}`)
+      const activeCourseStore = useActiveCourse()
+      
+      await activeCourseStore.setActiveCourse(cId)
+      router.push('/dashboard')
     } else {
-      router.push({ name: 'my-courses' })
+      router.push('/dashboard')
     }
   } catch (error) {
     console.error("Error finishing:", error)
@@ -278,10 +284,12 @@ const finishLesson = async () => {
     // Even if error, try to redirect
     if (lesson.value?.data?.courseId || lesson.value?.courseId) {
       const cId = lesson.value?.data?.courseId || lesson.value?.courseId
-
-      router.push(`/my-courses/${cId}`)
+      const activeCourseStore = useActiveCourse()
+      
+      await activeCourseStore.setActiveCourse(cId)
+      router.push('/dashboard')
     } else {
-      router.push({ name: 'my-courses' })
+      router.push('/dashboard')
     }
   } finally {
     isFinishing.value = false

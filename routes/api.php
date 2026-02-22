@@ -288,6 +288,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 |--------------------------------------------------------------------------
 */
 
+// Protected Learner Routes (Must be defined before public courses/{course} to avoid conflict)
+Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
+    Route::get('courses/enrolled', [LearnerEntitlementController::class, 'getEnrolledCourses']);
+});
+
 // Public Learner Routes
 Route::prefix('learner')->group(function () {
     // Courses Browsing
@@ -300,8 +305,7 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
     Route::get('course-content', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'show']);
     Route::get('dashboard/active-stats', [LearnerDashboardController::class, 'getActiveStats']);
-    Route::get('my-courses', [LearnerEntitlementController::class, 'myCourses']);
-    Route::get('my-courses/{course}', [CoursesContentController::class, 'show']);
+    Route::get('courses/enrolled', [LearnerEntitlementController::class, 'getEnrolledCourses']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
 
 

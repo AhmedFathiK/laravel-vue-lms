@@ -150,6 +150,7 @@ import { useActiveCourse } from '@/stores/activeCourse'
 import api from '@/utils/api'
 
 definePage({
+  name: 'courses-select',
   meta: {
     layout: 'learner',
   },
@@ -165,7 +166,7 @@ const error = ref(null)
 const fetchEnrollments = async () => {
   loading.value = true
   try {
-    const response = await api.get('/learner/my-courses')
+    const response = await api.get('/learner/courses/enrolled')
 
     enrollments.value = response
   } catch (err) {

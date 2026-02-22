@@ -91,7 +91,10 @@ const handleAcquireClick = async course => {
   }
 
   if (course.hasActiveAccess) {
-    router.push(`/my-courses/${course.id}`)
+    const activeCourseStore = useActiveCourse()
+    
+    await activeCourseStore.setActiveCourse(course.id)
+    router.push('/dashboard')
 
     return
   }
@@ -114,7 +117,9 @@ const handlePayment = async plan => {
       // Refresh courses to update UI state
       await fetchCourses()
 
-      router.push(`/my-courses/${selectedCourseForEntitlement.value.id}`)
+      const activeCourseStore = useActiveCourse()
+      await activeCourseStore.setActiveCourse(selectedCourseForEntitlement.value.id)
+      router.push('/dashboard')
     } else {
       // For paid plans, fetch payment methods first
       const response = await api.get('/payments/methods', {

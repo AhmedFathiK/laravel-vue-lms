@@ -180,7 +180,7 @@ class LearnerDashboardController extends Controller
                     'title' => 'Continue Learning',
                     'description' => "Pick up where you left off in \"{$course->title}\".",
                     'action_label' => 'Continue Course',
-                    'route' => "/my-courses/{$course->id}",
+                    'route' => "/courses/{$course->id}?resume=1",
                     'params' => ['courseId' => $course->id],
                 ];
             }
@@ -198,7 +198,7 @@ class LearnerDashboardController extends Controller
                     'title' => 'Start Something New',
                     'description' => "You've enrolled in \"{$course->title}\". Ready to begin?",
                     'action_label' => 'Start Learning',
-                    'route' => "/my-courses/{$course->id}",
+                    'route' => "/courses/{$course->id}?resume=1",
                     'params' => ['courseId' => $course->id],
                 ];
             }

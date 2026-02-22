@@ -33,7 +33,7 @@ class LearnerEntitlementController extends Controller
     /**
      * Get all enrollments for the current user.
      */
-    public function myCourses(Request $request): JsonResponse
+    public function getEnrolledCourses(Request $request): JsonResponse
     {
         $query = CourseEnrollment::where('user_id', Auth::id())
             ->with([
@@ -124,7 +124,7 @@ class LearnerEntitlementController extends Controller
         // 2. Paid Plan Logic
         try {
             $currency = Currency::normalize($plan->currency ?? Currency::default());
-            
+
             // Try to find linked course for metadata
             $courseId = null;
             $linkedCourse = $plan->courses()->first();
@@ -220,7 +220,7 @@ class LearnerEntitlementController extends Controller
                 'entitlement' => $entitlement
             ]);
         } catch (\Throwable $e) {
-             return response()->json(['message' => 'Enrollment failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Enrollment failed: ' . $e->getMessage()], 500);
         }
     }
 
@@ -236,7 +236,7 @@ class LearnerEntitlementController extends Controller
         // Logic to cancel recurring billing at gateway would go here.
         // For now, we just acknowledge the request.
         // Entitlement status remains active until expiration.
-        
+
         return response()->json([
             'message' => 'Entitlement cancellation request received.',
             'entitlement' => $entitlement,
@@ -287,8 +287,8 @@ class LearnerEntitlementController extends Controller
     public function getAvailablePlans(Course $course): JsonResponse
     {
         $plans = BillingPlan::whereHas('courses', function ($query) use ($course) {
-                $query->where('courses.id', $course->id);
-            })
+            $query->where('courses.id', $course->id);
+        })
             ->where('is_active', true)
             ->orderBy('price')
             ->get();
@@ -296,7 +296,7 @@ class LearnerEntitlementController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $activeEntitlement = null;
-        
+
         if ($user) {
             $activeEntitlement = $user->entitlements()
                 ->active()
