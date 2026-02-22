@@ -162,6 +162,7 @@ const handleFinishPlacement = async () => {
   
   if (levelId && courseId) {
     const activeCourseStore = useActiveCourse()
+
     await activeCourseStore.setActiveCourse(courseId)
     router.push({
       path: '/dashboard',

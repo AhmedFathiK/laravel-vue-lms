@@ -118,6 +118,7 @@ const handlePayment = async plan => {
       await fetchCourses()
 
       const activeCourseStore = useActiveCourse()
+
       await activeCourseStore.setActiveCourse(selectedCourseForEntitlement.value.id)
       router.push('/dashboard')
     } else {
