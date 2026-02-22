@@ -28,7 +28,7 @@
           {{ error }}
         </VAlert>
         <VAlert
-          v-if="courses.length === 0 && !loading"
+          v-if="enrollments.length === 0 && !loading"
           type="info"
           class="mb-6"
         >
@@ -41,29 +41,30 @@
           </VBtn>
         </VAlert>
 
-        <VRow>
+        <VRow v-if="!loading">
           <VCol
-            v-for="course in courses"
-            :key="course.id"
+            v-for="enrollment in enrollments"
+            :key="enrollment.id"
             cols="12"
             sm="6"
             md="4"
           >
-            <VCard 
-              :loading="loadingId === course.id" 
-              class="cursor-pointer hover-card h-100 d-flex flex-column" 
-              :class="{'border-primary': activeCourseStore.activeCourseId === course.id}"
-              :variant="activeCourseStore.activeCourseId === course.id ? 'outlined' : 'elevated'"
-              @click="selectCourse(course.id)"
+            <VCard
+              class="d-flex flex-column h-100 cursor-pointer hover-card"
+              rounded="lg"
+              :class="{'border-primary': activeCourseStore.activeCourseId === enrollment.course.id}"
+              :variant="activeCourseStore.activeCourseId === enrollment.course.id ? 'outlined' : 'elevated'"
+              :loading="loadingId === enrollment.course.id"
+              @click="isEntitlementActive(enrollment) ? selectCourse(enrollment.course.id) : null"
             >
               <VImg
-                :src="course.image || '/placeholder.jpg'"
-                height="180"
+                :src="enrollment.course.thumbnail || 'https://placehold.co/600x400/EEE/31343C'"
+                height="200px"
                 cover
-                class="align-end"
+                class="rounded-t-lg align-end"
               >
                 <VChip
-                  v-if="activeCourseStore.activeCourseId === course.id"
+                  v-if="activeCourseStore.activeCourseId === enrollment.course.id"
                   color="primary"
                   class="ma-2"
                   label
@@ -71,39 +72,71 @@
                   Active
                 </VChip>
               </VImg>
-              
-              <VCardTitle class="pt-4">
-                {{ course.title }}
-              </VCardTitle>
-              
+
               <VCardText class="flex-grow-1">
                 <div class="d-flex align-center mb-2">
-                  <VProgressLinear
-                    :model-value="course.progress"
-                    color="primary"
-                    height="6"
-                    rounded
-                    class="flex-grow-1 me-3"
-                  />
-                  <span class="text-caption font-weight-bold">{{ course.progress }}%</span>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <VChip
+                      v-if="enrollment.userEntitlement && enrollment.userEntitlement.billingPlan"
+                      color="info"
+                      size="small"
+                      class="text-truncate"
+                      style="max-width: 100%;"
+                    >
+                      <span class="text-truncate">
+                        {{ enrollment.userEntitlement.billingPlan.name }}
+                      </span>
+                    </VChip>
+                    <VChip
+                      v-else
+                      color="success"
+                      size="small"
+                    >
+                      Enrolled
+                    </VChip>
+
+                    <VChip
+                      v-if="!isEntitlementActive(enrollment)"
+                      color="error"
+                      size="small"
+                    >
+                      Expired
+                    </VChip>
+                  </div>
                 </div>
-                <div class="d-flex justify-space-between text-caption text-medium-emphasis">
-                  <span>{{ course.completed_lessons }} / {{ course.total_lessons }} Lessons</span>
-                  <span
-                    v-if="course.due_reviews > 0"
-                    class="text-warning"
-                  >{{ course.due_reviews }} Reviews</span>
-                </div>
+                
+                <h5 class="text-h5 font-weight-bold mb-2">
+                  {{ enrollment.course.title }}
+                </h5>
+                
+                <p
+                  v-if="enrollment.userEntitlement && enrollment.userEntitlement.endsAt"
+                  class="text-caption"
+                >
+                  Entitlement ends on:
+                  {{ new Date(enrollment.userEntitlement.endsAt).toLocaleDateString() }}
+                </p>
+                
+                <VProgressLinear
+                  :model-value="enrollment.completionPercentage"
+                  color="primary"
+                  height="8"
+                  rounded
+                  class="my-2"
+                />
+                <span class="text-caption">{{ enrollment.completionPercentage }}% Complete</span>
               </VCardText>
               
-              <VCardActions class="pt-0 pb-4 px-4">
-                <VBtn 
-                  block 
-                  :color="activeCourseStore.activeCourseId === course.id ? 'primary' : 'secondary'" 
-                  :variant="activeCourseStore.activeCourseId === course.id ? 'flat' : 'tonal'"
-                  :loading="loadingId === course.id"
+              <VCardActions class="pa-4 pt-0">
+                <VBtn
+                  block
+                  rounded="lg"
+                  :color="activeCourseStore.activeCourseId === enrollment.course.id ? 'primary' : (isEntitlementActive(enrollment) ? 'secondary' : 'error')"
+                  :variant="activeCourseStore.activeCourseId === enrollment.course.id ? 'flat' : 'tonal'"
+                  :disabled="!isEntitlementActive(enrollment)"
+                  @click.stop="selectCourse(enrollment.course.id)"
                 >
-                  {{ activeCourseStore.activeCourseId === course.id ? 'Continue' : 'Switch Course' }}
+                  {{ activeCourseStore.activeCourseId === enrollment.course.id ? 'Continue' : (isEntitlementActive(enrollment) ? 'Select Course' : 'Expired') }}
                 </VBtn>
               </VCardActions>
             </VCard>
@@ -128,27 +161,36 @@ definePage({
 
 const router = useRouter()
 const activeCourseStore = useActiveCourse()
-const courses = ref([])
+const enrollments = ref([])
 const loading = ref(false)
 const loadingId = ref(null)
 const error = ref(null)
 
-onMounted(async () => {
+const fetchEnrollments = async () => {
   loading.value = true
   try {
-    // Fetch stats which includes enrolled courses list with progress
-    const response = await api.get('/learner/statistics')
+    const response = await api.get('/learner/my-courses')
 
-    courses.value = response.courses || []
-    
-    // If user has no active course but has enrolled courses, maybe we don't auto-select to force choice?
-    // Or we let them choose.
+    enrollments.value = response
   } catch (err) {
-    error.value = 'Failed to load your courses.'
+    error.value = err.response?.data?.error || 'Failed to load your courses.'
     console.error(err)
   } finally {
     loading.value = false
   }
+}
+
+const isEntitlementActive = enrollment => {
+  if (!enrollment.userEntitlement) return false
+  
+  const isStatusActive = enrollment.userEntitlement.status === 'active'
+  const isNotExpired = !enrollment.userEntitlement.endsAt || new Date(enrollment.userEntitlement.endsAt) > new Date()
+  
+  return isStatusActive && isNotExpired
+}
+
+onMounted(async () => {
+  await fetchEnrollments()
 })
 
 const selectCourse = async courseId => {
