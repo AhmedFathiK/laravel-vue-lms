@@ -120,8 +120,11 @@ import { useActiveCourse } from '@/stores/activeCourse'
 import api from '@/utils/api'
 import { useRouter } from 'vue-router'
 
+import { useToast } from 'vue-toastification'
+
 const activeCourseStore = useActiveCourse()
 const router = useRouter()
+const toast = useToast()
 const courses = ref([])
 
 const fetchCourses = async () => {
@@ -137,11 +140,19 @@ const fetchCourses = async () => {
 const switchCourse = async courseId => {
   if (activeCourseStore.activeCourseId === courseId) return
     
-  await activeCourseStore.setActiveCourse(courseId)
+  const success = await activeCourseStore.setActiveCourse(courseId)
+  
+  if (success) {
+    // Reload current page or go to dashboard?
+    // Dashboard is safest as other pages might not support the new course context immediately without reload
+    router.push('/dashboard')
+  } else {
+    // Show error
+    const err = activeCourseStore.error
+    const message = err?.response?.data?.message || err?.response?.data?.error || 'Failed to activate course.'
 
-  // Reload current page or go to dashboard?
-  // Dashboard is safest as other pages might not support the new course context immediately without reload
-  router.push('/dashboard')
+    toast.error(message)
+  }
 }
 
 onMounted(() => {

@@ -143,9 +143,8 @@ class CoursesContentController extends Controller
         // Check Entitlement (Strict)
         $entitlements = $user->entitlements()
             ->active()
-            ->whereHas('capabilities', function ($query) use ($course) {
-                $query->where('scope_type', 'App\Models\Course')
-                    ->where('scope_id', $course->id);
+            ->whereHas('billingPlan.courses', function ($query) use ($course) {
+                $query->where('courses.id', $course->id);
             })
             ->get();
 

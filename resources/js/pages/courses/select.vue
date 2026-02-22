@@ -152,11 +152,12 @@ onMounted(async () => {
 })
 
 const selectCourse = async courseId => {
-  if (activeCourseStore.activeCourseId === courseId) {
-    router.push('/dashboard')
-    
-    return
-  }
+  // Always force API call to validate entitlement, even if ID matches store
+  // if (activeCourseStore.activeCourseId === courseId) {
+  //   router.push('/dashboard')
+  //   
+  //   return
+  // }
 
   loadingId.value = courseId
   try {
@@ -164,7 +165,9 @@ const selectCourse = async courseId => {
     if (success) {
       router.push('/dashboard')
     } else {
-      error.value = 'Failed to activate course.'
+      const err = activeCourseStore.error
+
+      error.value = err?.response?.data?.message || err?.response?.data?.error || 'Failed to activate course.'
     }
   } catch (err) {
     error.value = 'An error occurred.'

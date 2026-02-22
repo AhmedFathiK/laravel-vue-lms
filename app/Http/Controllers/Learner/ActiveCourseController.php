@@ -82,12 +82,6 @@ class ActiveCourseController extends Controller
         $user = Auth::user();
         $courseId = $request->course_id;
 
-        // Verify the user has access to this course
-        // Check 1: Direct Enrollment
-        $isEnrolled = $user->enrollments()
-            ->where('course_id', $courseId)
-            ->exists();
-
         // Check 2: Active Entitlement (Subscription/Plan)
         $entitlements = $user->entitlements()
             ->active()
@@ -100,8 +94,10 @@ class ActiveCourseController extends Controller
             return $entitlement->isActive();
         })->isNotEmpty();
 
-        if (!$isEnrolled && !$hasEntitlement) {
-            return response()->json(['message' => 'You do not have access to this course.'], 403);
+        // Strict access control: Enrollment alone is not enough; must have active entitlement.
+        // This matches CoursesContentController::show logic.
+        if (!$hasEntitlement) {
+            return response()->json(['error' => 'You do not have active access to this course.'], 403);
         }
 
         $user->active_course_id = $courseId;

@@ -140,10 +140,10 @@ watch(() => [props.isDialogVisible, props.data, props.dialogMode], async ([isVis
         fullName: entitlement.user.fullName,
       }
       
-      if (entitlement.billingPlan?.course) {
+      if (entitlement.billingPlan?.courses?.length) {
         selectedCourse.value = {
-          id: entitlement.billingPlan.course.id,
-          title: entitlement.billingPlan.course.title,
+          id: entitlement.billingPlan.courses[0].id,
+          title: entitlement.billingPlan.courses[0].title,
         }
         
         await fetchCoursePlans()

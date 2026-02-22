@@ -33,7 +33,7 @@ class UserEntitlementController extends Controller
      */
     public function index(ViewUserEntitlementRequest $request): AnonymousResourceCollection
     {
-        $query = UserEntitlement::with(['user', 'billingPlan', 'payment']);
+        $query = UserEntitlement::with(['user', 'billingPlan.courses', 'payment']);
 
         // Filter by user
         if ($request->has('user_id')) {
@@ -65,7 +65,7 @@ class UserEntitlementController extends Controller
         }
 
         $perPage = $request->per_page ?? 15;
-        
+
         return UserEntitlementResource::collection(
             $query->orderBy('created_at', 'desc')->paginate($perPage)
         );
@@ -83,10 +83,9 @@ class UserEntitlementController extends Controller
         try {
             $entitlement = $this->entitlementService->grantEntitlement($user, $plan, $payment);
 
-            return new UserEntitlementResource($entitlement->load(['user', 'billingPlan', 'payment']));
-
+            return new UserEntitlementResource($entitlement->load(['user', 'billingPlan.courses', 'payment']));
         } catch (\Exception $e) {
-             return response()->json(['message' => 'Failed to grant entitlement: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to grant entitlement: ' . $e->getMessage()], 500);
         }
     }
 
@@ -95,7 +94,7 @@ class UserEntitlementController extends Controller
      */
     public function show(ViewUserEntitlementRequest $request, UserEntitlement $userEntitlement): UserEntitlementResource
     {
-        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan', 'payment']));
+        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan.courses', 'payment']));
     }
 
     /**
@@ -105,7 +104,7 @@ class UserEntitlementController extends Controller
     {
         $userEntitlement->update($request->validated());
 
-        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan', 'payment']));
+        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan.courses', 'payment']));
     }
 
     /**
@@ -124,7 +123,7 @@ class UserEntitlementController extends Controller
             'ends_at' => now(), // Immediate revocation
         ]);
 
-        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan', 'payment']));
+        return new UserEntitlementResource($userEntitlement->load(['user', 'billingPlan.courses', 'payment']));
     }
 
     /**

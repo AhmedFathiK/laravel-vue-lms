@@ -26,7 +26,7 @@ class UserEntitlementResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => new UserResource($this->whenLoaded('user')),
-            'billing_plan' => new EntitlementPlanResource($this->whenLoaded('billing_plan')),
+            'billing_plan' => new EntitlementPlanResource($this->whenLoaded('billingPlan')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
         ];
     }
