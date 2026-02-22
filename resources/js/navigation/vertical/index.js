@@ -1,8 +1,15 @@
 export default [
   {
+    title: 'Learner Dashboard',
+    to: { name: 'dashboard' },
+    icon: { icon: 'tabler-dashboard' },
+    action: 'view',
+    subject: 'users',
+  },
+  {
     title: 'Dashboard',
     to: { name: 'admin' },
-    icon: { icon: 'tabler-smart-home' },
+    icon: { icon: 'tabler-device-ipad-cog' },
     action: 'view',
     subject: 'users',
   },
