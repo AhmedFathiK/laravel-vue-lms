@@ -135,19 +135,6 @@
                 />
                 <span class="text-caption">{{ enrollment.completionPercentage }}% Complete</span>
               </VCardText>
-              
-              <VCardActions class="pa-4 pt-0">
-                <VBtn
-                  block
-                  rounded="lg"
-                  :color="activeCourseStore.activeCourseId === enrollment.course.id ? 'primary' : (isEntitlementActive(enrollment) ? 'secondary' : 'error')"
-                  :variant="activeCourseStore.activeCourseId === enrollment.course.id ? 'flat' : 'tonal'"
-                  :disabled="!isEntitlementActive(enrollment)"
-                  @click.stop="selectCourse(enrollment.course.id)"
-                >
-                  {{ activeCourseStore.activeCourseId === enrollment.course.id ? 'Continue' : (isEntitlementActive(enrollment) ? 'Select Course' : 'Expired') }}
-                </VBtn>
-              </VCardActions>
             </VCard>
           </VCol>
         </VRow>
