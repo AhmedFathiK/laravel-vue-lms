@@ -74,16 +74,25 @@
               </VImg>
 
               <VCardText class="flex-grow-1">
-                <div class="d-flex align-center mb-2">
-                  <div class="d-flex gap-2 flex-wrap">
+                <div
+                  class="d-flex align-center mb-2"
+                  style="max-width: 100%;"
+                >
+                  <div
+                    class="d-flex gap-2 flex-wrap"
+                    style="max-width: 100%;"
+                  >
                     <VChip
                       v-if="enrollment.userEntitlement && enrollment.userEntitlement.billingPlan"
                       color="info"
                       size="small"
-                      class="text-truncate"
+                      class="d-inline-flex align-center"
                       style="max-width: 100%;"
                     >
-                      <span class="text-truncate">
+                      <span
+                        style="display: inline-block; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom;"
+                        :title="enrollment.userEntitlement.billingPlan.name"
+                      >
                         {{ enrollment.userEntitlement.billingPlan.name }}
                       </span>
                     </VChip>
