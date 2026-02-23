@@ -2,6 +2,7 @@
 import LevelCard from '@/components/learner/LevelCard.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import api from '@/utils/api'
+import { formatDate } from '@core/utils/formatters'
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActiveCourse } from '@/stores/activeCourse'
@@ -18,46 +19,36 @@ const activeCourseStore = useActiveCourse()
 const courseData = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const noAccessData = ref(null)
 const selectedItem = ref(null)
 const forcedCurrentItem = ref(null)
 const isModalVisible = ref(false)
 const isVideoModalVisible = ref(false)
 
 const fetchCourseContent = async () => {
-  console.log('fetchCourseContent called')
   loading.value = true
   error.value = null
-
-  console.log('Current activeCourseId:', activeCourseStore.activeCourseId)
+  noAccessData.value = null
 
   if (!activeCourseStore.activeCourseId) {
-    console.log('No activeCourseId, fetching...')
     await activeCourseStore.fetchActiveCourse()
-    console.log('After fetch, activeCourseId:', activeCourseStore.activeCourseId)
     if (!activeCourseStore.activeCourseId) {
-      console.log('Still no activeCourseId, redirecting to select')
       router.push('/courses/select')
-      loading.value = false // Ensure loading is stopped
+      loading.value = false
       
       return
     }
   }
 
   try {
-    console.log('Calling API /learner/course-content')
-
     const response = await api.get('/learner/course-content')
 
-    console.log('API response received', response)
-
     if (!response) {
-      console.log('Response is null/falsey')
-
       // If content is null but we have an active course ID, it might be invalid
       // Let's clear it and redirect
       activeCourseStore.clearActiveCourse()
       router.push('/courses/select')
-      loading.value = false // Ensure loading is stopped
+      loading.value = false
       
       return
     }
@@ -67,18 +58,24 @@ const fetchCourseContent = async () => {
     // Auto-scroll to next lesson logic
     findNextLesson()
   } catch (err) {
-    console.error('Error in fetchCourseContent', err)
     if (err.response?.status === 404) {
       // If course not found, clear and redirect
       activeCourseStore.clearActiveCourse()
       router.push('/courses/select')
-      loading.value = false // Ensure loading is stopped
+      loading.value = false
       
       return
     }
+
+    if (err.response?.status === 403 && err.response?.data?.reason) {
+      noAccessData.value = err.response.data
+      loading.value = false
+      
+      return
+    }
+
     error.value = err.response?.data?.error || "Failed to load course content. Please try again later."
   } finally {
-    console.log('fetchCourseContent finally block, setting loading = false')
     loading.value = false
   }
 }
@@ -260,6 +257,92 @@ const scrollToLevel = levelId => {
         color="primary"
         size="64"
       />
+    </div>
+
+    <div
+      v-else-if="noAccessData"
+      class="d-flex justify-center align-center flex-column"
+      style="min-height: 60vh"
+    >
+      <VCard
+        width="500"
+        class="text-center overflow-hidden"
+      >
+        <VImg
+          v-if="noAccessData.course?.thumbnail"
+          :src="noAccessData.course.thumbnail"
+          height="200"
+          cover
+        />
+        
+        <VCardTitle class="text-h5 pt-6 font-weight-bold text-wrap">
+          {{ noAccessData.course?.title }}
+        </VCardTitle>
+
+        <VCardText class="pb-2">
+          <VDivider class="my-4" />
+
+          <div class="d-flex align-center justify-center gap-2 mb-4">
+            <VIcon 
+              color="error" 
+              size="32" 
+              icon="tabler-lock"
+            />
+            <h3 class="text-h6 text-error">
+              Access Restricted
+            </h3>
+          </div>
+
+          <p class="text-body-1 mb-6">
+            <template v-if="noAccessData.reason === 'expired'">
+              Your subscription for this course expired on <strong>{{ noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : 'Unknown Date' }}</strong>.
+            </template>
+            <template v-else-if="noAccessData.reason === 'canceled'">
+              Your subscription was canceled on <strong>{{ noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : 'Unknown Date' }}</strong>.
+            </template>
+            <template v-else-if="noAccessData.reason === 'past_due'">
+              Your payment is past due. Please update your payment method to regain access.
+            </template>
+            <template v-else-if="noAccessData.reason === 'not_enrolled'">
+              You are currently not enrolled in this course.
+            </template>
+            <template v-else>
+              You do not have active access to this course. Please contact support if you believe this is an error.
+            </template>
+          </p>
+        </VCardText>
+
+        <VCardActions class="justify-center flex-column pb-6 px-6 gap-2">
+          <VBtn
+            v-if="['expired', 'canceled', 'past_due', 'not_enrolled'].includes(noAccessData.reason)"
+            block
+            color="primary"
+            variant="elevated"
+            size="large"
+            :to="{ name: 'courses-id', params: { id: noAccessData.course?.id } }"
+          >
+            {{ noAccessData.reason === 'not_enrolled' ? 'View Enrollment Options' : 'Renew Access' }}
+          </VBtn>
+          <VBtn
+            v-else
+            block
+            color="primary"
+            variant="tonal"
+            href="mailto:support@example.com"
+          >
+            Contact Support
+          </VBtn>
+           
+          <VBtn
+            block
+            color="secondary"
+            variant="text"
+            to="/courses/select"
+          >
+            Select Another Course
+          </VBtn>
+        </VCardActions>
+      </VCard>
     </div>
 
     <VAlert

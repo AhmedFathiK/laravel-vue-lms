@@ -48,9 +48,11 @@ class ActiveCourseController extends Controller
 
             // Check for error response from controller (it might return JsonResponse with 403)
             if ($response->status() === 403) {
-                \Illuminate\Support\Facades\Log::info('Received 403 from delegate, clearing active course');
-                $user->active_course_id = null;
-                $user->save();
+                \Illuminate\Support\Facades\Log::info('Received 403 from delegate. Keeping active course set so UI can show explanation.');
+                // Do NOT clear active_course_id so the frontend can display the specific error (expired, etc.)
+                // $user->active_course_id = null;
+                // $user->save();
+                
                 // Return the error response so the frontend knows why
                 return $response;
             }
@@ -60,9 +62,9 @@ class ActiveCourseController extends Controller
             \Illuminate\Support\Facades\Log::error('Exception in ActiveCourseController: ' . $e->getMessage());
             // If exception has 403 code
             if ($e->getCode() == 403) {
-                \Illuminate\Support\Facades\Log::info('Exception code 403 caught, clearing active course');
-                $user->active_course_id = null;
-                $user->save();
+                \Illuminate\Support\Facades\Log::info('Exception code 403 caught. Keeping active course set.');
+                // $user->active_course_id = null;
+                // $user->save();
                 return response()->json(['error' => $e->getMessage()], 403);
             }
             throw $e;

@@ -152,12 +152,46 @@ class CoursesContentController extends Controller
             return $entitlement->isActive();
         })->isNotEmpty();
 
-        $hasEnrollment = CourseEnrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->exists();
-
         if (!$hasEntitlement) {
-            return response()->json(["error" => "You do not have active access to this course."], 403);
+            // Determine the reason for no access
+            $reason = 'not_enrolled';
+            $entitlement = null;
+
+            // Check if there is ANY entitlement (even inactive)
+            $latestEntitlement = $user->entitlements()
+                ->whereHas('billingPlan.courses', function ($query) use ($course) {
+                    $query->where('courses.id', $course->id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->with('billingPlan')
+                ->first();
+
+            if ($latestEntitlement) {
+                $entitlement = $latestEntitlement;
+                if ($latestEntitlement->status === 'expired') {
+                    $reason = 'expired';
+                } elseif ($latestEntitlement->status === 'canceled') {
+                    $reason = 'canceled';
+                } elseif ($latestEntitlement->status === 'past_due') {
+                    $reason = 'past_due';
+                } elseif ($latestEntitlement->ends_at && $latestEntitlement->ends_at->isPast()) {
+                    $reason = 'expired';
+                } else {
+                    $reason = 'inactive'; // Generic fallback
+                }
+            }
+
+            return response()->json([
+                "error" => "You do not have active access to this course.",
+                "reason" => $reason,
+                "course" => [
+                    "id" => $course->id,
+                    "title" => $course->title,
+                    "thumbnail" => $course->thumbnail,
+                    "description" => $course->description,
+                ],
+                "entitlement" => $entitlement
+            ], 403);
         }
 
         // Update Enrollment Last Accessed (if exists)
