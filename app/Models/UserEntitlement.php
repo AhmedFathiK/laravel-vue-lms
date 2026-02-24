@@ -70,12 +70,17 @@ class UserEntitlement extends Model
         $maxDays = config('entitlement.grace_period.max_days', 7);
 
         $durationInDays = $this->starts_at->diffInDays($this->ends_at);
+
+        // Ensure at least 1 day duration to avoid division by zero or tiny grace periods
+        $durationInDays = max($durationInDays, 1);
+
         $calculatedGraceDays = ($durationInDays * $percentage) / 100;
 
-        // Final grace period is the minimum of calculated percentage and max absolute days
-        $effectiveGraceDays = min($calculatedGraceDays, $maxDays);
+        // Final grace period is the minimum of calculated percentage and max absolute days.
+        // We use ceil to ensure at least 1 day grace period for short durations if percentage > 0.
+        $effectiveGraceDays = min(ceil($calculatedGraceDays), $maxDays);
 
-        return $this->ends_at->copy()->addDays($effectiveGraceDays)->isFuture();
+        return $this->ends_at->copy()->addDays($effectiveGraceDays)->endOfDay()->isFuture();
     }
 
     public function scopeActive($query)
@@ -87,7 +92,7 @@ class UserEntitlement extends Model
         return $query->whereIn('status', [self::STATUS_ACTIVE, self::STATUS_PAST_DUE])
             ->where(function ($q) use ($maxDays) {
                 $q->whereNull('ends_at')
-                  ->orWhere('ends_at', '>', now()->subDays($maxDays));
+                    ->orWhere('ends_at', '>', now()->subDays($maxDays));
             });
     }
 }
