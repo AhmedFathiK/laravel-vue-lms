@@ -368,8 +368,30 @@ const scrollToLevel = levelId => {
     </VAlert>
 
     <template v-else-if="courseData">
+      <VAlert
+        v-if="courseData.entitlement?.isGracePeriod"
+        variant="tonal"
+        color="warning"
+        class="mb-6"
+      >
+        <template #prepend>
+          <VIcon icon="tabler-alert-triangle" />
+        </template>
+        Your subscription for this course has expired, but you are currently in a grace period. Please renew your plan to ensure uninterrupted access.
+        <template #append>
+          <VBtn
+            to="/pricing"
+            color="warning"
+            variant="flat"
+            size="small"
+          >
+            Renew Now
+          </VBtn>
+        </template>
+      </VAlert>
+
       <h1 class="text-h3 mb-6 text-center">
-        {{ courseData.title }}
+        {{ courseData.course?.title || courseData.title }}
       </h1>
 
       <!-- Placement CTA Section -->

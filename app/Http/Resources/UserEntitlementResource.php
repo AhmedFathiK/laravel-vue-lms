@@ -23,6 +23,8 @@ class UserEntitlementResource extends JsonResource
             'ends_at' => $this->ends_at,
             'status' => $this->status,
             'auto_renew' => $this->auto_renew,
+            'is_active' => $this->isActive(),
+            'is_grace_period' => $this->isActive() && $this->ends_at && $this->ends_at->isPast(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => new UserResource($this->whenLoaded('user')),

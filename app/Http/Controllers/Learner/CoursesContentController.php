@@ -443,6 +443,7 @@ class CoursesContentController extends Controller
         return response()->json(array_merge($courseData, [
             'placementExam' => $placementExam,
             'finalExam' => $finalExam,
+            'entitlement' => $entitlements->first() ? new \App\Http\Resources\UserEntitlementResource($entitlements->first()) : null,
         ]));
     }
 }

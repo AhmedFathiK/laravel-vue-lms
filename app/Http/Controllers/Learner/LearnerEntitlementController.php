@@ -27,7 +27,12 @@ class LearnerEntitlementController extends Controller
      */
     public function index(): JsonResponse
     {
-        return response()->json([]);
+        $entitlements = UserEntitlement::where('user_id', Auth::id())
+            ->with(['billingPlan.courses'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json(\App\Http\Resources\UserEntitlementResource::collection($entitlements));
     }
 
     /**
@@ -188,12 +193,16 @@ class LearnerEntitlementController extends Controller
         $user = Auth::user();
 
         // Check if user already has active access
-        $hasAccess = $user->entitlements()
+        $entitlements = $user->entitlements()
             ->active()
             ->whereHas('billingPlan.courses', function ($query) use ($course) {
                 $query->where('courses.id', $course->id);
             })
-            ->exists();
+            ->get();
+
+        $hasAccess = $entitlements->filter(function ($entitlement) {
+            return $entitlement->isActive();
+        })->isNotEmpty();
 
         if ($hasAccess) {
             return response()->json(['message' => 'You already have active access to this course'], 422);

@@ -14,6 +14,7 @@ const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const isLoading = ref(false)
+const errors = ref({})
 
 const passwordRequirements = [
   'Minimum 8 characters long - the more, the better',
@@ -30,6 +31,7 @@ const changePassword = async () => {
 
   try {
     isLoading.value = true
+    errors.value = {}
     
     await api.put('/auth/password', {
       currentPassword: currentPassword.value,
@@ -46,11 +48,7 @@ const changePassword = async () => {
   } catch (error) {
     console.error(error)
     if (error.response?.data?.errors) {
-      const errors = error.response.data.errors
-
-      Object.values(errors).forEach(err => {
-        toast.error(err[0])
-      })
+      errors.value = error.response.data.errors
     } else if (error.response?.data?.message) {
       toast.error(error.response.data.message)
     } else {
@@ -91,6 +89,7 @@ const changePassword = async () => {
                   placeholder="············"
                   :type="isCurrentPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="isCurrentPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.currentPassword"
                   @click:append-inner="isCurrentPasswordVisible = !isCurrentPasswordVisible"
                 />
               </VCol>
@@ -106,6 +105,7 @@ const changePassword = async () => {
                   placeholder="············"
                   :type="isNewPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.password"
                   @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
                 />
               </VCol>
@@ -120,6 +120,7 @@ const changePassword = async () => {
                   placeholder="············"
                   :type="isConfirmPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.passwordConfirmation"
                   @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
                 />
               </VCol>
@@ -135,43 +136,6 @@ const changePassword = async () => {
               </VCol>
             </VRow>
           </VForm>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <!-- 👉 Two-steps verification -->
-    <VCol cols="12">
-      <VCard
-        title="Two-steps verification"
-        subtitle="Keep your account secure with authentication step."
-      >
-        <VCardText>
-          <div class="text-h6 mb-1">
-            SMS
-          </div>
-          <AppTextField placeholder="+1(968) 819-2547">
-            <template #append>
-              <IconBtn color="secondary">
-                <VIcon
-                  icon="tabler-edit"
-                  size="22"
-                />
-              </IconBtn>
-              <IconBtn color="secondary">
-                <VIcon
-                  icon="tabler-user-plus"
-                  size="22"
-                />
-              </IconBtn>
-            </template>
-          </AppTextField>
-
-          <p class="mb-0 mt-4">
-            Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to log in. <a
-              href="javascript:void(0)"
-              class="text-decoration-none"
-            >Learn more</a>.
-          </p>
         </VCardText>
       </VCard>
     </VCol>

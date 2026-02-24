@@ -108,12 +108,16 @@ class Level extends Model
         }
 
         // Check if user has entitlement for this course
-        return $user->entitlements()
+        $entitlements = $user->entitlements()
             ->active()
             ->whereHas('billingPlan.courses', function ($q) {
                 $q->where('courses.id', $this->course_id);
             })
-            ->exists();
+            ->get();
+
+        return $entitlements->filter(function ($entitlement) {
+            return $entitlement->isActive();
+        })->isNotEmpty();
     }
 
     /**

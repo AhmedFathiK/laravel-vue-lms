@@ -1,151 +1,196 @@
 <script setup>
-import { ref } from 'vue'
+import { formatCurrency } from '@/@core/utils/formatters'
+import api from '@/utils/api'
+import { computed, onMounted, ref } from 'vue'
 
-const currentPlan = ref({
-  plan: 'Basic',
-  status: 'active',
-  price: 0,
-  benefits: [
-    'Access to free courses',
-    'Basic support',
-  ],
-})
+const entitlements = ref([])
+const receipts = ref([])
+const isLoading = ref(false)
 
-const isUpgradePlanDialogVisible = ref(false)
+const fetchBillingData = async () => {
+  try {
+    isLoading.value = true
+    
+    const [entitlementsRes, receiptsRes] = await Promise.all([
+      api.get('/learner/entitlements'),
+      api.get('/learner/receipts'),
+    ])
+
+    entitlements.value = entitlementsRes
+    receipts.value = receiptsRes.data || receiptsRes // Handle paginated response
+  } catch (error) {
+    console.error('Failed to fetch billing data:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const isGracePeriod = entitlement => {
+  return entitlement.isGracePeriod
+}
+
+const getStatusColor = status => {
+  if (status === 'active') return 'success'
+  if (status === 'expired') return 'secondary'
+  if (status === 'canceled') return 'error'
+  if (status === 'past_due') return 'warning'
+  
+  return 'primary'
+}
+
+onMounted(fetchBillingData)
 </script>
 
 <template>
   <VRow>
-    <!-- 👉 Current Plan -->
+    <!-- 👉 Current Plans / Entitlements -->
     <VCol cols="12">
-      <VCard title="Current Plan">
+      <VCard title="My Plans & Subscriptions">
         <VCardText>
-          <VRow>
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <div class="mb-6">
-                <h3 class="text-h3 font-weight-medium mb-1">
-                  {{ currentPlan.plan }}
-                </h3>
-                <p class="text-body-1">
-                  A simple start for everyone
-                </p>
-              </div>
-
-              <div class="mb-6">
-                <h4 class="text-h4 font-weight-medium mb-1">
-                  Active until Dec 09, 2026
-                </h4>
-                <p class="text-body-1">
-                  We will send you a notification upon Subscription expiration
-                </p>
-              </div>
-
-              <div>
-                <div class="d-flex align-center gap-2 mb-2">
-                  <span class="text-h4 font-weight-medium">${{ currentPlan.price }} Per Month</span>
-                  <VChip
-                    color="primary"
-                    label
-                    size="small"
-                  >
-                    Popular
-                  </VChip>
-                </div>
-                <p class="text-body-1 mb-0">
-                  Standard plan for small to medium businesses
-                </p>
-              </div>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VAlert
-                variant="tonal"
-                color="warning"
-                class="mb-6"
-              >
-                <VAlertTitle class="mb-1">
-                  We need your attention!
-                </VAlertTitle>
-                <span>Your plan requires update</span>
-              </VAlert>
-
-              <div class="d-flex justify-space-between align-center flex-wrap gap-4">
-                <h6 class="text-h6 font-weight-semibold">
-                  Days
-                </h6>
-                <h6 class="text-h6 font-weight-semibold">
-                  24 of 30 Days
-                </h6>
-              </div>
-
-              <VProgressLinear
-                model-value="75"
-                rounded
-                color="primary"
-                height="8"
-                class="mt-3 mb-2"
-              />
-              <p class="text-body-2 mb-0">
-                6 days remaining until your plan requires update
-              </p>
-            </VCol>
-
-            <VCol cols="12">
-              <div class="d-flex gap-4 flex-wrap">
-                <VBtn
-                  variant="tonal"
-                  @click="isUpgradePlanDialogVisible = true"
-                >
-                  Upgrade Plan
-                </VBtn>
-
-                <VBtn
-                  variant="tonal"
-                  color="error"
-                >
-                  Cancel Subscription
-                </VBtn>
-              </div>
-            </VCol>
-          </VRow>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <!-- 👉 Payment Methods -->
-    <VCol cols="12">
-      <VCard title="Payment Methods">
-        <VCardText class="d-flex flex-column gap-4">
-          <VAlert
-            variant="tonal"
-            color="primary"
+          <div
+            v-if="isLoading"
+            class="d-flex justify-center py-4"
           >
-            <template #prepend>
-              <VIcon
-                icon="tabler-credit-card"
-                size="24"
-              />
-            </template>
-            <VAlertTitle class="mb-1">
-              No payment methods saved
-            </VAlertTitle>
-            <span>You have not saved any payment methods yet.</span>
-          </VAlert>
+            <VProgressCircular indeterminate />
+          </div>
 
-          <div>
+          <div
+            v-else-if="entitlements.length === 0"
+            class="text-center py-6"
+          >
+            <VIcon
+              icon="tabler-subscription"
+              size="48"
+              class="mb-2 text-disabled"
+            />
+            <p class="text-body-1 text-disabled">
+              You don't have any active plans.
+            </p>
             <VBtn
+              to="/pricing"
               variant="tonal"
-              prepend-icon="tabler-plus"
             >
-              Add Payment Method
+              Browse Plans
             </VBtn>
           </div>
+
+          <VRow v-else>
+            <VCol
+              v-for="entitlement in entitlements"
+              :key="entitlement.id"
+              cols="12"
+              md="6"
+            >
+              <VCard
+                variant="outlined"
+                class="h-100"
+              >
+                <VCardText>
+                  <div class="d-flex justify-space-between align-center mb-4">
+                    <h4 class="text-h4 font-weight-medium">
+                      {{ entitlement.billingPlan?.name }}
+                    </h4>
+                    <VChip
+                      :color="getStatusColor(entitlement.status)"
+                      label
+                      size="small"
+                      class="text-capitalize"
+                    >
+                      {{ entitlement.status }}
+                    </VChip>
+                  </div>
+
+                  <VAlert
+                    v-if="isGracePeriod(entitlement)"
+                    variant="tonal"
+                    color="warning"
+                    class="mb-4"
+                    density="compact"
+                  >
+                    <template #prepend>
+                      <VIcon icon="tabler-alert-triangle" />
+                    </template>
+                    Your plan has expired but you are currently in a grace period. Please renew to keep access.
+                  </VAlert>
+
+                  <div class="mb-4">
+                    <div class="d-flex align-center gap-2 mb-1">
+                      <VIcon
+                        icon="tabler-calendar-event"
+                        size="18"
+                        class="text-disabled"
+                      />
+                      <span class="text-body-1">
+                        Started: {{ new Date(entitlement.startsAt).toLocaleDateString() }}
+                      </span>
+                    </div>
+                    <div
+                      v-if="entitlement.endsAt"
+                      class="d-flex align-center gap-2"
+                    >
+                      <VIcon
+                        icon="tabler-calendar-off"
+                        size="18"
+                        class="text-disabled"
+                      />
+                      <span class="text-body-1">
+                        Expires: {{ new Date(entitlement.endsAt).toLocaleDateString() }}
+                      </span>
+                    </div>
+                    <div
+                      v-else
+                      class="d-flex align-center gap-2"
+                    >
+                      <VIcon
+                        icon="tabler-infinity"
+                        size="18"
+                        class="text-disabled"
+                      />
+                      <span class="text-body-1">Lifetime Access</span>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="entitlement.billingPlan?.courses?.length"
+                    class="mb-4"
+                  >
+                    <p class="text-subtitle-2 mb-1">
+                      Included Courses:
+                    </p>
+                    <div class="d-flex flex-wrap gap-1">
+                      <VChip
+                        v-for="course in entitlement.billingPlan.courses"
+                        :key="course.id"
+                        size="x-small"
+                        variant="tonal"
+                      >
+                        {{ course.title }}
+                      </VChip>
+                    </div>
+                  </div>
+
+                  <div class="d-flex gap-2">
+                    <VBtn
+                      v-if="entitlement.status === 'active' || entitlement.status === 'past_due'"
+                      size="small"
+                      color="primary"
+                      to="/pricing"
+                    >
+                      Manage
+                    </VBtn>
+                    <VBtn
+                      v-if="entitlement.autoRenew"
+                      size="small"
+                      variant="tonal"
+                      color="error"
+                    >
+                      Cancel Auto-renew
+                    </VBtn>
+                  </div>
+                </VCardText>
+              </VCard>
+            </VCol>
+          </VRow>
         </VCardText>
       </VCard>
     </VCol>
@@ -156,14 +201,46 @@ const isUpgradePlanDialogVisible = ref(false)
         <VCardText>
           <VDataTable
             :headers="[
-              { title: 'Invoice ID', key: 'id' },
-              { title: 'Date', key: 'issuedDate' },
-              { title: 'Amount', key: 'total' },
-              { title: 'Status', key: 'status' },
+              { title: 'Receipt #', key: 'receiptNumber' },
+              { title: 'Date', key: 'createdAt' },
+              { title: 'Item', key: 'itemName' },
+              { title: 'Amount', key: 'amount' },
+              { title: 'Status', key: 'payment.status' },
+              { title: 'Actions', key: 'actions', sortable: false },
             ]"
-            :items="[]"
+            :items="receipts"
+            :loading="isLoading"
             no-data-text="No invoices found"
-          />
+          >
+            <template #[`item.createdAt`]="{ item }">
+              {{ new Date(item.createdAt).toLocaleDateString() }}
+            </template>
+
+            <template #[`item.amount`]="{ item }">
+              {{ formatCurrency(item.amount, item.currency) }}
+            </template>
+
+            <template #[`item.payment.status`]="{ item }">
+              <VChip
+                :color="item.payment?.status === 'paid' ? 'success' : 'warning'"
+                label
+                size="x-small"
+                class="text-capitalize"
+              >
+                {{ item.payment?.status || 'pending' }}
+              </VChip>
+            </template>
+
+            <template #[`item.actions`]="{ item }">
+              <IconBtn
+                :href="`/api/learner/receipts/${item.id}/download`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <VIcon icon="tabler-download" />
+              </IconBtn>
+            </template>
+          </VDataTable>
         </VCardText>
       </VCard>
     </VCol>

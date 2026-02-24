@@ -22,6 +22,8 @@ const validateAccountDeactivation = [v => !!v || 'Please confirm account deactiv
 const isLoading = ref(false)
 const avatarFile = ref(null)
 
+const errors = ref({})
+
 const resetForm = () => {
   accountDataLocal.value = {
     avatar: authStore.user?.avatar || avatar1,
@@ -30,6 +32,7 @@ const resetForm = () => {
     email: authStore.user?.email || '',
   }
   avatarFile.value = null
+  errors.value = {}
 }
 
 const changeAvatar = file => {
@@ -54,11 +57,12 @@ const resetAvatar = () => {
 const saveChanges = async () => {
   try {
     isLoading.value = true
+    errors.value = {}
     
     const formData = new FormData()
 
-    formData.append('firstName', accountDataLocal.value.firstName)
-    formData.append('lastName', accountDataLocal.value.lastName)
+    formData.append('first_name', accountDataLocal.value.firstName)
+    formData.append('last_name', accountDataLocal.value.lastName)
     formData.append('email', accountDataLocal.value.email)
     
     if (avatarFile.value) {
@@ -81,11 +85,7 @@ const saveChanges = async () => {
   } catch (error) {
     console.error(error)
     if (error.response?.data?.errors) {
-      const errors = error.response.data.errors
-
-      Object.values(errors).forEach(err => {
-        toast.error(err[0])
-      })
+      errors.value = error.response.data.errors
     } else {
       toast.error('Failed to update profile')
     }
@@ -168,6 +168,7 @@ const saveChanges = async () => {
                 <AppTextField
                   v-model="accountDataLocal.firstName"
                   label="First Name"
+                  :error-messages="errors.first_name"
                 />
               </VCol>
 
@@ -179,6 +180,7 @@ const saveChanges = async () => {
                 <AppTextField
                   v-model="accountDataLocal.lastName"
                   label="Last Name"
+                  :error-messages="errors.last_name"
                 />
               </VCol>
 
@@ -191,6 +193,10 @@ const saveChanges = async () => {
                   v-model="accountDataLocal.email"
                   label="E-mail"
                   type="email"
+                  readonly
+                  disabled
+                  hint="Email cannot be changed"
+                  persistent-hint
                 />
               </VCol>
 

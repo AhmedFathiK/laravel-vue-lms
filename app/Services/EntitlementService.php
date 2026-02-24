@@ -200,12 +200,16 @@ class EntitlementService
     {
         // Special case for course access
         if ($featureCode === 'course.access' && $scopeType === 'App\Models\Course') {
-            return $user->entitlements()
+            $entitlements = $user->entitlements()
                 ->active()
                 ->whereHas('billingPlan.courses', function($q) use ($scopeId) {
                     $q->where('course_id', $scopeId);
                 })
-                ->exists();
+                ->get();
+
+            return $entitlements->filter(function ($entitlement) {
+                return $entitlement->isActive();
+            })->isNotEmpty();
         }
 
         // 1. Find active entitlements

@@ -59,7 +59,10 @@ const authStore = useAuthStore()
           <VDivider class="my-2" />
 
           <!-- 👉 Profile -->
-          <VListItem :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }">
+          <VListItem
+            :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }"
+            value="profile"
+          >
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -72,7 +75,10 @@ const authStore = useAuthStore()
           </VListItem>
 
           <!-- 👉 Settings -->
-          <VListItem :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }">
+          <VListItem
+            :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }"
+            value="settings"
+          >
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -85,7 +91,10 @@ const authStore = useAuthStore()
           </VListItem>
 
           <!-- 👉 Pricing -->
-          <VListItem :to="{ name: 'pages-account-settings-tab', params: { tab: 'billing-plans' } }">
+          <VListItem
+            :to="{ name: 'pages-account-settings-tab', params: { tab: 'billing-plans' } }"
+            value="pricing"
+          >
             <template #prepend>
               <VIcon
                 class="me-2"
