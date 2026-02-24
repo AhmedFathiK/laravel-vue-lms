@@ -24,6 +24,7 @@ const selectedItem = ref(null)
 const forcedCurrentItem = ref(null)
 const isModalVisible = ref(false)
 const isVideoModalVisible = ref(false)
+const isPricingPlanDialogVisible = ref(false)
 
 const fetchCourseContent = async () => {
   loading.value = true
@@ -380,10 +381,10 @@ const scrollToLevel = levelId => {
         Your subscription for this course has expired, but you are currently in a grace period. Please renew your plan to ensure uninterrupted access.
         <template #append>
           <VBtn
-            to="/pricing"
             color="warning"
             variant="flat"
             size="small"
+            @click="isPricingPlanDialogVisible = true"
           >
             Renew Now
           </VBtn>
@@ -744,6 +745,12 @@ const scrollToLevel = levelId => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <PricingPlanDialog
+      v-model:is-dialog-visible="isPricingPlanDialogVisible"
+      :course-id="courseData?.course?.id || courseData?.id"
+      :active-entitlement="courseData?.entitlement"
+    />
   </VContainer>
 </template>
 

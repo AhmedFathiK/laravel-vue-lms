@@ -1,102 +1,173 @@
 <script setup>
 import safeBoxWithGoldenCoin from '@images/misc/3d-safe-box-with-golden-dollar-coins.png'
 import spaceRocket from '@images/misc/3d-space-rocket-with-smoke.png'
-import dollarCoinPiggyBank from '@images/misc/dollar-coins-flying-pink-piggy-bank.png'
+import dollarCoinPiggyBank from '@images/avatars/avatar-1.png'
+import api from '@/utils/api'
+import { onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   title: {
     type: String,
     required: false,
   },
+  courseId: {
+    type: [Number, String],
+    default: null,
+  },
+  activeEntitlement: {
+    type: Object,
+    default: null,
+  },
   xs: {
-    type: [
-      Number,
-      String,
-    ],
+    type: [Number, String],
     required: false,
   },
   sm: {
-    type: [
-      Number,
-      String,
-    ],
+    type: [Number, String],
     required: false,
   },
   md: {
-    type: [
-      String,
-      Number,
-    ],
+    type: [Number, String],
     required: false,
   },
   lg: {
-    type: [
-      String,
-      Number,
-    ],
+    type: [Number, String],
     required: false,
   },
   xl: {
-    type: [
-      String,
-      Number,
-    ],
+    type: [Number, String],
     required: false,
   },
 })
 
-const annualMonthlyPlanPriceToggler = ref(true)
+const annualMonthlyPlanPriceToggler = ref(false)
+const pricingPlans = ref([])
+const isLoading = ref(false)
+const upgradeCalculations = ref({})
 
-const pricingPlans = [
-  {
-    name: 'Basic',
-    tagLine: 'A simple start for everyone',
-    logo: dollarCoinPiggyBank,
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    isPopular: false,
-    current: true,
-    features: [
-      '100 responses a month',
-      'Unlimited forms and surveys',
-      'Unlimited fields',
-      'Basic form creation tools',
-      'Up to 2 subdomains',
-    ],
-  },
-  {
-    name: 'Standard',
-    tagLine: 'For small to medium businesses',
-    logo: safeBoxWithGoldenCoin,
-    monthlyPrice: 49,
-    yearlyPrice: 499,
-    isPopular: true,
-    current: false,
-    features: [
-      'Unlimited responses',
-      'Unlimited forms and surveys',
-      'Instagram profile page',
-      'Google Docs integration',
-      'Custom “Thank you” page',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    tagLine: 'Solution for big organizations',
-    logo: spaceRocket,
-    monthlyPrice: 99,
-    yearlyPrice: 999,
-    isPopular: false,
-    current: false,
-    features: [
-      'PayPal payments',
-      'Logic Jumps',
-      'File upload with 5GB storage',
-      'Custom domain support',
-      'Stripe integration',
-    ],
-  },
-]
+// Payment Methods
+const isPaymentMethodDialogVisible = ref(false)
+const paymentMethods = ref([])
+const selectedPaymentMethod = ref(null)
+const selectedPlanForPayment = ref(null)
+const isProcessingPayment = ref(false)
+
+const fetchPlans = async () => {
+  if (!props.courseId) return
+  isLoading.value = true
+  try {
+    const response = await api.get(`/learner/courses/${props.courseId}/billing-plans`)
+
+    pricingPlans.value = response.plans || []
+  } catch (error) {
+    console.error('Failed to fetch plans', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const calculateUpgrade = async plan => {
+  if (!props.activeEntitlement || props.activeEntitlement.billingPlanId === plan.id) return
+  
+  try {
+    const response = await api.get(`/learner/entitlements/${props.activeEntitlement.id}/upgrade/${plan.id}/calculate`)
+
+    upgradeCalculations.value[plan.id] = response
+  } catch (error) {
+    console.error('Failed to calculate upgrade', error)
+  }
+}
+
+const handlePlanAction = async plan => {
+  // If free plan, handle directly
+  if (parseFloat(plan.price) === 0) {
+    try {
+      const response = await api.post('/learner/acquire-entitlement', { planId: plan.id })
+      if (response.status === 'enrolled') {
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Failed to acquire free plan', error)
+    }
+
+    return
+  }
+
+  // For paid plans, show payment method selection first
+  selectedPlanForPayment.value = plan
+  
+  // Get amount (either full price or upgrade price)
+  const amount = upgradeCalculations.value[plan.id]?.upgrade_price ?? plan.price
+  
+  try {
+    const response = await api.get('/payments/methods', {
+      params: {
+        amount,
+        currency: plan.currency || 'EGP',
+      },
+    })
+
+    if (response.success) {
+      paymentMethods.value = response.data
+      isPaymentMethodDialogVisible.value = true
+    }
+  } catch (error) {
+    console.error('Failed to fetch payment methods', error)
+  }
+}
+
+const proceedToCheckout = async () => {
+  if (!selectedPlanForPayment.value || !selectedPaymentMethod.value) return
+
+  isProcessingPayment.value = true
+
+  const plan = selectedPlanForPayment.value
+
+  try {
+    let response
+    if (props.activeEntitlement?.billingPlanId === plan.id) {
+      // Renew
+      response = await api.post(`/learner/entitlements/${props.activeEntitlement.id}/renew`, {
+        paymentMethodId: String(selectedPaymentMethod.value),
+      })
+    } else if (props.activeEntitlement) {
+      // Upgrade or Downgrade (Both handled by upgrade endpoint logic for pro-rating)
+      response = await api.post(`/learner/entitlements/${props.activeEntitlement.id}/upgrade/${plan.id}`, {
+        paymentMethodId: String(selectedPaymentMethod.value),
+      })
+    } else {
+      // New acquisition
+      response = await api.post('/payments/checkout', {
+        amount: plan.price,
+        currency: plan.currency || 'EGP',
+        planId: plan.id,
+        courseId: props.courseId,
+        paymentMethodId: String(selectedPaymentMethod.value),
+      })
+    }
+
+    if (response.paymentUrl || (response.success && response.paymentUrl)) {
+      window.location.href = response.paymentUrl || response.data?.paymentUrl
+    }
+  } catch (error) {
+    console.error('Checkout failed', error)
+  } finally {
+    isProcessingPayment.value = false
+  }
+}
+
+onMounted(fetchPlans)
+
+watch(() => props.courseId, fetchPlans)
+watch(pricingPlans, plans => {
+  if (props.activeEntitlement) {
+    plans.forEach(plan => {
+      if (plan.id !== props.activeEntitlement.billingPlanId && parseFloat(plan.price) > 0) {
+        calculateUpgrade(plan)
+      }
+    })
+  }
+})
 </script>
 
 <template>
@@ -114,8 +185,10 @@ const pricingPlans = [
   </div>
 
   <!-- 👉 Annual and monthly price toggler -->
-
-  <div class="d-flex font-weight-medium text-body-1 align-center justify-center mx-auto mt-12 mb-6">
+  <div
+    v-if="pricingPlans.some(p => p.billing_type === 'recurring')"
+    class="d-flex font-weight-medium text-body-1 align-center justify-center mx-auto mt-12 mb-6"
+  >
     <VLabel
       for="pricing-plan-toggle"
       class="me-3"
@@ -134,36 +207,29 @@ const pricingPlans = [
           </div>
         </template>
       </VSwitch>
-
-      <div class="save-upto-chip position-absolute align-center d-none d-md-flex gap-1">
-        <VIcon
-          icon="tabler-corner-left-down"
-          size="24"
-          class="flip-in-rtl mt-2 text-disabled"
-        />
-        <VChip
-          label
-          color="primary"
-          size="small"
-        >
-          Save up to 10%
-        </VChip>
-      </div>
     </div>
   </div>
 
+  <div
+    v-if="isLoading"
+    class="d-flex justify-center py-10"
+  >
+    <VProgressCircular indeterminate />
+  </div>
+
   <!-- SECTION pricing plans -->
-  <VRow>
+  <VRow v-else>
     <VCol
       v-for="plan in pricingPlans"
-      :key="plan.logo"
-      v-bind="props"
+      :key="plan.id"
       cols="12"
+      md="4"
     >
       <!-- 👉  Card -->
       <VCard
         flat
         border
+        class="h-100 d-flex flex-column"
         :class="plan.isPopular ? 'border-primary border-opacity-100' : ''"
       >
         <VCardText
@@ -172,62 +238,72 @@ const pricingPlans = [
         >
           <!-- 👉 Popular -->
           <VChip
-            v-show="plan.isPopular"
+            v-if="plan.isPopular"
             label
             color="primary"
             size="small"
           >
             Popular
           </VChip>
+          <VChip
+            v-if="activeEntitlement?.billingPlanId === plan.id"
+            label
+            color="success"
+            size="small"
+          >
+            Current
+          </VChip>
         </VCardText>
 
         <!-- 👉 Plan logo -->
-        <VCardText>
-          <VImg
-            :height="120"
-            :width="120"
-            :src="plan.logo"
-            class="mx-auto mb-5"
-          />
-
+        <VCardText class="flex-grow-1">
           <!-- 👉 Plan name -->
           <h4 class="text-h4 mb-1 text-center">
             {{ plan.name }}
           </h4>
           <p class="mb-0 text-body-1 text-center">
-            {{ plan.tagLine }}
+            {{ plan.description }}
           </p>
 
           <!-- 👉 Plan price  -->
-
           <div class="position-relative">
             <div class="d-flex justify-center pt-5 pb-10">
               <div class="text-body-1 align-self-start font-weight-medium">
-                EGP
+                {{ plan.currency }}
               </div>
               <h1 class="text-h1 font-weight-medium text-primary">
-                {{ annualMonthlyPlanPriceToggler ? Math.floor(Number(plan.yearlyPrice) / 12) : plan.monthlyPrice }}
+                {{ plan.price }}
               </h1>
-              <div class="text-body-1 font-weight-medium align-self-end">
-                /month
+              <div
+                v-if="plan.billing_type === 'recurring'"
+                class="text-body-1 font-weight-medium align-self-end"
+              >
+                /{{ plan.billing_interval }}
               </div>
             </div>
 
-            <!-- 👉 Annual Price -->
-            <span
-              v-show="annualMonthlyPlanPriceToggler"
-              class="annual-price-text position-absolute text-caption text-disabled pb-4"
+            <div
+              v-if="upgradeCalculations[plan.id]"
+              class="text-center mt-n8 mb-4"
             >
-              {{ plan.yearlyPrice === 0 ? 'free' : `EGP ${plan.yearlyPrice}/Year` }}
-            </span>
+              <VChip
+                color="info"
+                size="small"
+                variant="tonal"
+              >
+                Upgrade for {{ upgradeCalculations[plan.id].upgrade_price }} {{ plan.currency }}
+              </VChip>
+              <p class="text-caption text-disabled mt-1">
+                {{ upgradeCalculations[plan.id].remaining_days }} days remaining credited
+              </p>
+            </div>
           </div>
 
           <!-- 👉 Plan features -->
-
           <VList class="card-list mb-4">
             <VListItem
               v-for="feature in plan.features"
-              :key="feature"
+              :key="feature.id"
             >
               <template #prepend>
                 <VIcon
@@ -238,26 +314,114 @@ const pricingPlans = [
               </template>
 
               <VListItemTitle class="text-body-1">
-                {{ feature }}
+                {{ feature.name }}
               </VListItemTitle>
             </VListItem>
           </VList>
+        </VCardText>
 
+        <VCardText class="pt-0">
           <!-- 👉 Plan actions -->
           <VBtn
             block
-            :color="plan.current ? 'success' : 'primary'"
+            :color="activeEntitlement?.billingPlanId === plan.id ? 'success' : 'primary'"
             :variant="plan.isPopular ? 'elevated' : 'tonal'"
-            :to="{ name: 'payment' }"
-            :active="false"
+            @click="handlePlanAction(plan)"
           >
-            {{ plan.yearlyPrice === 0 ? 'Your Current Plan' : 'Upgrade' }}
+            {{ 
+              activeEntitlement?.billingPlanId === plan.id 
+                ? 'Renew Plan' 
+                : (activeEntitlement ? 'Upgrade Plan' : (parseFloat(plan.price) === 0 ? 'Enroll for Free' : 'Get Started')) 
+            }}
           </VBtn>
         </VCardText>
       </VCard>
     </VCol>
   </VRow>
   <!-- !SECTION  -->
+
+  <!-- Payment Method Selection Dialog -->
+  <VDialog
+    v-model="isPaymentMethodDialogVisible"
+    max-width="600"
+  >
+    <VCard>
+      <VCardTitle class="pa-4">
+        <div class="d-flex align-center justify-space-between">
+          <h3 class="text-h5 font-weight-bold">
+            Select Payment Method
+          </h3>
+          <VBtn
+            icon
+            variant="text"
+            @click="isPaymentMethodDialogVisible = false"
+          >
+            <VIcon icon="tabler-x" />
+          </VBtn>
+        </div>
+      </VCardTitle>
+
+      <VCardText class="pa-4">
+        <p class="text-body-1 mb-4">
+          Choose how you'd like to pay for <strong>{{ selectedPlanForPayment?.name }}</strong>.
+        </p>
+
+        <VCard
+          variant="outlined"
+          class="pa-4 mb-6"
+        >
+          <VRow>
+            <VCol
+              v-for="method in paymentMethods"
+              :key="method.paymentMethodId"
+              cols="12"
+              sm="6"
+              md="4"
+            >
+              <VCard
+                border
+                :color="selectedPaymentMethod === method.paymentMethodId ? 'primary' : ''"
+                :variant="selectedPaymentMethod === method.paymentMethodId ? 'tonal' : 'outlined'"
+                class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
+                @click="selectedPaymentMethod = method.paymentMethodId"
+              >
+                <VImg
+                  :src="method.imageUrl"
+                  height="40"
+                  width="60"
+                  class="mb-2"
+                  contain
+                />
+                <span class="text-subtitle-2 text-center">{{ method.paymentMethodEn }}</span>
+              </VCard>
+            </VCol>
+          </VRow>
+        </VCard>
+      </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn
+          variant="outlined"
+          color="secondary"
+          @click="isPaymentMethodDialogVisible = false"
+        >
+          Cancel
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          :disabled="!selectedPaymentMethod"
+          :loading="isProcessingPayment"
+          @click="proceedToCheckout"
+        >
+          Proceed to Pay
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>
 
 <style lang="scss" scoped>

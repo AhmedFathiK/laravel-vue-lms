@@ -6,6 +6,8 @@ import { computed, onMounted, ref } from 'vue'
 const entitlements = ref([])
 const receipts = ref([])
 const isLoading = ref(false)
+const isPricingPlanDialogVisible = ref(false)
+const selectedEntitlementForAction = ref(null)
 
 const fetchBillingData = async () => {
   try {
@@ -23,6 +25,11 @@ const fetchBillingData = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const openPricingDialog = entitlement => {
+  selectedEntitlementForAction.value = entitlement
+  isPricingPlanDialogVisible.value = true
 }
 
 const isGracePeriod = entitlement => {
@@ -171,12 +178,12 @@ onMounted(fetchBillingData)
 
                   <div class="d-flex gap-2">
                     <VBtn
-                      v-if="entitlement.status === 'active' || entitlement.status === 'past_due'"
+                      v-if="entitlement.status === 'active' || entitlement.status === 'past_due' || entitlement.status === 'expired'"
                       size="small"
                       color="primary"
-                      to="/pricing"
+                      @click="openPricingDialog(entitlement)"
                     >
-                      Manage
+                      Renew / Upgrade
                     </VBtn>
                     <VBtn
                       v-if="entitlement.autoRenew"
@@ -245,4 +252,10 @@ onMounted(fetchBillingData)
       </VCard>
     </VCol>
   </VRow>
+
+  <PricingPlanDialog
+    v-model:is-dialog-visible="isPricingPlanDialogVisible"
+    :course-id="selectedEntitlementForAction?.course_id"
+    :active-entitlement="selectedEntitlementForAction"
+  />
 </template>

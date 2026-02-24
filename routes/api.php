@@ -29,6 +29,7 @@ use App\Http\Controllers\Learner\LearnerReceiptController;
 use App\Http\Controllers\Admin\CourseAccessController;
 use App\Http\Controllers\Learner\CoursesContentController;
 use App\Http\Controllers\Learner\LearnerEntitlementController;
+use App\Http\Controllers\Learner\ActiveCourseController;
 use App\Http\Controllers\PaymentGatewayController;
 
 use App\Http\Controllers\Learner\LearnerDashboardController;
@@ -86,8 +87,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
     });
 
     Route::post('/user/locale', [LearnerUserController::class, 'updateLocale']);
-    Route::post('/user/active-course', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'update']);
-    Route::get('/user/active-course', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'show']);
+    Route::post('/user/active-course', [ActiveCourseController::class, 'update']);
+    Route::get('/user/active-course', [ActiveCourseController::class, 'show']);
 });
 
 /*
@@ -303,7 +304,7 @@ Route::prefix('learner')->group(function () {
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
-    Route::get('course-content', [\App\Http\Controllers\Learner\ActiveCourseController::class, 'show']);
+    Route::get('course-content', [ActiveCourseController::class, 'show']);
     Route::get('dashboard/active-stats', [LearnerDashboardController::class, 'getActiveStats']);
     Route::get('courses/enrolled', [LearnerEntitlementController::class, 'getEnrolledCourses']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);
@@ -320,6 +321,8 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     Route::post('courses/{course}/enroll', [LearnerEntitlementController::class, 'enroll']);
     Route::post('entitlements/{entitlement}/cancel', [LearnerEntitlementController::class, 'cancel']);
     Route::post('entitlements/{entitlement}/renew', [LearnerEntitlementController::class, 'renew']);
+    Route::get('entitlements/{entitlement}/upgrade/{newPlan}/calculate', [LearnerEntitlementController::class, 'calculateUpgrade']);
+    Route::post('entitlements/{entitlement}/upgrade/{newPlan}', [LearnerEntitlementController::class, 'upgrade']);
     Route::get('courses/{course}/free-content', [LearnerEntitlementController::class, 'getFreeCourseContent']);
     Route::get('courses/{course}/billing-plans', [LearnerEntitlementController::class, 'getAvailablePlans']);
     Route::get('levels/{level}/access-status', [LearnerEntitlementController::class, 'checkLevelAccess']);

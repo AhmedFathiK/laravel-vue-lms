@@ -37,6 +37,15 @@ class CourseResource extends JsonResource
                         $q->where('courses.id', $this->id);
                     })->exists()
             ) : false,
+            'active_entitlement' => $request->user('sanctum') ? (
+                $request->user('sanctum')->entitlements()
+                    ->active()
+                    ->whereHas('billingPlan.courses', function ($q) {
+                        $q->where('courses.id', $this->id);
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->first()
+            ) : null,
         ];
     }
 }

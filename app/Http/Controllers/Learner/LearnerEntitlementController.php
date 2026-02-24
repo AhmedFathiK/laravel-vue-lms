@@ -273,9 +273,161 @@ class LearnerEntitlementController extends Controller
             ], 422);
         }
 
-        // Reuse the acquisition logic by calling it with the same plan_id
-        $request->merge(['plan_id' => $plan->id]);
-        return $this->acquire($request, $entitlementService, $paymentService);
+        // Check if the plan is actually renewable (recurring or expired)
+        if ($entitlement->isActive() && !$entitlement->ends_at?->isPast()) {
+            // It's already active and not yet in grace period/expired
+            // For now, we allow "early renewal" or "extension" if user wants
+        }
+
+        // Reuse the checkout logic by calling PaymentGatewayController
+        $gatewayController = app(\App\Http\Controllers\PaymentGatewayController::class);
+        $request->merge([
+            'amount' => $plan->price,
+            'currency' => $plan->currency,
+            'plan_id' => $plan->id,
+            'course_id' => $plan->courses()->first()?->id,
+        ]);
+
+        return $gatewayController->checkout($request);
+    }
+
+    /**
+     * Calculate upgrade price.
+     */
+    public function calculateUpgrade(
+        UserEntitlement $entitlement,
+        BillingPlan $newPlan
+    ): JsonResponse {
+        if ($entitlement->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to entitlement');
+        }
+
+        // 1. Calculate remaining days on current plan
+        $now = now();
+        $endsAt = $entitlement->ends_at;
+
+        if (!$endsAt || $endsAt->isPast()) {
+            $remainingDays = 0;
+        } else {
+            $remainingDays = $now->diffInDays($endsAt);
+        }
+
+        // 2. Calculate daily price of the NEW plan
+        // (Assuming 30 days for monthly, 365 for yearly if not specified)
+        $durationDays = $newPlan->access_duration_days;
+        if (!$durationDays) {
+            if ($newPlan->billing_interval === 'month') $durationDays = 30;
+            elseif ($newPlan->billing_interval === 'year') $durationDays = 365;
+            elseif ($newPlan->billing_interval === 'week') $durationDays = 7;
+            elseif ($newPlan->billing_interval === 'day') $durationDays = 1;
+            else $durationDays = 30; // Fallback
+        }
+
+        $dailyPrice = (float) $newPlan->price / $durationDays;
+
+        // 3. Upgrade price = remaining days * daily price of new plan
+        $upgradePrice = round($remainingDays * $dailyPrice, 2);
+
+        return response()->json([
+            'current_plan' => $entitlement->billingPlan->name,
+            'new_plan' => $newPlan->name,
+            'remaining_days' => $remainingDays,
+            'daily_price' => round($dailyPrice, 2),
+            'upgrade_price' => $upgradePrice,
+            'currency' => $newPlan->currency,
+        ]);
+    }
+
+    /**
+     * Upgrade an entitlement.
+     */
+    public function upgrade(
+        UserEntitlement $entitlement,
+        BillingPlan $newPlan,
+        Request $request,
+        EntitlementService $entitlementService,
+        PaymentServiceInterface $paymentService
+    ): JsonResponse {
+        if ($entitlement->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to entitlement');
+        }
+
+        // 1. Get the upgrade price
+        $calculation = $this->calculateUpgrade($entitlement, $newPlan)->getData();
+        $upgradePrice = $calculation->upgrade_price;
+
+        // 2. Handle free upgrade (shouldn't happen with paid plans, but for safety)
+        if ($upgradePrice <= 0) {
+            $user = Auth::user();
+            $newEntitlement = $entitlementService->grantEntitlement($user, $newPlan);
+
+            // Mark old one as canceled/superseded
+            $entitlement->update(['status' => UserEntitlement::STATUS_CANCELED]);
+
+            return response()->json([
+                'message' => 'Upgraded successfully',
+                'entitlement' => $newEntitlement,
+            ]);
+        }
+
+        // 3. Initiate payment for the upgrade price via PaymentGatewayController
+        $gatewayController = app(\App\Http\Controllers\PaymentGatewayController::class);
+        $request->merge([
+            'amount' => $upgradePrice,
+            'currency' => $newPlan->currency,
+            'plan_id' => $newPlan->id,
+            'course_id' => $newPlan->courses()->first()?->id,
+        ]);
+
+        // We need to pass the upgrade_from_entitlement_id to the payment_details
+        // The PaymentGatewayController::checkout currently doesn't support extra details
+        // Let's modify checkout to accept them or just handle it here since we need the specific meta
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $currency = Currency::normalize($newPlan->currency ?? Currency::default());
+
+        $payment = \App\Models\Payment::create([
+            'user_id' => $user->id,
+            'amount' => $upgradePrice,
+            'currency' => $currency,
+            'status' => 'pending',
+            'payment_method' => $paymentService->gatewayKey(),
+            'payment_provider' => $paymentService->gatewayKey(),
+            'payment_details' => [
+                'billing_plan_id' => $newPlan->id,
+                'upgrade_from_entitlement_id' => $entitlement->id,
+                'payment_method_id' => $request->payment_method_id,
+            ],
+        ]);
+
+        $checkout = $paymentService->createCheckout(
+            amount: (float) $upgradePrice,
+            currency: $currency,
+            customer: [
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            metadata: [
+                'customer_reference' => (string) $payment->id,
+                'type' => 'upgrade',
+            ],
+            callbackUrl: route('payments.callback'),
+            errorUrl: route('payments.error'),
+            paymentMethodId: $request->payment_method_id
+        );
+
+        if (!empty($checkout['transaction_id'])) {
+            $payment->update(['transaction_id' => (string) $checkout['transaction_id']]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Upgrade payment initiated',
+            'payment_url' => $checkout['payment_url'] ?? null,
+            'payment_id' => $payment->id,
+            'status' => 'payment_initiated',
+        ]);
     }
 
     /**

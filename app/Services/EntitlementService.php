@@ -119,6 +119,7 @@ class EntitlementService
     {
         $existingDetails = $payment->payment_details ?? [];
         $planId = $existingDetails['billing_plan_id'] ?? $existingDetails['plan_id'] ?? null;
+        $upgradeFromId = $existingDetails['upgrade_from_entitlement_id'] ?? null;
 
         if (!$planId) {
             return;
@@ -134,6 +135,15 @@ class EntitlementService
             return;
         }
 
+        // Handle Upgrade Flow
+        if ($upgradeFromId) {
+            $oldEntitlement = UserEntitlement::find($upgradeFromId);
+            if ($oldEntitlement && $oldEntitlement->user_id === $user->id) {
+                $oldEntitlement->update(['status' => UserEntitlement::STATUS_CANCELED]);
+                Log::info("Old entitlement {$upgradeFromId} canceled for upgrade to plan {$planId}");
+            }
+        }
+
         // Idempotency: Check if entitlement already exists for this payment
         if (UserEntitlement::where('payment_id', $payment->id)->exists()) {
              Log::info("Entitlement already exists for payment {$payment->id}");
@@ -143,7 +153,8 @@ class EntitlementService
         // Also check if user already has an active entitlement for this plan
         // This handles cases where the same user might have been granted access manually
         // or through another flow before the payment callback completed.
-        if (UserEntitlement::where('user_id', $user->id)
+        // SKIP this check if it's an upgrade, as we WANT to grant the new plan even if old one is still active
+        if (!$upgradeFromId && UserEntitlement::where('user_id', $user->id)
             ->where('billing_plan_id', $plan->id)
             ->whereIn('status', [UserEntitlement::STATUS_ACTIVE, UserEntitlement::STATUS_PAST_DUE])
             ->exists()) {

@@ -30,6 +30,7 @@ class UserEntitlementResource extends JsonResource
             'user' => new UserResource($this->whenLoaded('user')),
             'billing_plan' => new EntitlementPlanResource($this->whenLoaded('billingPlan')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
+            'course_id' => $this->billingPlan?->courses?->first()?->id,
         ];
     }
 }

@@ -1,8 +1,18 @@
 <script setup>
+import AppPricing from '@/components/AppPricing.vue'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
     required: true,
+  },
+  courseId: {
+    type: [Number, String],
+    default: null,
+  },
+  activeEntitlement: {
+    type: Object,
+    default: null,
   },
 })
 
@@ -24,7 +34,11 @@ const dialogVisibleUpdate = val => {
 
     <VCard class="pricing-dialog pa-2 pa-sm-10">
       <VCardText>
-        <AppPricing md="4" />
+        <AppPricing
+          md="4"
+          :course-id="props.courseId"
+          :active-entitlement="props.activeEntitlement"
+        />
       </VCardText>
     </VCard>
   </VDialog>

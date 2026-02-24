@@ -24,6 +24,9 @@ const searchQuery = ref('')
 const selectedCategory = ref(null)
 const sortBy = ref('popularity,desc')
 
+const isPricingPlanDialogVisible = ref(false)
+const selectedActiveEntitlement = ref(null)
+
 const sortOptions = [
   { title: 'Most Popular', value: 'popularity,desc' },
   { title: 'Newest', value: 'createdAt,desc' },
@@ -90,16 +93,26 @@ const handleAcquireClick = async course => {
     return
   }
 
+  selectedCourseForEntitlement.value = course
+
   if (course.hasActiveAccess) {
-    const activeCourseStore = useActiveCourse()
-    
-    await activeCourseStore.setActiveCourse(course.id)
-    router.push('/dashboard')
+    // If it's a grace period or about to expire, we might want to offer renewal
+    // For now, let's just open the pricing dialog to allow Upgrade/Renew
+    selectedActiveEntitlement.value = course.activeEntitlement
+    isPricingPlanDialogVisible.value = true
 
     return
   }
 
-  viewCourseDetails(course.id)
+  // Fetch plans and show selection
+  try {
+    const response = await api.get(`/learner/courses/${course.id}/billing-plans`)
+
+    billingPlans.value = response.plans
+    isAcquireDialogVisible.value = true
+  } catch (error) {
+    console.error('Error fetching plans:', error)
+  }
 }
 
 const handlePayment = async plan => {
@@ -561,6 +574,12 @@ onMounted(() => {
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <PricingPlanDialog
+      v-model:is-dialog-visible="isPricingPlanDialogVisible"
+      :course-id="selectedCourseForEntitlement?.id"
+      :active-entitlement="selectedActiveEntitlement"
+    />
   </VContainer>
 </template>
 
