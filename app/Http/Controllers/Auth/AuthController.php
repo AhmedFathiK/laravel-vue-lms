@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 
+use Illuminate\Support\Facades\Storage;
+
 class AuthController extends Controller
 {
     /**
@@ -108,14 +110,29 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => 'required|string|email|max:255|unique:users,email,' . $request->user()->id,
+            'avatar' => 'nullable|image|max:2048',
         ]);
 
         $user = $request->user();
-        $user->update([
+
+        $data = [
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
-        ]);
+        ];
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                // Try to delete old avatar
+                $oldPath = str_replace('/storage/', '', parse_url($user->avatar, PHP_URL_PATH));
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = Storage::url($path);
+        }
+
+        $user->update($data);
 
         return response()->json([
             'message' => 'Profile updated successfully',

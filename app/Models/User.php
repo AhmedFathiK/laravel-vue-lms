@@ -28,6 +28,7 @@ class User extends Authenticatable
         'password',
         'interface_language',
         'active_course_id',
+        'avatar',
     ];
 
     /**

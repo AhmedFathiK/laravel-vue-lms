@@ -45,7 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
-  const userName = computed(() => user.value?.first_name || '')
+  const userName = computed(() => user.value?.firstName || '')
   const userEmail = computed(() => user.value?.email || '')
   const userRole = computed(() => role.value || '')
   const userRoles = computed(() => roles.value || [])

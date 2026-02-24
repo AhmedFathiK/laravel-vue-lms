@@ -1,0 +1,179 @@
+<script setup>
+import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
+import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const authStore = useAuthStore()
+
+const isCurrentPasswordVisible = ref(false)
+const isNewPasswordVisible = ref(false)
+const isConfirmPasswordVisible = ref(false)
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const isLoading = ref(false)
+
+const passwordRequirements = [
+  'Minimum 8 characters long - the more, the better',
+  'At least one lowercase character',
+  'At least one number, symbol, or whitespace character',
+]
+
+const changePassword = async () => {
+  if (newPassword.value !== confirmPassword.value) {
+    toast.error('New password and confirm password do not match')
+    
+    return
+  }
+
+  try {
+    isLoading.value = true
+    
+    await api.put('/auth/password', {
+      currentPassword: currentPassword.value,
+      password: newPassword.value,
+      passwordConfirmation: confirmPassword.value,
+    })
+
+    toast.success('Password changed successfully')
+    
+    // Reset form
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch (error) {
+    console.error(error)
+    if (error.response?.data?.errors) {
+      const errors = error.response.data.errors
+
+      Object.values(errors).forEach(err => {
+        toast.error(err[0])
+      })
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error('Failed to change password')
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+</script>
+
+<template>
+  <VRow>
+    <!-- 👉 Change password -->
+    <VCol cols="12">
+      <VCard title="Change Password">
+        <VCardText>
+          <VAlert
+            variant="tonal"
+            color="warning"
+            class="mb-4"
+          >
+            <VAlertTitle class="mb-1">
+              Ensure that these requirements are met
+            </VAlertTitle>
+            <span>Minimum 8 characters long, uppercase & symbol</span>
+          </VAlert>
+
+          <VForm @submit.prevent="changePassword">
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="currentPassword"
+                  label="Current Password"
+                  placeholder="············"
+                  :type="isCurrentPasswordVisible ? 'text' : 'password'"
+                  :append-inner-icon="isCurrentPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  @click:append-inner="isCurrentPasswordVisible = !isCurrentPasswordVisible"
+                />
+              </VCol>
+            </VRow>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="newPassword"
+                  label="New Password"
+                  placeholder="············"
+                  :type="isNewPasswordVisible ? 'text' : 'password'"
+                  :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="confirmPassword"
+                  label="Confirm Password"
+                  placeholder="············"
+                  :type="isConfirmPasswordVisible ? 'text' : 'password'"
+                  :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
+                />
+              </VCol>
+
+              <VCol cols="12">
+                <VBtn
+                  type="submit"
+                  :loading="isLoading"
+                  :disabled="isLoading"
+                >
+                  Change Password
+                </VBtn>
+              </VCol>
+            </VRow>
+          </VForm>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <!-- 👉 Two-steps verification -->
+    <VCol cols="12">
+      <VCard
+        title="Two-steps verification"
+        subtitle="Keep your account secure with authentication step."
+      >
+        <VCardText>
+          <div class="text-h6 mb-1">
+            SMS
+          </div>
+          <AppTextField placeholder="+1(968) 819-2547">
+            <template #append>
+              <IconBtn color="secondary">
+                <VIcon
+                  icon="tabler-edit"
+                  size="22"
+                />
+              </IconBtn>
+              <IconBtn color="secondary">
+                <VIcon
+                  icon="tabler-user-plus"
+                  size="22"
+                />
+              </IconBtn>
+            </template>
+          </AppTextField>
+
+          <p class="mb-0 mt-4">
+            Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to log in. <a
+              href="javascript:void(0)"
+              class="text-decoration-none"
+            >Learn more</a>.
+          </p>
+        </VCardText>
+      </VCard>
+    </VCol>
+  </VRow>
+</template>
