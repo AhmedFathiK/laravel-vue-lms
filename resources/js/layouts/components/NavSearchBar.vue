@@ -56,7 +56,7 @@ const suggestionGroups = [
         icon: 'tabler-settings',
         title: 'Account Settings',
         url: {
-          name: 'pages-account-settings-tab',
+          name: 'account-settings-tab',
           params: { tab: 'account' },
         },
       },

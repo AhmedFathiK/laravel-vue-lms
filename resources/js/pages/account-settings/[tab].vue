@@ -5,6 +5,12 @@ import AccountSettingsSecurity from '@/views/pages/account-settings/AccountSetti
 import AccountSettingsBilling from '@/views/pages/account-settings/AccountSettingsBilling.vue'
 import { ref } from 'vue'
 
+definePage({
+  meta: {
+    layout: 'learner',
+  },
+})
+
 const route = useRoute()
 const activeTab = ref(route.params.tab)
 
@@ -38,7 +44,7 @@ const tabs = [
         v-for="item in tabs"
         :key="item.icon"
         :value="item.tab"
-        :to="{ name: 'pages-account-settings-tab', params: { tab: item.tab } }"
+        :to="{ name: 'account-settings-tab', params: { tab: item.tab } }"
       >
         <VIcon
           start

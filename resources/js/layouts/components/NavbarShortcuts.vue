@@ -35,7 +35,7 @@ const shortcuts = [
     title: 'Settings',
     subtitle: 'Account Settings',
     to: {
-      name: 'pages-account-settings-tab',
+      name: 'account-settings-tab',
       params: { tab: 'account' },
     },
   },

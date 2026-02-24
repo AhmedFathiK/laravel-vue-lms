@@ -60,7 +60,7 @@ const authStore = useAuthStore()
 
           <!-- 👉 Profile -->
           <VListItem
-            :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }"
+            :to="{ name: 'account-settings-tab', params: { tab: 'account' } }"
             value="profile"
           >
             <template #prepend>
@@ -76,7 +76,7 @@ const authStore = useAuthStore()
 
           <!-- 👉 Settings -->
           <VListItem
-            :to="{ name: 'pages-account-settings-tab', params: { tab: 'account' } }"
+            :to="{ name: 'account-settings-tab', params: { tab: 'account' } }"
             value="settings"
           >
             <template #prepend>
@@ -92,7 +92,7 @@ const authStore = useAuthStore()
 
           <!-- 👉 Pricing -->
           <VListItem
-            :to="{ name: 'pages-account-settings-tab', params: { tab: 'billing-plans' } }"
+            :to="{ name: 'account-settings-tab', params: { tab: 'billing-plans' } }"
             value="pricing"
           >
             <template #prepend>

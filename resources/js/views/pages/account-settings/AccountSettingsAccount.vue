@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 import avatar1 from '@images/avatars/avatar-1.png'
 import { ref } from 'vue'
+import { definePage } from 'vue-router/auto'
 import { useToast } from 'vue-toastification'
 
 const authStore = useAuthStore()
