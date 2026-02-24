@@ -26,13 +26,11 @@ use App\Http\Controllers\Learner\LearnerCourseController;
 use App\Http\Controllers\Learner\GamificationController;
 use App\Http\Controllers\Learner\ProgressController;
 use App\Http\Controllers\Learner\LearnerReceiptController;
-use App\Http\Controllers\Admin\CourseAccessController;
 use App\Http\Controllers\Learner\CoursesContentController;
 use App\Http\Controllers\Learner\LearnerEntitlementController;
 use App\Http\Controllers\Learner\ActiveCourseController;
-use App\Http\Controllers\PaymentGatewayController;
-
 use App\Http\Controllers\Learner\LearnerDashboardController;
+use App\Http\Controllers\PaymentGatewayController;
 
 /*
 |--------------------------------------------------------------------------

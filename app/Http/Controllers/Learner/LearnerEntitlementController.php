@@ -450,6 +450,7 @@ class LearnerEntitlementController extends Controller
         $plans = BillingPlan::whereHas('courses', function ($query) use ($course) {
             $query->where('courses.id', $course->id);
         })
+            ->with(['planFeatures.feature'])
             ->where('is_active', true)
             ->orderBy('price')
             ->get();

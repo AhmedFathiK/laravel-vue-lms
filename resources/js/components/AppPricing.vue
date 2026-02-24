@@ -168,6 +168,22 @@ watch(pricingPlans, plans => {
     })
   }
 })
+
+const getActionText = plan => {
+  if (props.activeEntitlement?.billingPlanId === plan.id) {
+    return 'Renew Plan'
+  }
+  
+  if (!props.activeEntitlement) {
+    return parseFloat(plan.price) === 0 ? 'Enroll for Free' : 'Get Started'
+  }
+
+  // Check if upgrade or downgrade
+  const currentPrice = parseFloat(props.activeEntitlement.billingPlan?.price || 0)
+  const newPrice = parseFloat(plan.price)
+
+  return newPrice > currentPrice ? 'Upgrade Plan' : 'Downgrade Plan'
+}
 </script>
 
 <template>
@@ -328,11 +344,7 @@ watch(pricingPlans, plans => {
             :variant="plan.isPopular ? 'elevated' : 'tonal'"
             @click="handlePlanAction(plan)"
           >
-            {{ 
-              activeEntitlement?.billingPlanId === plan.id 
-                ? 'Renew Plan' 
-                : (activeEntitlement ? 'Upgrade Plan' : (parseFloat(plan.price) === 0 ? 'Enroll for Free' : 'Get Started')) 
-            }}
+            {{ getActionText(plan) }}
           </VBtn>
         </VCardText>
       </VCard>

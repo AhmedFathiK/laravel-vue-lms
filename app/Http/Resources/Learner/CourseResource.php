@@ -32,20 +32,30 @@ class CourseResource extends JsonResource
             ) : false,
             'has_active_access' => $request->user('sanctum') ? (
                 $request->user('sanctum')->entitlements()
-                    ->active()
-                    ->whereHas('billingPlan.courses', function ($q) {
-                        $q->where('courses.id', $this->id);
-                    })->exists()
+                ->active()
+                ->whereHas('billingPlan.courses', function ($q) {
+                    $q->where('courses.id', $this->id);
+                })->exists()
             ) : false,
             'active_entitlement' => $request->user('sanctum') ? (
                 $request->user('sanctum')->entitlements()
-                    ->active()
-                    ->whereHas('billingPlan.courses', function ($q) {
-                        $q->where('courses.id', $this->id);
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->first()
+                ->active()
+                ->whereHas('billingPlan.courses', function ($q) {
+                    $q->where('courses.id', $this->id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->first()
             ) : null,
+            'is_grace_period' => $request->user('sanctum') ? (
+                $request->user('sanctum')->entitlements()
+                ->active()
+                ->whereHas('billingPlan.courses', function ($q) {
+                    $q->where('courses.id', $this->id);
+                })
+                ->get()
+                ->filter(fn($e) => $e->isActive() && $e->ends_at && $e->ends_at->isPast())
+                ->isNotEmpty()
+            ) : false,
         ];
     }
 }

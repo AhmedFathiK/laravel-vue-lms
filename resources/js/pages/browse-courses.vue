@@ -96,23 +96,50 @@ const handleAcquireClick = async course => {
   selectedCourseForEntitlement.value = course
 
   if (course.hasActiveAccess) {
-    // If it's a grace period or about to expire, we might want to offer renewal
-    // For now, let's just open the pricing dialog to allow Upgrade/Renew
-    selectedActiveEntitlement.value = course.activeEntitlement
-    isPricingPlanDialogVisible.value = true
+    // If it's enrolled and active, check if user wants to upgrade/renew
+    // or if they just want to continue learning.
+    // If it's in grace period, show the pricing dialog to renew.
+    if (course.isGracePeriod) {
+      selectedActiveEntitlement.value = course.activeEntitlement
+      isPricingPlanDialogVisible.value = true
+      
+      return
+    }
+
+    // Otherwise, just go to dashboard
+    const activeCourseStore = useActiveCourse()
+    
+    await activeCourseStore.setActiveCourse(course.id)
+    router.push('/dashboard')
 
     return
   }
 
-  // Fetch plans and show selection
+  // If not active, show plans to acquire or renew
   try {
     const response = await api.get(`/learner/courses/${course.id}/billing-plans`)
 
     billingPlans.value = response.plans
-    isAcquireDialogVisible.value = true
+    selectedActiveEntitlement.value = course.activeEntitlement
+    isPricingPlanDialogVisible.value = true
   } catch (error) {
     console.error('Error fetching plans:', error)
   }
+}
+
+const getCourseButtonText = course => {
+  if (!course.isEnrolled) return 'View Details'
+  if (course.isGracePeriod) return 'Renew Access'
+  if (!course.hasActiveAccess) return 'Renew Subscription'
+  
+  return 'Continue Learning'
+}
+
+const getCourseButtonColor = course => {
+  if (course.isGracePeriod || (!course.hasActiveAccess && course.isEnrolled)) return 'warning'
+  if (course.isEnrolled) return 'success'
+  
+  return 'primary'
 }
 
 const handlePayment = async plan => {
@@ -362,7 +389,7 @@ onMounted(() => {
               <VCardActions class="pa-5">
                 <VBtn
                   block
-                  :color="course.isEnrolled ? 'success' : 'primary'"
+                  :color="getCourseButtonColor(course)"
                   variant="elevated"
                   rounded="lg"
                   size="large"
@@ -370,11 +397,16 @@ onMounted(() => {
                   @click="handleAcquireClick(course)"
                 >
                   <VIcon
-                    v-if="course.isEnrolled"
+                    v-if="course.isEnrolled && course.hasActiveAccess && !course.isGracePeriod"
                     start
                     icon="tabler-player-play"
                   />
-                  {{ course.isEnrolled ? 'Continue Learning' : 'View Details' }}
+                  <VIcon
+                    v-else-if="course.isEnrolled"
+                    start
+                    icon="tabler-refresh"
+                  />
+                  {{ getCourseButtonText(course) }}
                 </VBtn>
               </VCardActions>
             </VCard>
