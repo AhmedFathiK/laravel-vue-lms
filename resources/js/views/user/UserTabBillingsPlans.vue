@@ -1,12 +1,11 @@
 <script setup>
 import { formatCurrency } from '@/@core/utils/formatters'
+import { ref } from 'vue'
 import americanExpress from '@images/icons/payments/american-express.png'
 import mastercard from '@images/icons/payments/mastercard.png'
 import visa from '@images/icons/payments/visa.png'
 
-import AddEditAddressDialog from '@/components/dialogs/AddEditAddressDialog.vue'
-import AddEditCardDialog from '@/components/dialogs/AddEditCardDialog.vue'
-import UserUpgradePlanDialog from '@/components/dialogs/UserUpgradePlanDialog.vue'
+import PricingPlanDialog from '@/components/dialogs/PricingPlanDialog.vue'
 
 const isUpgradePlanDialogVisible = ref(false)
 const currentCardDetails = ref()
@@ -401,28 +400,8 @@ const currentBillingAddress = {
     </VCol>
   </VRow>
 
-  <!-- 👉 Edit Card Dialog -->
-  <AddEditCardDialog
-    v-model:is-dialog-visible="isCardEditDialogVisible"
-    :data="currentCardDetails"
-    dialog-mode="edit"
-  />
-
-  <!-- 👉 Add Card Dialog -->
-  <AddEditCardDialog
-    v-model:is-dialog-visible="isCardAddDialogVisible"
-    dialog-mode="add"
-  />
-
-  <!-- 👉 Edit Address dialog -->
-  <AddEditAddressDialog
-    v-model:is-dialog-visible="isEditAddressDialogVisible"
-    :data="currentBillingAddress"
-    dialog-mode="edit"
-  />
-
   <!-- 👉 Upgrade plan dialog -->
-  <UserUpgradePlanDialog v-model:is-dialog-visible="isUpgradePlanDialogVisible" />
+  <PricingPlanDialog v-model:is-dialog-visible="isUpgradePlanDialogVisible" />
 </template>
 
 <style lang="scss">
