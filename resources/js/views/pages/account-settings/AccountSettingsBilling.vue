@@ -81,123 +81,104 @@ onMounted(fetchBillingData)
             </VBtn>
           </div>
 
-          <VRow v-else>
-            <VCol
-              v-for="entitlement in entitlements"
-              :key="entitlement.id"
-              cols="12"
-              md="6"
-            >
-              <VCard
-                variant="outlined"
-                class="h-100"
+          <VDataTable
+            v-else
+            :headers="[
+              { title: 'Plan Name', key: 'billingPlan.name' },
+              { title: 'Status', key: 'status' },
+              { title: 'Included Courses', key: 'courses' },
+              { title: 'Start Date', key: 'startsAt' },
+              { title: 'Expiry Date', key: 'endsAt' },
+              { title: 'Actions', key: 'actions', sortable: false },
+            ]"
+            :items="entitlements"
+            :loading="isLoading"
+            no-data-text="No active plans found"
+          >
+            <template #[`item.billingPlan.name`]="{ item }">
+              <div class="d-flex flex-column">
+                <span class="text-h6 font-weight-medium">{{ item.billingPlan?.name }}</span>
+                <VAlert
+                  v-if="isGracePeriod(item)"
+                  variant="tonal"
+                  color="warning"
+                  density="compact"
+                  class="mt-1 py-1"
+                  style="max-width: 300px;"
+                >
+                  <template #prepend>
+                    <VIcon
+                      icon="tabler-alert-triangle"
+                      size="16"
+                    />
+                  </template>
+                  <span class="text-caption">Grace Period</span>
+                </VAlert>
+              </div>
+            </template>
+
+            <template #[`item.status`]="{ item }">
+              <VChip
+                :color="getStatusColor(item.status)"
+                label
+                size="small"
+                class="text-capitalize"
               >
-                <VCardText>
-                  <div class="d-flex justify-space-between align-center mb-4">
-                    <h4 class="text-h4 font-weight-medium">
-                      {{ entitlement.billingPlan?.name }}
-                    </h4>
-                    <VChip
-                      :color="getStatusColor(entitlement.status)"
-                      label
-                      size="small"
-                      class="text-capitalize"
-                    >
-                      {{ entitlement.status }}
-                    </VChip>
-                  </div>
+                {{ item.status }}
+              </VChip>
+            </template>
 
-                  <VAlert
-                    v-if="isGracePeriod(entitlement)"
-                    variant="tonal"
-                    color="warning"
-                    class="mb-4"
-                    density="compact"
-                  >
-                    <template #prepend>
-                      <VIcon icon="tabler-alert-triangle" />
-                    </template>
-                    Your plan has expired but you are currently in a grace period. Please renew to keep access.
-                  </VAlert>
+            <template #[`item.courses`]="{ item }">
+              <div class="d-flex flex-wrap gap-1 py-2">
+                <VChip
+                  v-for="course in item.billingPlan?.courses"
+                  :key="course.id"
+                  size="x-small"
+                  variant="tonal"
+                >
+                  {{ course.title }}
+                </VChip>
+              </div>
+            </template>
 
-                  <div class="mb-4">
-                    <div class="d-flex align-center gap-2 mb-1">
-                      <VIcon
-                        icon="tabler-calendar-event"
-                        size="18"
-                        class="text-disabled"
-                      />
-                      <span class="text-body-1">
-                        Started: {{ new Date(entitlement.startsAt).toLocaleDateString() }}
-                      </span>
-                    </div>
-                    <div
-                      v-if="entitlement.endsAt"
-                      class="d-flex align-center gap-2"
-                    >
-                      <VIcon
-                        icon="tabler-calendar-off"
-                        size="18"
-                        class="text-disabled"
-                      />
-                      <span class="text-body-1">
-                        Expires: {{ new Date(entitlement.endsAt).toLocaleDateString() }}
-                      </span>
-                    </div>
-                    <div
-                      v-else
-                      class="d-flex align-center gap-2"
-                    >
-                      <VIcon
-                        icon="tabler-infinity"
-                        size="18"
-                        class="text-disabled"
-                      />
-                      <span class="text-body-1">Lifetime Access</span>
-                    </div>
-                  </div>
+            <template #[`item.startsAt`]="{ item }">
+              {{ new Date(item.startsAt).toLocaleDateString() }}
+            </template>
 
-                  <div
-                    v-if="entitlement.billingPlan?.courses?.length"
-                    class="mb-4"
-                  >
-                    <p class="text-subtitle-2 mb-1">
-                      Included Courses:
-                    </p>
-                    <div class="d-flex flex-wrap gap-1">
-                      <VChip
-                        v-for="course in entitlement.billingPlan.courses"
-                        :key="course.id"
-                        size="x-small"
-                        variant="tonal"
-                      >
-                        {{ course.title }}
-                      </VChip>
-                    </div>
-                  </div>
+            <template #[`item.endsAt`]="{ item }">
+              <span v-if="item.endsAt">{{ new Date(item.endsAt).toLocaleDateString() }}</span>
+              <span
+                v-else
+                class="text-disabled"
+              >Lifetime Access</span>
+            </template>
 
-                  <div class="d-flex gap-2">
-                    <VBtn
-                      v-if="entitlement.status === 'active' || entitlement.status === 'past_due' || entitlement.status === 'expired'"
-                      size="small"
-                      color="primary"
-                      @click="openPricingDialog(entitlement)"
-                    >
-                      Renew / Upgrade
-                    </VBtn>
-                    <VBtn
-                      v-if="entitlement.autoRenew"
-                      size="small"
-                      variant="tonal"
-                      color="error"
-                    >
-                      Cancel Auto-renew
-                    </VBtn>
-                  </div>
-                </VCardText>
-              </VCard>
-            </VCol>
-          </VRow>
+            <template #[`item.actions`]="{ item }">
+              <div class="d-flex gap-2">
+                <VBtn
+                  v-if="item.status === 'active' || item.status === 'past_due' || item.status === 'expired'"
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                  @click="openPricingDialog(item)"
+                >
+                  Renew / Upgrade
+                </VBtn>
+                <VBtn
+                  v-if="item.autoRenew"
+                  size="small"
+                  variant="tonal"
+                  color="error"
+                  icon
+                >
+                  <VIcon icon="tabler-calendar-off" />
+                  <VTooltip activator="parent">
+                    Cancel Auto-renew
+                  </VTooltip>
+                </VBtn>
+              </div>
+            </template>
+          </VDataTable>
         </VCardText>
       </VCard>
     </VCol>
