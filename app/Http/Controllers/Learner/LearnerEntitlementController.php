@@ -132,10 +132,28 @@ class LearnerEntitlementController extends Controller
 
             // Try to find linked course for metadata
             $courseId = null;
+            $courseName = null;
             $linkedCourse = $plan->courses()->first();
             if ($linkedCourse) {
                 $courseId = $linkedCourse->id;
+                $courseName = $linkedCourse->title;
             }
+
+            // Prepare item name for payment gateway
+            $period = match ($plan->access_type) {
+                'lifetime' => 'Lifetime',
+                'fixed' => $plan->access_duration_days . ' days',
+                'while_active' => match ($plan->billing_interval) {
+                    'month' => '30 days',
+                    'year' => '365 days',
+                    default => $plan->access_duration_days . ' days',
+                },
+                default => '',
+            };
+
+            $itemName = $courseName
+                ? "{$courseName} - {$plan->name}({$period})"
+                : "{$plan->name}({$period})";
 
             // Create pending payment record
             $payment = \App\Models\Payment::create([
@@ -163,7 +181,14 @@ class LearnerEntitlementController extends Controller
                     'customer_reference' => (string) $payment->id,
                 ],
                 callbackUrl: route('payments.callback'),
-                errorUrl: route('payments.error')
+                errorUrl: route('payments.error'),
+                items: [
+                    [
+                        'name' => $itemName,
+                        'quantity' => 1,
+                        'price' => (float) $plan->price,
+                    ]
+                ]
             );
 
             if (!empty($checkout['transaction_id'])) {

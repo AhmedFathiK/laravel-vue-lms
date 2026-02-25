@@ -48,7 +48,8 @@ class MyFatoorahService implements PaymentServiceInterface
         array $metadata,
         string $callbackUrl,
         string $errorUrl,
-        ?string $paymentMethodId = null
+        ?string $paymentMethodId = null,
+        ?array $items = null
     ): array {
         $currency = Currency::normalize($currency);
 
@@ -57,7 +58,7 @@ class MyFatoorahService implements PaymentServiceInterface
         $customerReference = (string) ($metadata['customer_reference'] ?? '');
 
         $payload = [
-            'PaymentMethodId' => $paymentMethodId ?? '2',
+            'PaymentMethodId' => $paymentMethodId,
             'InvoiceValue' => $amount,
             'DisplayCurrencyIso' => $currency,
             'CustomerName' => $customerName,
@@ -66,7 +67,23 @@ class MyFatoorahService implements PaymentServiceInterface
             'ErrorUrl' => $errorUrl,
             'CustomerReference' => $customerReference,
             'Language' => 'en',
+            'ExpiryDate' => now()->addDays(7)->toIso8601String(), // Extend expiry to 7 days
         ];
+
+        if (!empty($items)) {
+            $payload['InvoiceItems'] = array_map(function ($item) {
+                return [
+                    'ItemName' => $item['name'] ?? 'Item',
+                    'Quantity' => $item['quantity'] ?? 1,
+                    'UnitPrice' => $item['price'] ?? 0,
+                ];
+            }, $items);
+
+            // Also set UserDefinedField and Comments for better visibility on some MyFatoorah templates
+            $payload['UserDefinedField'] = $items[0]['name'] ?? '';
+            // Some versions of MyFatoorah display Comments prominently
+            $payload['Comments'] = $items[0]['name'] ?? '';
+        }
 
         $data = $this->executePayment($payload);
 
@@ -181,7 +198,17 @@ class MyFatoorahService implements PaymentServiceInterface
      */
     protected function executePayment(array $data): array
     {
+        Log::info('MyFatoorah Request:', [
+            'url' => $this->baseUrl . '/v2/ExecutePayment',
+            'payload' => $data,
+        ]);
+
         $response = $this->getRequest()->post($this->baseUrl . '/v2/ExecutePayment', $data);
+
+        Log::info('MyFatoorah Response:', [
+            'status' => $response->status(),
+            'body' => $response->json(),
+        ]);
 
         return $this->handleResponse($response);
     }

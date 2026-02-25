@@ -31,7 +31,10 @@ class MyFatoorahServiceTest extends TestCase
             customer: ['name' => 'Test', 'email' => 'test@example.com'],
             metadata: ['customer_reference' => 'local-1'],
             callbackUrl: 'https://app.example/callback',
-            errorUrl: 'https://app.example/error'
+            errorUrl: 'https://app.example/error',
+            items: [
+                ['name' => 'Test Course', 'quantity' => 1, 'price' => 10.5]
+            ]
         );
 
         $this->assertSame('https://pay.example/redirect', $result['payment_url']);
@@ -44,7 +47,9 @@ class MyFatoorahServiceTest extends TestCase
                 && $request->method() === 'POST'
                 && $request->hasHeader('Authorization', 'Bearer test-key')
                 && ($data['DisplayCurrencyIso'] ?? null) === 'EGP'
-                && ($data['CustomerReference'] ?? null) === 'local-1';
+                && ($data['CustomerReference'] ?? null) === 'local-1'
+                && ($data['InvoiceItems'][0]['ItemName'] ?? null) === 'Test Course'
+                && array_key_exists('ExpiryDate', $data);
         });
     }
 

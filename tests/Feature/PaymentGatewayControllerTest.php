@@ -31,7 +31,8 @@ class PaymentGatewayControllerTest extends TestCase
                 array $metadata,
                 string $callbackUrl,
                 string $errorUrl,
-                ?string $paymentMethodId = null
+                ?string $paymentMethodId = null,
+                ?array $items = null
             ): array {
                 return [
                     'payment_url' => 'https://pay.example/redirect',
@@ -104,7 +105,8 @@ class PaymentGatewayControllerTest extends TestCase
                 array $metadata,
                 string $callbackUrl,
                 string $errorUrl,
-                ?string $paymentMethodId = null
+                ?string $paymentMethodId = null,
+                ?array $items = null
             ): array {
                 return [];
             }
@@ -143,7 +145,7 @@ class PaymentGatewayControllerTest extends TestCase
     {
         $this->app->instance(PaymentServiceInterface::class, new class implements PaymentServiceInterface
         {
-            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null, ?array $items = null): array
             {
                 return [];
             }
@@ -206,9 +208,16 @@ class PaymentGatewayControllerTest extends TestCase
         $this->app->instance(PaymentServiceInterface::class, new class($payment->id) implements PaymentServiceInterface
         {
             public function __construct(private readonly int $paymentId) {}
-            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array { return []; }
-            public function getPaymentMethods(float $a, string $c): array { return []; }
-            public function getPaymentStatus(string $paymentId): array {
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null, ?array $items = null): array
+            {
+                return [];
+            }
+            public function getPaymentMethods(float $a, string $c): array
+            {
+                return [];
+            }
+            public function getPaymentStatus(string $paymentId): array
+            {
                 return [
                     'local_payment_id' => $this->paymentId,
                     'status' => 'paid',
@@ -216,7 +225,10 @@ class PaymentGatewayControllerTest extends TestCase
                     'gateway_data' => ['payment_id' => $paymentId],
                 ];
             }
-            public function gatewayKey(): string { return 'fake'; }
+            public function gatewayKey(): string
+            {
+                return 'fake';
+            }
         });
 
         $response = $this->get('/api/payments/callback?payment_id=gw-1');
@@ -272,9 +284,16 @@ class PaymentGatewayControllerTest extends TestCase
         $this->app->instance(PaymentServiceInterface::class, new class($payment->id) implements PaymentServiceInterface
         {
             public function __construct(private readonly int $paymentId) {}
-            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null): array { return []; }
-            public function getPaymentMethods(float $a, string $c): array { return []; }
-            public function getPaymentStatus(string $paymentId): array {
+            public function createCheckout(float $a, string $c, array $cus, array $meta, string $call, string $err, ?string $pm = null, ?array $items = null): array
+            {
+                return [];
+            }
+            public function getPaymentMethods(float $a, string $c): array
+            {
+                return [];
+            }
+            public function getPaymentStatus(string $paymentId): array
+            {
                 return [
                     'local_payment_id' => $this->paymentId,
                     'status' => 'paid',
@@ -282,7 +301,10 @@ class PaymentGatewayControllerTest extends TestCase
                     'gateway_data' => ['payment_id' => $paymentId],
                 ];
             }
-            public function gatewayKey(): string { return 'fake'; }
+            public function gatewayKey(): string
+            {
+                return 'fake';
+            }
         });
 
         $response = $this->get('/api/payments/callback?payment_id=gw-1');

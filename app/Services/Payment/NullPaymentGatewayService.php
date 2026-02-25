@@ -16,7 +16,8 @@ class NullPaymentGatewayService implements PaymentServiceInterface
         array $metadata,
         string $callbackUrl,
         string $errorUrl,
-        ?string $paymentMethodId = null
+        ?string $paymentMethodId = null,
+        ?array $items = null
     ): array {
         $currency = Currency::normalize($currency);
         $reference = (string) ($metadata['customer_reference'] ?? '');

@@ -13,6 +13,7 @@ interface PaymentServiceInterface
      * @param  string  $currency  ISO 4217 currency code (e.g., EGP).
      * @param  array<string, mixed>  $customer
      * @param  array<string, mixed>  $metadata
+     * @param  array<array<string, mixed>>|null  $items
      * @return array<string, mixed>
      */
     public function createCheckout(
@@ -22,7 +23,8 @@ interface PaymentServiceInterface
         array $metadata,
         string $callbackUrl,
         string $errorUrl,
-        ?string $paymentMethodId = null
+        ?string $paymentMethodId = null,
+        ?array $items = null
     ): array;
 
     /**

@@ -65,6 +65,43 @@ class PaymentGatewayController extends Controller
         ]);
 
         try {
+            $items = null;
+            if (!empty($validated['plan_id'])) {
+                $plan = BillingPlan::find($validated['plan_id']);
+                if ($plan) {
+                    $courseName = null;
+                    if (!empty($validated['course_id'])) {
+                        $course = \App\Models\Course::find($validated['course_id']);
+                        $courseName = $course?->title;
+                    } elseif ($plan->courses()->exists()) {
+                        $courseName = $plan->courses()->first()?->title;
+                    }
+
+                    $period = match ($plan->access_type) {
+                        'lifetime' => 'Lifetime',
+                        'fixed' => $plan->access_duration_days . ' days',
+                        'while_active' => match ($plan->billing_interval) {
+                            'month' => '30 days',
+                            'year' => '365 days',
+                            default => $plan->access_duration_days . ' days',
+                        },
+                        default => '',
+                    };
+
+                    $itemName = $courseName 
+                        ? "{$courseName} - {$plan->name}({$period})"
+                        : "{$plan->name}({$period})";
+
+                    $items = [
+                        [
+                            'name' => $itemName,
+                            'quantity' => 1,
+                            'price' => $amount,
+                        ]
+                    ];
+                }
+            }
+
             $checkout = $this->paymentGateway->createCheckout(
                 amount: $amount,
                 currency: $currency,
@@ -77,7 +114,8 @@ class PaymentGatewayController extends Controller
                 ],
                 callbackUrl: route('payments.callback'),
                 errorUrl: route('payments.error'),
-                paymentMethodId: $validated['payment_method_id'] ?? null
+                paymentMethodId: $validated['payment_method_id'] ?? null,
+                items: $items
             );
 
             if (!empty($checkout['transaction_id'])) {
