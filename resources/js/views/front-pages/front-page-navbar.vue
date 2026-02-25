@@ -184,7 +184,7 @@ watch(() => display, () => {
             
             <RouterLink
               v-if="isAuthenticated && can('access', 'admin_panel')"
-              to="/admin/dashboard"
+              to="/admin"
               class="nav-link font-weight-medium py-2 px-2 px-lg-4"
             >
               Admin Dashboard

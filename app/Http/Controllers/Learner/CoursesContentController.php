@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserEntitlementResource;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\UserLevelProgress;
@@ -190,7 +191,7 @@ class CoursesContentController extends Controller
                     "thumbnail" => $course->thumbnail,
                     "description" => $course->description,
                 ],
-                "entitlement" => $entitlement
+                "entitlement" => $entitlement ? new UserEntitlementResource($entitlement) : null
             ], 403);
         }
 

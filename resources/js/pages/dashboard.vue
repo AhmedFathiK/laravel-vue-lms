@@ -296,10 +296,10 @@ const scrollToLevel = levelId => {
 
           <p class="text-body-1 mb-6">
             <template v-if="noAccessData.reason === 'expired'">
-              Your subscription for this course expired on <strong>{{ noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : 'Unknown Date' }}</strong>.
+              Your subscription for this course expired on <strong>{{ noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : (noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : 'Unknown Date') }}</strong>.
             </template>
             <template v-else-if="noAccessData.reason === 'canceled'">
-              Your subscription was canceled on <strong>{{ noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : 'Unknown Date' }}</strong>.
+              Your subscription was canceled on <strong>{{ noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : (noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : 'Unknown Date') }}</strong>.
             </template>
             <template v-else-if="noAccessData.reason === 'past_due'">
               Your payment is past due. Please update your payment method to regain access.

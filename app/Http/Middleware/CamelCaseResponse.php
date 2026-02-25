@@ -12,7 +12,8 @@ class CamelCaseResponse
         $response = $next($request);
 
         // Only transform JSON
-        if ($response->headers->get('Content-Type') !== 'application/json') {
+        $contentType = $response->headers->get('Content-Type');
+        if (!$contentType || !str_contains($contentType, 'application/json')) {
             return $response;
         }
 
