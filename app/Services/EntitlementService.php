@@ -113,6 +113,69 @@ class EntitlementService
     }
 
     /**
+     * Renew an existing entitlement by extending its expiry date.
+     */
+    public function renewEntitlement(UserEntitlement $entitlement, BillingPlan $plan, ?Payment $payment = null): UserEntitlement
+    {
+        return DB::transaction(function () use ($entitlement, $plan, $payment) {
+            // 1. Determine base date for extension
+            // If currently active and ends_at is in the future, extend from ends_at.
+            // If expired or in grace period, extend from now().
+            $baseDate = ($entitlement->ends_at && $entitlement->ends_at->isFuture())
+                ? $entitlement->ends_at
+                : now();
+
+            $newEndsAt = null;
+
+            if ($plan->access_type === 'fixed') {
+                $newEndsAt = $baseDate->copy()->addDays($plan->access_duration_days);
+            } elseif ($plan->access_type === 'while_active') {
+                if ($plan->billing_interval === 'month') {
+                    $newEndsAt = $baseDate->copy()->addMonth();
+                } elseif ($plan->billing_interval === 'year') {
+                    $newEndsAt = $baseDate->copy()->addYear();
+                } else {
+                    $newEndsAt = $baseDate->copy()->addDays($plan->access_duration_days ?? 30);
+                }
+            }
+
+            // 2. Update Entitlement
+            $entitlement->update([
+                'payment_id' => $payment?->id ?? $entitlement->payment_id,
+                'ends_at' => $newEndsAt,
+                'status' => 'active', // Reset status to active if it was expired/past_due
+                'auto_renew' => $plan->billing_type === 'recurring',
+            ]);
+
+            // 3. Update Enrollment if needed (ensure it points to this entitlement)
+            foreach ($plan->courses as $course) {
+                CourseEnrollment::updateOrCreate([
+                    'user_id' => $entitlement->user_id,
+                    'course_id' => $course->id,
+                ], [
+                    'user_entitlement_id' => $entitlement->id,
+                ]);
+            }
+
+            // 4. Create Receipt
+            if ($payment) {
+                Receipt::create([
+                    'user_id' => $entitlement->user_id,
+                    'payment_id' => $payment->id,
+                    'receipt_number' => 'REC-' . strtoupper(bin2hex(random_bytes(4))),
+                    'item_type' => 'billing_plan',
+                    'item_id' => $plan->id,
+                    'item_name' => $plan->name . ' (Renewal)',
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                ]);
+            }
+
+            return $entitlement;
+        });
+    }
+
+    /**
      * Process a successful payment: Create entitlement.
      */
     public function processSuccessfulPayment(Payment $payment): void
@@ -120,6 +183,7 @@ class EntitlementService
         $existingDetails = $payment->payment_details ?? [];
         $planId = $existingDetails['billing_plan_id'] ?? $existingDetails['plan_id'] ?? null;
         $upgradeFromId = $existingDetails['upgrade_from_entitlement_id'] ?? null;
+        $renewEntitlementId = $existingDetails['renew_entitlement_id'] ?? null;
 
         if (!$planId) {
             return;
@@ -135,7 +199,17 @@ class EntitlementService
             return;
         }
 
-        // Handle Upgrade Flow
+        // 1. Handle Renewal Flow (Update existing)
+        if ($renewEntitlementId) {
+            $entitlement = UserEntitlement::find($renewEntitlementId);
+            if ($entitlement && $entitlement->user_id === $user->id) {
+                $this->renewEntitlement($entitlement, $plan, $payment);
+                Log::info("Entitlement {$renewEntitlementId} renewed for user {$user->id}");
+                return;
+            }
+        }
+
+        // 2. Handle Upgrade Flow (Cancel old, create new)
         if ($upgradeFromId) {
             $oldEntitlement = UserEntitlement::find($upgradeFromId);
             if ($oldEntitlement && $oldEntitlement->user_id === $user->id) {
@@ -146,8 +220,8 @@ class EntitlementService
 
         // Idempotency: Check if entitlement already exists for this payment
         if (UserEntitlement::where('payment_id', $payment->id)->exists()) {
-             Log::info("Entitlement already exists for payment {$payment->id}");
-             return;
+            Log::info("Entitlement already exists for payment {$payment->id}");
+            return;
         }
 
         // Also check if user already has an active entitlement for this plan
@@ -157,24 +231,25 @@ class EntitlementService
         if (!$upgradeFromId && UserEntitlement::where('user_id', $user->id)
             ->where('billing_plan_id', $plan->id)
             ->whereIn('status', [UserEntitlement::STATUS_ACTIVE, UserEntitlement::STATUS_PAST_DUE])
-            ->exists()) {
-             Log::info("User {$user->id} already has an active entitlement for plan {$plan->id}. Skipping creation.");
-             
-             // If a payment was made, we still need to create a receipt for it
-             if ($payment && !Receipt::where('payment_id', $payment->id)->exists()) {
-                 Receipt::create([
-                     'user_id' => $user->id,
-                     'payment_id' => $payment->id,
-                     'receipt_number' => 'REC-' . strtoupper(bin2hex(random_bytes(4))),
-                     'item_type' => 'billing_plan',
-                     'item_id' => $plan->id,
-                     'item_name' => $plan->name,
-                     'amount' => $payment->amount,
-                     'currency' => $payment->currency,
-                 ]);
-             }
-             
-             return;
+            ->exists()
+        ) {
+            Log::info("User {$user->id} already has an active entitlement for plan {$plan->id}. Skipping creation.");
+
+            // If a payment was made, we still need to create a receipt for it
+            if ($payment && !Receipt::where('payment_id', $payment->id)->exists()) {
+                Receipt::create([
+                    'user_id' => $user->id,
+                    'payment_id' => $payment->id,
+                    'receipt_number' => 'REC-' . strtoupper(bin2hex(random_bytes(4))),
+                    'item_type' => 'billing_plan',
+                    'item_id' => $plan->id,
+                    'item_name' => $plan->name,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                ]);
+            }
+
+            return;
         }
 
         $this->grantEntitlement($user, $plan, $payment);
@@ -213,7 +288,7 @@ class EntitlementService
         if ($featureCode === 'course.access' && $scopeType === 'App\Models\Course') {
             $entitlements = $user->entitlements()
                 ->active()
-                ->whereHas('billingPlan.courses', function($q) use ($scopeId) {
+                ->whereHas('billingPlan.courses', function ($q) use ($scopeId) {
                     $q->where('course_id', $scopeId);
                 })
                 ->get();
@@ -228,15 +303,15 @@ class EntitlementService
         // 3. Check for match
         return $user->capabilities()
             ->where('feature_code', $featureCode)
-            ->where(function($q) use ($scopeType, $scopeId) {
-                 $q->whereNull('scope_id') // Global access (e.g. All Courses)
-                   ->orWhere(function($q2) use ($scopeType, $scopeId) {
-                       $q2->where('scope_type', $scopeType)
-                          ->where('scope_id', $scopeId);
-                   });
+            ->where(function ($q) use ($scopeType, $scopeId) {
+                $q->whereNull('scope_id') // Global access (e.g. All Courses)
+                    ->orWhere(function ($q2) use ($scopeType, $scopeId) {
+                        $q2->where('scope_type', $scopeType)
+                            ->where('scope_id', $scopeId);
+                    });
             })
-            ->whereHas('entitlement', function($q) {
-                 $q->active(); // Checks dates & status
+            ->whereHas('entitlement', function ($q) {
+                $q->active(); // Checks dates & status
             })
             ->exists();
     }

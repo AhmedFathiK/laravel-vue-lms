@@ -38,6 +38,8 @@ class PaymentGatewayController extends Controller
             'plan_id' => ['nullable', 'exists:billing_plans,id'],
             'course_id' => ['nullable', 'exists:courses,id'],
             'payment_method_id' => ['nullable', 'string'],
+            'renew_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
+            'upgrade_from_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
         ];
 
         $validated = $request->validate($rules);
@@ -57,6 +59,8 @@ class PaymentGatewayController extends Controller
                 'billing_plan_id' => $validated['plan_id'] ?? null,
                 'course_id' => $validated['course_id'] ?? null,
                 'payment_method_id' => $validated['payment_method_id'] ?? null,
+                'renew_entitlement_id' => $validated['renew_entitlement_id'] ?? null,
+                'upgrade_from_entitlement_id' => $validated['upgrade_from_entitlement_id'] ?? null,
             ],
         ]);
 

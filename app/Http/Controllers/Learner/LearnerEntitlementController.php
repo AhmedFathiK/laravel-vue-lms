@@ -286,6 +286,7 @@ class LearnerEntitlementController extends Controller
             'currency' => $plan->currency,
             'plan_id' => $plan->id,
             'course_id' => $plan->courses()->first()?->id,
+            'renew_entitlement_id' => $entitlement->id, // Pass this to link the renewal
         ]);
 
         return $gatewayController->checkout($request);
@@ -377,57 +378,10 @@ class LearnerEntitlementController extends Controller
             'currency' => $newPlan->currency,
             'plan_id' => $newPlan->id,
             'course_id' => $newPlan->courses()->first()?->id,
+            'upgrade_from_entitlement_id' => $entitlement->id,
         ]);
 
-        // We need to pass the upgrade_from_entitlement_id to the payment_details
-        // The PaymentGatewayController::checkout currently doesn't support extra details
-        // Let's modify checkout to accept them or just handle it here since we need the specific meta
-
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $currency = Currency::normalize($newPlan->currency ?? Currency::default());
-
-        $payment = \App\Models\Payment::create([
-            'user_id' => $user->id,
-            'amount' => $upgradePrice,
-            'currency' => $currency,
-            'status' => 'pending',
-            'payment_method' => $paymentService->gatewayKey(),
-            'payment_provider' => $paymentService->gatewayKey(),
-            'payment_details' => [
-                'billing_plan_id' => $newPlan->id,
-                'upgrade_from_entitlement_id' => $entitlement->id,
-                'payment_method_id' => $request->payment_method_id,
-            ],
-        ]);
-
-        $checkout = $paymentService->createCheckout(
-            amount: (float) $upgradePrice,
-            currency: $currency,
-            customer: [
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
-            metadata: [
-                'customer_reference' => (string) $payment->id,
-                'type' => 'upgrade',
-            ],
-            callbackUrl: route('payments.callback'),
-            errorUrl: route('payments.error'),
-            paymentMethodId: $request->payment_method_id
-        );
-
-        if (!empty($checkout['transaction_id'])) {
-            $payment->update(['transaction_id' => (string) $checkout['transaction_id']]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Upgrade payment initiated',
-            'payment_url' => $checkout['payment_url'] ?? null,
-            'payment_id' => $payment->id,
-            'status' => 'payment_initiated',
-        ]);
+        return $gatewayController->checkout($request);
     }
 
     /**
