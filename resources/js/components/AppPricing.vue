@@ -182,7 +182,15 @@ const getActionText = plan => {
   const currentPrice = parseFloat(props.activeEntitlement.billingPlan?.price || 0)
   const newPrice = parseFloat(plan.price)
 
-  return newPrice > currentPrice ? 'Upgrade Plan' : 'Downgrade Plan'
+  if (newPrice > currentPrice) {
+    return 'Upgrade Plan'
+  }
+  
+  if (newPrice < currentPrice) {
+    return 'Downgrade Plan'
+  }
+
+  return 'Switch Plan'
 }
 </script>
 
