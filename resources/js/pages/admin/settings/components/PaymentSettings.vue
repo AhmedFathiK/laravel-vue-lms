@@ -18,8 +18,6 @@ const settings = ref({
 
   // MyFatoorah
   paymentMyfatoorahApiKey: '',
-  paymentMyfatoorahBaseUrl: 'https://apitest.myfatoorah.com',
-  paymentMyfatoorahTestMode: true,
   myfatoorahAllowedMethods: [],
 })
 
@@ -292,28 +290,6 @@ onMounted(fetchSettings)
                 placeholder="Enter MyFatoorah API Key"
                 type="password"
                 :rules="[requiredValidator]"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="8"
-            >
-              <AppTextField
-                v-model="settings.paymentMyfatoorahBaseUrl"
-                label="Base URL"
-                placeholder="https://api.myfatoorah.com"
-                :rules="[requiredValidator]"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VSwitch
-                v-model="settings.paymentMyfatoorahTestMode"
-                label="Test Mode"
               />
             </VCol>
 

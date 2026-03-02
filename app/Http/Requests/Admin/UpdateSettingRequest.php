@@ -51,8 +51,6 @@ class UpdateSettingRequest extends FormRequest
                     'settings.paymob_public_key' => ['nullable', 'string'],
                     // MyFatoorah
                     'settings.payment_myfatoorah_api_key' => ['nullable', 'string'],
-                    'settings.payment_myfatoorah_base_url' => ['nullable', 'url'],
-                    'settings.payment_myfatoorah_test_mode' => ['nullable', 'boolean'],
                     'settings.myfatoorah_allowed_methods' => ['nullable', 'array'],
                 ]);
                 break;
