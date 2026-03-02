@@ -24,7 +24,17 @@ class MyFatoorahService implements PaymentServiceInterface
 
     public function __construct()
     {
-        $this->baseUrl = rtrim((string) Setting::get('payment_myfatoorah_base_url', config('services.myfatoorah.base_url', '')), '/');
+
+        // 1. Try to get Config (ENV)
+        $baseUrl = config('services.myfatoorah.base_url');
+
+        // 2. If empty, use hardcoded default
+        if (empty($baseUrl)) {
+            $baseUrl = 'https://apitest.myfatoorah.com';
+        }
+
+        $this->baseUrl = rtrim($baseUrl, '/');
+
         $this->apiKey = (string) Setting::get('payment_myfatoorah_api_key', config('services.myfatoorah.api_key', ''));
 
         $this->headers = [
