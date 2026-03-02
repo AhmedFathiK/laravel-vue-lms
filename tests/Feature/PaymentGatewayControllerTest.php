@@ -40,7 +40,7 @@ class PaymentGatewayControllerTest extends TestCase
                 ];
             }
 
-            public function getPaymentMethods(float $amount, string $currency): array
+            public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array
             {
                 return [];
             }
@@ -111,7 +111,7 @@ class PaymentGatewayControllerTest extends TestCase
                 return [];
             }
 
-            public function getPaymentMethods(float $amount, string $currency): array
+            public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array
             {
                 return [];
             }
@@ -157,7 +157,7 @@ class PaymentGatewayControllerTest extends TestCase
             {
                 return 'fake';
             }
-            public function getPaymentMethods(float $amount, string $currency): array
+            public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array
             {
                 return [
                     ['PaymentMethodId' => '1', 'PaymentMethodEn' => 'KNET'],
@@ -212,7 +212,7 @@ class PaymentGatewayControllerTest extends TestCase
             {
                 return [];
             }
-            public function getPaymentMethods(float $a, string $c): array
+            public function getPaymentMethods(float $a, string $c, bool $filter = true): array
             {
                 return [];
             }
@@ -288,7 +288,7 @@ class PaymentGatewayControllerTest extends TestCase
             {
                 return [];
             }
-            public function getPaymentMethods(float $a, string $c): array
+            public function getPaymentMethods(float $a, string $c, bool $filter = true): array
             {
                 return [];
             }

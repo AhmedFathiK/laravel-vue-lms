@@ -287,26 +287,26 @@ if (route.query.payment === 'success') {
         <VRow>
           <VCol
             v-for="method in paymentMethods"
-            :key="method.paymentMethodId"
+            :key="method.id"
             cols="12"
             sm="6"
             md="4"
           >
             <VCard
               border
-              :color="selectedPaymentMethod === method.paymentMethodId ? 'primary' : ''"
-              :variant="selectedPaymentMethod === method.paymentMethodId ? 'tonal' : 'outlined'"
+              :color="selectedPaymentMethod === method.id ? 'primary' : ''"
+              :variant="selectedPaymentMethod === method.id ? 'tonal' : 'outlined'"
               class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
-              @click="selectedPaymentMethod = method.paymentMethodId"
+              @click="selectedPaymentMethod = method.id"
             >
               <VImg
-                :src="method.imageUrl"
+                :src="method.image"
                 height="40"
                 width="60"
                 class="mb-2"
                 contain
               />
-              <span class="text-subtitle-2 text-center">{{ method.paymentMethodEn }}</span>
+              <span class="text-subtitle-2 text-center">{{ method.name }}</span>
             </VCard>
           </VCol>
         </VRow>

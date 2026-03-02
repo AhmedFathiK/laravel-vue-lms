@@ -20,8 +20,10 @@ use App\Observers\ReceiptObserver;
 use App\Observers\SlideObserver;
 use App\Policies\ReceiptPolicy;
 use App\Services\Payment\MyFatoorahService;
+use App\Services\Payment\PaymobService;
 use App\Services\Payment\NullPaymentGatewayService;
 use App\Services\Payments\PaymentServiceInterface;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -34,10 +36,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PaymentServiceInterface::class, function ($app) {
-            $gateway = (string) config('services.payment.gateway', 'myfatoorah');
+            $gateway = (string) Setting::get('payment_gateway', config('services.payment.gateway', 'myfatoorah'));
 
             return match ($gateway) {
                 'myfatoorah' => $app->make(MyFatoorahService::class),
+                'paymob' => $app->make(PaymobService::class),
                 'null' => $app->make(NullPaymentGatewayService::class),
                 default => $app->make(MyFatoorahService::class),
             };

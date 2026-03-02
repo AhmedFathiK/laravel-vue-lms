@@ -7,18 +7,64 @@ use App\Http\Requests\Admin\PaymentRequest;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\User;
+use App\Services\Payment\Currency;
+use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+use App\Services\Payment\MyFatoorahService;
+use App\Services\Payment\PaymobService;
+use App\Services\Payment\NullPaymentGatewayService;
 
 class PaymentController extends Controller
 {
     /**
      * Create a new controller instance.
      */
-    public function __construct()
-    {
-        $this->middleware('permission:view.payments', ['only' => ['index', 'show']]);
+    public function __construct(
+        private readonly PaymentServiceInterface $paymentGateway
+    ) {
+        $this->middleware('permission:view.payments', ['only' => ['index', 'show', 'getAllMethods']]);
         $this->middleware('permission:manage.user_entitlements', ['only' => ['store', 'update', 'destroy']]);
+    }
+
+    /**
+     * Get all available payment methods for a specific gateway (for admin).
+     */
+    public function getAllMethods(Request $request): JsonResponse
+    {
+        $amount = (float) ($request->amount ?? 100);
+        $currency = Currency::normalize((string) ($request->currency ?? Currency::default()));
+        $gatewayKey = $request->gateway;
+
+        try {
+            // Resolve the service based on requested gateway if provided
+            $service = $this->paymentGateway;
+            if ($gatewayKey) {
+                $service = match ($gatewayKey) {
+                    'myfatoorah' => app(MyFatoorahService::class),
+                    'paymob' => app(PaymobService::class),
+                    'null' => app(NullPaymentGatewayService::class),
+                    default => $this->paymentGateway,
+                };
+            }
+
+            // For admin, we bypass the filter to see all available methods
+            $methods = $service->getPaymentMethods($amount, $currency, false);
+
+            return response()->json([
+                'success' => true,
+                'data' => $methods,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Admin: Failed to fetch payment methods: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment methods: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

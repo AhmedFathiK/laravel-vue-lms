@@ -312,6 +312,7 @@ class LearnerEntitlementController extends Controller
             'plan_id' => $plan->id,
             'course_id' => $plan->courses()->first()?->id,
             'renew_entitlement_id' => $entitlement->id, // Pass this to link the renewal
+            'phone' => $request->input('phone'),
         ]);
 
         return $gatewayController->checkout($request);
@@ -404,6 +405,7 @@ class LearnerEntitlementController extends Controller
             'plan_id' => $newPlan->id,
             'course_id' => $newPlan->courses()->first()?->id,
             'upgrade_from_entitlement_id' => $entitlement->id,
+            'phone' => $request->input('phone'),
         ]);
 
         return $gatewayController->checkout($request);

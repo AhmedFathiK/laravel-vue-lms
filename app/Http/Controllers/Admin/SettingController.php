@@ -86,6 +86,11 @@ class SettingController extends Controller
                     $value = '/storage/' . $path;
                 }
 
+                // Stringify arrays for storage
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
+
                 Setting::updateOrCreate(
                     ['key' => $key],
                     [

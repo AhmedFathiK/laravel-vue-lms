@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
-use App\Services\Payments\PaymentServiceInterface;
+use App\Models\Setting;
 use App\Services\EntitlementService;
+use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -41,15 +42,15 @@ class PaymentWebhookController extends Controller
         // Fallback: If Event.Code is missing, try to parse raw content
         // This handles cases where Content-Type header might be missing or incorrect
         if (is_null($eventCode)) {
-             $content = $request->getContent();
-             $json = json_decode($content, true);
-             if (is_array($json)) {
-                 $request->merge($json); // Merge into request so input() works later
-                 $eventCode = $request->input('Event.Code');
-                 $data = $request->input('Data', []);
-             } else {
-                 Log::warning('MyFatoorah Webhook: Failed to decode JSON content.', ['content' => $content]);
-             }
+            $content = $request->getContent();
+            $json = json_decode($content, true);
+            if (is_array($json)) {
+                $request->merge($json); // Merge into request so input() works later
+                $eventCode = $request->input('Event.Code');
+                $data = $request->input('Data', []);
+            } else {
+                Log::warning('MyFatoorah Webhook: Failed to decode JSON content.', ['content' => $content]);
+            }
         }
 
         $orderedString = '';
@@ -141,12 +142,12 @@ class PaymentWebhookController extends Controller
         // Data.Invoice.Id (matches local transaction_id)
         // Data.Transaction.PaymentId (Gateway Payment ID)
         // Data.Transaction.Status (SUCCESS, FAILED, etc.)
-        
+
         $invoiceId = $data['Invoice']['Id'] ?? null;
         $transactionData = $data['Transaction'] ?? [];
         $gatewayPaymentId = $transactionData['PaymentId'] ?? null;
         $status = $transactionData['Status'] ?? null;
-        
+
         if (!$invoiceId) {
             Log::warning('MyFatoorah Webhook: Invoice ID missing');
             return response()->json(['success' => false, 'message' => 'Invoice ID missing'], 400);
@@ -182,7 +183,7 @@ class PaymentWebhookController extends Controller
 
             // Idempotent: Safe to call even if Callback already ran
             $this->entitlementService->processSuccessfulPayment($payment);
-            
+
             Log::info("MyFatoorah Webhook: Payment {$payment->id} processed successfully.");
         } else {
             $payment->update([
@@ -201,10 +202,10 @@ class PaymentWebhookController extends Controller
         // Data.Refund.Id
         // Data.Refund.Status (REFUNDED, CANCELED)
         // Data.ReferencedInvoice.Id (Original Invoice ID)
-        
+
         $refundData = $data['Refund'] ?? [];
         $referencedInvoice = $data['ReferencedInvoice'] ?? [];
-        
+
         $invoiceId = $referencedInvoice['Id'] ?? $refundData['InvoiceId'] ?? null;
         $refundStatus = $refundData['Status'] ?? null;
 
@@ -233,11 +234,134 @@ class PaymentWebhookController extends Controller
                 'payment_details' => $mergedDetails,
             ]);
             Log::info("MyFatoorah Webhook: Payment {$payment->id} marked as refunded.");
-            
+
             // Revoke the entitlement
             $this->entitlementService->revokeEntitlement($payment, 'Refunded via MyFatoorah Webhook');
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Handle Paymob webhook.
+     */
+    public function handlePaymob(Request $request): JsonResponse
+    {
+        Log::info('Paymob Webhook Received', [
+            'query' => $request->query(),
+            'payload' => $request->all()
+        ]);
+
+        $hmac = $request->query('hmac');
+        $data = $request->input('obj');
+
+        if (!$data) {
+            return response()->json(['message' => 'Invalid payload'], 400);
+        }
+
+        // Verify HMAC
+        $hmacSecret = Setting::get('paymob_hmac_secret', config('services.paymob.hmac_secret'));
+        if ($hmacSecret && !$this->verifyPaymobHmac($request->all(), $hmacSecret, $hmac)) {
+            Log::error('Paymob Webhook: HMAC verification failed');
+
+            return response()->json(['message' => 'Invalid signature'], 401);
+        }
+
+        $gatewayPaymentId = (string) ($data['id'] ?? '');
+        $status = ($data['success'] === true && $data['pending'] === false) ? 'paid' : 'failed';
+        $customerReference = $data['order']['extra_data']['customer_reference'] ?? null;
+
+        if (!$customerReference) {
+            Log::error('Paymob Webhook: Customer reference (payment ID) missing');
+
+            return response()->json(['message' => 'Missing reference'], 400);
+        }
+
+        $payment = Payment::find($customerReference);
+        if (!$payment) {
+            Log::error('Paymob Webhook: Payment not found for reference: ' . $customerReference);
+
+            return response()->json(['message' => 'Payment not found'], 404);
+        }
+
+        // Update payment
+        $existingDetails = $payment->payment_details ?? [];
+        $payment->update([
+            'status' => $status === 'paid' ? 'completed' : 'failed',
+            'payment_details' => array_merge($existingDetails, [
+                'gateway' => 'paymob',
+                'gateway_payment_id' => $gatewayPaymentId,
+                'gateway_status' => $status,
+                'gateway_data' => $data,
+                'webhook_received_at' => now()->toIso8601String(),
+            ]),
+            'transaction_id' => $gatewayPaymentId,
+        ]);
+
+        if ($status === 'paid') {
+            try {
+                $this->entitlementService->processSuccessfulPayment($payment);
+            } catch (\Throwable $e) {
+                Log::error('Paymob Webhook Error Processing Entitlement: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    private function verifyPaymobHmac(array $payload, string $secret, ?string $hmac): bool
+    {
+        if (!$hmac) {
+            return false;
+        }
+
+        $obj = $payload['obj'] ?? [];
+
+        // Paymob HMAC concatenation order for transaction webhook
+        $keys = [
+            'amount_cents',
+            'created_at',
+            'currency',
+            'error_occured',
+            'has_parent_transaction',
+            'id',
+            'integration_id',
+            'is_3d_secure',
+            'is_auth',
+            'is_capture',
+            'is_refunded',
+            'is_standalone_payment',
+            'is_voided',
+            'order_id', // This is actually obj.order.id
+            'owner',
+            'pending',
+            'source_data_pan', // This is obj.source_data.pan
+            'source_data_sub_type', // This is obj.source_data.sub_type
+            'source_data_type', // This is obj.source_data.type
+            'success'
+        ];
+
+        $concatenatedString = '';
+        foreach ($keys as $key) {
+            $val = '';
+            if ($key === 'order_id') {
+                $val = $obj['order']['id'] ?? '';
+            } elseif (str_starts_with($key, 'source_data_')) {
+                $subKey = str_replace('source_data_', '', $key);
+                $val = $obj['source_data'][$subKey] ?? '';
+            } else {
+                $val = $obj[$key] ?? '';
+            }
+
+            if (is_bool($val)) {
+                $val = $val ? 'true' : 'false';
+            }
+
+            $concatenatedString .= $val;
+        }
+
+        $calculatedHmac = hash_hmac('sha512', $concatenatedString, $secret);
+
+        return hash_equals($calculatedHmac, $hmac);
     }
 }

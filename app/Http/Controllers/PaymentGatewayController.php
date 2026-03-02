@@ -40,6 +40,7 @@ class PaymentGatewayController extends Controller
             'payment_method_id' => ['nullable', 'string'],
             'renew_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
             'upgrade_from_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ];
 
         $validated = $request->validate($rules);
@@ -88,7 +89,7 @@ class PaymentGatewayController extends Controller
                         default => '',
                     };
 
-                    $itemName = $courseName 
+                    $itemName = $courseName
                         ? "{$courseName} - {$plan->name}({$period})"
                         : "{$plan->name}({$period})";
 
@@ -108,6 +109,7 @@ class PaymentGatewayController extends Controller
                 customer: [
                     'name' => $user?->name,
                     'email' => $user?->email,
+                    'phone' => $validated['phone'] ?? $user?->phone,
                 ],
                 metadata: [
                     'customer_reference' => (string) $payment->id,
@@ -168,11 +170,14 @@ class PaymentGatewayController extends Controller
     }
 
     /**
-     * Handle gateway callback.
+     * Handle successful payment callback from gateway.
      */
     public function callback(Request $request): RedirectResponse|JsonResponse
     {
-        Log::info('Payment Callback Hit', $request->all());
+        Log::info('Payment Gateway Success Callback Received', [
+            'query' => $request->query(),
+            'all' => $request->all()
+        ]);
 
         $gatewayPaymentId = $request->query('payment_id') ?? $request->query('id') ?? $request->query('paymentId');
         if (!$gatewayPaymentId) {
@@ -234,6 +239,11 @@ class PaymentGatewayController extends Controller
      */
     public function error(Request $request): RedirectResponse|JsonResponse
     {
+        Log::info('Payment Gateway Error Callback Received', [
+            'query' => $request->query(),
+            'all' => $request->all()
+        ]);
+
         $gatewayPaymentId = $request->query('payment_id') ?? $request->query('id') ?? $request->query('paymentId');
 
         Log::error('Payment Failed Callback for gateway payment id: ' . (string) $gatewayPaymentId);

@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Models\Setting;
 use App\Services\Payment\Currency;
 use App\Services\Payments\PaymentServiceInterface;
 use Illuminate\Http\Client\PendingRequest;
@@ -23,8 +24,8 @@ class MyFatoorahService implements PaymentServiceInterface
 
     public function __construct()
     {
-        $this->baseUrl = rtrim((string) config('services.myfatoorah.base_url', ''), '/');
-        $this->apiKey = (string) config('services.myfatoorah.api_key', '');
+        $this->baseUrl = rtrim((string) Setting::get('payment_myfatoorah_base_url', config('services.myfatoorah.base_url', '')), '/');
+        $this->apiKey = (string) Setting::get('payment_myfatoorah_api_key', config('services.myfatoorah.api_key', ''));
 
         $this->headers = [
             'Content-Type' => 'application/json',
@@ -94,7 +95,7 @@ class MyFatoorahService implements PaymentServiceInterface
         ];
     }
 
-    public function getPaymentMethods(float $amount, string $currency): array
+    public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array
     {
         $currency = Currency::normalize($currency);
 
@@ -106,7 +107,30 @@ class MyFatoorahService implements PaymentServiceInterface
         $response = $this->getRequest()->post($this->baseUrl . '/v2/InitiatePayment', $payload);
         $data = $this->handleResponse($response);
 
-        return $data['PaymentMethods'] ?? [];
+        $methods = $data['PaymentMethods'] ?? [];
+
+        // Filter based on allowed methods in settings
+        if ($filter) {
+            $allowedMethodsJson = Setting::get('myfatoorah_allowed_methods');
+            $allowedMethods = $allowedMethodsJson ? json_decode($allowedMethodsJson, true) : null;
+
+            if ($allowedMethods && is_array($allowedMethods)) {
+                $methods = array_filter($methods, function ($method) use ($allowedMethods) {
+                    return in_array((string) ($method['PaymentMethodId'] ?? ''), array_map('strval', $allowedMethods));
+                });
+
+                // Re-index after filtering
+                $methods = array_values($methods);
+            }
+        }
+
+        return array_map(function ($method) {
+            return [
+                'id' => (string) ($method['PaymentMethodId'] ?? ''),
+                'name' => (string) ($method['PaymentMethodEn'] ?? ''),
+                'image' => (string) ($method['ImageUrl'] ?? null),
+            ];
+        }, $methods);
     }
 
     public function getPaymentStatus(string $paymentId): array

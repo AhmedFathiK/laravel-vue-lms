@@ -43,6 +43,7 @@ declare module 'vue-router/auto-routes' {
     'admin-settings': RouteRecordInfo<'admin-settings', '/admin/settings', Record<never, never>, Record<never, never>>,
     'admin-settings-components-general-settings': RouteRecordInfo<'admin-settings-components-general-settings', '/admin/settings/components/GeneralSettings', Record<never, never>, Record<never, never>>,
     'admin-settings-components-landing-page-settings': RouteRecordInfo<'admin-settings-components-landing-page-settings', '/admin/settings/components/LandingPageSettings', Record<never, never>, Record<never, never>>,
+    'admin-settings-components-payment-settings': RouteRecordInfo<'admin-settings-components-payment-settings', '/admin/settings/components/PaymentSettings', Record<never, never>, Record<never, never>>,
     'admin-trash': RouteRecordInfo<'admin-trash', '/admin/trash', Record<never, never>, Record<never, never>>,
     'admin-trophies': RouteRecordInfo<'admin-trophies', '/admin/trophies', Record<never, never>, Record<never, never>>,
     'admin-user-entitlements': RouteRecordInfo<'admin-user-entitlements', '/admin/user-entitlements', Record<never, never>, Record<never, never>>,

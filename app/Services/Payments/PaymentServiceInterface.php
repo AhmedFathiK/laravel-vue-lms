@@ -30,7 +30,7 @@ interface PaymentServiceInterface
     /**
      * Retrieve available payment methods from the gateway.
      */
-    public function getPaymentMethods(float $amount, string $currency): array;
+    public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array;
 
     /**
      * Retrieve payment status from the gateway.

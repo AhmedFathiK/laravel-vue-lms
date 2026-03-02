@@ -253,6 +253,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
     Route::apiResource('billing-plans', BillingPlanController::class);
     Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
 
+    Route::get('payments/all-methods', [PaymentController::class, 'getAllMethods']);
     Route::apiResource('payments', PaymentController::class);
     Route::get('receipts/statistics', [ReceiptController::class, 'statistics']);
     Route::apiResource('receipts', ReceiptController::class);
@@ -388,3 +389,4 @@ Route::get('payments/callback', [PaymentGatewayController::class, 'callback'])->
 Route::get('payments/error', [PaymentGatewayController::class, 'error'])->name('payments.error');
 
 Route::post('webhooks/myfatoorah', [\App\Http\Controllers\PaymentWebhookController::class, 'handleMyFatoorah']);
+Route::post('webhooks/paymob', [\App\Http\Controllers\PaymentWebhookController::class, 'handlePaymob']);

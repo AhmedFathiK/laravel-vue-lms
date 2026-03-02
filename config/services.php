@@ -49,4 +49,10 @@ return [
         'webhook_secret' => env('PAYMENT_MYFATOORAH_WEBHOOK_SECRET'),
     ],
 
+    'paymob' => [
+        'secret_key' => env('PAYMOB_SECRET_KEY'),
+        'public_key' => env('PAYMOB_PUBLIC_KEY'),
+        'test_mode' => env('PAYMOB_TEST_MODE', true),
+    ],
+
 ];

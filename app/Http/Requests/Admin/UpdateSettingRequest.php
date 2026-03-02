@@ -42,14 +42,21 @@ class UpdateSettingRequest extends FormRequest
                 break;
 
             case 'payment':
-                // Future implementation example
                 $rules = array_merge($rules, [
-                    'settings.stripe_key' => ['nullable', 'string'],
-                    'settings.stripe_secret' => ['nullable', 'string'],
+                    'settings.payment_gateway' => ['required', 'string', 'in:paymob,myfatoorah'],
+                    // Paymob
+                    'settings.paymob_integrations' => ['nullable', 'array'],
+                    'settings.paymob_secret_key' => ['nullable', 'string'],
+                    'settings.paymob_public_key' => ['nullable', 'string'],
+                    // MyFatoorah
+                    'settings.payment_myfatoorah_api_key' => ['nullable', 'string'],
+                    'settings.payment_myfatoorah_base_url' => ['nullable', 'url'],
+                    'settings.payment_myfatoorah_test_mode' => ['nullable', 'boolean'],
+                    'settings.myfatoorah_allowed_methods' => ['nullable', 'array'],
                 ]);
                 break;
-            
-            // Add other groups here as needed
+
+                // Add other groups here as needed
         }
 
         return $rules;

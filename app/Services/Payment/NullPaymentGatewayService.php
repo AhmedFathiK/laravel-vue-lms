@@ -35,28 +35,18 @@ class NullPaymentGatewayService implements PaymentServiceInterface
         ];
     }
 
-    public function getPaymentMethods(float $amount, string $currency): array
+    public function getPaymentMethods(float $amount, string $currency, bool $filter = true): array
     {
         return [
             [
-                'PaymentMethodId' => '1',
-                'PaymentMethodEn' => 'KNET',
-                'PaymentMethodAr' => 'KNET',
-                'ImageUrl' => 'https://portal.myfatoorah.com/imgs/payment-methods/knet.png',
-                'IsDirectPayment' => false,
-                'ServiceCharge' => 0.5,
-                'TotalAmount' => $amount + 0.5,
-                'CurrencyIso' => $currency,
+                'id' => '1',
+                'name' => 'KNET',
+                'image' => 'https://portal.myfatoorah.com/imgs/payment-methods/knet.png',
             ],
             [
-                'PaymentMethodId' => '2',
-                'PaymentMethodEn' => 'VISA/MASTER',
-                'PaymentMethodAr' => 'VISA/MASTER',
-                'ImageUrl' => 'https://portal.myfatoorah.com/imgs/payment-methods/vm.png',
-                'IsDirectPayment' => true,
-                'ServiceCharge' => 1.0,
-                'TotalAmount' => $amount + 1.0,
-                'CurrencyIso' => $currency,
+                'id' => '2',
+                'name' => 'VISA/MASTER',
+                'image' => 'https://portal.myfatoorah.com/imgs/payment-methods/vm.png',
             ],
         ];
     }
