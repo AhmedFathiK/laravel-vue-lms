@@ -50,6 +50,7 @@ return [
     ],
 
     'paymob' => [
+        'api_key' => env('PAYMOB_API_KEY'),
         'secret_key' => env('PAYMOB_SECRET_KEY'),
         'public_key' => env('PAYMOB_PUBLIC_KEY'),
         'test_mode' => env('PAYMOB_TEST_MODE', true),

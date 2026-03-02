@@ -46,6 +46,7 @@ class UpdateSettingRequest extends FormRequest
                     'settings.payment_gateway' => ['required', 'string', 'in:paymob,myfatoorah'],
                     // Paymob
                     'settings.paymob_integrations' => ['nullable', 'array'],
+                    'settings.paymob_api_key' => ['nullable', 'string'],
                     'settings.paymob_secret_key' => ['nullable', 'string'],
                     'settings.paymob_public_key' => ['nullable', 'string'],
                     // MyFatoorah

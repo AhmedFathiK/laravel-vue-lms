@@ -11,6 +11,7 @@ const settings = ref({
   paymentGateway: 'myfatoorah',
 
   // Paymob
+  paymobApiKey: '',
   paymobSecretKey: '',
   paymobPublicKey: '',
   paymobIntegrations: [],
@@ -58,7 +59,7 @@ const fetchMyFatoorahMethods = async () => {
 }
 
 const paymobIntegrationTypes = [
-  { title: 'Card (Iframe)', value: 'CARD' },
+  { title: 'Online Card', value: 'CARD' },
   { title: 'Mobile Wallet', value: 'WALLET' },
 ]
 
@@ -178,6 +179,16 @@ onMounted(fetchSettings)
               </h6>
             </VCol>
             
+            <VCol cols="12">
+              <AppTextField
+                v-model="settings.paymobApiKey"
+                label="API Key"
+                placeholder="Enter Paymob API Key"
+                type="password"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+
             <VCol cols="12">
               <AppTextField
                 v-model="settings.paymobSecretKey"

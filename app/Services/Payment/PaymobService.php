@@ -12,12 +12,15 @@ class PaymobService implements PaymentServiceInterface
 {
     private string $secretKey;
     private string $publicKey;
+    private string $apiKey;
     private string $baseUrl = 'https://accept.paymob.com/v1';
+    private string $authBaseUrl = 'https://accept.paymob.com/api';
 
     public function __construct()
     {
         $this->secretKey = Setting::get('paymob_secret_key', config('services.paymob.secret_key'));
         $this->publicKey = Setting::get('paymob_public_key', config('services.paymob.public_key'));
+        $this->apiKey = Setting::get('paymob_api_key', config('services.paymob.api_key'));
     }
 
     /**
@@ -119,10 +122,11 @@ class PaymobService implements PaymentServiceInterface
         Log::info('Paymob Request: Create Intention', $payload);
 
         // Using Secret Key for Authorization
+        // Note: Http::asJson() already adds 'Content-Type: application/json'
+        // We only need to add Authorization
         $response = $this->getRequest()
             ->withHeaders([
                 'Authorization' => 'Token ' . $this->secretKey,
-                'Content-Type' => 'application/json',
             ])
             ->post("{$this->baseUrl}/intention/", $payload);
 
@@ -137,68 +141,62 @@ class PaymobService implements PaymentServiceInterface
 
     public function getPaymentStatus(string $paymentId): array
     {
-        // For intention API, we might need to check status differently or use the same transaction endpoint
-        // Assuming we still get a transaction ID in the callback
         Log::info('Paymob Request: Check Transaction Status', ['id' => $paymentId]);
 
-        // Using Secret Key for Authorization to check transaction
-        $response = $this->getRequest()
-            ->withHeaders([
-                'Authorization' => 'Token ' . $this->secretKey,
-            ])
-            ->get("{$this->baseUrl}/intention/{$paymentId}"); // Or transactions endpoint depending on what ID we get
+        try {
+            // Use API Key Authentication Flow for Transaction Status Check
+            // 1. Get Auth Token using API Key
+            $authToken = $this->getAuthToken();
 
-        // Fallback to checking transaction directly if intention endpoint fails or if we have a transaction ID
-        if (!$response->successful()) {
-            // Try old transaction endpoint just in case
+            // 2. Check Transaction Status
             $response = $this->getRequest()
-                ->withHeaders([
-                    'Authorization' => 'Token ' . $this->secretKey,
-                ])
-                ->get("https://accept.paymob.com/api/acceptance/transactions/{$paymentId}");
-        }
+                ->withToken($authToken)
+                ->get("{$this->authBaseUrl}/acceptance/transactions/{$paymentId}");
 
-        if (!$response->successful()) {
-            throw new \Exception('Failed to fetch Paymob transaction status');
-        }
+            if (!$response->successful()) {
+                Log::error('Paymob Transaction Status Failed', ['body' => $response->body()]);
+                throw new \Exception('Failed to fetch Paymob transaction status');
+            }
 
-        $data = $response->json();
+            $data = $response->json();
 
-        // Handle Intention Response Structure
-        if (isset($data['status'])) {
-            // Intention Status
-            // status: intended, proccessing, succeeded, failed
-            $status = match ($data['status']) {
-                'succeeded' => 'paid',
-                'proccessing' => 'pending', // Note: Check spelling from API docs
-                'intended' => 'pending',
-                default => 'failed',
-            };
+            // Handle Transaction Response Structure (Legacy/Standard)
+            $success = $data['success'] ?? false;
+            $pending = $data['pending'] ?? false;
+
+            $status = 'failed';
+            if ($success === true && $pending === false) {
+                $status = 'paid';
+            } elseif ($pending === true) {
+                $status = 'pending';
+            }
+
             return [
-                'local_payment_id' => $data['special_reference'] ?? $data['extras']['customer_reference'] ?? null,
+                'local_payment_id' => $data['order']['merchant_order_id'] ?? $data['extra_data']['customer_reference'] ?? null,
                 'status' => $status,
                 'transaction_id' => $data['id'] ?? null,
                 'gateway_data' => $data,
             ];
+        } catch (\Exception $e) {
+            Log::error('Paymob Transaction Status Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function getAuthToken(): string
+    {
+        Log::info('Paymob Request: Auth Token');
+        $response = $this->getRequest()->post("{$this->authBaseUrl}/auth/tokens", [
+            'api_key' => $this->apiKey,
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('Paymob Auth Failed', ['response' => $response->body()]);
+            throw new \Exception('Paymob Authentication Failed');
         }
 
-        // Handle Transaction Response Structure (Legacy/Standard)
-        $success = $data['success'] ?? false;
-        $pending = $data['pending'] ?? false;
-
-        $status = 'failed';
-        if ($success && !$pending) {
-            $status = 'paid';
-        } elseif ($pending) {
-            $status = 'pending';
-        }
-
-        return [
-            'local_payment_id' => $data['extra_data']['customer_reference'] ?? null,
-            'status' => $status,
-            'transaction_id' => $data['id'] ?? null,
-            'gateway_data' => $data,
-        ];
+        Log::info('Paymob Auth Success');
+        return $response->json('token');
     }
 
     public function gatewayKey(): string
