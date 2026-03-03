@@ -2,6 +2,8 @@
 import safeBoxWithGoldenCoin from '@images/misc/3d-safe-box-with-golden-dollar-coins.png'
 import spaceRocket from '@images/misc/3d-space-rocket-with-smoke.png'
 import dollarCoinPiggyBank from '@images/avatars/avatar-1.png'
+import visaMasterIcon from '@images/icons/payments/visa-master.png'
+import walletIcon from '@images/icons/payments/mobile-wallet.png'
 import api from '@/utils/api'
 import { onMounted, ref, watch } from 'vue'
 
@@ -191,6 +193,13 @@ const getActionText = plan => {
   }
 
   return 'Switch Plan'
+}
+
+const getPaymentMethodIcon = method => {
+  if (method.type === 'CARD') return visaMasterIcon
+  if (method.type === 'WALLET') return walletIcon
+  
+  return method.image
 }
 </script>
 
@@ -406,7 +415,7 @@ const getActionText = plan => {
                 @click="selectedPaymentMethod = method.id"
               >
                 <VImg
-                  :src="method.image"
+                  :src="getPaymentMethodIcon(method)"
                   height="40"
                   width="60"
                   class="mb-2"
