@@ -41,4 +41,15 @@ interface PaymentServiceInterface
      * Machine key for the gateway (e.g., myfatoorah).
      */
     public function gatewayKey(): string;
+
+    /**
+     * Charge a saved token.
+     */
+    public function chargeToken(
+        string $token,
+        float $amount,
+        string $currency,
+        array $customer,
+        array $metadata
+    ): array;
 }

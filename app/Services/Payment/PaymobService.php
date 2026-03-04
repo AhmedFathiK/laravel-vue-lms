@@ -248,6 +248,104 @@ class PaymobService implements PaymentServiceInterface
         return 'CARD';
     }
 
+    public function chargeToken(
+        string $token,
+        float $amount,
+        string $currency,
+        array $customer,
+        array $metadata
+    ): array {
+        try {
+            // Paymob recurring payment flow:
+            // 1. Get Auth Token
+            $authToken = $this->getAuthToken();
+
+            // 2. Create Order
+            $orderResponse = $this->getRequest()
+                ->withToken($authToken)
+                ->post("{$this->authBaseUrl}/acceptance/orders", [
+                    'amount_cents' => (int) ($amount * 100),
+                    'currency' => $currency,
+                    'merchant_order_id' => (string) ($metadata['customer_reference'] ?? ''),
+                ]);
+
+            if (!$orderResponse->successful()) {
+                throw new \Exception('Paymob Order Creation Failed: ' . $orderResponse->body());
+            }
+
+            $orderId = $orderResponse->json('id');
+
+            // 3. Get Payment Key for the token
+            $names = explode(' ', $customer['name'] ?? 'Guest User', 2);
+            $firstName = $names[0] ?? 'Guest';
+            $lastName = $names[1] ?? 'User';
+
+            $paymentKeyResponse = $this->getRequest()
+                ->withToken($authToken)
+                ->post("{$this->authBaseUrl}/acceptance/payment_keys", [
+                    'amount_cents' => (int) ($amount * 100),
+                    'expiration' => 3600,
+                    'order_id' => $orderId,
+                    'billing_data' => [
+                        'apartment' => 'NA',
+                        'email' => $customer['email'] ?? 'guest@example.com',
+                        'floor' => 'NA',
+                        'first_name' => $firstName,
+                        'street' => 'NA',
+                        'building' => 'NA',
+                        'phone_number' => $customer['phone'] ?? '01012345678',
+                        'shipping_method' => 'NA',
+                        'postal_code' => 'NA',
+                        'city' => 'NA',
+                        'country' => 'NA',
+                        'last_name' => $lastName,
+                        'state' => 'NA',
+                    ],
+                    'currency' => $currency,
+                    'integration_id' => (int) $this->getDefaultIntegrationId(),
+                ]);
+
+            if (!$paymentKeyResponse->successful()) {
+                throw new \Exception('Paymob Payment Key Failed: ' . $paymentKeyResponse->body());
+            }
+
+            $paymentKey = $paymentKeyResponse->json('token');
+
+            // 4. Execute Payment with Token
+            $payResponse = $this->getRequest()->post("{$this->authBaseUrl}/acceptance/payments/pay", [
+                'source' => [
+                    'identifier' => $token,
+                    'subtype' => 'TOKEN',
+                ],
+                'payment_token' => $paymentKey,
+            ]);
+
+            if (!$payResponse->successful()) {
+                throw new \Exception('Paymob Token Payment Failed: ' . $payResponse->body());
+            }
+
+            $data = $payResponse->json();
+            $success = $data['success'] ?? false;
+            $pending = $data['pending'] ?? false;
+
+            $status = 'failed';
+            if ($success === true && $pending === false) {
+                $status = 'paid';
+            } elseif ($pending === true) {
+                $status = 'pending';
+            }
+
+            return [
+                'status' => $status,
+                'transaction_id' => (string) ($data['id'] ?? ''),
+                'gateway_data' => $data,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Paymob Token Charge Failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     private function createWalletCheckout(string $paymentKey, int $orderId, array $customer): array
     {
         $response = $this->getRequest()->post("{$this->baseUrl}/acceptance/payments/pay", [

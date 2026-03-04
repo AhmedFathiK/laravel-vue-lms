@@ -184,6 +184,9 @@ class PaymentWebhookController extends Controller
             // Idempotent: Safe to call even if Callback already ran
             $this->entitlementService->processSuccessfulPayment($payment);
 
+            // Save Payment Token if available (for auto-renew)
+            $this->saveMyFatoorahToken($payment, $data);
+
             Log::info("MyFatoorah Webhook: Payment {$payment->id} processed successfully.");
         } else {
             $payment->update([
@@ -194,6 +197,86 @@ class PaymentWebhookController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Save MyFatoorah token for auto-renewal.
+     */
+    private function saveMyFatoorahToken(Payment $payment, array $data): void
+    {
+        // MyFatoorah sends token information in Data.InvoiceTransactions
+        // We look for a successful transaction that has tokenization info
+        $transactions = $data['InvoiceTransactions'] ?? [];
+        foreach ($transactions as $tx) {
+            if (($tx['TransactionStatus'] ?? '') === 'Succss' && !empty($tx['Token'])) {
+                $token = $tx['Token'];
+                $cardInfo = $tx['CardInfo'] ?? [];
+
+                \App\Models\PaymentToken::updateOrCreate([
+                    'user_id' => $payment->user_id,
+                    'gateway' => 'myfatoorah',
+                    'token' => $token,
+                ], [
+                    'masked_pan' => $cardInfo['Number'] ?? null,
+                    'card_type' => $cardInfo['Brand'] ?? null,
+                    'is_default' => true,
+                    'last_used_at' => now(),
+                ]);
+
+                // Update other tokens for this user to not be default
+                \App\Models\PaymentToken::where('user_id', $payment->user_id)
+                    ->where('gateway', 'myfatoorah')
+                    ->where('token', '!=', $token)
+                    ->update(['is_default' => false]);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * Save Paymob token for auto-renewal.
+     */
+    private function savePaymobToken(Payment $payment, array $data): void
+    {
+        // Paymob tokenization: 
+        // If save_card was enabled or it's a recurring payment, 
+        // the webhook 'obj' will contain token information.
+        // Usually in source_data or payment_key_claims.
+
+        $token = $data['source_data']['token']
+            ?? $data['payment_key_claims']['token']
+            ?? $data['token']
+            ?? null;
+
+        if (!$token) {
+            return;
+        }
+
+        $maskedPan = $data['source_data']['pan']
+            ?? $data['payment_key_claims']['billing_data']['pan']
+            ?? null;
+
+        $cardType = $data['source_data']['sub_type']
+            ?? $data['payment_key_claims']['billing_data']['card_type']
+            ?? null;
+
+        \App\Models\PaymentToken::updateOrCreate([
+            'user_id' => $payment->user_id,
+            'gateway' => 'paymob',
+            'token' => $token,
+        ], [
+            'masked_pan' => $maskedPan,
+            'card_type' => $cardType,
+            'is_default' => true,
+            'last_used_at' => now(),
+        ]);
+
+        // Update other tokens for this user to not be default
+        \App\Models\PaymentToken::where('user_id', $payment->user_id)
+            ->where('gateway', 'paymob')
+            ->where('token', '!=', $token)
+            ->update(['is_default' => false]);
     }
 
     private function handleRefundStatusChanged(array $data): JsonResponse
@@ -261,13 +344,13 @@ class PaymentWebhookController extends Controller
 
         // HMAC Verification Removed as we are using Intention API and Secret Key
         // The callback structure provided by user is a Transaction Object
-        
+
         $gatewayPaymentId = (string) ($data['id'] ?? '');
-        
+
         // Determine Status based on flags
         $success = $data['success'] ?? false;
         $pending = $data['pending'] ?? false;
-        
+
         $status = 'failed';
         if ($success === true && $pending === false) {
             $status = 'paid';
@@ -277,28 +360,28 @@ class PaymentWebhookController extends Controller
 
         // Extract Customer Reference (Payment ID)
         // Check multiple locations as per structure
-        $customerReference = $data['order']['extra_data']['customer_reference'] 
+        $customerReference = $data['order']['extra_data']['customer_reference']
             ?? $data['payment_key_claims']['billing_data']['extra_description'] // Sometimes here
-            ?? $data['payment_key_claims']['extra']['customer_reference'] 
+            ?? $data['payment_key_claims']['extra']['customer_reference']
             ?? null;
 
         // If still null, try to find in 'special_reference' if available in order root (rare but possible)
         if (!$customerReference && isset($data['order']['merchant_order_id'])) {
-             // Sometimes merchant_order_id is used
-             $customerReference = $data['order']['merchant_order_id'];
+            // Sometimes merchant_order_id is used
+            $customerReference = $data['order']['merchant_order_id'];
         }
 
         if (!$customerReference) {
             Log::error('Paymob Webhook: Customer reference (payment ID) missing', ['data' => $data]);
             return response()->json(['message' => 'Missing reference'], 400);
         }
-        
+
         // Clean up reference if it has prefixes
         // (e.g. sometimes sent as "51" or "REF_51")
         // Assuming integer ID for now
-        
+
         $payment = Payment::find($customerReference);
-        
+
         if (!$payment) {
             Log::error('Paymob Webhook: Payment not found for reference: ' . $customerReference);
             return response()->json(['message' => 'Payment not found'], 404);
@@ -324,14 +407,16 @@ class PaymentWebhookController extends Controller
         if ($status === 'paid') {
             try {
                 // Ensure we don't process it twice if already completed
-                if ($payment->status !== 'completed') { 
-                     // This check is redundant with update above, but good logic flow
+                if ($payment->status !== 'completed') {
+                    // This check is redundant with update above, but good logic flow
                 }
-                
+
                 // Process Entitlement
-                // We need to resolve EntitlementService instance if not injected or use the one from constructor
                 $this->entitlementService->processSuccessfulPayment($payment);
-                
+
+                // Save Payment Token if available (for auto-renew)
+                $this->savePaymobToken($payment, $data);
+
                 Log::info("Paymob Webhook: Payment {$payment->id} processed successfully.");
             } catch (\Throwable $e) {
                 Log::error('Paymob Webhook Error Processing Entitlement: ' . $e->getMessage());

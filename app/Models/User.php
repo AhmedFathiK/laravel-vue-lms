@@ -157,6 +157,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all payment tokens (saved cards) for this user.
+     */
+    public function paymentTokens(): HasMany
+    {
+        return $this->hasMany(PaymentToken::class);
+    }
+
+    /**
      * Get all streaks for this user.
      */
     public function streaks(): HasMany

@@ -13,8 +13,110 @@ use App\Events\EntitlementCreated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\PaymentToken;
+use App\Services\Payments\PaymentServiceInterface;
+
 class EntitlementService
 {
+    /**
+     * Attempt to auto-renew an entitlement using a saved token.
+     */
+    public function attemptAutoRenew(UserEntitlement $entitlement): bool
+    {
+        // 1. Check if auto-renew is enabled and entitlement is past_due or expiring soon
+        if (!$entitlement->auto_renew) {
+            return false;
+        }
+
+        $user = $entitlement->user;
+        $plan = $entitlement->billingPlan;
+
+        if (!$user || !$plan || $plan->price <= 0) {
+            return false;
+        }
+
+        // 2. Find a saved token for the last payment gateway used
+        $lastPayment = $entitlement->payment;
+        $gateway = $lastPayment?->payment_method;
+
+        if (!$gateway) {
+            // Fallback: try to find any default token for the user
+            $token = $user->paymentTokens()->where('is_default', true)->first();
+        } else {
+            $token = $user->paymentTokens()
+                ->where('gateway', $gateway)
+                ->where('is_default', true)
+                ->first();
+        }
+
+        if (!$token) {
+            Log::info("Auto-renew failed for entitlement {$entitlement->id}: No saved token found for user {$user->id}");
+            return false;
+        }
+
+        // 3. Resolve the payment gateway service
+        try {
+            /** @var PaymentServiceInterface $paymentService */
+            $paymentService = app($token->gateway === 'paymob' ? \App\Services\Payment\PaymobService::class : \App\Services\Payment\MyFatoorahService::class);
+
+            // 4. Create a pending payment record for the renewal
+            $newPayment = Payment::create([
+                'user_id' => $user->id,
+                'amount' => $plan->price,
+                'currency' => $plan->currency ?? 'USD',
+                'status' => 'pending',
+                'payment_method' => $token->gateway,
+                'payment_provider' => $token->gateway,
+                'payment_details' => [
+                    'billing_plan_id' => $plan->id,
+                    'renew_entitlement_id' => $entitlement->id,
+                    'is_auto_renew' => true,
+                ],
+            ]);
+
+            // 5. Charge the token
+            $charge = $paymentService->chargeToken(
+                token: $token->token,
+                amount: (float) $plan->price,
+                currency: $plan->currency ?? 'USD',
+                customer: [
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone_number,
+                ],
+                metadata: [
+                    'customer_reference' => (string) $newPayment->id,
+                ]
+            );
+
+            // 6. Update payment status
+            $newPayment->update([
+                'status' => $charge['status'] === 'paid' ? 'completed' : 'failed',
+                'transaction_id' => $charge['transaction_id'] ?? null,
+                'payment_details' => array_merge($newPayment->payment_details, [
+                    'gateway_data' => $charge['gateway_data'] ?? [],
+                ]),
+            ]);
+
+            if ($charge['status'] === 'paid') {
+                // 7. Renew the entitlement
+                $this->renewEntitlement($entitlement, $plan, $newPayment);
+
+                // Update token last used at
+                $token->update(['last_used_at' => now()]);
+
+                Log::info("Auto-renew success for entitlement {$entitlement->id} via {$token->gateway}");
+                return true;
+            } else {
+                Log::warning("Auto-renew failed for entitlement {$entitlement->id}: Charge status is {$charge['status']}");
+                return false;
+            }
+        } catch (\Throwable $e) {
+            Log::error("Auto-renew error for entitlement {$entitlement->id}: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Alias for grantEntitlement to satisfy tests.
      */
@@ -33,7 +135,7 @@ class EntitlementService
             $startsAt = now();
             $endsAt = null;
 
-            if ($plan->access_type === 'fixed') {
+            if ($plan->access_type === 'limited') {
                 $endsAt = $startsAt->copy()->addDays($plan->access_duration_days);
             } elseif ($plan->access_type === 'while_active') {
                 // For recurring, "while_active" usually means "until next billing cycle + grace".
@@ -127,7 +229,7 @@ class EntitlementService
 
             $newEndsAt = null;
 
-            if ($plan->access_type === 'fixed') {
+            if ($plan->access_type === 'limited') {
                 $newEndsAt = $baseDate->copy()->addDays($plan->access_duration_days);
             } elseif ($plan->access_type === 'while_active') {
                 if ($plan->billing_interval === 'month') {
@@ -228,7 +330,8 @@ class EntitlementService
         // This handles cases where the same user might have been granted access manually
         // or through another flow before the payment callback completed.
         // SKIP this check if it's an upgrade, as we WANT to grant the new plan even if old one is still active
-        if (!$upgradeFromId && UserEntitlement::where('user_id', $user->id)
+        if (
+            !$upgradeFromId && UserEntitlement::where('user_id', $user->id)
             ->where('billing_plan_id', $plan->id)
             ->whereIn('status', [UserEntitlement::STATUS_ACTIVE, UserEntitlement::STATUS_PAST_DUE])
             ->exists()

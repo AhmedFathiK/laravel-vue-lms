@@ -79,6 +79,7 @@ class MyFatoorahService implements PaymentServiceInterface
             'CustomerReference' => $customerReference,
             'Language' => 'en',
             'ExpiryDate' => now()->addDays(7)->toIso8601String(), // Extend expiry to 7 days
+            'SaveToken' => true,
         ];
 
         if (!empty($items)) {
@@ -165,6 +166,49 @@ class MyFatoorahService implements PaymentServiceInterface
     public function gatewayKey(): string
     {
         return 'myfatoorah';
+    }
+
+    public function chargeToken(
+        string $token,
+        float $amount,
+        string $currency,
+        array $customer,
+        array $metadata
+    ): array {
+        $currency = Currency::normalize($currency);
+
+        $payload = [
+            'Token' => $token,
+            'InvoiceValue' => $amount,
+            'DisplayCurrencyIso' => $currency,
+            'CustomerName' => $customer['name'] ?? 'Guest',
+            'CustomerEmail' => $customer['email'] ?? 'guest@example.com',
+            'CustomerReference' => $metadata['customer_reference'] ?? '',
+        ];
+
+        try {
+            Log::info('MyFatoorah Token Charge Request:', [
+                'url' => $this->baseUrl . '/v2/ExecutePayment',
+                'payload' => $payload,
+            ]);
+
+            $response = $this->getRequest()->post($this->baseUrl . '/v2/ExecutePayment', $payload);
+            $data = $this->handleResponse($response);
+
+            // For token charge, MyFatoorah returns the status directly if successful
+            // We need to fetch the payment status to be sure
+            $paymentId = (string) ($data['InvoiceId'] ?? '');
+            $statusData = $this->getPaymentStatus($paymentId);
+
+            return [
+                'status' => $statusData['status'],
+                'transaction_id' => $paymentId,
+                'gateway_data' => array_merge($data, ['status_data' => $statusData['gateway_data']]),
+            ];
+        } catch (\Exception $e) {
+            Log::error('MyFatoorah Token Charge Failed: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
