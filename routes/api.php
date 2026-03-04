@@ -41,7 +41,7 @@ use App\Http\Controllers\PaymentGatewayController;
 // SPA Authentication (Session-based)
 Route::prefix('auth')->group(function () {
     // Public routes
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/register', [AuthController::class, 'register']);
 
     // Protected routes

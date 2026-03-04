@@ -25,6 +25,14 @@ const resolvePaymentMethodVariant = method => {
   return { color: 'secondary', icon: 'tabler-cash' }
 }
 
+const resolveStatusColor = status => {
+  if (status === 'completed' || status === 'paid' || status === 'active') return 'success'
+  if (status === 'pending') return 'warning'
+  if (status === 'failed' || status === 'voided' || status === 'canceled') return 'error'
+  
+  return 'secondary'
+}
+
 const resolveItemTypeVariant = type => {
   type = type?.toLowerCase() || ''
   if (type.includes('course') || type.includes('billing_plan')) return { color: 'primary', icon: 'tabler-book' }
@@ -171,11 +179,76 @@ const resendReceipt = () => {
                       {{ receipt.payment.transactionId || 'N/A' }}
                     </VListItemTitle>
                   </VListItem>
+                  <VListItem v-if="receipt.payment.status">
+                    <VListItemTitle>
+                      <VIcon
+                        icon="tabler-activity"
+                        size="20"
+                        class="me-2"
+                      />
+                      <VChip
+                        :color="resolveStatusColor(receipt.payment.status)"
+                        size="x-small"
+                        class="text-capitalize"
+                      >
+                        {{ receipt.payment.status }}
+                      </VChip>
+                    </VListItemTitle>
+                  </VListItem>
                 </VList>
               </VCol>
             </VRow>
 
             <VDivider class="my-6" />
+
+            <!-- Subscription / Entitlement Details -->
+            <div
+              v-if="receipt.entitlement"
+              class="mb-6"
+            >
+              <h6 class="text-h6 mb-4">
+                Subscription Details
+              </h6>
+              <VTable density="compact">
+                <tbody>
+                  <tr>
+                    <td
+                      class="font-weight-medium"
+                      style="width: 150px;"
+                    >
+                      Status:
+                    </td>
+                    <td>
+                      <VChip
+                        :color="resolveStatusColor(receipt.entitlement.status)"
+                        size="x-small"
+                        class="text-capitalize"
+                      >
+                        {{ receipt.entitlement.status }}
+                      </VChip>
+                    </td>
+                  </tr>
+                  <tr v-if="receipt.entitlement.billing_plan">
+                    <td class="font-weight-medium">
+                      Plan:
+                    </td>
+                    <td>{{ receipt.entitlement.billing_plan.name }}</td>
+                  </tr>
+                  <tr v-if="receipt.entitlement.auto_renew && receipt.entitlement.ends_at">
+                    <td class="font-weight-medium">
+                      Renews On:
+                    </td>
+                    <td>{{ formatDate(receipt.entitlement.ends_at) }}</td>
+                  </tr>
+                  <tr v-if="receipt.payment?.payment_details?.notes">
+                    <td class="font-weight-medium">
+                      Notes:
+                    </td>
+                    <td>{{ receipt.payment.payment_details.notes }}</td>
+                  </tr>
+                </tbody>
+              </VTable>
+            </div>
 
             <VTable class="receipt-table">
               <thead>

@@ -19,7 +19,11 @@ class PaymentResource extends JsonResource
             'payment_method' => $this->payment_method,
             'payment_provider' => $this->payment_provider,
             'transaction_id' => $this->transaction_id,
+            'amount' => $this->amount,
+            'currency' => $this->currency,
+            'status' => $this->status,
             'payment_details' => $this->payment_details,
+            'created_at' => $this->created_at,
         ];
     }
 }

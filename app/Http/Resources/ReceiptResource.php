@@ -25,6 +25,7 @@ class ReceiptResource extends JsonResource
             'createdAt' => $this->created_at,
             'user' => new UserResource($this->whenLoaded('user')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
+            'entitlement' => new UserEntitlementResource($this->whenLoaded('entitlement')),
             'course' => new CourseResource($this->whenLoaded('course')),
             'billingPlan' => $this->whenLoaded('billingPlan'),
             'isLinkedToEntitlement' => $this->when(isset($this->is_linked_to_entitlement), $this->is_linked_to_entitlement),

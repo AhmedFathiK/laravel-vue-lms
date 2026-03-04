@@ -2,12 +2,25 @@
 import { formatCurrency } from '@/@core/utils/formatters'
 import api from '@/utils/api'
 import { computed, onMounted, ref } from 'vue'
+import ReceiptViewDialog from '@/components/dialogs/ReceiptViewDialog.vue'
 
 const entitlements = ref([])
 const receipts = ref([])
 const isLoading = ref(false)
 const isPricingPlanDialogVisible = ref(false)
 const selectedEntitlementForAction = ref(null)
+
+const isReceiptDialogVisible = ref(false)
+const selectedReceipt = ref({})
+
+const openReceiptDialog = receipt => {
+  selectedReceipt.value = receipt
+  isReceiptDialogVisible.value = true
+}
+
+const downloadReceipt = receipt => {
+  window.open(`/api/learner/receipts/${receipt.id}/download`, '_blank')
+}
 
 const fetchBillingData = async () => {
   try {
@@ -220,13 +233,24 @@ onMounted(fetchBillingData)
             </template>
 
             <template #[`item.actions`]="{ item }">
-              <IconBtn
-                :href="`/api/learner/receipts/${item.id}/download`"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <VIcon icon="tabler-download" />
-              </IconBtn>
+              <div class="d-flex gap-2">
+                <IconBtn @click="openReceiptDialog(item)">
+                  <VIcon icon="tabler-eye" />
+                  <VTooltip activator="parent">
+                    View Receipt
+                  </VTooltip>
+                </IconBtn>
+                <IconBtn
+                  :href="`/api/learner/receipts/${item.id}/download`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <VIcon icon="tabler-download" />
+                  <VTooltip activator="parent">
+                    Download PDF
+                  </VTooltip>
+                </IconBtn>
+              </div>
             </template>
           </VDataTable>
         </VCardText>
@@ -238,5 +262,11 @@ onMounted(fetchBillingData)
     v-model:is-dialog-visible="isPricingPlanDialogVisible"
     :course-id="selectedEntitlementForAction?.course_id"
     :active-entitlement="selectedEntitlementForAction"
+  />
+
+  <ReceiptViewDialog
+    v-model:is-dialog-visible="isReceiptDialogVisible"
+    :receipt="selectedReceipt"
+    @download="downloadReceipt"
   />
 </template>
