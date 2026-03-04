@@ -18,8 +18,27 @@ const openReceiptDialog = receipt => {
   isReceiptDialogVisible.value = true
 }
 
-const downloadReceipt = receipt => {
-  window.open(`/api/learner/receipts/${receipt.id}/download`, '_blank')
+const downloadReceipt = async receipt => {
+  try {
+    const response = await api.get(`/learner/receipts/${receipt.id}/download`, {
+      responseType: 'blob',
+    })
+
+    // Create a temporary URL for the blob
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+
+    link.href = url
+    link.setAttribute('download', `receipt-${receipt.receiptNumber}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up
+    link.parentNode.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Failed to download receipt:', error)
+  }
 }
 
 const fetchBillingData = async () => {
@@ -240,11 +259,7 @@ onMounted(fetchBillingData)
                     View Receipt
                   </VTooltip>
                 </IconBtn>
-                <IconBtn
-                  :href="`/api/learner/receipts/${item.id}/download`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <IconBtn @click="downloadReceipt(item)">
                   <VIcon icon="tabler-download" />
                   <VTooltip activator="parent">
                     Download PDF
