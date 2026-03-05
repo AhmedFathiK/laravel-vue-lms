@@ -66,17 +66,25 @@ class UserEntitlement extends Model
         }
 
         // If explicitly expired, return false (but logic below might double check if we want to allow reactivation? No.)
-        if ($this->status === self::STATUS_EXPIRED) {
-            return false;
-        }
+        // CHANGE: If date is extended, allow reactivation from EXPIRED.
+        // if ($this->status === self::STATUS_EXPIRED) {
+        //     return false;
+        // }
 
         if ($this->ends_at === null) {
+            if ($this->status === self::STATUS_EXPIRED) {
+                // Reactivate if expired but no end date (lifetime access granted?)
+                static::where('id', $this->id)->update(['status' => self::STATUS_ACTIVE]);
+                $this->setAttribute('status', self::STATUS_ACTIVE);
+                $this->syncOriginal();
+                return true;
+            }
             return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_PAST_DUE]);
         }
 
         // Calculate grace period based on duration percentage
-        $percentage = config('entitlement.grace_period.percentage', 10);
-        $maxDays = config('entitlement.grace_period.max_days', 7);
+        $percentage = (int) config('entitlement.grace_period.percentage', 10);
+        $maxDays = (int) config('entitlement.grace_period.max_days', 7);
 
         $durationInDays = $this->starts_at->diffInDays($this->ends_at);
 
@@ -87,7 +95,7 @@ class UserEntitlement extends Model
 
         // Final grace period is the minimum of calculated percentage and max absolute days.
         // We use ceil to ensure at least 1 day grace period for short durations if percentage > 0.
-        $effectiveGraceDays = min(ceil($calculatedGraceDays), $maxDays);
+        $effectiveGraceDays = (int) min(ceil($calculatedGraceDays), $maxDays);
 
         $isGracePeriodValid = $this->ends_at->copy()->addDays($effectiveGraceDays)->endOfDay()->isFuture();
 
@@ -109,6 +117,29 @@ class UserEntitlement extends Model
         if ($this->ends_at->isPast() && $this->status === self::STATUS_ACTIVE) {
             static::where('id', $this->id)->update(['status' => self::STATUS_PAST_DUE]);
             $this->setAttribute('status', self::STATUS_PAST_DUE);
+            $this->syncOriginal();
+        }
+
+        // REACTIVATION LOGIC:
+        // If status is EXPIRED or PAST_DUE but date is now valid (future or within grace), set to ACTIVE.
+        // Wait, if it's within grace, it should be PAST_DUE (handled above if active).
+        // If it was EXPIRED and now is within grace, it should be PAST_DUE.
+        // If it was EXPIRED and now is future, it should be ACTIVE.
+
+        if ($this->status === self::STATUS_EXPIRED) {
+            if ($this->ends_at->isFuture()) {
+                static::where('id', $this->id)->update(['status' => self::STATUS_ACTIVE]);
+                $this->setAttribute('status', self::STATUS_ACTIVE);
+                $this->syncOriginal();
+            } elseif ($isGracePeriodValid) {
+                static::where('id', $this->id)->update(['status' => self::STATUS_PAST_DUE]);
+                $this->setAttribute('status', self::STATUS_PAST_DUE);
+                $this->syncOriginal();
+            }
+        } elseif ($this->status === self::STATUS_PAST_DUE && $this->ends_at->isFuture()) {
+            // If extended beyond grace period into future, make active
+            static::where('id', $this->id)->update(['status' => self::STATUS_ACTIVE]);
+            $this->setAttribute('status', self::STATUS_ACTIVE);
             $this->syncOriginal();
         }
 

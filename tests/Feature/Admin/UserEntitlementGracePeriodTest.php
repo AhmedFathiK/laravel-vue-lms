@@ -187,4 +187,64 @@ class UserEntitlementGracePeriodTest extends TestCase
 
         $this->assertEquals(UserEntitlement::STATUS_EXPIRED, $staleEntitlement->status);
     }
+
+    public function test_entitlement_status_reactivates_when_date_is_extended()
+    {
+        // Setup permissions and user
+        if (!Permission::where('name', 'view.user_entitlements')->exists()) {
+            Permission::create(['name' => 'view.user_entitlements', 'guard_name' => 'web']);
+        }
+        if (!Role::where('name', 'admin')->exists()) {
+            $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        } else {
+            $role = Role::findByName('admin', 'web');
+        }
+        $role->givePermissionTo('view.user_entitlements');
+
+        // Ensure student role exists for user factory
+        if (!Role::where('name', 'Student')->exists()) {
+            Role::create(['name' => 'Student', 'guard_name' => 'web']);
+        }
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $plan = BillingPlan::create([
+            'name' => 'Test Plan',
+            'price' => 100,
+            'currency' => 'USD',
+            'billing_type' => 'one_time',
+            'billing_interval' => 'month',
+            'access_type' => 'limited',
+            'access_duration_days' => 30,
+            'is_active' => true,
+        ]);
+
+        // Create an expired entitlement
+        $expiredEntitlement = UserEntitlement::create([
+            'user_id' => User::factory()->create()->id,
+            'billing_plan_id' => $plan->id,
+            'status' => 'expired',
+            'starts_at' => now()->subDays(60),
+            'ends_at' => now()->subDays(20),
+            'auto_renew' => false,
+        ]);
+
+        // Assert it is expired initially
+        $this->assertEquals(UserEntitlement::STATUS_EXPIRED, $expiredEntitlement->status);
+        $this->assertFalse($expiredEntitlement->isActive());
+
+        // Extend the date to future
+        $expiredEntitlement->update(['ends_at' => now()->addDays(30)]);
+
+        // Refresh to get updated model
+        $expiredEntitlement->refresh();
+
+        // Check if isActive updates the status to active
+        // This simulates accessing the entitlement via API or Policy
+        $isActive = $expiredEntitlement->isActive();
+
+        $this->assertTrue($isActive, 'Entitlement should be active after extending date');
+        $this->assertEquals(UserEntitlement::STATUS_ACTIVE, $expiredEntitlement->status, 'Status should update to active');
+    }
 }
