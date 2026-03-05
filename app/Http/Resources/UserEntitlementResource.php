@@ -14,6 +14,9 @@ class UserEntitlementResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Call isActive first as it may update the status if expired
+        $isActive = $this->isActive();
+        
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -21,10 +24,10 @@ class UserEntitlementResource extends JsonResource
             'payment_id' => $this->payment_id,
             'starts_at' => $this->starts_at,
             'ends_at' => $this->ends_at,
-            'status' => $this->status,
+            'status' => $this->status, // This will reflect updated status if isActive changed it
             'auto_renew' => $this->auto_renew,
-            'is_active' => $this->isActive(),
-            'is_grace_period' => $this->isActive() && $this->ends_at && $this->ends_at->isPast(),
+            'is_active' => $isActive,
+            'is_grace_period' => $isActive && $this->ends_at && $this->ends_at->isPast(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => new UserResource($this->whenLoaded('user')),

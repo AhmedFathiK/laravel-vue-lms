@@ -104,13 +104,15 @@ const statusOptions = [
   { title: 'Active', value: 'active' },
   { title: 'Canceled', value: 'canceled' },
   { title: 'Expired', value: 'expired' },
+  { title: 'Grace Period', value: 'grace_period' },
 ]
 
 // Helper functions for UI
-const resolveStatusVariant = status => {
-  if (status === 'active') return 'success'
-  if (status === 'canceled') return 'warning'
-  if (status === 'expired') return 'error'
+const resolveStatusVariant = item => {
+  if (item.isGracePeriod) return 'warning'
+  if (item.status === 'active') return 'success'
+  if (item.status === 'canceled') return 'secondary'
+  if (item.status === 'expired') return 'error'
   
   return 'secondary'
 }
@@ -302,12 +304,12 @@ const clearFilters = () => {
         </template>
         <template #[`item.status`]="{ item }">
           <VChip
-            :color="resolveStatusVariant(item.status)"
+            :color="resolveStatusVariant(item)"
             label
             size="small"
             class="text-capitalize"
           >
-            {{ item.status }}
+            {{ item.isGracePeriod ? 'Grace Period' : item.status }}
           </VChip>
         </template>
         <template #[`item.autoRenew`]="{ item }">

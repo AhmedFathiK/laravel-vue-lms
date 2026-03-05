@@ -52,7 +52,15 @@ class UserEntitlementController extends Controller
 
         // Filter by status
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'grace_period') {
+                $maxDays = config('entitlement.grace_period.max_days', 7);
+                $query->whereIn('status', [UserEntitlement::STATUS_ACTIVE, UserEntitlement::STATUS_PAST_DUE])
+                    ->whereNotNull('ends_at')
+                    ->where('ends_at', '<', now())
+                    ->where('ends_at', '>', now()->subDays($maxDays));
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Filter by date range for start date

@@ -57,12 +57,21 @@ class UserEntitlement extends Model
 
     public function isActive(): bool
     {
-        if (!in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_PAST_DUE])) {
+        // Always check expiration logic first if ends_at is set, regardless of current status (unless already final/failed/revoked)
+        // But if status is EXPIRED, we still return false.
+        // However, if status is ACTIVE but date says EXPIRED, we need to catch that.
+
+        if ($this->status === self::STATUS_FAILED || $this->status === self::STATUS_CANCELED || $this->status === self::STATUS_REVOKED) {
+            return false;
+        }
+
+        // If explicitly expired, return false (but logic below might double check if we want to allow reactivation? No.)
+        if ($this->status === self::STATUS_EXPIRED) {
             return false;
         }
 
         if ($this->ends_at === null) {
-            return true;
+            return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_PAST_DUE]);
         }
 
         // Calculate grace period based on duration percentage
@@ -80,7 +89,31 @@ class UserEntitlement extends Model
         // We use ceil to ensure at least 1 day grace period for short durations if percentage > 0.
         $effectiveGraceDays = min(ceil($calculatedGraceDays), $maxDays);
 
-        return $this->ends_at->copy()->addDays($effectiveGraceDays)->endOfDay()->isFuture();
+        $isGracePeriodValid = $this->ends_at->copy()->addDays($effectiveGraceDays)->endOfDay()->isFuture();
+
+        if (!$isGracePeriodValid) {
+            // Grace period has passed.
+            // Update status to expired if it's currently active or past_due.
+            if (in_array($this->getAttribute('status'), [self::STATUS_ACTIVE, self::STATUS_PAST_DUE])) {
+                // We use direct update to avoid recursion if saving triggers events that check isActive.
+                static::where('id', $this->id)->update(['status' => self::STATUS_EXPIRED]);
+
+                // Also update local instance to reflect change immediately
+                $this->setAttribute('status', self::STATUS_EXPIRED);
+                $this->syncOriginal();
+            }
+            return false;
+        }
+
+        // Check if we are in Grace Period (ends_at is past, but within grace days)
+        if ($this->ends_at->isPast() && $this->status === self::STATUS_ACTIVE) {
+            static::where('id', $this->id)->update(['status' => self::STATUS_PAST_DUE]);
+            $this->setAttribute('status', self::STATUS_PAST_DUE);
+            $this->syncOriginal();
+        }
+
+        // If we are here, date is valid (within active or grace period)
+        return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_PAST_DUE]);
     }
 
     public function scopeActive($query)
