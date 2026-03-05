@@ -298,16 +298,10 @@ class ReceiptController extends Controller
 
             // Void associated payment if exists
             if ($receipt->payment) {
-                // If payment is completed, we should probably mark it as voided or refunded
-                // For now, let's assume 'voided' is a valid status or use 'failed'
-                // Based on EntitlementService logic, maybe 'failed' is safer to trigger observer
-                // But Payment model might not have 'voided' status.
-                // Let's check Payment model constants or schema if available.
-                // Assuming standard 'failed' or 'refunded' for now if 'voided' not available.
-                // Or just set to 'failed'.
-                // Ideally, we should add 'voided' to Payment status enum if not present.
-                // Let's use 'failed' for now as it triggers suspension.
-                $receipt->payment->update(['status' => 'failed']);
+                // When a receipt is voided by an admin, it's more accurate to set the status to 'canceled'
+                // rather than 'failed' (which usually implies a technical or payment processing failure).
+                // The PaymentObserver will then update the linked entitlement status to 'canceled'.
+                $receipt->payment->update(['status' => 'refunded']);
             }
         });
 

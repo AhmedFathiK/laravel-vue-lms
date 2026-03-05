@@ -48,7 +48,7 @@ class PaymentObserver
                 
                 // Case: completed -> refunded => Cancel
                 if ($newStatus === 'refunded') {
-                    Log::info('Canceling entitlement (refunded)');
+                    Log::info('Canceling entitlement (refunded/voided)');
                     $entitlement->update([
                         'status' => UserEntitlement::STATUS_CANCELED,
                     ]);

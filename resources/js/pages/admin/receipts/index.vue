@@ -19,6 +19,7 @@ const toast = useToast()
 const searchQuery = ref('')
 const selectedPaymentMethod = ref(null)
 const selectedItemType = ref(null)
+const selectedStatus = ref(null) // Added selectedStatus
 const isLoading = ref(false)
 const fromDate = ref('')
 const toDate = ref('')
@@ -71,6 +72,7 @@ const fetchReceipts = async () => {
       search: searchQuery.value || undefined,
       paymentMethod: selectedPaymentMethod.value || undefined,
       itemType: selectedItemType.value || undefined,
+      status: selectedStatus.value || undefined, // Pass status to API
       fromDate: fromDate.value || undefined,
       toDate: toDate.value || undefined,
       receiptId: receiptId.value || undefined,
@@ -95,7 +97,7 @@ const fetchReceipts = async () => {
 
 // Watch for changes to trigger refetch
 watch(
-  [searchQuery, selectedPaymentMethod, selectedItemType, page, itemsPerPage, fromDate, toDate, receiptId, userQuery, courseId, billingType, sortBy, sortOrder, showDeleted],
+  [searchQuery, selectedPaymentMethod, selectedItemType, selectedStatus, page, itemsPerPage, fromDate, toDate, receiptId, userQuery, courseId, billingType, sortBy, sortOrder, showDeleted],
   fetchReceipts,
   { immediate: true },
 )
@@ -103,6 +105,14 @@ watch(
 // Computed properties
 const receipts = computed(() => receiptsData.value.items || [])
 const totalReceipts = computed(() => receiptsData.value.total || 0)
+
+// Status options
+const statusOptions = [
+  { title: 'Completed', value: 'completed' },
+  { title: 'Voided', value: 'voided' },
+  { title: 'Refunded', value: 'refunded' },
+  { title: 'Deleted', value: 'deleted' },
+]
 
 // Payment method options for dropdown
 const paymentMethods = [
@@ -261,6 +271,7 @@ const clearFilters = () => {
   searchQuery.value = ''
   selectedPaymentMethod.value = null
   selectedItemType.value = null
+  selectedStatus.value = null
   fromDate.value = ''
   toDate.value = ''
   receiptId.value = ''
@@ -315,6 +326,19 @@ const onReceiptSubmitSuccess = () => {
               label="Payment Method"
               placeholder="Select Payment Method"
               :items="paymentMethods"
+              clearable
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="6"
+            md="4"
+          >
+            <AppSelect
+              v-model="selectedStatus"
+              label="Status"
+              placeholder="Select Status"
+              :items="statusOptions"
               clearable
             />
           </VCol>
@@ -504,6 +528,14 @@ const onReceiptSubmitSuccess = () => {
             size="small"
           >
             Voided
+          </VChip>
+          <VChip
+            v-else-if="item.payment?.status === 'refunded'"
+            color="warning"
+            label
+            size="small"
+          >
+            Refunded
           </VChip>
           <VChip
             v-else-if="item.deletedAt"
