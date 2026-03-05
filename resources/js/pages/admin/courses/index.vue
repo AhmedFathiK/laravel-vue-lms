@@ -200,7 +200,7 @@ const updateWidgetCounts = () => {
       activeCount++
     }
     
-    if (course.billing_plans && course.billing_plans.some(plan => plan.billing_type === 'recurring')) {
+    if (course.billingPlans && course.billingPlans.some(plan => plan.billingType === 'recurring')) {
       entitlementCount++
     }
   })

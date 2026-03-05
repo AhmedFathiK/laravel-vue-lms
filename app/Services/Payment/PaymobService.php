@@ -119,6 +119,11 @@ class PaymobService implements PaymentServiceInterface
             'redirection_url' => $redirectionUrl, // Callback URL
         ];
 
+        // Paymob Intention API doesn't have an explicit 'save_card' param in the simplified docs,
+        // but passing complete billing data is usually enough for the hosted page to offer the "Save Card" option if enabled in dashboard.
+        // However, we can hint it in extras if custom logic uses it, but standard Paymob hosted checkout controls this via dashboard settings mostly.
+        // We will trust that the user checks the box if they want to save it.
+
         Log::info('Paymob Request: Create Intention', $payload);
 
         // Using Secret Key for Authorization

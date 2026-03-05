@@ -68,6 +68,8 @@ class MyFatoorahService implements PaymentServiceInterface
         $customerEmail = (string) ($customer['email'] ?? 'guest@example.com');
         $customerReference = (string) ($metadata['customer_reference'] ?? '');
 
+        $autoRenew = ($metadata['auto_renew'] ?? '1') === '1';
+
         $payload = [
             'PaymentMethodId' => $paymentMethodId,
             'InvoiceValue' => $amount,
@@ -79,7 +81,7 @@ class MyFatoorahService implements PaymentServiceInterface
             'CustomerReference' => $customerReference,
             'Language' => 'en',
             'ExpiryDate' => now()->addDays(7)->toIso8601String(), // Extend expiry to 7 days
-            'SaveToken' => true,
+            'SaveToken' => $autoRenew,
         ];
 
         if (!empty($items)) {
@@ -136,9 +138,30 @@ class MyFatoorahService implements PaymentServiceInterface
         }
 
         return array_map(function ($method) {
+            $name = (string) ($method['PaymentMethodEn'] ?? '');
+            $code = strtoupper((string) ($method['PaymentMethodCode'] ?? ''));
+
+            // Heuristic for type
+            $type = 'CARD';
+            if (
+                stripos($name, 'APPLE') !== false ||
+                stripos($name, 'GOOGLE') !== false ||
+                stripos($name, 'STC') !== false ||
+                stripos($code, 'APPLE') !== false ||
+                stripos($code, 'GOOGLE') !== false
+            ) {
+                $type = 'WALLET';
+            }
+
+            // Explicit override for known codes if available
+            if (in_array($code, ['APPLEPAY', 'GOOGLEPAY', 'STCPAY'])) {
+                $type = 'WALLET';
+            }
+
             return [
                 'id' => (string) ($method['PaymentMethodId'] ?? ''),
-                'name' => (string) ($method['PaymentMethodEn'] ?? ''),
+                'name' => $name,
+                'type' => $type,
                 'image' => (string) ($method['ImageUrl'] ?? null),
             ];
         }, $methods);
@@ -298,9 +321,16 @@ class MyFatoorahService implements PaymentServiceInterface
      */
     protected function fetchPaymentStatus(string $paymentId): array
     {
+        Log::info('MyFatoorah Request: GetPaymentStatus', ['paymentId' => $paymentId]);
+
         $response = $this->getRequest()->post($this->baseUrl . '/v2/GetPaymentStatus', [
             'Key' => $paymentId,
             'KeyType' => 'PaymentId',
+        ]);
+
+        Log::info('MyFatoorah Response: GetPaymentStatus', [
+            'status' => $response->status(),
+            'body' => $response->json(),
         ]);
 
         return $this->handleResponse($response);

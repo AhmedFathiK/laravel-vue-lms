@@ -4,8 +4,9 @@ import spaceRocket from '@images/misc/3d-space-rocket-with-smoke.png'
 import dollarCoinPiggyBank from '@images/avatars/avatar-1.png'
 import visaMasterIcon from '@images/icons/payments/visa-master.png'
 import walletIcon from '@images/icons/payments/mobile-wallet.png'
+import PaymentMethodSelector from '@/components/PaymentMethodSelector.vue'
 import api from '@/utils/api'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 
 const props = defineProps({
   title: {
@@ -53,6 +54,7 @@ const paymentMethods = ref([])
 const selectedPaymentMethod = ref(null)
 const selectedPlanForPayment = ref(null)
 const isProcessingPayment = ref(false)
+const autoRenew = ref(true)
 
 const fetchPlans = async () => {
   if (!props.courseId) return
@@ -112,6 +114,8 @@ const handlePlanAction = async plan => {
     if (response.success) {
       paymentMethods.value = response.data
       isPaymentMethodDialogVisible.value = true
+      selectedPaymentMethod.value = null // Reset selection
+      autoRenew.value = true // Reset auto-renew
     }
   } catch (error) {
     console.error('Failed to fetch payment methods', error)
@@ -131,11 +135,13 @@ const proceedToCheckout = async () => {
       // Renew
       response = await api.post(`/learner/entitlements/${props.activeEntitlement.id}/renew`, {
         paymentMethodId: String(selectedPaymentMethod.value),
+        autoRenew: autoRenew.value,
       })
     } else if (props.activeEntitlement) {
       // Upgrade or Downgrade (Both handled by upgrade endpoint logic for pro-rating)
       response = await api.post(`/learner/entitlements/${props.activeEntitlement.id}/upgrade/${plan.id}`, {
         paymentMethodId: String(selectedPaymentMethod.value),
+        autoRenew: autoRenew.value,
       })
     } else {
       // New acquisition
@@ -145,6 +151,7 @@ const proceedToCheckout = async () => {
         planId: plan.id,
         courseId: props.courseId,
         paymentMethodId: String(selectedPaymentMethod.value),
+        autoRenew: autoRenew.value,
       })
     }
 
@@ -399,32 +406,11 @@ const getPaymentMethodIcon = method => {
           variant="outlined"
           class="pa-4 mb-6"
         >
-          <VRow>
-            <VCol
-              v-for="method in paymentMethods"
-              :key="method.id"
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <VCard
-                border
-                :color="selectedPaymentMethod === method.id ? 'primary' : ''"
-                :variant="selectedPaymentMethod === method.id ? 'tonal' : 'outlined'"
-                class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
-                @click="selectedPaymentMethod = method.id"
-              >
-                <VImg
-                  :src="getPaymentMethodIcon(method)"
-                  height="40"
-                  width="60"
-                  class="mb-2"
-                  contain
-                />
-                <span class="text-subtitle-2 text-center">{{ method.name }}</span>
-              </VCard>
-            </VCol>
-          </VRow>
+          <PaymentMethodSelector
+            v-model="selectedPaymentMethod"
+            v-model:auto-renew="autoRenew"
+            :payment-methods="paymentMethods"
+          />
         </VCard>
       </VCardText>
 

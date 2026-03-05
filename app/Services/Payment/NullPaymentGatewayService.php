@@ -23,8 +23,8 @@ class NullPaymentGatewayService implements PaymentServiceInterface
         $reference = (string) ($metadata['customer_reference'] ?? '');
 
         return [
-            'payment_url' => $callbackUrl.'?payment_id=null-'.urlencode($reference),
-            'transaction_id' => 'null-'.$reference,
+            'payment_url' => $callbackUrl . '?payment_id=null-' . urlencode($reference),
+            'transaction_id' => 'null-' . $reference,
             'gateway_data' => [
                 'amount' => $amount,
                 'currency' => $currency,
@@ -66,5 +66,23 @@ class NullPaymentGatewayService implements PaymentServiceInterface
     public function gatewayKey(): string
     {
         return 'null';
+    }
+
+    public function chargeToken(
+        string $token,
+        float $amount,
+        string $currency,
+        array $customer,
+        array $metadata
+    ): array {
+        return [
+            'status' => 'paid',
+            'transaction_id' => 'null-auto-renew-' . uniqid(),
+            'gateway_data' => [
+                'token' => $token,
+                'amount' => $amount,
+                'customer' => $customer,
+            ],
+        ];
     }
 }

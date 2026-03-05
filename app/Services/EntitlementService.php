@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Log;
 use App\Models\PaymentToken;
 use App\Services\Payments\PaymentServiceInterface;
 
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RenewalFailedMail;
+
 class EntitlementService
 {
     /**
@@ -51,6 +54,23 @@ class EntitlementService
 
         if (!$token) {
             Log::info("Auto-renew failed for entitlement {$entitlement->id}: No saved token found for user {$user->id}");
+            // Send email about failure
+            Mail::to($user)->send(new RenewalFailedMail($entitlement, 'No saved card found.'));
+            // Disable auto-renew to prevent spamming logs
+            $entitlement->update(['auto_renew' => false]);
+            return false;
+        }
+
+        // Check if token is for a wallet (unsupported for silent recurring usually)
+        // Card type "WALLET" or gateway specific checks can be added here.
+        // Paymob wallets usually require OTP, so we skip auto-renew for wallets.
+        // MyFatoorah wallets are usually not tokenized in the same way, but checking card type is safer.
+        if (
+            ($token->gateway === 'paymob' && stripos($token->card_type, 'WALLET') !== false) ||
+            ($token->gateway === 'paymob' && stripos($token->masked_pan, 'wallet') !== false)
+        ) {
+            Log::info("Auto-renew skipped for entitlement {$entitlement->id}: Wallet payment method not supported for auto-renew.");
+            $entitlement->update(['auto_renew' => false]);
             return false;
         }
 
@@ -109,10 +129,13 @@ class EntitlementService
                 return true;
             } else {
                 Log::warning("Auto-renew failed for entitlement {$entitlement->id}: Charge status is {$charge['status']}");
+                // Send failure email
+                Mail::to($user)->send(new RenewalFailedMail($entitlement, 'Payment authorization failed.'));
                 return false;
             }
         } catch (\Throwable $e) {
             Log::error("Auto-renew error for entitlement {$entitlement->id}: " . $e->getMessage());
+            Mail::to($user)->send(new RenewalFailedMail($entitlement, 'Payment processing error.'));
             return false;
         }
     }
@@ -152,7 +175,10 @@ class EntitlementService
             }
             // lifetime = null ends_at
 
-            // 2. Create Entitlement
+            // 2. Determine Auto Renew Status
+            $autoRenew = $this->shouldEnableAutoRenew($plan, $payment);
+
+            // 3. Create Entitlement
             $entitlement = UserEntitlement::create([
                 'user_id' => $user->id,
                 'billing_plan_id' => $plan->id,
@@ -160,11 +186,11 @@ class EntitlementService
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
                 'status' => 'active',
-                'auto_renew' => $plan->billing_type === 'recurring',
+                'auto_renew' => $autoRenew,
             ]);
 
-            // 3. Snapshot Capabilities
-            // 3.1 Course Access (Legacy/Progress support)
+            // 4. Snapshot Capabilities
+            // 4.1 Course Access (Legacy/Progress support)
             foreach ($plan->courses as $course) {
                 CourseEnrollment::updateOrCreate([
                     'user_id' => $user->id,
@@ -176,7 +202,7 @@ class EntitlementService
                 ]);
             }
 
-            // 3.2 Plan Features
+            // 4.2 Plan Features
             foreach ($plan->planFeatures as $pf) {
                 // Skip if feature definition is missing
                 if (!$pf->feature) {
@@ -246,7 +272,7 @@ class EntitlementService
                 'payment_id' => $payment?->id ?? $entitlement->payment_id,
                 'ends_at' => $newEndsAt,
                 'status' => 'active', // Reset status to active if it was expired/past_due
-                'auto_renew' => $plan->billing_type === 'recurring',
+                'auto_renew' => $this->shouldEnableAutoRenew($plan, $payment),
             ]);
 
             // 3. Update Enrollment if needed (ensure it points to this entitlement)
@@ -356,6 +382,22 @@ class EntitlementService
         }
 
         $this->grantEntitlement($user, $plan, $payment);
+
+        // Handle Auto-Renew Intent Check
+        // If user requested auto-renew but we don't end up saving a token (e.g. they unchecked it),
+        // we should probably ensure auto_renew is false on the entitlement.
+        // However, the token saving happens in the Controller AFTER this method.
+        // But we can check the payment details for intent.
+        $entitlement = UserEntitlement::where('payment_id', $payment->id)->first();
+        if ($entitlement) {
+            $requestedAutoRenew = $existingDetails['request_auto_renew'] ?? true;
+            // If user explicitly said NO, ensure it's false.
+            if (!$requestedAutoRenew) {
+                $entitlement->update(['auto_renew' => false]);
+            }
+            // If they said YES, it defaults to true in grantEntitlement (if recurring), 
+            // but if token is missing later, the renewal job will just fail gracefully or we can add a check.
+        }
     }
 
     /**
@@ -442,5 +484,52 @@ class EntitlementService
             // Grant Entitlement
             return $this->grantEntitlement($user, $plan, $payment);
         });
+    }
+
+    private function shouldEnableAutoRenew(BillingPlan $plan, ?Payment $payment): bool
+    {
+        // 1. Basic Plan Requirement
+        if ($plan->billing_type !== 'recurring') {
+            return false;
+        }
+
+        // 2. User Intent (if payment provided)
+        if ($payment && isset($payment->payment_details['request_auto_renew'])) {
+            if (!filter_var($payment->payment_details['request_auto_renew'], FILTER_VALIDATE_BOOLEAN)) {
+                return false;
+            }
+        }
+
+        // 3. Payment Method Constraints
+        if ($payment) {
+            $details = $payment->payment_details ?? [];
+            $gatewayData = $details['gateway_data'] ?? [];
+            $gateway = $payment->payment_method;
+
+            // Paymob Wallet Check
+            if ($gateway === 'paymob') {
+                $subType = $gatewayData['source_data']['sub_type'] ?? '';
+                if (stripos($subType, 'WALLET') !== false) {
+                    Log::info("Auto-renew disabled for Payment {$payment->id}: Wallet used (Paymob).");
+                    return false;
+                }
+            }
+
+            // MyFatoorah Wallet Check
+            elseif ($gateway === 'myfatoorah') {
+                $txs = $gatewayData['InvoiceTransactions'] ?? [];
+                foreach ($txs as $tx) {
+                    if (($tx['TransactionStatus'] ?? '') === 'Succss') {
+                        $code = strtoupper($tx['PaymentGateway'] ?? '');
+                        if (in_array($code, ['APPLEPAY', 'GOOGLEPAY', 'STCPAY'])) {
+                            Log::info("Auto-renew disabled for Payment {$payment->id}: Wallet used (MyFatoorah - {$code}).");
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 }

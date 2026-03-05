@@ -94,6 +94,7 @@ class LearnerEntitlementController extends Controller
     ): JsonResponse {
         $validator = Validator::make($request->all(), [
             'plan_id' => 'required|exists:billing_plans,id',
+            'autoRenew' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +104,7 @@ class LearnerEntitlementController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $plan = BillingPlan::findOrFail($request->plan_id);
+        $autoRenew = $request->boolean('autoRenew', true); // Default to true if not provided
 
         // Check if the plan is active
         if (!$plan->is_active) {
@@ -166,6 +168,7 @@ class LearnerEntitlementController extends Controller
                 'payment_details' => [
                     'billing_plan_id' => $plan->id,
                     'course_id' => $courseId,
+                    'request_auto_renew' => $autoRenew, // Store user intent
                 ],
             ]);
 
@@ -179,6 +182,7 @@ class LearnerEntitlementController extends Controller
                 ],
                 metadata: [
                     'customer_reference' => (string) $payment->id,
+                    'auto_renew' => $autoRenew ? '1' : '0',
                 ],
                 callbackUrl: route('payments.callback'),
                 errorUrl: route('payments.error'),

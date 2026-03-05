@@ -76,6 +76,7 @@ declare module 'vue' {
     MCQSlide: typeof import('./resources/js/components/SlideTypes/MCQSlide.vue')['default']
     MoreBtn: typeof import('./resources/js/@core/components/MoreBtn.vue')['default']
     Notifications: typeof import('./resources/js/@core/components/Notifications.vue')['default']
+    PaymentMethodSelector: typeof import('./resources/js/components/PaymentMethodSelector.vue')['default']
     PricingPlanDialog: typeof import('./resources/js/components/dialogs/PricingPlanDialog.vue')['default']
     ProductDescriptionEditor: typeof import('./resources/js/@core/components/ProductDescriptionEditor.vue')['default']
     QuestionSearchDialog: typeof import('./resources/js/components/dialogs/QuestionSearchDialog.vue')['default']

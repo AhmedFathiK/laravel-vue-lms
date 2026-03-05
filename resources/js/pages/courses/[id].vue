@@ -1,6 +1,7 @@
 <script setup>
 import api from '@/utils/api'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import PaymentMethodSelector from '@/components/PaymentMethodSelector.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActiveCourse } from '@/stores/activeCourse'
@@ -25,6 +26,7 @@ const selectedPaymentMethod = ref(null)
 const selectedPlan = ref(null)
 const fetchedBillingPlans = ref([])
 const isFreePlanDialogVisible = ref(false)
+const autoRenew = ref(true)
 
 const fetchBillingPlans = async () => {
   try {
@@ -122,6 +124,8 @@ const handlePayment = async plan => {
 
       if (response.success) {
         paymentMethods.value = response.data
+        selectedPaymentMethod.value = null // Reset
+        autoRenew.value = true // Reset
         isPaymentMethodDialogVisible.value = true
       } else {
         throw new Error('Failed to fetch payment methods')
@@ -176,6 +180,7 @@ const proceedToCheckout = async () => {
       planId: selectedPlan.value.id,
       courseId: courseDetails.value.id,
       paymentMethodId: String(selectedPaymentMethod.value),
+      autoRenew: autoRenew.value,
     })
 
     if (response.success && response.paymentUrl) {
@@ -284,32 +289,11 @@ if (route.query.payment === 'success') {
       <VDivider />
 
       <VCardText class="pa-4">
-        <VRow>
-          <VCol
-            v-for="method in paymentMethods"
-            :key="method.id"
-            cols="12"
-            sm="6"
-            md="4"
-          >
-            <VCard
-              border
-              :color="selectedPaymentMethod === method.id ? 'primary' : ''"
-              :variant="selectedPaymentMethod === method.id ? 'tonal' : 'outlined'"
-              class="d-flex flex-column align-center justify-center pa-4 cursor-pointer h-100 transition-all"
-              @click="selectedPaymentMethod = method.id"
-            >
-              <VImg
-                :src="method.image"
-                height="40"
-                width="60"
-                class="mb-2"
-                contain
-              />
-              <span class="text-subtitle-2 text-center">{{ method.name }}</span>
-            </VCard>
-          </VCol>
-        </VRow>
+        <PaymentMethodSelector
+          v-model="selectedPaymentMethod"
+          v-model:auto-renew="autoRenew"
+          :payment-methods="paymentMethods"
+        />
       </VCardText>
 
       <VDivider />

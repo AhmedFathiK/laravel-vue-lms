@@ -204,12 +204,27 @@ class PaymentWebhookController extends Controller
      */
     private function saveMyFatoorahToken(Payment $payment, array $data): void
     {
+        Log::info("MyFatoorah: Attempting to save token for payment {$payment->id}", ['data' => $data]);
+
+        // Check if user actually requested auto-renew
+        $requestAutoRenew = $payment->payment_details['request_auto_renew'] ?? true;
+        if (!$requestAutoRenew) {
+            Log::info("MyFatoorah: Auto-renew not requested for payment {$payment->id}");
+            return;
+        }
+
         // MyFatoorah sends token information in Data.InvoiceTransactions
         // We look for a successful transaction that has tokenization info
         $transactions = $data['InvoiceTransactions'] ?? [];
+        $tokenFound = false;
+
         foreach ($transactions as $tx) {
-            if (($tx['TransactionStatus'] ?? '') === 'Succss' && !empty($tx['Token'])) {
-                $token = $tx['Token'];
+            $status = $tx['TransactionStatus'] ?? '';
+            $token = $tx['Token'] ?? null;
+
+            Log::info("MyFatoorah: Checking transaction", ['status' => $status, 'has_token' => !empty($token)]);
+
+            if ($status === 'Succss' && !empty($token)) {
                 $cardInfo = $tx['CardInfo'] ?? [];
 
                 \App\Models\PaymentToken::updateOrCreate([
@@ -223,14 +238,21 @@ class PaymentWebhookController extends Controller
                     'last_used_at' => now(),
                 ]);
 
+                Log::info("MyFatoorah: Token saved successfully for user {$payment->user_id}");
+
                 // Update other tokens for this user to not be default
                 \App\Models\PaymentToken::where('user_id', $payment->user_id)
                     ->where('gateway', 'myfatoorah')
                     ->where('token', '!=', $token)
                     ->update(['is_default' => false]);
 
+                $tokenFound = true;
                 break;
             }
+        }
+
+        if (!$tokenFound) {
+            Log::warning("MyFatoorah: No valid token found in webhook data for payment {$payment->id}");
         }
     }
 
@@ -239,6 +261,12 @@ class PaymentWebhookController extends Controller
      */
     private function savePaymobToken(Payment $payment, array $data): void
     {
+        // Check if user actually requested auto-renew
+        $requestAutoRenew = $payment->payment_details['request_auto_renew'] ?? true;
+        if (!$requestAutoRenew) {
+            return;
+        }
+
         // Paymob tokenization: 
         // If save_card was enabled or it's a recurring payment, 
         // the webhook 'obj' will contain token information.

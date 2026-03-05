@@ -41,6 +41,7 @@ class PaymentGatewayController extends Controller
             'renew_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
             'upgrade_from_entitlement_id' => ['nullable', 'exists:user_entitlements,id'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'autoRenew' => ['nullable', 'boolean'],
         ];
 
         $validated = $request->validate($rules);
@@ -62,6 +63,7 @@ class PaymentGatewayController extends Controller
                 'payment_method_id' => $validated['payment_method_id'] ?? null,
                 'renew_entitlement_id' => $validated['renew_entitlement_id'] ?? null,
                 'upgrade_from_entitlement_id' => $validated['upgrade_from_entitlement_id'] ?? null,
+                'request_auto_renew' => $validated['autoRenew'] ?? true, // Default to true if not provided
             ],
         ]);
 
@@ -113,6 +115,7 @@ class PaymentGatewayController extends Controller
                 ],
                 metadata: [
                     'customer_reference' => (string) $payment->id,
+                    'auto_renew' => ($validated['autoRenew'] ?? true) ? '1' : '0',
                 ],
                 callbackUrl: route('payments.callback'),
                 errorUrl: route('payments.error'),

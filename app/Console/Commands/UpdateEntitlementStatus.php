@@ -78,11 +78,25 @@ class UpdateEntitlementStatus extends Command
             ->chunkById(100, function ($entitlements) use ($maxGraceDays, &$failedCount, $entitlementService) {
                 foreach ($entitlements as $entitlement) {
                     // 2.1 Attempt auto-renewal for past_due entitlements if they have auto_renew on
+                    // We want to retry at specific intervals (e.g., daily)
+                    // Since this command runs daily, we can just retry every time it runs until grace period ends.
+                    // To be more sophisticated (e.g. 1st, 3rd, 5th day), we would need to track attempts.
+                    // For now, daily retry is acceptable as per requirement "intervalled renew retrials".
+                    
                     if ($entitlement->auto_renew) {
                         $this->info("Retrying auto-renewal for past_due entitlement {$entitlement->id}...");
-                        if ($entitlementService->attemptAutoRenew($entitlement)) {
-                            $this->info("Successfully auto-renewed past_due entitlement {$entitlement->id}.");
-                            continue; // Skip further processing for this entitlement as it's now active
+                        
+                        // Check if we should retry today (simple daily logic for now, or check last_payment_at)
+                        // Ideally we check if we already tried today to avoid spamming if command runs multiple times
+                        $lastAttempt = $entitlement->payment ? $entitlement->payment->created_at : null;
+                        
+                        if (!$lastAttempt || $lastAttempt->diffInHours(now()) >= 20) {
+                             if ($entitlementService->attemptAutoRenew($entitlement)) {
+                                $this->info("Successfully auto-renewed past_due entitlement {$entitlement->id}.");
+                                continue; // Skip further processing for this entitlement as it's now active
+                            }
+                        } else {
+                            $this->info("Skipping retry for entitlement {$entitlement->id}, already attempted recently.");
                         }
                     }
 

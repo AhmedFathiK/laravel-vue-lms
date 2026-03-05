@@ -228,23 +228,23 @@ const resendReceipt = () => {
                       </VChip>
                     </td>
                   </tr>
-                  <tr v-if="receipt.entitlement.billing_plan">
+                  <tr v-if="receipt.entitlement.billingPlan">
                     <td class="font-weight-medium">
                       Plan:
                     </td>
-                    <td>{{ receipt.entitlement.billing_plan.name }}</td>
+                    <td>{{ receipt.entitlement.billingPlan.name }}</td>
                   </tr>
-                  <tr v-if="receipt.entitlement.auto_renew && receipt.entitlement.ends_at">
+                  <tr v-if="receipt.entitlement.autoRenew && receipt.entitlement.endsAt">
                     <td class="font-weight-medium">
                       Renews On:
                     </td>
-                    <td>{{ formatDate(receipt.entitlement.ends_at) }}</td>
+                    <td>{{ formatDate(receipt.entitlement.endsAt) }}</td>
                   </tr>
-                  <tr v-if="receipt.payment?.payment_details?.notes">
+                  <tr v-if="receipt.payment?.paymentDetails?.notes">
                     <td class="font-weight-medium">
                       Notes:
                     </td>
-                    <td>{{ receipt.payment.payment_details.notes }}</td>
+                    <td>{{ receipt.payment.paymentDetails.notes }}</td>
                   </tr>
                 </tbody>
               </VTable>
