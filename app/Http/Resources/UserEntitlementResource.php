@@ -5,6 +5,8 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use App\Models\BillingPlan;
+
 class UserEntitlementResource extends JsonResource
 {
     /**
@@ -17,6 +19,20 @@ class UserEntitlementResource extends JsonResource
         // Call isActive first as it may update the status if expired
         $isActive = $this->isActive();
         
+        // Check for upgrades
+        $hasUpgrades = false;
+        if ($this->billingPlan) {
+            $courseIds = $this->billingPlan->courses->pluck('id');
+            if ($courseIds->isNotEmpty()) {
+                $hasUpgrades = BillingPlan::whereHas('courses', function ($q) use ($courseIds) {
+                    $q->whereIn('courses.id', $courseIds);
+                })
+                ->where('is_active', true)
+                ->where('price', '>', $this->billingPlan->price)
+                ->exists();
+            }
+        }
+        
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -27,6 +43,7 @@ class UserEntitlementResource extends JsonResource
             'status' => $this->status, // This will reflect updated status if isActive changed it
             'auto_renew' => $this->auto_renew,
             'is_active' => $isActive,
+            'has_upgrades' => $hasUpgrades,
             'is_grace_period' => $isActive && $this->ends_at && $this->ends_at->isPast(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

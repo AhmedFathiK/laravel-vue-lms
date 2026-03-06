@@ -333,6 +333,18 @@ class LearnerEntitlementController extends Controller
             abort(403, 'Unauthorized access to entitlement');
         }
 
+        // Check for downgrade restriction
+        // Only restrict if the current subscription term is still ongoing (ends_at is future)
+        // If ends_at is past (even if in grace period), allow them to choose whatever.
+        $isTermActive = $entitlement->ends_at === null || $entitlement->ends_at->isFuture();
+
+        if ($entitlement->isActive() && $isTermActive && $newPlan->price < $entitlement->billingPlan->price) {
+            return response()->json([
+                'message' => 'You cannot downgrade your plan until your current subscription expires.',
+                'is_downgrade' => true,
+            ], 403);
+        }
+
         // 1. Calculate remaining days on current plan
         $now = now();
         $endsAt = $entitlement->ends_at;
@@ -381,6 +393,17 @@ class LearnerEntitlementController extends Controller
     ): JsonResponse {
         if ($entitlement->user_id !== Auth::id()) {
             abort(403, 'Unauthorized access to entitlement');
+        }
+
+        // Check for downgrade restriction
+        // Only restrict if the current subscription term is still ongoing (ends_at is future)
+        // If ends_at is past (even if in grace period), allow them to choose whatever.
+        $isTermActive = $entitlement->ends_at === null || $entitlement->ends_at->isFuture();
+
+        if ($entitlement->isActive() && $isTermActive && $newPlan->price < $entitlement->billingPlan->price) {
+            return response()->json([
+                'message' => 'You cannot downgrade your plan until your current subscription expires.'
+            ], 403);
         }
 
         // 1. Get the upgrade price
@@ -432,14 +455,6 @@ class LearnerEntitlementController extends Controller
      */
     public function getAvailablePlans(Course $course): JsonResponse
     {
-        $plans = BillingPlan::whereHas('courses', function ($query) use ($course) {
-            $query->where('courses.id', $course->id);
-        })
-            ->with(['planFeatures.feature'])
-            ->where('is_active', true)
-            ->orderBy('price')
-            ->get();
-
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $activeEntitlement = null;
@@ -453,6 +468,21 @@ class LearnerEntitlementController extends Controller
                 ->with('billingPlan')
                 ->first();
         }
+
+        $plansQuery = BillingPlan::whereHas('courses', function ($query) use ($course) {
+            $query->where('courses.id', $course->id);
+        })
+            ->with(['planFeatures.feature'])
+            ->where('is_active', true)
+            ->orderBy('price');
+
+        // Filter out downgrade plans if user has an active entitlement
+        if ($activeEntitlement && $activeEntitlement->isActive() && ($activeEntitlement->ends_at === null || $activeEntitlement->ends_at->isFuture())) {
+            $currentPrice = $activeEntitlement->billingPlan->price;
+            $plansQuery->where('price', '>=', $currentPrice);
+        }
+
+        $plans = $plansQuery->get();
 
         return response()->json([
             'plans' => EntitlementPlanResource::collection($plans)->resolve(),

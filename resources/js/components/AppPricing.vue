@@ -43,6 +43,8 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['loaded'])
+
 const annualMonthlyPlanPriceToggler = ref(false)
 const pricingPlans = ref([])
 const isLoading = ref(false)
@@ -63,6 +65,7 @@ const fetchPlans = async () => {
     const response = await api.get(`/learner/courses/${props.courseId}/billing-plans`)
 
     pricingPlans.value = response.plans || []
+    emit('loaded', pricingPlans.value.length)
   } catch (error) {
     console.error('Failed to fetch plans', error)
   } finally {
@@ -198,7 +201,7 @@ const getActionText = plan => {
   if (newPrice < currentPrice) {
     return 'Downgrade Plan'
   }
-
+  
   return 'Switch Plan'
 }
 
@@ -262,8 +265,11 @@ const getPaymentMethodIcon = method => {
     <VCol
       v-for="plan in pricingPlans"
       :key="plan.id"
-      cols="12"
-      md="4"
+      :cols="props.xs || 12"
+      :sm="props.sm"
+      :md="props.md || 4"
+      :lg="props.lg"
+      :xl="props.xl"
     >
       <!-- 👉  Card -->
       <VCard

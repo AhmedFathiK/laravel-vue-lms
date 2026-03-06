@@ -77,6 +77,20 @@ const getStatusColor = status => {
   return 'primary'
 }
 
+const shouldShowPricingButton = item => {
+  if (item.status === 'active') {
+    return !!item.hasUpgrades
+  }
+  
+  return item.status === 'past_due' || item.status === 'expired'
+}
+
+const getPricingButtonText = item => {
+  if (item.status === 'active') return 'Upgrade'
+  
+  return 'Renew'
+}
+
 onMounted(fetchBillingData)
 </script>
 
