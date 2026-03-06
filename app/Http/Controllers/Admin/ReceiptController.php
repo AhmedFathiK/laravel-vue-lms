@@ -111,6 +111,32 @@ class ReceiptController extends Controller
         if ($request->has('item_type')) {
             $query->where('item_type', $request->item_type);
         }
+
+        // Filter by status
+        if ($request->has('status')) {
+            $status = $request->status;
+
+            if ($status === 'voided') {
+                $query->whereNotNull('voided_at');
+            } elseif ($status === 'refunded') {
+                // Refunded payments (usually result of voiding, but can be manual refund)
+                $query->whereHas('payment', function ($q) {
+                    $q->where('status', 'refunded');
+                });
+            } elseif ($status === 'completed') {
+                // Completed: Not voided, not deleted, and payment is completed
+                $query->whereNull('voided_at')
+                    ->whereHas('payment', function ($q) {
+                        $q->where('status', 'completed');
+                    });
+            } elseif ($status === 'deleted') {
+                // If filtering specifically for deleted, we must include trashed items
+                // The frontend might send with_trashed separately, but this ensures we get deleted items
+                $query->onlyTrashed();
+            }
+            // Unknown statuses are simply ignored, acting as "All" (except deleted unless requested)
+        }
+
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $receipts = $query->orderBy($sortBy, $sortOrder)
@@ -208,12 +234,78 @@ class ReceiptController extends Controller
     }
 
     /**
+     * Update the specified receipt in storage.
+     */
+    public function update(UpdateReceiptRequest $request, Receipt $receipt): JsonResponse
+    {
+        $validated = $request->validated();
+
+        // Prevent updates if receipt is voided
+        if ($receipt->voided_at) {
+            return response()->json(['message' => 'Cannot update a voided receipt'], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Update Receipt
+            // Explicitly map fields to update to avoid mass assignment or unintended overwrites
+            $receiptData = [];
+            if (array_key_exists('user_id', $validated)) $receiptData['user_id'] = $validated['user_id'];
+            if (array_key_exists('receipt_number', $validated)) $receiptData['receipt_number'] = $validated['receipt_number'];
+            if (array_key_exists('amount', $validated)) $receiptData['amount'] = $validated['amount'];
+
+            if (!empty($receiptData)) {
+                $receipt->update($receiptData);
+            }
+
+            // Update Payment if related fields changed
+            if ($receipt->payment) {
+                $paymentData = [];
+                if (array_key_exists('user_id', $validated)) $paymentData['user_id'] = $validated['user_id'];
+                if (array_key_exists('amount', $validated)) $paymentData['amount'] = $validated['amount'];
+                if (array_key_exists('payment_method', $validated)) $paymentData['payment_method'] = $validated['payment_method'];
+
+                // If payment date or notes changed, update details json
+                if (isset($validated['payment_date']) || isset($validated['notes'])) {
+                    $details = $receipt->payment->payment_details ?? [];
+                    if (isset($validated['payment_date'])) $details['payment_date'] = $validated['payment_date'];
+                    if (isset($validated['notes'])) $details['notes'] = $validated['notes'];
+                    $paymentData['payment_details'] = $details;
+                }
+
+                if (!empty($paymentData)) {
+                    $receipt->payment->update($paymentData);
+                }
+            }
+
+            // Regenerate PDF if requested or if critical info changed
+            if ($request->auto_generate_pdf) {
+                // PDF generation logic
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Receipt updated successfully',
+                'receipt' => $receipt->fresh(['user', 'payment']),
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to update receipt.',
+                'error' => $th->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
      * Display receipt statistics.
      */
     public function statistics(Request $request): JsonResponse
     {
         $totalRevenue = Receipt::whereNull('voided_at')->sum('total_amount');
-        
+
         $currentMonthRevenue = Receipt::whereNull('voided_at')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
@@ -243,7 +335,7 @@ class ReceiptController extends Controller
         try {
             $pdf = $this->receiptPdfService->generate($receipt);
             $pdfContent = $pdf->output();
-            
+
             Mail::to($receipt->user->email)->send(
                 new EntitlementReceiptMail($receipt, $pdfContent)
             );
@@ -267,7 +359,7 @@ class ReceiptController extends Controller
         try {
             // In this implementation, generate() always creates a fresh PDF from current DB data
             $this->receiptPdfService->generate($receipt);
-            
+
             return response()->json([
                 'message' => 'Receipt PDF regenerated successfully'
             ]);
