@@ -81,8 +81,14 @@ class MyFatoorahService implements PaymentServiceInterface
             'CustomerReference' => $customerReference,
             'Language' => 'en',
             'ExpiryDate' => now()->addDays(7)->toIso8601String(), // Extend expiry to 7 days
-            'SaveToken' => $autoRenew,
         ];
+
+        if ($autoRenew) {
+            $payload['SaveCardOptions'] = [
+                'SaveToken' => true,
+                'RetrieveSavedTokens' => true,
+            ];
+        }
 
         if (!empty($items)) {
             $payload['InvoiceItems'] = array_map(function ($item) {

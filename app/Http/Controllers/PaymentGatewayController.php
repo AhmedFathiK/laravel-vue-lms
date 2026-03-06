@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\DuplicateEntitlementException;
 use App\Models\Payment;
+use App\Models\PaymentToken;
 use App\Models\Receipt;
 use App\Models\BillingPlan;
 use App\Models\UserEntitlement;
@@ -216,6 +217,9 @@ class PaymentGatewayController extends Controller
                     'transaction_id' => $transactionId ?? $payment->transaction_id,
                 ]);
 
+                // Attempt to save token if available (in case webhook is delayed)
+                $this->attemptSaveToken($payment, $statusData['gateway_data'] ?? []);
+
                 $this->handlePostPayment($payment);
 
                 return redirect($this->successRedirectUrl($existingDetails, $payment->id));
@@ -301,6 +305,58 @@ class PaymentGatewayController extends Controller
         } catch (\Throwable $e) {
             Log::error("Failed to process post-payment actions for Payment {$payment->id}: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    private function attemptSaveToken(Payment $payment, array $data): void
+    {
+        $requestAutoRenew = $payment->payment_details['request_auto_renew'] ?? true;
+        // If it's explicitly false, skip. If null/true, proceed.
+        if ($requestAutoRenew === false || $requestAutoRenew === 'false' || $requestAutoRenew === 0 || $requestAutoRenew === '0') {
+            return;
+        }
+
+        if ($this->paymentGateway->gatewayKey() === 'myfatoorah') {
+            $this->saveMyFatoorahToken($payment, $data);
+        }
+    }
+
+    private function saveMyFatoorahToken(Payment $payment, array $data): void
+    {
+        $transactions = $data['InvoiceTransactions'] ?? [];
+        foreach ($transactions as $tx) {
+            $status = $tx['TransactionStatus'] ?? '';
+            // Check Card.Token, Token, and RecurringId
+            $token = $tx['Card']['Token'] ?? $tx['Token'] ?? null;
+
+            // Sometimes RecurringId is used as the token in V2
+            if (empty($token) && !empty($data['RecurringId'])) {
+                $token = $data['RecurringId'];
+            }
+
+            if ($status === 'Succss' && !empty($token)) {
+                $cardInfo = $tx['CardInfo'] ?? $tx['Card'] ?? [];
+
+                PaymentToken::updateOrCreate([
+                    'user_id' => $payment->user_id,
+                    'gateway' => 'myfatoorah',
+                    'token' => $token,
+                ], [
+                    'masked_pan' => $cardInfo['Number'] ?? null,
+                    'card_type' => $cardInfo['Brand'] ?? null,
+                    'is_default' => true,
+                    'last_used_at' => now(),
+                ]);
+
+                // Update other tokens for this user to not be default
+                PaymentToken::where('user_id', $payment->user_id)
+                    ->where('gateway', 'myfatoorah')
+                    ->where('token', '!=', $token)
+                    ->update(['is_default' => false]);
+
+                Log::info("MyFatoorah: Token saved from callback for user {$payment->user_id}");
+                break;
+            }
         }
     }
 

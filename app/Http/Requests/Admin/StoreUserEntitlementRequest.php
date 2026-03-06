@@ -29,7 +29,7 @@ class StoreUserEntitlementRequest extends FormRequest
             'payment_id' => ['nullable', 'exists:payments,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
-            'status' => ['required', 'string', 'in:active,canceled,expired'],
+            'status' => ['required', 'string', 'in:active,canceled,expired,past_due,grace_period'],
             'auto_renew' => ['boolean'],
             'cancellation_reason' => ['nullable', 'string', 'max:255'],
         ];

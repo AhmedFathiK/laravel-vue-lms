@@ -104,13 +104,14 @@ const statusOptions = [
   { title: 'Active', value: 'active' },
   { title: 'Canceled', value: 'canceled' },
   { title: 'Expired', value: 'expired' },
-  { title: 'Grace Period', value: 'grace_period' },
+  { title: 'Past Due', value: 'past_due' },
 ]
 
 // Helper functions for UI
 const resolveStatusVariant = item => {
   if (item.isGracePeriod) return 'warning'
   if (item.status === 'active') return 'success'
+  if (item.status === 'past_due') return 'warning'
   if (item.status === 'canceled') return 'secondary'
   if (item.status === 'expired') return 'error'
   

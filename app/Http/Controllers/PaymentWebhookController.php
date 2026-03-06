@@ -220,12 +220,18 @@ class PaymentWebhookController extends Controller
 
         foreach ($transactions as $tx) {
             $status = $tx['TransactionStatus'] ?? '';
-            $token = $tx['Token'] ?? null;
+            // MyFatoorah V2: Token is usually inside Card object
+            $token = $tx['Card']['Token'] ?? $tx['Token'] ?? null;
+            
+            // Sometimes RecurringId is used as the token in V2
+            if (empty($token) && !empty($data['RecurringId'])) {
+                $token = $data['RecurringId'];
+            }
 
             Log::info("MyFatoorah: Checking transaction", ['status' => $status, 'has_token' => !empty($token)]);
 
             if ($status === 'Succss' && !empty($token)) {
-                $cardInfo = $tx['CardInfo'] ?? [];
+                $cardInfo = $tx['CardInfo'] ?? $tx['Card'] ?? [];
 
                 \App\Models\PaymentToken::updateOrCreate([
                     'user_id' => $payment->user_id,

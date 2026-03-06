@@ -32,7 +32,7 @@ class UpdateUserEntitlementRequest extends FormRequest
             ],
             'starts_at' => ['sometimes', 'required', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
-            'status' => ['sometimes', 'required', 'string', 'in:active,canceled,expired'],
+            'status' => ['sometimes', 'required', 'string', 'in:active,canceled,expired,past_due,grace_period'],
             'auto_renew' => ['boolean'],
             'cancellation_reason' => ['nullable', 'string', 'max:255'],
         ];

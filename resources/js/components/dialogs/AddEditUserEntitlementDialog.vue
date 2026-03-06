@@ -54,6 +54,7 @@ const statusOptions = [
   { title: 'Active', value: 'active' },
   { title: 'Canceled', value: 'canceled' },
   { title: 'Expired', value: 'expired' },
+  { title: 'Past Due', value: 'past_due' },
 ]
 
 const dialogTitle = computed(() => props.dialogMode === 'add' ? 'Add User Entitlement' : 'Edit User Entitlement')

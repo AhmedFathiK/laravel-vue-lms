@@ -275,7 +275,7 @@ onMounted(fetchBillingData)
 
   <PricingPlanDialog
     v-model:is-dialog-visible="isPricingPlanDialogVisible"
-    :course-id="selectedEntitlementForAction?.course_id"
+    :course-id="selectedEntitlementForAction?.courseId"
     :active-entitlement="selectedEntitlementForAction"
   />
 
