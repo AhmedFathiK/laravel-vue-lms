@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\BillingPlan;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +22,7 @@ class MigrateEntitlements extends Command
      *
      * @var string
      */
-    protected $description = 'Migrate and refresh UserCapabilities for all active entitlements based on their Billing Plans.';
+    protected $description = 'Migrate and refresh UserFeatures for all active entitlements based on their Billing Plans.';
 
     /**
      * Execute the console command.

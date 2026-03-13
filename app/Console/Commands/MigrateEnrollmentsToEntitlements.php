@@ -5,10 +5,9 @@ namespace App\Console\Commands;
 use App\Models\BillingPlan;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Services\EntitlementService;
 use Illuminate\Console\Command;
-use App\Models\UserFeature;
 
 class MigrateEnrollmentsToEntitlements extends Command
 {

@@ -110,12 +110,12 @@ class Level extends Model
         }
 
         // Check if level is free
-        if ($this->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->course_id)) {
+        if ($this->is_free && $user->hasFeature('content.free.access', 'App\Models\Course', $this->course_id)) {
             return true;
         }
 
-        // Check paid access
-        if ($user->hasCapability('content.paid.access', 'App\Models\Course', $this->course_id)) {
+        // 2. Check paid access
+        if ($user->hasFeature('content.paid.access', 'App\Models\Course', $this->course_id)) {
             return true;
         }
 

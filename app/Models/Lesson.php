@@ -88,17 +88,17 @@ class Lesson extends Model
         }
 
         // Check lesson is free
-        if ($this->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->level->course_id)) {
+        if ($this->is_free && $user->hasFeature('content.free.access', 'App\Models\Course', $this->level->course_id)) {
             return true;
         }
 
-        // Check if level is free
-        if ($this->level->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->level->course_id)) {
+        // 2. Check if parent Level is free
+        if ($this->level->is_free && $user->hasFeature('content.free.access', 'App\Models\Course', $this->level->course_id)) {
             return true;
         }
 
-        // Check paid access
-        if ($user->hasCapability('content.paid.access', 'App\Models\Course', $this->level->course_id)) {
+        // 3. Check paid access
+        if ($user->hasFeature('content.paid.access', 'App\Models\Course', $this->level->course_id)) {
             return true;
         }
 

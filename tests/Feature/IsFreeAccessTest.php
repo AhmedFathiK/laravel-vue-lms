@@ -70,7 +70,7 @@ class IsFreeAccessTest extends TestCase
         ]);
     }
 
-    public function test_user_without_capabilities_cannot_access_anything()
+    public function test_user_without_features_cannot_access_anything()
     {
         // Set active course
         $this->user->active_course_id = $this->course->id;

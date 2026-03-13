@@ -96,16 +96,25 @@ class PlacementExamResultTest extends TestCase
             'status' => 'active',
         ]);
 
-        $entitlement->capabilities()->create([
-            'user_id' => $user->id,
+        $entitlement->features()->create([
+            'feature_code' => 'course.access',
+            'value' => 'true',
             'scope_type' => Course::class,
             'scope_id' => $course->id,
-            'feature_code' => 'course.access',
-            'parameters' => [],
         ]);
 
         // 1. Visit Course - Placement Exam should be incomplete
-        $response = $this->getJson("/api/learner/my-courses/{$course->id}");
+        // Set active course first
+        $res = $this->postJson('/api/user/active-course', ['course_id' => $course->id]);
+        if ($res->status() !== 200) {
+            dump($res->json());
+        }
+        $res->assertStatus(200);
+        
+        $response = $this->getJson("/api/learner/course-content");
+        if ($response->status() !== 200) {
+            dump($response->json());
+        }
         $response->assertStatus(200);
         $data = $response->json();
 
@@ -128,7 +137,10 @@ class PlacementExamResultTest extends TestCase
         ]);
 
         // 3. Visit Course again - Placement Exam should be completed with outcome
-        $response = $this->getJson("/api/learner/my-courses/{$course->id}");
+        // Ensure active course is still set (session persistence or token)
+        $this->postJson('/api/user/active-course', ['course_id' => $course->id]);
+        
+        $response = $this->getJson("/api/learner/course-content");
         $response->assertStatus(200);
         $data = $response->json();
 

@@ -11,7 +11,7 @@ use App\Models\Level;
 use App\Models\User;
 use App\Models\UserLevelProgress;
 use App\Models\UserStudiedLesson;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\UserEntitlement;
 use App\Models\BillingPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;

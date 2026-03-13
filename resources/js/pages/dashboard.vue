@@ -208,8 +208,8 @@ const userHasAnyProgress = computed(() => {
 const shouldOfferPlacement = computed(() => {
   if (!hasPlacementExam.value || userHasAnyProgress.value) return false
 
-  // Check capability
-  return authStore.user?.capabilities?.some(c => 
+  // Check feature
+  return authStore.user?.features?.some(c => 
     c.code === 'placement_test.access' && 
       c.scope_type === 'App\\Models\\Course' && 
       c.scope_id === courseData.value?.id,

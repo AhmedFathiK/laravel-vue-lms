@@ -14,7 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
 
-class RenewalCapabilitySyncTest extends TestCase
+class RenewalFeatureSyncTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -26,7 +26,9 @@ class RenewalCapabilitySyncTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Role::create(['name' => 'Student']);
+        if (!Role::where('name', 'Student')->exists()) {
+            Role::create(['name' => 'Student']);
+        }
         $this->user = User::factory()->create();
         $this->course = Course::factory()->create(['status' => 'published']);
         $this->service = app(EntitlementService::class);
@@ -47,19 +49,20 @@ class RenewalCapabilitySyncTest extends TestCase
         PlanFeature::create([
             'billing_plan_id' => $this->plan->id,
             'feature_id' => $featureA->id,
-            'scope_type' => 'App\Models\Course',
+            'scope_type' => Course::class,
             'scope_id' => $this->course->id,
             'value' => '1',
         ]);
     }
 
-    public function test_renewal_should_update_capabilities_to_match_current_plan()
+    public function test_renewal_should_update_features_to_match_current_plan()
     {
         // 1. Grant Entitlement (User gets Feature A)
         $entitlement = $this->service->grantEntitlement($this->user, $this->plan);
 
-        $this->assertTrue($this->user->hasCapability('feature.a', 'App\Models\Course', $this->course->id));
-        $this->assertFalse($this->user->hasCapability('feature.b', 'App\Models\Course', $this->course->id));
+        // Verify initial state
+        $this->assertTrue($this->user->hasFeature('feature.a', Course::class, $this->course->id));
+        $this->assertFalse($this->user->hasFeature('feature.b', Course::class, $this->course->id));
 
         // 2. Modify Plan: Remove Feature A, Add Feature B
         PlanFeature::where('billing_plan_id', $this->plan->id)->delete(); // Remove A
@@ -68,7 +71,7 @@ class RenewalCapabilitySyncTest extends TestCase
         PlanFeature::create([
             'billing_plan_id' => $this->plan->id,
             'feature_id' => $featureB->id,
-            'scope_type' => 'App\Models\Course',
+            'scope_type' => Course::class,
             'scope_id' => $this->course->id,
             'value' => '1',
         ]);
@@ -79,21 +82,22 @@ class RenewalCapabilitySyncTest extends TestCase
         // Refresh the user relation completely
         $this->user->refresh();
 
-        // 4. Verify Capabilities Updated
+        // 4. Verify Features Updated
         // Feature A should be GONE (or at least B should be present).
-        // If we want strictly "match current plan", A should be removed.
-        // If we want "additive", A might stay.
-        // Usually, a renewal implies "I am buying the plan AS IT IS NOW".
-        // So strict sync is preferred: User should have what the plan currently offers.
+        // Since renewal implies "I am buying the plan AS IT IS NOW", strict sync is preferred.
 
-        // Reload user capabilities
-        // Note: hasFeature might be cached or loaded from relation?
-        // Let's force load features
-        $hasA = $this->user->hasFeature('feature.a', 'App\Models\Course', $this->course->id);
-        $hasB = $this->user->hasFeature('feature.b', 'App\Models\Course', $this->course->id);
-
-        // Debug output
-        // dump($this->user->features()->pluck('feature_code')->toArray());
+        // Reload user features explicitly
+        $hasA = $this->user->features()
+            ->where('feature_code', 'feature.a')
+            ->where('scope_type', Course::class)
+            ->where('scope_id', $this->course->id)
+            ->exists();
+            
+        $hasB = $this->user->features()
+            ->where('feature_code', 'feature.b')
+            ->where('scope_type', Course::class)
+            ->where('scope_id', $this->course->id)
+            ->exists();
 
         $this->assertFalse($hasA, 'Old Feature A should be removed upon renewal');
         $this->assertTrue($hasB, 'New Feature B should be added upon renewal');

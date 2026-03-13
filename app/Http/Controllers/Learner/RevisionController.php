@@ -41,7 +41,7 @@ class RevisionController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Use FeatureAccessService to check for revision capability
+        // Use FeatureAccessService to check for revision feature
         // We want to ensure they have access AT LEAST for the active course context if possible,
         // or generally if no course is active?
         // Actually, the prompt asked to check "for his current active/used course".

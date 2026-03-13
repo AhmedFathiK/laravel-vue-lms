@@ -96,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Convert permissions to CASL rules
     abilityRules = convertPermissionsToCaslRules(userPermissions)
 
-    // Process Features from User Entitlements (previously capabilities)
+    // Process Features from User Entitlements
     if (userData && userData.features) {
       userData.features.forEach(feature => {
         const subject = feature.scope_type ? feature.scope_type.split('\\').pop() : 'all'

@@ -53,8 +53,8 @@ class FirstLevelLockingTest extends TestCase
         ]);
 
         // Mock Entitlement (User must have access to course)
-        // Usually done via billing plan or capability
-        // For simplicity, we can mock the entitlement check or just give the user the capability.
+        // Usually done via billing plan or feature
+        // For simplicity, we can mock the entitlement check or just give the user the feature.
         // But the controller checks entitlements.
         
         // Let's create a free plan and enroll the user? 
@@ -82,8 +82,8 @@ class FirstLevelLockingTest extends TestCase
             'status' => 'active', // Ensure status is active
         ]);
         
-        // Grant capability for the course
-        $entitlement->capabilities()->create([
+        // Grant feature for the course
+        $entitlement->features()->create([
             'user_id' => $user->id,
             'scope_type' => Course::class,
             'scope_id' => $course->id,
