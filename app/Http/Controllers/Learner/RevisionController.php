@@ -73,20 +73,19 @@ class RevisionController extends Controller
         }
 
         // Get allowed course IDs based on 'revision.access' capability
-        // We still need this list for filtering the query later
         $allowedCourseIds = $user->entitlements()
             ->active()
-            ->whereHas('capabilities', function ($q) {
+            ->whereHas('features', function ($q) {
                 $q->where('feature_code', 'revision.access')
                     ->where('scope_type', 'App\Models\Course');
             })
-            ->with(['capabilities' => function ($q) {
+            ->with(['features' => function ($q) {
                 $q->where('feature_code', 'revision.access')
                     ->where('scope_type', 'App\Models\Course');
             }])
             ->get()
             ->flatMap(function ($entitlement) {
-                return $entitlement->capabilities->pluck('scope_id');
+                return $entitlement->features->pluck('scope_id');
             })
             ->unique()
             ->values()
@@ -188,17 +187,17 @@ class RevisionController extends Controller
         // Get allowed course IDs based on 'revision.access' capability
         $allowedCourseIds = $user->entitlements()
             ->active()
-            ->whereHas('capabilities', function ($q) {
+            ->whereHas('features', function ($q) {
                 $q->where('feature_code', 'revision.access')
                     ->where('scope_type', 'App\Models\Course');
             })
-            ->with(['capabilities' => function ($q) {
+            ->with(['features' => function ($q) {
                 $q->where('feature_code', 'revision.access')
                     ->where('scope_type', 'App\Models\Course');
             }])
             ->get()
             ->flatMap(function ($entitlement) {
-                return $entitlement->capabilities->pluck('scope_id');
+                return $entitlement->features->pluck('scope_id');
             })
             ->unique()
             ->values()

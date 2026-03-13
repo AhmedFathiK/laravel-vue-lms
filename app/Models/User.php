@@ -141,11 +141,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all capabilities (features) granted to this user.
+     * Get all features (capabilities) granted to this user.
      */
-    public function capabilities()
+    public function features()
     {
-        return $this->hasManyThrough(UserCapability::class, UserEntitlement::class);
+        return $this->hasManyThrough(UserFeature::class, UserEntitlement::class);
     }
 
     /**
@@ -207,7 +207,7 @@ class User extends Authenticatable
 
         return $this->entitlements()
             ->active()
-            ->whereHas('capabilities', function ($q) use ($featureCode, $scopeType, $scopeId) {
+            ->whereHas('features', function ($q) use ($featureCode, $scopeType, $scopeId) {
                 $q->where('feature_code', $featureCode);
 
                 if ($scopeType !== null) {

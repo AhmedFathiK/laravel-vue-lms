@@ -5,6 +5,9 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use App\Http\Resources\UserEntitlementResource;
+use App\Models\UserFeature;
+
 class UserResource extends JsonResource
 {
     /**
@@ -19,12 +22,15 @@ class UserResource extends JsonResource
             'full_name' => $this->full_name,
             'email' => $this->email,
             'avatar' => $this->avatar,
-            'capabilities' => $this->capabilities->map(function ($cap) {
+            'roles' => $this->roles->pluck('name'),
+            'entitlements' => UserEntitlementResource::collection($this->whenLoaded('entitlements')),
+            // Add capabilities (features) to the user resource
+            'capabilities' => $this->features->map(function ($feature) {
                 return [
-                    'code' => $cap->feature_code,
-                    'scope_type' => $cap->scope_type,
-                    'scope_id' => $cap->scope_id,
-                    'value' => $cap->value,
+                    'code' => $feature->feature_code,
+                    'scope_type' => $feature->scope_type,
+                    'scope_id' => $feature->scope_id,
+                    'value' => $feature->value,
                 ];
             }),
         ];

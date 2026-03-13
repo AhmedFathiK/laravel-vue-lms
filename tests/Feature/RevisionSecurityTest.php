@@ -6,7 +6,7 @@ use App\Models\BillingPlan;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\Feature;
 use App\Models\PlanFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +27,7 @@ class RevisionSecurityTest extends TestCase
         Role::create(['name' => 'Student']);
         $this->user = User::factory()->create();
         $this->course = Course::factory()->create(['status' => 'published']);
-        
+
         // Seed Revision Feature
         Feature::firstOrCreate(['code' => 'revision.access'], ['description' => 'Access Revision']);
     }
@@ -60,7 +60,7 @@ class RevisionSecurityTest extends TestCase
         // The index endpoint is mapped to /api/revisions (likely, based on controller resource) or /api/revision/items?
         // Let's check routes file or assume common patterns.
         // Actually, let's test the endpoint we DID secure: index() and getGrammarTopics()
-        
+
         // Assuming route for index is GET /api/revision/items or similar.
         // Let's use getGrammarTopics which we definitely secured.
         $response = $this->actingAs($this->user)
@@ -89,7 +89,7 @@ class RevisionSecurityTest extends TestCase
             'starts_at' => now(),
         ]);
 
-        UserCapability::create([
+        UserFeature::create([
             'user_entitlement_id' => $entitlement->id,
             'feature_code' => 'revision.access',
             'scope_type' => 'App\Models\Course',

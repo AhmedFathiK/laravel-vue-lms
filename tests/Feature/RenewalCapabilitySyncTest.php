@@ -6,7 +6,7 @@ use App\Models\BillingPlan;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\Feature;
 use App\Models\PlanFeature;
 use App\Services\EntitlementService;
@@ -93,7 +93,7 @@ class RenewalCapabilitySyncTest extends TestCase
         $hasB = $this->user->hasCapability('feature.b', 'App\Models\Course', $this->course->id);
 
         // Debug output
-        // dump($this->user->capabilities()->pluck('feature_code')->toArray());
+        // dump($this->user->features()->pluck('feature_code')->toArray());
 
         $this->assertFalse($hasA, 'Old Feature A should be removed upon renewal');
         $this->assertTrue($hasB, 'New Feature B should be added upon renewal');

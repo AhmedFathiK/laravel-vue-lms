@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\PlanFeature;
 
 class EntitlementCapabilityBackfillSeeder extends Seeder
@@ -14,7 +14,7 @@ class EntitlementCapabilityBackfillSeeder extends Seeder
      */
     public function run(): void
     {
-        $entitlements = UserEntitlement::with('billingPlan.planFeatures.feature')->get();
+        $entitlements = UserEntitlement::where('status', 'active')->get();
 
         foreach ($entitlements as $entitlement) {
             $plan = $entitlement->billingPlan;
@@ -23,7 +23,7 @@ class EntitlementCapabilityBackfillSeeder extends Seeder
             foreach ($plan->planFeatures as $pf) {
                 if (!$pf->feature) continue;
 
-                UserCapability::firstOrCreate([
+                UserFeature::firstOrCreate([
                     'user_entitlement_id' => $entitlement->id,
                     'feature_code' => $pf->feature->code,
                     'scope_type' => $pf->scope_type,

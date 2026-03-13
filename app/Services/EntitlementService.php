@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\BillingPlan;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\Payment;
 use App\Models\CourseEnrollment;
 use App\Models\Receipt;
@@ -206,11 +206,11 @@ class EntitlementService
             foreach ($plan->planFeatures as $pf) {
                 // Skip if feature definition is missing
                 if (!$pf->feature) {
-                    Log::warning("PlanFeature {$pf->id} has missing Feature definition. Skipping capability creation.");
+                    Log::warning("PlanFeature {$pf->id} has missing Feature definition. Skipping feature creation.");
                     continue;
                 }
 
-                UserCapability::create([
+                UserFeature::create([
                     'user_entitlement_id' => $entitlement->id,
                     'feature_code' => $pf->feature->code,
                     'scope_type' => $pf->scope_type,
@@ -287,7 +287,7 @@ class EntitlementService
 
             // 3.1 SYNC CAPABILITIES: Remove old ones and re-add current plan features
             // This ensures user gets the updated features of the plan upon renewal.
-            $entitlement->capabilities()->delete();
+            $entitlement->features()->delete();
 
             foreach ($plan->planFeatures as $pf) {
                 // If feature definition is missing, skip
@@ -305,7 +305,7 @@ class EntitlementService
             foreach ($plan->planFeatures as $pf) {
                 if (!$pf->feature) continue;
 
-                UserCapability::create([
+                UserFeature::create([
                     'user_entitlement_id' => $entitlement->id,
                     'feature_code' => $pf->feature->code,
                     'scope_type' => $pf->scope_type,
@@ -473,9 +473,9 @@ class EntitlementService
         }
 
         // 1. Find active entitlements
-        // 2. Join with capabilities
+        // 2. Join with features
         // 3. Check for match
-        return $user->capabilities()
+        return $user->features()
             ->where('feature_code', $featureCode)
             ->where(function ($q) use ($scopeType, $scopeId) {
                 $q->whereNull('scope_id') // Global access (e.g. All Courses)

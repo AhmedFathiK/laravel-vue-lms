@@ -50,9 +50,9 @@ class UserEntitlement extends Model
         return $this->belongsTo(Payment::class);
     }
 
-    public function capabilities(): HasMany
+    public function features(): HasMany
     {
-        return $this->hasMany(UserCapability::class);
+        return $this->hasMany(UserFeature::class);
     }
 
     public function isActive(): bool

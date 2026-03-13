@@ -8,7 +8,7 @@ use App\Models\Level;
 use App\Models\Lesson;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
@@ -104,7 +104,7 @@ class IsFreeAccessTest extends TestCase
             'starts_at' => now(),
         ]);
 
-        UserCapability::create([
+        UserFeature::create([
             'user_entitlement_id' => $entitlement->id,
             'scope_type' => 'App\Models\Course',
             'scope_id' => $this->course->id,
@@ -192,7 +192,7 @@ class IsFreeAccessTest extends TestCase
             'starts_at' => now(),
         ]);
 
-        UserCapability::create([
+        UserFeature::create([
             'user_entitlement_id' => $entitlement->id,
             'scope_type' => 'App\Models\Course',
             'scope_id' => $this->course->id,
@@ -253,7 +253,7 @@ class IsFreeAccessTest extends TestCase
             'starts_at' => now(),
         ]);
 
-        UserCapability::create([
+        UserFeature::create([
             'user_entitlement_id' => $entitlement->id,
             'scope_type' => 'App\Models\Course',
             'scope_id' => $this->course->id,
