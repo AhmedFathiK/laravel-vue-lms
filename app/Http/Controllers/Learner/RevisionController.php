@@ -95,7 +95,7 @@ class RevisionController extends Controller
             ->with('revisionable')
             ->orderBy('due_date', 'asc');
 
-        // Apply Capability Filter
+        // Apply Feature Filter
         $query->whereHasMorph(
             'revisionable',
             [Term::class, Concept::class],

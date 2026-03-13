@@ -190,7 +190,7 @@ class EntitlementService
                 'auto_renew' => $autoRenew,
             ]);
 
-            // 4. Snapshot Capabilities
+            // 4. Snapshot Features
             // 4.1 Course Access (Legacy/Progress support)
             foreach ($plan->courses as $course) {
                 CourseEnrollment::updateOrCreate([
@@ -288,7 +288,7 @@ class EntitlementService
                 ]);
             }
 
-            // 3.1 SYNC CAPABILITIES: Remove old ones and re-add current plan features
+            // 3.1 SYNC FEATURES: Remove old ones and re-add current plan features
             // This ensures user gets the updated features of the plan upon renewal.
             $entitlement->features()->delete();
 

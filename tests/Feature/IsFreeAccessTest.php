@@ -86,7 +86,7 @@ class IsFreeAccessTest extends TestCase
 
     public function test_user_with_free_access_can_access_free_level_but_not_paid()
     {
-        // Grant Free Access Capability via Entitlement
+        // Grant Free Access Feature via Entitlement
         $plan = BillingPlan::create([
             'name' => 'Free Plan',
             'price' => 0,
@@ -174,7 +174,7 @@ class IsFreeAccessTest extends TestCase
 
     public function test_user_with_paid_access_can_access_paid_level()
     {
-        // Grant Paid Access Capability
+        // Grant Paid Access Feature
         $plan = BillingPlan::create([
             'name' => 'Paid Plan',
             'price' => 100,

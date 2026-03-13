@@ -41,7 +41,7 @@ class CoursesContentController extends Controller
             abort(404);
         }
 
-        // 2. Enforce Entitlement (Strict via Capabilities)
+        // 2. Enforce Entitlement (Strict via Features)
         if (!$lesson->isAccessibleToUser($user)) {
             return response()->json([
                 "error" => "You do not have access to this lesson content.",
