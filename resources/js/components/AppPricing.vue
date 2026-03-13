@@ -47,6 +47,7 @@ const emit = defineEmits(['loaded'])
 
 const annualMonthlyPlanPriceToggler = ref(false)
 const pricingPlans = ref([])
+const allFeatures = ref([])
 const isLoading = ref(false)
 const upgradeCalculations = ref({})
 
@@ -64,7 +65,9 @@ const fetchPlans = async () => {
   try {
     const response = await api.get(`/learner/courses/${props.courseId}/billing-plans`)
 
+    console.log('AppPricing response:', response)
     pricingPlans.value = response.plans || []
+    allFeatures.value = response.allFeatures || []
     emit('loaded', pricingPlans.value.length)
   } catch (error) {
     console.error('Failed to fetch plans', error)
@@ -219,6 +222,10 @@ const getPaymentMethodIcon = method => {
   
   return method.image
 }
+
+const hasFeature = (plan, featureId) => {
+  return plan.features && plan.features.some(f => f.id === featureId)
+}
 </script>
 
 <template>
@@ -356,18 +363,22 @@ const getPaymentMethodIcon = method => {
           <!-- 👉 Plan features -->
           <VList class="card-list mb-4">
             <VListItem
-              v-for="feature in plan.features"
+              v-for="feature in allFeatures"
               :key="feature.id"
             >
               <template #prepend>
                 <VIcon
-                  size="8"
-                  icon="tabler-circle-filled"
-                  color="rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity))"
+                  :icon="hasFeature(plan, feature.id) ? 'tabler-check' : 'tabler-x'"
+                  :color="hasFeature(plan, feature.id) ? 'primary' : 'disabled'"
+                  size="20"
+                  class="me-2"
                 />
               </template>
 
-              <VListItemTitle class="text-body-1">
+              <VListItemTitle 
+                class="text-body-1"
+                :class="!hasFeature(plan, feature.id) && 'text-disabled'"
+              >
                 {{ feature.name }}
               </VListItemTitle>
             </VListItem>

@@ -496,16 +496,32 @@ class LearnerEntitlementController extends Controller
             ->orderBy('price');
 
         // Filter out downgrade plans if user has an active entitlement
+        /* 
+        // DISABLED: Allow users to see all plans, but maybe restrict action in UI or acquire endpoint
         if ($activeEntitlement && $activeEntitlement->isActive() && ($activeEntitlement->ends_at === null || $activeEntitlement->ends_at->isFuture())) {
             $currentPrice = $activeEntitlement->billingPlan->price;
             $plansQuery->where('price', '>=', $currentPrice);
         }
+        */
 
         $plans = $plansQuery->get();
+        
+        // Get all possible features for comparison
+        $allFeatures = \App\Models\Feature::select('id', 'code', 'description')
+            ->orderBy('description')
+            ->get()
+            ->map(function ($feature) {
+                return [
+                    'id' => $feature->id,
+                    'code' => $feature->code,
+                    'name' => $feature->description ?? $feature->code,
+                ];
+            });
 
         return response()->json([
             'plans' => EntitlementPlanResource::collection($plans)->resolve(),
             'active_entitlement' => $activeEntitlement ? (new \App\Http\Resources\UserEntitlementResource($activeEntitlement))->resolve() : null,
+            'all_features' => $allFeatures,
         ]);
     }
 
