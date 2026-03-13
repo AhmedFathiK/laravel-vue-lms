@@ -18,6 +18,15 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'full_name' => $this->full_name,
             'email' => $this->email,
+            'avatar' => $this->avatar,
+            'capabilities' => $this->capabilities->map(function ($cap) {
+                return [
+                    'code' => $cap->feature_code,
+                    'scope_type' => $cap->scope_type,
+                    'scope_id' => $cap->scope_id,
+                    'value' => $cap->value,
+                ];
+            }),
         ];
     }
 }

@@ -37,6 +37,7 @@ const defaultForm = () => ({
   status: 'draft',
   courseId: props.courseId,
   finalExamId: null,
+  isFree: false,
 })
 
 const form = ref(defaultForm())
@@ -152,6 +153,19 @@ const { isLoading, validationErrors, onSubmit } = useCrudSubmit({
                 label="Status"
                 placeholder="Select Status"
                 :error-messages="validationErrors.status"
+              />
+            </VCol>
+
+            <!-- Is Free -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VSwitch
+                v-model="form.isFree"
+                label="Is Free?"
+                hint="Allow access without paid subscription"
+                persistent-hint
               />
             </VCol>
 

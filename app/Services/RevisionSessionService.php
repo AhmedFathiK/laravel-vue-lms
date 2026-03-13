@@ -17,6 +17,25 @@ class RevisionSessionService
      */
     public function generateSession(User $user, ?Course $course = null, string $type = 'both', int $limit = 20, bool $earlyReview = false): array
     {
+        // 0. Get allowed course IDs
+        $allowedCourseIds = $user->entitlements()
+            ->active()
+            ->whereHas('capabilities', function ($q) {
+                $q->where('feature_code', 'revision.access')
+                  ->where('scope_type', 'App\Models\Course');
+            })
+            ->with(['capabilities' => function ($q) {
+                $q->where('feature_code', 'revision.access')
+                  ->where('scope_type', 'App\Models\Course');
+            }])
+            ->get()
+            ->flatMap(function ($entitlement) {
+                return $entitlement->capabilities->pluck('scope_id');
+            })
+            ->unique()
+            ->values()
+            ->all();
+
         // 1. Fetch due items
         $query = RevisionItem::where('user_id', $user->id)
             ->with('revisionable')
@@ -27,11 +46,25 @@ class RevisionSessionService
         }
 
         if ($course) {
+            // Check if user has access to this course
+            if (!in_array($course->id, $allowedCourseIds)) {
+                return [];
+            }
+
             $query->whereHasMorph(
                 'revisionable',
                 [Term::class, Concept::class],
                 function ($q) use ($course) {
                     $q->where('course_id', $course->id);
+                }
+            );
+        } else {
+            // Filter by allowed courses
+            $query->whereHasMorph(
+                'revisionable',
+                [Term::class, Concept::class],
+                function ($q) use ($allowedCourseIds) {
+                    $q->whereIn('course_id', $allowedCourseIds);
                 }
             );
         }

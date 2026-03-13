@@ -184,8 +184,11 @@ class LearnerLessonAccessTest extends TestCase
         ]);
 
         // 4. Request Course Content
+        $user->active_course_id = $course->id;
+        $user->save();
+
         $response = $this->actingAs($user)
-            ->getJson("/api/learner/my-courses/{$course->id}");
+            ->getJson("/api/learner/course-content");
 
         $response->assertStatus(200);
 

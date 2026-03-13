@@ -26,6 +26,7 @@ class Level extends Model
         'sort_order',
         'status',
         'final_exam_id',
+        'is_free',
     ];
 
     public array $translatable = [
@@ -35,6 +36,7 @@ class Level extends Model
 
     protected $casts = [
         'sort_order' => 'integer',
+        'is_free' => 'boolean',
     ];
 
     /**
@@ -89,7 +91,7 @@ class Level extends Model
     public function currentUserProgress(): HasOne
     {
         return $this->hasOne(UserLevelProgress::class)
-            ->where('user_id', auth()->id());
+            ->where('user_id', \Illuminate\Support\Facades\Auth::id());
     }
 
     public function placementAttempts(): HasMany
@@ -107,17 +109,17 @@ class Level extends Model
             return false;
         }
 
-        // Check if user has entitlement for this course
-        $entitlements = $user->entitlements()
-            ->active()
-            ->whereHas('billingPlan.courses', function ($q) {
-                $q->where('courses.id', $this->course_id);
-            })
-            ->get();
+        // Check if level is free
+        if ($this->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->course_id)) {
+            return true;
+        }
 
-        return $entitlements->filter(function ($entitlement) {
-            return $entitlement->isActive();
-        })->isNotEmpty();
+        // Check paid access
+        if ($user->hasCapability('content.paid.access', 'App\Models\Course', $this->course_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

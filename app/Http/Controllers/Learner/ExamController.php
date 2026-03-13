@@ -71,6 +71,18 @@ class ExamController extends Controller
             ], 404);
         }
 
+        // Check placement test capability
+        $course = $exam->course;
+        if ($course && $course->placement_exam_id === $exam->id) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            if (!$user->hasCapability('placement_test.access', 'App\Models\Course', $course->id)) {
+                return response()->json([
+                    'message' => 'You do not have access to the placement test.'
+                ], 403);
+            }
+        }
+
         // Check if the user has reached the maximum attempts
         if ($exam->max_attempts > 0) {
             $attemptsCount = ExamAttempt::where('user_id', Auth::id())
@@ -380,16 +392,19 @@ class ExamController extends Controller
     public function getPlacementTest(Request $request): JsonResponse
     {
         $courseId = $request->input('course_id');
+        $course = \App\Models\Course::with('placementExam')->find($courseId);
 
-        $placementTest = Exam::where('course_id', $courseId)
-            ->where('type', Exam::TYPE_PLACEMENT)
-            ->where('is_active', true)
-            ->where('status', 'published')
-            ->first();
-
-        if (!$placementTest) {
+        if (!$course || !$course->placementExam) {
             return response()->json([
                 'message' => 'No placement test available for this course'
+            ], 404);
+        }
+
+        $placementTest = $course->placementExam;
+
+        if (!$placementTest->is_active || $placementTest->status !== 'published') {
+            return response()->json([
+                'message' => 'Placement test is not currently available'
             ], 404);
         }
 

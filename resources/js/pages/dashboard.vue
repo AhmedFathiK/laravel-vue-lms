@@ -6,6 +6,7 @@ import { formatDate } from '@core/utils/formatters'
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -15,6 +16,7 @@ definePage({
 
 const router = useRouter()
 const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 
 const courseData = ref(null)
 const loading = ref(true)
@@ -204,7 +206,14 @@ const userHasAnyProgress = computed(() => {
 })
 
 const shouldOfferPlacement = computed(() => {
-  return hasPlacementExam.value && !userHasAnyProgress.value
+  if (!hasPlacementExam.value || userHasAnyProgress.value) return false
+
+  // Check capability
+  return authStore.user?.capabilities?.some(c => 
+    c.code === 'placement_test.access' && 
+      c.scope_type === 'App\\Models\\Course' && 
+      c.scope_id === courseData.value?.id,
+  ) ?? false
 })
 
 const placementResult = computed(() => {

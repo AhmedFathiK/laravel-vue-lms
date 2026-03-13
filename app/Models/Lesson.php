@@ -25,6 +25,7 @@ class Lesson extends Model
         'reshow_count',
         'require_correct_answers',
         'thumbnail',
+        'is_free',
     ];
 
     public array $translatable = [
@@ -33,10 +34,13 @@ class Lesson extends Model
     ];
 
     protected $casts = [
+        'title' => 'array',
+        'description' => 'array',
         'sort_order' => 'integer',
         'reshow_incorrect_slides' => 'boolean',
         'reshow_count' => 'integer',
         'require_correct_answers' => 'boolean',
+        'is_free' => 'boolean',
     ];
 
     /**
@@ -83,8 +87,22 @@ class Lesson extends Model
             return false;
         }
 
-        // Check level access which handles entitlement checks
-        return $this->level->isAccessibleToUser($user);
+        // Check lesson is free
+        if ($this->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->level->course_id)) {
+            return true;
+        }
+
+        // Check if level is free
+        if ($this->level->is_free && $user->hasCapability('content.free.access', 'App\Models\Course', $this->level->course_id)) {
+            return true;
+        }
+
+        // Check paid access
+        if ($user->hasCapability('content.paid.access', 'App\Models\Course', $this->level->course_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

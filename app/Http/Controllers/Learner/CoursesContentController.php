@@ -37,22 +37,10 @@ class CoursesContentController extends Controller
             abort(404);
         }
 
-        // 2. Enforce Entitlement (Strict)
-        // Retrieve entitlements first, then filter using PHP logic to ensure accurate grace period calculation
-        $entitlements = $user->entitlements()
-            ->active()
-            ->whereHas('billingPlan.courses', function ($query) use ($course) {
-                $query->where('courses.id', $course->id);
-            })
-            ->get();
-
-        $hasEntitlement = $entitlements->filter(function ($entitlement) {
-            return $entitlement->isActive();
-        })->isNotEmpty();
-
-        if (!$hasEntitlement) {
+        // 2. Enforce Entitlement (Strict via Capabilities)
+        if (!$lesson->isAccessibleToUser($user)) {
             return response()->json([
-                "error" => "You do not have active access to this course.",
+                "error" => "You do not have access to this lesson content.",
                 "course_id" => $course->id
             ], 403);
         }
@@ -313,41 +301,58 @@ class CoursesContentController extends Controller
             // Access Logic:
             // 1. If explicit status exists -> Use it.
             // 2. If NO status exists -> Only unlock if it's the FIRST level.
+            // 3. If Level is FREE and User has capability -> Unlock it.
 
             $isLevelUnlocked = false;
 
-            if ($levelStatus) {
-                if (in_array($levelStatus, [UserLevelProgress::STATUS_UNLOCKED, UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_IN_PROGRESS])) {
-                    $isLevelUnlocked = true;
-                }
-            } else {
-                if ($level['id'] === $firstLevelId) {
-                    $isLevelUnlocked = true;
+            // Check Capability for Free Level
+            if (($level['is_free'] ?? false) && $user->hasCapability('content.free.access', 'App\Models\Course', $course->id)) {
+                $isLevelUnlocked = true;
+                $levelStatus = UserLevelProgress::STATUS_UNLOCKED; // Treat as unlocked for logic
 
-                    // PERSISTENCE FIX: Create the record in DB so it remains unlocked even if sort order changes
-                    UserLevelProgress::firstOrCreate(
-                        [
-                            'user_id' => Auth::id(),
-                            'course_id' => $course->id,
-                            'level_id' => $level['id']
-                        ],
-                        [
-                            'status' => UserLevelProgress::STATUS_UNLOCKED,
-                            'unlocked_at' => now()
-                        ]
-                    );
+                // Inject status so frontend knows it is unlocked
+                $level['current_user_progress'] = [
+                    'status' => UserLevelProgress::STATUS_UNLOCKED
+                ];
+                $level['currentUserProgress'] = [
+                    'status' => UserLevelProgress::STATUS_UNLOCKED
+                ];
+            }
 
-                    // Inject status so frontend knows it is unlocked
-                    $level['current_user_progress'] = [
-                        'status' => UserLevelProgress::STATUS_UNLOCKED
-                    ];
-                    // Also inject with camelCase to ensure middleware/frontend consistency
-                    $level['currentUserProgress'] = [
-                        'status' => UserLevelProgress::STATUS_UNLOCKED
-                    ];
-                    // Update local variable to match downstream logic if needed
-                    $levelStatus = UserLevelProgress::STATUS_UNLOCKED;
-                    // Log::info("Injected UNLOCKED status for Level ID: {$level['id']}");
+            if (!$isLevelUnlocked) {
+                if ($levelStatus) {
+                    if (in_array($levelStatus, [UserLevelProgress::STATUS_UNLOCKED, UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_IN_PROGRESS])) {
+                        $isLevelUnlocked = true;
+                    }
+                } else {
+                    if ($level['id'] === $firstLevelId) {
+                        $isLevelUnlocked = true;
+
+                        // PERSISTENCE FIX: Create the record in DB so it remains unlocked even if sort order changes
+                        UserLevelProgress::firstOrCreate(
+                            [
+                                'user_id' => Auth::id(),
+                                'course_id' => $course->id,
+                                'level_id' => $level['id']
+                            ],
+                            [
+                                'status' => UserLevelProgress::STATUS_UNLOCKED,
+                                'unlocked_at' => now()
+                            ]
+                        );
+
+                        // Inject status so frontend knows it is unlocked
+                        $level['current_user_progress'] = [
+                            'status' => UserLevelProgress::STATUS_UNLOCKED
+                        ];
+                        // Also inject with camelCase to ensure middleware/frontend consistency
+                        $level['currentUserProgress'] = [
+                            'status' => UserLevelProgress::STATUS_UNLOCKED
+                        ];
+                        // Update local variable to match downstream logic if needed
+                        $levelStatus = UserLevelProgress::STATUS_UNLOCKED;
+                        // Log::info("Injected UNLOCKED status for Level ID: {$level['id']}");
+                    }
                 }
             }
 
@@ -384,7 +389,21 @@ class CoursesContentController extends Controller
             $currentLevelPreviousItemCompleted = true; // Start of level is always accessible IF level is unlocked
 
             foreach ($items as &$item) {
-                if (!$isLevelUnlocked) {
+                // Determine if item is free:
+                // 1. Explicitly free item
+                // 2. Or inherited from free level
+                $isItemFree = (($item['is_free'] ?? false) || ($level['is_free'] ?? false))
+                    && $user->hasCapability('content.free.access', 'App\Models\Course', $course->id);
+
+                // Determine if user has paid access
+                $hasPaidAccess = $user->hasCapability('content.paid.access', 'App\Models\Course', $course->id);
+
+                if ($isItemFree) {
+                    $item['locked'] = false;
+                } elseif (!$hasPaidAccess) {
+                    // CRITICAL FIX: If item is NOT free and user has NO paid access -> Always locked
+                    $item['locked'] = true;
+                } elseif (!$isLevelUnlocked) {
                     // Level is locked -> Everything is locked
                     $item['locked'] = true;
                 } elseif ($isFullyOpen) {
@@ -393,10 +412,6 @@ class CoursesContentController extends Controller
                 } else {
                     // Level is unlocked/in_progress -> Enforce sequence
                     if ($item['type'] === 'exam') {
-                        // Level exams are usually unlocked if lessons are done? 
-                        // Or just unlocked? Let's say unlocked if it's the last thing.
-                        // Standard logic: Level exam is unlocked if all lessons are done?
-                        // Or just sequential.
                         $item['locked'] = !$currentLevelPreviousItemCompleted;
                     } else {
                         $item['locked'] = !$currentLevelPreviousItemCompleted;
@@ -410,18 +425,7 @@ class CoursesContentController extends Controller
                     $currentLevelPreviousItemCompleted = false;
                 }
             }
-            unset($item);
-
-            // We don't really use $previousCompleted for cross-level locking anymore, 
-            // because UserLevelProgress handles level unlocking.
-            // But we might need it for the Course Final Exam.
-            // A level is "passed" for the purpose of the Final Exam if:
-            // 1. It is skipped (counts as passed)
-            // 2. It is completed
-            // 3. Or just checking if the last item is done?
-
-            // Let's rely on UserLevelProgress status for simplicity.
-            // If level is skipped/completed -> Passed.
+            unset($item); // Break reference
 
             $level['items'] = $items;
             unset($level['lessons']);

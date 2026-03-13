@@ -171,4 +171,35 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserStreak::class);
     }
+
+    /**
+     * Check if the user has a specific capability via an active entitlement.
+     *
+     * @param string $featureCode The capability code (e.g., 'revision.access')
+     * @param string|null $scopeType Optional scope type (e.g., 'App\Models\Course')
+     * @param int|null $scopeId Optional scope ID
+     * @return bool
+     */
+    public function hasCapability(string $featureCode, ?string $scopeType = null, ?int $scopeId = null): bool
+    {
+        // Check active entitlements
+        return $this->entitlements()
+            ->where(function ($q) {
+                // Use the scopeActive logic manually or call the scope if available on the relation query
+                // Since UserEntitlement has scopeActive, we can use it.
+                $q->active();
+            })
+            ->whereHas('capabilities', function ($q) use ($featureCode, $scopeType, $scopeId) {
+                $q->where('feature_code', $featureCode);
+
+                if ($scopeType !== null) {
+                    $q->where('scope_type', $scopeType);
+                }
+
+                if ($scopeId !== null) {
+                    $q->where('scope_id', $scopeId);
+                }
+            })
+            ->exists();
+    }
 }

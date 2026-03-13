@@ -32,9 +32,42 @@ class RevisionController extends Controller
      */
     public function index(RevisionRequest $request): JsonResponse
     {
-        $query = RevisionItem::where('user_id', Auth::id())
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Get allowed course IDs based on 'revision.access' capability
+        $allowedCourseIds = $user->entitlements()
+            ->active()
+            ->whereHas('capabilities', function ($q) {
+                $q->where('feature_code', 'revision.access')
+                    ->where('scope_type', 'App\Models\Course');
+            })
+            ->with(['capabilities' => function ($q) {
+                $q->where('feature_code', 'revision.access')
+                    ->where('scope_type', 'App\Models\Course');
+            }])
+            ->get()
+            ->flatMap(function ($entitlement) {
+                return $entitlement->capabilities->pluck('scope_id');
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        $query = RevisionItem::where('user_id', $user->id)
             ->with('revisionable')
             ->orderBy('due_date', 'asc');
+
+        // Apply Capability Filter
+        $query->whereHasMorph(
+            'revisionable',
+            [Term::class, Concept::class],
+            function ($q) use ($allowedCourseIds) {
+                $q->whereIn('course_id', $allowedCourseIds);
+            }
+        );
+
+        // Filter by state
 
         // Filter by state
         if ($request->has('state')) {
@@ -97,7 +130,28 @@ class RevisionController extends Controller
     public function getGrammarTopics(Request $request): JsonResponse
     {
         $userId = Auth::id();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         $courseId = $request->input('course_id');
+
+        // Get allowed course IDs based on 'revision.access' capability
+        $allowedCourseIds = $user->entitlements()
+            ->active()
+            ->whereHas('capabilities', function ($q) {
+                $q->where('feature_code', 'revision.access')
+                    ->where('scope_type', 'App\Models\Course');
+            })
+            ->with(['capabilities' => function ($q) {
+                $q->where('feature_code', 'revision.access')
+                    ->where('scope_type', 'App\Models\Course');
+            }])
+            ->get()
+            ->flatMap(function ($entitlement) {
+                return $entitlement->capabilities->pluck('scope_id');
+            })
+            ->unique()
+            ->values()
+            ->all();
 
         // Fetch categories and their concepts
         $query = \App\Models\ConceptCategory::with(['concepts' => function ($q) {
@@ -105,7 +159,12 @@ class RevisionController extends Controller
         }]);
 
         if ($courseId) {
+            if (!in_array($courseId, $allowedCourseIds)) {
+                return response()->json([]);
+            }
             $query->where('course_id', $courseId);
+        } else {
+            $query->whereIn('course_id', $allowedCourseIds);
         }
 
         $categories = $query->get();
