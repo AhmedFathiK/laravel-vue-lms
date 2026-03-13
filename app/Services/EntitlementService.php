@@ -285,6 +285,35 @@ class EntitlementService
                 ]);
             }
 
+            // 3.1 SYNC CAPABILITIES: Remove old ones and re-add current plan features
+            // This ensures user gets the updated features of the plan upon renewal.
+            $entitlement->capabilities()->delete();
+
+            foreach ($plan->planFeatures as $pf) {
+                // If feature definition is missing, skip
+                // Note: In tests we might create PlanFeature without Feature relation if not careful,
+                // but in this test we created Feature models.
+                // However, we need to ensure $plan->planFeatures is reloaded if we modified DB directly.
+
+                // FORCE RELOAD plan features to ensure we get the latest DB state
+                // because the $plan object passed might have old relations loaded.
+            }
+
+            // Reload plan features to be sure
+            $plan->load('planFeatures.feature');
+
+            foreach ($plan->planFeatures as $pf) {
+                if (!$pf->feature) continue;
+
+                UserCapability::create([
+                    'user_entitlement_id' => $entitlement->id,
+                    'feature_code' => $pf->feature->code,
+                    'scope_type' => $pf->scope_type,
+                    'scope_id' => $pf->scope_id,
+                    'value' => $pf->value,
+                ]);
+            }
+
             // 4. Create Receipt
             if ($payment) {
                 Receipt::create([
