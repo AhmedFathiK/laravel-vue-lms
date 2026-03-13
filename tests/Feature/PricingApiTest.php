@@ -47,8 +47,6 @@ class PricingApiTest extends TestCase
             ->getJson("/api/learner/courses/{$course->id}/billing-plans");
 
         $response->assertStatus(200);
-        
-        $response->dump(); // Add dump to see what's wrong
 
         $response->assertJsonStructure([
             'plans',
@@ -59,7 +57,7 @@ class PricingApiTest extends TestCase
         // Check that allFeatures is populated
         $allFeatures = $response->json('allFeatures');
         $this->assertNotEmpty($allFeatures, 'allFeatures should not be empty');
-        
+
         // Check that plans have features
         $plans = $response->json('plans');
         $this->assertNotEmpty($plans, 'plans should not be empty');

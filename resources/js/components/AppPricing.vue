@@ -65,7 +65,6 @@ const fetchPlans = async () => {
   try {
     const response = await api.get(`/learner/courses/${props.courseId}/billing-plans`)
 
-    console.log('AppPricing response:', response)
     pricingPlans.value = response.plans || []
     allFeatures.value = response.allFeatures || []
     emit('loaded', pricingPlans.value.length)
