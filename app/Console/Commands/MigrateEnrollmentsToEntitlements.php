@@ -8,7 +8,7 @@ use App\Models\CourseEnrollment;
 use App\Models\UserCapability;
 use App\Services\EntitlementService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use App\Models\UserFeature;
 
 class MigrateEnrollmentsToEntitlements extends Command
 {
@@ -17,14 +17,14 @@ class MigrateEnrollmentsToEntitlements extends Command
      *
      * @var string
      */
-    protected $signature = 'lms:migrate-enrollments';
+    protected $signature = 'entitlements:migrate-enrollments';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Backfill UserEntitlements for existing CourseEnrollments and fix legacy capabilities';
+    protected $description = 'Backfill UserEntitlements for existing CourseEnrollments and fix legacy features';
 
     /**
      * Execute the console command.
@@ -33,31 +33,26 @@ class MigrateEnrollmentsToEntitlements extends Command
     {
         $this->info('Starting migration...');
 
-        // 1. Fix Legacy Capabilities (if any)
-        $this->info('Checking for legacy capabilities...');
-        $capabilities = UserCapability::whereNull('scope_type')
-            ->whereNotNull('feature_code')
+        $this->info('Checking for legacy features...');
+        $features = UserFeature::whereNull('scope_type')
+            ->whereNull('scope_id')
             ->get();
 
-        foreach ($capabilities as $cap) {
-            // Assume feature_code format like 'course.{id}.access' or similar?
-            // Or maybe just a code that maps to a course?
-            // Without knowing the exact format, I'll check if the feature_code IS the course ID (unlikely)
-            // or if we can derive it.
-            // If the user meant "old feature_code logic" referring to PlanFeature having feature_code...
-            // But PlanFeature doesn't have it.
-            
-            // Let's assume this part is less critical if we don't know the format, 
-            // and focus on the Enrollment backfill which is definitely needed.
-            // However, if the feature_code is simply the feature name (e.g. "course_access"), 
-            // and the scope was missing...
-            
-            // Let's skip this for now unless we find a pattern.
+        foreach ($features as $feature) {
+            $entitlement = $feature->entitlement;
+            if (!$entitlement) continue;
+
+            // Try to find course from entitlement's enrollments?
+            // Entitlements might not be linked to enrollments yet.
+            // But if scope is missing, we need to fix it.
+
+            // For now, just log
+            $this->warn("Found feature {$feature->id} without scope for entitlement {$entitlement->id}");
         }
 
         // 2. Backfill Entitlements from Enrollments
         $this->info('Backfilling entitlements from enrollments...');
-        
+
         $enrollments = CourseEnrollment::with(['user', 'course'])->get();
         $count = 0;
         $skipped = 0;
@@ -73,9 +68,10 @@ class MigrateEnrollmentsToEntitlements extends Command
             // Check if user already has entitlement
             $hasEntitlement = $user->entitlements()
                 ->active()
-                ->whereHas('capabilities', function ($query) use ($course) {
-                    $query->where('scope_type', 'App\Models\Course')
-                          ->where('scope_id', $course->id);
+                ->whereHas('features', function ($query) use ($course) {
+                    $query->where('feature_code', 'content.paid.access') // Assuming this is the main access
+                        ->where('scope_type', 'App\Models\Course')
+                        ->where('scope_id', $course->id);
                 })
                 ->exists();
 

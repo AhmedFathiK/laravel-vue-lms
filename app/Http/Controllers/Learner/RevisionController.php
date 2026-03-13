@@ -72,7 +72,7 @@ class RevisionController extends Controller
             ], 403);
         }
 
-        // Get allowed course IDs based on 'revision.access' capability
+        // Get allowed course IDs based on 'revision.access' feature
         $allowedCourseIds = $user->entitlements()
             ->active()
             ->whereHas('features', function ($q) {
@@ -184,7 +184,7 @@ class RevisionController extends Controller
             ], 403);
         }
 
-        // Get allowed course IDs based on 'revision.access' capability
+        // Get allowed course IDs based on 'revision.access' feature
         $allowedCourseIds = $user->entitlements()
             ->active()
             ->whereHas('features', function ($q) {

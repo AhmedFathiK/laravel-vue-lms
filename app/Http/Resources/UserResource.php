@@ -25,7 +25,7 @@ class UserResource extends JsonResource
             'roles' => $this->roles->pluck('name'),
             'entitlements' => UserEntitlementResource::collection($this->whenLoaded('entitlements')),
             // Add capabilities (features) to the user resource
-            'capabilities' => $this->features->map(function ($feature) {
+            'features' => $this->features->map(function ($feature) {
                 return [
                     'code' => $feature->feature_code,
                     'scope_type' => $feature->scope_type,

@@ -9,7 +9,7 @@ use App\Models\Level;
 use App\Models\BillingPlan;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Models\UserCapability;
+use App\Models\UserFeature;
 use App\Models\UserLevelProgress;
 use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -175,7 +175,7 @@ class LearnerLessonAccessTest extends TestCase
             'starts_at' => now(),
         ]);
 
-        UserCapability::create([
+        UserFeature::create([
             'user_entitlement_id' => $entitlement->id,
             'scope_type' => 'App\Models\Course',
             'scope_id' => $course->id,

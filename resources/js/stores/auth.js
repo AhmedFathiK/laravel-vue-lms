@@ -97,8 +97,8 @@ export const useAuthStore = defineStore('auth', () => {
     abilityRules = convertPermissionsToCaslRules(userPermissions)
 
     // Process Features from User Entitlements (previously capabilities)
-    if (userData && userData.capabilities) {
-      userData.capabilities.forEach(feature => {
+    if (userData && userData.features) {
+      userData.features.forEach(feature => {
         const subject = feature.scope_type ? feature.scope_type.split('\\').pop() : 'all'
         const action = feature.code
         
@@ -108,7 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
         
         if (feature.scope_id) {
-           rule.conditions = { id: feature.scope_id }
+          rule.conditions = { id: feature.scope_id }
         }
         
         abilityRules.push(rule)

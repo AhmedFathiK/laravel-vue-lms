@@ -49,7 +49,7 @@ const fetchSession = async () => {
         type, 
         limit: 20,
         earlyReview: earlyReview ? 1 : 0,
-        course_id: courseId,
+        courseId,
       }, 
     })
 

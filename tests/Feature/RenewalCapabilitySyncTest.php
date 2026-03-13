@@ -87,10 +87,10 @@ class RenewalCapabilitySyncTest extends TestCase
         // So strict sync is preferred: User should have what the plan currently offers.
 
         // Reload user capabilities
-        // Note: hasCapability might be cached or loaded from relation?
-        // Let's force load capabilities
-        $hasA = $this->user->hasCapability('feature.a', 'App\Models\Course', $this->course->id);
-        $hasB = $this->user->hasCapability('feature.b', 'App\Models\Course', $this->course->id);
+        // Note: hasFeature might be cached or loaded from relation?
+        // Let's force load features
+        $hasA = $this->user->hasFeature('feature.a', 'App\Models\Course', $this->course->id);
+        $hasB = $this->user->hasFeature('feature.b', 'App\Models\Course', $this->course->id);
 
         // Debug output
         // dump($this->user->features()->pluck('feature_code')->toArray());

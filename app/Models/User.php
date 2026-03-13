@@ -173,34 +173,34 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user has a specific capability via an active entitlement.
+     * Check if the user has a specific feature via an active entitlement.
      *
-     * @param string $featureCode The capability code (e.g., 'revision.access')
+     * @param string $featureCode The feature code (e.g., 'revision.access')
      * @param string|null $scopeType Optional scope type (e.g., 'App\Models\Course')
      * @param int|null $scopeId Optional scope ID
      * @return bool
      */
-    public function hasCapability(string $featureCode, ?string $scopeType = null, ?int $scopeId = null): bool
+    public function hasFeature(string $featureCode, ?string $scopeType = null, ?int $scopeId = null): bool
     {
         // If a scope is provided, ensure it matches.
         // If no scope is provided (null), we are checking for "global" access or access to "any" instance?
         // Current logic:
-        // If scopeType/Id is NULL, it matches capabilities where scope is NULL (Global).
-        // If scopeType/Id is PROVIDED, it matches capabilities with THAT scope OR Global (null).
+        // If scopeType/Id is NULL, it matches features where scope is NULL (Global).
+        // If scopeType/Id is PROVIDED, it matches features with THAT scope OR Global (null).
 
-        // Wait, the previous implementation of hasCapability (which I'm replacing/updating)
+        // Wait, the previous implementation of hasFeature (which I'm replacing/updating)
         // was:
         /*
         return $this->entitlements()
             ->active()
-            ->whereHas('capabilities', function ($q) use ($featureCode, $scopeType, $scopeId) {
+            ->whereHas('features', function ($q) use ($featureCode, $scopeType, $scopeId) {
                 $q->where('feature_code', $featureCode);
                 if ($scopeType !== null) $q->where('scope_type', $scopeType);
                 if ($scopeId !== null) $q->where('scope_id', $scopeId);
             })
             ->exists();
         */
-        // That implementation was "strict": if I ask for course 1, you must have capability for course 1.
+        // That implementation was "strict": if I ask for course 1, you must have feature for course 1.
         // It didn't automatically fallback to global.
         // Let's stick to the existing strict logic for the model method to avoid side effects,
         // and let FeatureAccessService handle higher-level logic if needed.

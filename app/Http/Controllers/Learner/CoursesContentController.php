@@ -305,12 +305,18 @@ class CoursesContentController extends Controller
             // Access Logic:
             // 1. If explicit status exists -> Use it.
             // 2. If NO status exists -> Only unlock if it's the FIRST level.
-            // 3. If Level is FREE and User has capability -> Unlock it.
+            // 3. If Level is FREE and User has feature -> Unlock it.
 
             $isLevelUnlocked = false;
 
-            // Check Capability for Free Level
-            if (($level['is_free'] ?? false) && $user->hasCapability('content.free.access', 'App\Models\Course', $course->id)) {
+            // (Note: This overrides locked status if we decide free levels are always accessible regardless of previous completion?
+            // Usually, yes. Free levels are like "samples".)
+            // But wait, if it's the second level and it's free, can they access it without first level?
+            // Let's assume Yes for now, or adhere to sequence?
+            // If "is_free" means "Preview", then it should be accessible anytime.
+
+            // Check Feature for Free Level
+            if (($level['is_free'] ?? false) && $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course)) {
                 $isLevelUnlocked = true;
                 $levelStatus = UserLevelProgress::STATUS_UNLOCKED; // Treat as unlocked for logic
 

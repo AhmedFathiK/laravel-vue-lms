@@ -150,6 +150,7 @@ class EntitlementService
 
     /**
      * Grant an entitlement to a user based on a billing plan.
+     * Creates UserEntitlement and UserFeatures.
      */
     public function grantEntitlement(User $user, BillingPlan $plan, ?Payment $payment = null): UserEntitlement
     {
@@ -241,7 +242,9 @@ class EntitlementService
     }
 
     /**
-     * Renew an existing entitlement by extending its expiry date.
+     * Renew an entitlement based on its billing plan.
+     * Updates the expiration date and creates a new receipt.
+     * Also syncs features from the plan to the user.
      */
     public function renewEntitlement(UserEntitlement $entitlement, BillingPlan $plan, ?Payment $payment = null): UserEntitlement
     {

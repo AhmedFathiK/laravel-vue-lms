@@ -7,7 +7,7 @@ use App\Models\UserEntitlement;
 use App\Models\UserFeature;
 use App\Models\PlanFeature;
 
-class EntitlementCapabilityBackfillSeeder extends Seeder
+class EntitlementFeatureBackfillSeeder extends Seeder
 {
     /**
      * Run the database seeds.

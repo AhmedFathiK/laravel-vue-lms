@@ -131,20 +131,20 @@ class IsFreeAccessTest extends TestCase
 
         // Paid level should be locked (or at least not explicitly unlocked by free logic)
         // Wait, sequential access might unlock it if free level is completed?
-        // No, Level::isAccessibleToUser checks capabilities.
+        // No, Level::isAccessibleToUser checks features.
         // If user doesn't have 'content.paid.access', isAccessibleToUser returns false.
         // And CoursesContentController uses isAccessibleToUser?
         // No, CoursesContentController uses it for Lesson access check, but for Dashboard level listing it uses logic:
-        // "3. If Level is FREE and User has capability -> Unlock it."
+        // "3. If Level is FREE and User has feature -> Unlock it."
 
         // For paid level, it falls through to standard logic (sequential).
         // If free level is completed, paid level *would* be unlocked via sequential logic...
-        // BUT does sequential logic check for paid capability?
+        // BUT does sequential logic check for paid feature?
         // In `CoursesContentController`, the level loop determines "locked" status for items.
         // It doesn't seem to check `isAccessibleToUser` for the level itself to determine if it should be locked on the dashboard?
         // Wait, `isLevelUnlocked` logic in controller:
         // "If explicit status exists -> Use it."
-        // "If Level is FREE and User has capability -> Unlock it."
+        // "If Level is FREE and User has feature -> Unlock it."
 
         // If paid level is NOT free, and user has NO status, it checks if it's first level.
         // If it's 2nd level, it remains locked unless previous is completed.
@@ -152,7 +152,7 @@ class IsFreeAccessTest extends TestCase
         // No, `isLevelUnlocked` determines if items are accessible.
 
         // Issue: The controller dashboard logic primarily handles *sequence*.
-        // It doesn't seem to strictly enforce "Paid Capability" for the *listing* of levels on the dashboard.
+        // It doesn't seem to strictly enforce "Paid Feature" for the *listing* of levels on the dashboard.
         // However, `isAccessibleToUser` IS used in `showLesson` (actual content access).
 
         // So on Dashboard, the user might see the level as "unlocked" (if sequential), but when clicking a lesson, `showLesson` will block them?
@@ -199,13 +199,6 @@ class IsFreeAccessTest extends TestCase
             'feature_code' => 'content.paid.access',
             'value' => '1',
         ]);
-
-        // Also grant free access usually? Or implies it?
-        // Our logic in Level::isAccessibleToUser:
-        // if is_free && has(free) -> true
-        // if has(paid) -> true (regardless of is_free?)
-        // Yes: "Check paid access ... return true"
-        // So paid access grants access to everything in the course usually.
 
         $this->user->active_course_id = $this->course->id;
         $this->user->save();

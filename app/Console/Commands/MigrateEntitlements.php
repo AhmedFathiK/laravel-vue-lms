@@ -47,20 +47,19 @@ class MigrateEntitlements extends Command
             }
 
             DB::transaction(function () use ($entitlement, $plan) {
-                // We will refresh capabilities.
-                // First, get existing capabilities to potentially avoid churn if already correct,
+                // We will refresh features.
+                // First, get existing features to potentially avoid churn if already correct,
                 // but deleting and recreating is safer and cleaner for "migration".
-                // To preserve history or IDs, we could update, but capabilities are essentially value objects here.
-                
-                // Delete existing capabilities
-                $entitlement->capabilities()->delete();
+                // To preserve history or IDs, we could update, but features are essentially value objects here.
 
-                // Create new capabilities based on PlanFeatures
+                // Delete existing features
+                $entitlement->features()->delete();
+
+                // Create new features based on PlanFeatures
                 foreach ($plan->planFeatures as $pf) {
                     if (!$pf->feature) continue;
 
-                    UserCapability::create([
-                        'user_entitlement_id' => $entitlement->id,
+                    $entitlement->features()->create([
                         'feature_code' => $pf->feature->code,
                         'scope_type' => $pf->scope_type,
                         'scope_id' => $pf->scope_id,

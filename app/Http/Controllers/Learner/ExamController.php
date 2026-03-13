@@ -79,7 +79,7 @@ class ExamController extends Controller
             ], 404);
         }
 
-        // Check placement test capability
+        // Check placement test feature
         $course = $exam->course;
         if ($course && $course->placement_exam_id === $exam->id) {
             /** @var \App\Models\User $user */

@@ -19,7 +19,7 @@ class FeatureAccessService
      */
     public function hasFeature(User $user, string $featureCode, ?string $scopeType = null, ?int $scopeId = null): bool
     {
-        return $user->hasCapability($featureCode, $scopeType, $scopeId);
+        return $user->hasFeature($featureCode, $scopeType, $scopeId);
     }
 
     /**
