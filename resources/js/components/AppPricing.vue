@@ -86,6 +86,10 @@ const calculateUpgrade = async plan => {
 }
 
 const handlePlanAction = async plan => {
+  if (props.activeEntitlement?.billingPlanId === plan.id && props.activeEntitlement.status === 'active') {
+    return // Block active plan actions
+  }
+
   // If free plan, handle directly
   if (parseFloat(plan.price) === 0) {
     try {
@@ -183,6 +187,10 @@ watch(pricingPlans, plans => {
 
 const getActionText = plan => {
   if (props.activeEntitlement?.billingPlanId === plan.id) {
+    if (props.activeEntitlement.status === 'active') {
+      return 'Active'
+    }
+    
     return 'Renew Plan'
   }
   
@@ -372,6 +380,7 @@ const getPaymentMethodIcon = method => {
             block
             :color="activeEntitlement?.billingPlanId === plan.id ? 'success' : 'primary'"
             :variant="plan.isPopular ? 'elevated' : 'tonal'"
+            :disabled="activeEntitlement?.billingPlanId === plan.id && activeEntitlement.status === 'active'"
             @click="handlePlanAction(plan)"
           >
             {{ getActionText(plan) }}

@@ -113,6 +113,21 @@ class LearnerEntitlementController extends Controller
             ], 422);
         }
 
+        // Check if user already has an active entitlement for this plan
+        $existingEntitlement = $user->entitlements()
+            ->where('billing_plan_id', $plan->id)
+            ->where('status', UserEntitlement::STATUS_ACTIVE)
+            ->first();
+
+        if ($existingEntitlement) {
+            // Check if it's really active (double check logic)
+            if ($existingEntitlement->isActive()) {
+                return response()->json([
+                    'message' => 'You already have an active entitlement for this plan.',
+                ], 403);
+            }
+        }
+
         // 1. Free Plan Logic
         if ($plan->billing_type === 'free' || $plan->price <= 0) {
             try {
@@ -303,9 +318,13 @@ class LearnerEntitlementController extends Controller
         }
 
         // Check if the plan is actually renewable (recurring or expired)
-        if ($entitlement->isActive() && !$entitlement->ends_at?->isPast()) {
-            // It's already active and not yet in grace period/expired
-            // For now, we allow "early renewal" or "extension" if user wants
+        // Ensure status is up to date
+        $entitlement->isActive();
+        
+        if ($entitlement->status === UserEntitlement::STATUS_ACTIVE) {
+             return response()->json([
+                'message' => 'This plan is currently active and cannot be renewed until it expires.',
+            ], 403);
         }
 
         // Reuse the checkout logic by calling PaymentGatewayController

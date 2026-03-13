@@ -202,13 +202,13 @@ onMounted(fetchBillingData)
             <template #[`item.actions`]="{ item }">
               <div class="d-flex gap-2">
                 <VBtn
-                  v-if="item.status === 'active' || item.status === 'past_due' || item.status === 'expired'"
+                  v-if="shouldShowPricingButton(item)"
                   size="small"
                   color="primary"
                   variant="tonal"
                   @click="openPricingDialog(item)"
                 >
-                  Renew / Upgrade
+                  {{ getPricingButtonText(item) }}
                 </VBtn>
                 <VBtn
                   v-if="item.autoRenew"
