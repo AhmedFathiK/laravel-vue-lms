@@ -10,6 +10,7 @@ use App\Models\RevisionItem;
 use App\Models\Term;
 use App\Services\FSRSService;
 use App\Services\RevisionSessionService;
+use App\Services\FeatureAccessService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +21,16 @@ class RevisionController extends Controller
 {
     protected FSRSService $fsrsService;
     protected RevisionSessionService $revisionSessionService;
+    protected FeatureAccessService $featureAccessService;
 
-    public function __construct(FSRSService $fsrsService, RevisionSessionService $revisionSessionService)
-    {
+    public function __construct(
+        FSRSService $fsrsService,
+        RevisionSessionService $revisionSessionService,
+        FeatureAccessService $featureAccessService
+    ) {
         $this->fsrsService = $fsrsService;
         $this->revisionSessionService = $revisionSessionService;
+        $this->featureAccessService = $featureAccessService;
     }
 
     /**
@@ -35,7 +41,39 @@ class RevisionController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        // Use FeatureAccessService to check for revision capability
+        // We want to ensure they have access AT LEAST for the active course context if possible,
+        // or generally if no course is active?
+        // Actually, the prompt asked to check "for his current active/used course".
+
+        // If the request has a course_id, we should check against that.
+        // If not, we should check against the user's active_course_id.
+        // If neither, what do we do?
+
+        // The index method filters by allowed courses anyway.
+        // But for the "Gate" check:
+
+        $courseId = $request->input('course_id') ?? $user->active_course_id;
+
+        if ($courseId) {
+            if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+                return response()->json([
+                    'message' => 'You do not have access to the revision system for this course.'
+                ], 403);
+            }
+        } else {
+            // Fallback: Check if they have access to ANY course? 
+            // Or just check strictly for active course?
+            // "checks user access to a feature for his current active/used course"
+            // If no active course is set, we might default to 403 or check general access.
+            // Let's go with: Must have access for active course.
+            return response()->json([
+                'message' => 'No active course selected to verify revision access.'
+            ], 403);
+        }
+
         // Get allowed course IDs based on 'revision.access' capability
+        // We still need this list for filtering the query later
         $allowedCourseIds = $user->entitlements()
             ->active()
             ->whereHas('capabilities', function ($q) {
@@ -132,7 +170,20 @@ class RevisionController extends Controller
         $userId = Auth::id();
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $courseId = $request->input('course_id');
+        $courseId = $request->input('course_id') ?? $user->active_course_id;
+
+        if (!$courseId) {
+            return response()->json([
+                'message' => 'No active course selected.'
+            ], 400);
+        }
+
+        // Check feature access for this specific course
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.'
+            ], 403);
+        }
 
         // Get allowed course IDs based on 'revision.access' capability
         $allowedCourseIds = $user->entitlements()

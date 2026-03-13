@@ -8,6 +8,7 @@ use App\Models\ExamAttempt;
 use App\Models\ExamResponse;
 use App\Models\ExamSection;
 use App\Models\Question;
+use App\Services\FeatureAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,13 @@ use Illuminate\Support\Facades\DB;
 
 class ExamController extends Controller
 {
+    protected FeatureAccessService $featureAccessService;
+
+    public function __construct(FeatureAccessService $featureAccessService)
+    {
+        $this->featureAccessService = $featureAccessService;
+    }
+
     /**
      * Get available exams for a course, level, or lesson.
      */
@@ -76,7 +84,7 @@ class ExamController extends Controller
         if ($course && $course->placement_exam_id === $exam->id) {
             /** @var \App\Models\User $user */
             $user = Auth::user();
-            if (!$user->hasCapability('placement_test.access', 'App\Models\Course', $course->id)) {
+            if (!$this->featureAccessService->hasFeatureForCourse($user, 'placement_test.access', $course)) {
                 return response()->json([
                     'message' => 'You do not have access to the placement test.'
                 ], 403);

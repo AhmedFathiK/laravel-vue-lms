@@ -17,11 +17,15 @@ use App\Http\Resources\Learner\LessonResource;
 use App\Models\UserStudiedLesson;
 use App\Models\ExamAttempt;
 use App\Services\EntitlementService;
+use App\Services\FeatureAccessService;
 use Illuminate\Support\Facades\Log; // Added Log
 
 class CoursesContentController extends Controller
 {
-    public function __construct(protected EntitlementService $entitlementService) {}
+    public function __construct(
+        protected EntitlementService $entitlementService,
+        protected FeatureAccessService $featureAccessService
+    ) {}
 
     /**
      * Display a specific lesson's content.
@@ -393,10 +397,10 @@ class CoursesContentController extends Controller
                 // 1. Explicitly free item
                 // 2. Or inherited from free level
                 $isItemFree = (($item['is_free'] ?? false) || ($level['is_free'] ?? false))
-                    && $user->hasCapability('content.free.access', 'App\Models\Course', $course->id);
+                    && $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course);
 
                 // Determine if user has paid access
-                $hasPaidAccess = $user->hasCapability('content.paid.access', 'App\Models\Course', $course->id);
+                $hasPaidAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.paid.access', $course);
 
                 if ($isItemFree) {
                     $item['locked'] = false;

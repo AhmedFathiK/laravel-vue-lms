@@ -182,13 +182,31 @@ class User extends Authenticatable
      */
     public function hasCapability(string $featureCode, ?string $scopeType = null, ?int $scopeId = null): bool
     {
-        // Check active entitlements
+        // If a scope is provided, ensure it matches.
+        // If no scope is provided (null), we are checking for "global" access or access to "any" instance?
+        // Current logic:
+        // If scopeType/Id is NULL, it matches capabilities where scope is NULL (Global).
+        // If scopeType/Id is PROVIDED, it matches capabilities with THAT scope OR Global (null).
+
+        // Wait, the previous implementation of hasCapability (which I'm replacing/updating)
+        // was:
+        /*
         return $this->entitlements()
-            ->where(function ($q) {
-                // Use the scopeActive logic manually or call the scope if available on the relation query
-                // Since UserEntitlement has scopeActive, we can use it.
-                $q->active();
+            ->active()
+            ->whereHas('capabilities', function ($q) use ($featureCode, $scopeType, $scopeId) {
+                $q->where('feature_code', $featureCode);
+                if ($scopeType !== null) $q->where('scope_type', $scopeType);
+                if ($scopeId !== null) $q->where('scope_id', $scopeId);
             })
+            ->exists();
+        */
+        // That implementation was "strict": if I ask for course 1, you must have capability for course 1.
+        // It didn't automatically fallback to global.
+        // Let's stick to the existing strict logic for the model method to avoid side effects,
+        // and let FeatureAccessService handle higher-level logic if needed.
+
+        return $this->entitlements()
+            ->active()
             ->whereHas('capabilities', function ($q) use ($featureCode, $scopeType, $scopeId) {
                 $q->where('feature_code', $featureCode);
 

@@ -58,6 +58,9 @@ const fetchSession = async () => {
       ...slide.data,
     })) // Interceptor returns response.data
   } catch (e) {
+    if (e.response?.status === 403) {
+      router.push('/not-authorized')
+    }
     console.error(e)
   } finally {
     loading.value = false

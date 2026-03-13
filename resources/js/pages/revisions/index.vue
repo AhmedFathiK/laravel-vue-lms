@@ -68,6 +68,9 @@ const fetchStats = async () => {
 
     stats.value = res
   } catch (e) {
+    if (e.response?.status === 403) {
+      router.push('/not-authorized')
+    }
     console.error(e)
   }
 }
@@ -83,6 +86,9 @@ const fetchCategories = async () => {
 
     categories.value = res
   } catch (e) {
+    if (e.response?.status === 403) {
+      router.push('/not-authorized')
+    }
     console.error(e)
   } finally {
     categoriesLoading.value = false
