@@ -341,22 +341,6 @@ const hasFeature = (plan, featureId) => {
                 /{{ plan.billing_interval }}
               </div>
             </div>
-
-            <div
-              v-if="upgradeCalculations[plan.id]"
-              class="text-center mt-n8 mb-4"
-            >
-              <VChip
-                color="info"
-                size="small"
-                variant="tonal"
-              >
-                Upgrade for {{ upgradeCalculations[plan.id].upgrade_price }} {{ plan.currency }}
-              </VChip>
-              <p class="text-caption text-disabled mt-1">
-                {{ upgradeCalculations[plan.id].remaining_days }} days remaining credited
-              </p>
-            </div>
           </div>
 
           <!-- 👉 Plan features -->
