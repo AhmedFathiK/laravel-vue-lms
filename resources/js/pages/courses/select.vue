@@ -33,7 +33,7 @@
           class="mb-6"
         >
           You are not enrolled in any courses yet. <VBtn
-            to="/learner/courses"
+            to="/browse-courses"
             variant="text"
             class="px-0 text-decoration-underline"
           >

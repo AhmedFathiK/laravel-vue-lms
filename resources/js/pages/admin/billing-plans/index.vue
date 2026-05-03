@@ -187,7 +187,7 @@ const formatPrice = (price, currency) => {
 }
 
 const formatPlanType = type => {
-  const types = { recurring: 'Recurring', one_time: 'One-time', free: 'Free' }
+  const types = { recurring: 'Recurring', "one_time": 'One-time', free: 'Free' }
   
   return types[type] || type
 }
@@ -200,7 +200,7 @@ const formatBillingCycle = cycle => {
 }
 
 const formatAccessType = (type, days) => {
-  const types = { lifetime: 'Lifetime', while_active: 'While Active', limited: 'Limited' }
+  const types = { lifetime: 'Lifetime', "while_active": 'While Active', limited: 'Limited' }
   const label = types[type] || type
   if (type === 'limited' && days) {
     return `${label} (${days} days)`
@@ -278,7 +278,7 @@ const formatAccessType = (type, days) => {
             cols="12"
             md="4"
           >
-            <VSelect
+            <AppSelect
               v-model="filters.billingType"
               :items="[
                 { title: 'All Types', value: null },
@@ -297,7 +297,7 @@ const formatAccessType = (type, days) => {
             cols="12"
             md="4"
           >
-            <VSelect
+            <AppSelect
               v-model="filters.billingInterval"
               :items="[
                 { title: 'All Cycles', value: null },
@@ -316,7 +316,7 @@ const formatAccessType = (type, days) => {
             cols="12"
             md="4"
           >
-            <VSelect
+            <AppSelect
               v-model="filters.isActive"
               :items="[
                 { title: 'All Status', value: null },
