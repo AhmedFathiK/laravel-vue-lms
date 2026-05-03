@@ -165,14 +165,10 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
   form: localPlan,
   apiEndpoint: computed(() => {
     if (props.dialogMode === 'add') {
-      return props.courseId 
-        ? `/admin/courses/${props.courseId}/billing-plans` 
-        : `/admin/billing-plans`
+      return `/admin/billing-plans`
     }
     
-    return props.courseId
-      ? `/admin/courses/${props.courseId}/billing-plans/${localPlan.value.id}`
-      : `/admin/billing-plans/${localPlan.value.id}`
+    return `/admin/billing-plans/${localPlan.value.id}`
   }),
   isUpdate: computed(() => props.dialogMode === 'edit'),
   isFormData: false, // JSON payload
@@ -400,6 +396,7 @@ const { isLoading: isSubmitting, validationErrors, onSubmit: submitForm } = useC
           
             <VRow>
               <VCol cols="12">
+                {{ localPlan.features }}
                 <AppAutocomplete
                   v-model="localPlan.features"
                   :items="featuresList"
