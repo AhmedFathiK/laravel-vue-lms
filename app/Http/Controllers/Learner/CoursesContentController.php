@@ -41,15 +41,20 @@ class CoursesContentController extends Controller
             abort(404);
         }
 
-        // 2. Enforce Entitlement (Strict via Features)
-        if (!$lesson->isAccessibleToUser($user)) {
+        $hasFreeAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course);
+        $hasPaidAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.paid.access', $course);
+
+        $isFreeLessonAccess = $hasFreeAccess && (($lesson->is_free ?? false) || ($lesson->level->is_free ?? false));
+
+        if (!$hasPaidAccess && !$isFreeLessonAccess) {
             return response()->json([
                 "error" => "You do not have access to this lesson content.",
                 "course_id" => $course->id
             ], 403);
         }
 
-        // 3. Paid Content: Enforce Sequential Access
+        // 3. Paid Content: Enforce Sequential Access only for paid learners.
+        // Free-content access can open free lessons even if the level itself is otherwise locked.
         // Check Level Status first
         $levelProgress = UserLevelProgress::where('user_id', $user->id)
             ->where('course_id', $course->id)
@@ -78,32 +83,33 @@ class CoursesContentController extends Controller
             }
         }
 
-        if (!$isLevelUnlocked) {
-            return response()->json([
-                "error" => "This level is locked.",
-                "course_id" => $course->id
-            ], 403);
-        }
+        if ($hasPaidAccess) {
+            if (!$isLevelUnlocked) {
+                return response()->json([
+                    "error" => "This level is locked.",
+                    "course_id" => $course->id
+                ], 403);
+            }
 
-        // Within an unlocked level, we still enforce sequential lesson access
-        // UNLESS the level is skipped or completed, in which case everything is open.
-        if (!in_array($levelStatus, [UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED])) {
-            $previousLesson = Lesson::where('level_id', $lesson->level_id)
-                ->where('sort_order', '<', $lesson->sort_order)
-                ->where('status', 'published')
-                ->orderByDesc('sort_order')
-                ->first();
+            // Within an unlocked level, enforce sequential access unless skipped/completed.
+            if (!in_array($levelStatus, [UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED])) {
+                $previousLesson = Lesson::where('level_id', $lesson->level_id)
+                    ->where('sort_order', '<', $lesson->sort_order)
+                    ->where('status', 'published')
+                    ->orderByDesc('sort_order')
+                    ->first();
 
-            if ($previousLesson) {
-                $isCompleted = UserStudiedLesson::where('user_id', $user->id)
-                    ->where('lesson_id', $previousLesson->id)
-                    ->exists();
+                if ($previousLesson) {
+                    $isCompleted = UserStudiedLesson::where('user_id', $user->id)
+                        ->where('lesson_id', $previousLesson->id)
+                        ->exists();
 
-                if (!$isCompleted) {
-                    return response()->json([
-                        "error" => "You must complete the previous lesson first.",
-                        "previous_lesson_id" => $previousLesson->id
-                    ], 403);
+                    if (!$isCompleted) {
+                        return response()->json([
+                            "error" => "You must complete the previous lesson first.",
+                            "previous_lesson_id" => $previousLesson->id
+                        ], 403);
+                    }
                 }
             }
         }
@@ -296,6 +302,9 @@ class CoursesContentController extends Controller
 
         // Log::info("First Level ID: " . $firstLevelId);
 
+        $hasFreeAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course);
+        $hasPaidAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.paid.access', $course);
+
         foreach ($courseData['levels'] as &$level) {
             $items = [];
             $levelExamCompleted = false;
@@ -402,20 +411,24 @@ class CoursesContentController extends Controller
             $currentLevelPreviousItemCompleted = true; // Start of level is always accessible IF level is unlocked
 
             foreach ($items as &$item) {
-                // Determine if item is free:
-                // 1. Explicitly free item
-                // 2. Or inherited from free level
-                $isItemFree = (($item['is_free'] ?? false) || ($level['is_free'] ?? false))
-                    && $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course);
+                // Determine free access for this item.
+                // Level-level free inheritance applies to lessons only.
+                $isItemFreeByOwnFlag = ($item['is_free'] ?? false) && $hasFreeAccess;
+                $isLessonFreeByLevel = ($item['type'] ?? null) === 'lesson'
+                    && ($level['is_free'] ?? false)
+                    && $hasFreeAccess;
+                $isItemFree = $isItemFreeByOwnFlag || $isLessonFreeByLevel;
 
-                // Determine if user has paid access
-                $hasPaidAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.paid.access', $course);
+                $item['is_paid_locked'] = false;
+                $item['lock_reason'] = null;
 
                 if ($isItemFree) {
                     $item['locked'] = false;
                 } elseif (!$hasPaidAccess) {
-                    // CRITICAL FIX: If item is NOT free and user has NO paid access -> Always locked
+                    // Keep paid content visible, but locked as paid.
                     $item['locked'] = true;
+                    $item['is_paid_locked'] = true;
+                    $item['lock_reason'] = 'paid';
                 } elseif (!$isLevelUnlocked) {
                     // Level is locked -> Everything is locked
                     $item['locked'] = true;
@@ -424,11 +437,7 @@ class CoursesContentController extends Controller
                     $item['locked'] = false;
                 } else {
                     // Level is unlocked/in_progress -> Enforce sequence
-                    if ($item['type'] === 'exam') {
-                        $item['locked'] = !$currentLevelPreviousItemCompleted;
-                    } else {
-                        $item['locked'] = !$currentLevelPreviousItemCompleted;
-                    }
+                    $item['locked'] = !$currentLevelPreviousItemCompleted;
                 }
 
                 // Update sequence tracker for the next item in this level

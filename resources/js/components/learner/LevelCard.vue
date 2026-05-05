@@ -23,6 +23,14 @@ const isLocked = computed(() => status.value === 'locked')
 const isSkipped = computed(() => status.value === 'skipped')
 const isCompleted = computed(() => status.value === 'completed')
 
+const hasAnyUnlockedItem = computed(() => {
+  return props.level.items?.some(item => !item.locked) ?? false
+})
+
+const shouldDisableWholeLevel = computed(() => {
+  return isLocked.value && !hasAnyUnlockedItem.value
+})
+
 // Helper for progress calculation
 const progressPercentage = computed(() => {
   if (!props.level.items || props.level.items.length === 0) return 0
@@ -36,7 +44,7 @@ const progressPercentage = computed(() => {
 })
 
 const handleItemClick = item => {
-  if (isLocked.value) return
+  if (item.locked || shouldDisableWholeLevel.value) return
   emit('itemClick', item)
 }
 
@@ -71,7 +79,7 @@ const isCurrentItem = item => {
   >
     <!-- Locked Overlay -->
     <div
-      v-if="isLocked"
+      v-if="shouldDisableWholeLevel"
       class="locked-overlay d-flex align-center justify-center"
     >
       <VIcon
@@ -159,7 +167,7 @@ const isCurrentItem = item => {
       <!-- Timeline Items -->
       <div
         class="timeline-container"
-        :class="{ 'opacity-50': isLocked }"
+        :class="{ 'opacity-50': shouldDisableWholeLevel }"
       >
         <template v-if="level.items && level.items.length > 0">
           <div
@@ -176,7 +184,7 @@ const isCurrentItem = item => {
                   :class="[
                     { 
                       'avatar-completed': item.completed, // Show checkmarks even if skipped/completed
-                      'avatar-locked': item.locked || isLocked,
+                      'avatar-locked': item.locked,
                       'avatar-current': isCurrentItem(item)
                     }
                   ]"
@@ -190,9 +198,9 @@ const isCurrentItem = item => {
                   <VIcon
                     v-else
                     size="28"
-                    :color="item.completed ? 'success' : ((item.locked || isLocked) ? 'disabled' : 'primary')"
+                    :color="item.completed ? 'success' : (item.locked ? (item.isPaidLocked ? 'warning' : 'disabled') : 'primary')"
                   >
-                    {{ item.type === 'exam' ? 'tabler-certificate' : 'tabler-book' }}
+                    {{ item.locked && item.isPaidLocked ? 'tabler-crown' : (item.type === 'exam' ? 'tabler-certificate' : 'tabler-book') }}
                   </VIcon>
                 </VAvatar>
 
@@ -221,7 +229,7 @@ const isCurrentItem = item => {
             <div 
               class="timeline-content py-4 px-5 mb-4 flex-grow-1 rounded-lg border"
               :class="{ 
-                'cursor-pointer': !item.locked && !isLocked,
+                'cursor-pointer': !item.locked,
                 'bg-light-primary': isCurrentItem(item)
               }"
               @click="handleItemClick(item)"
@@ -231,7 +239,7 @@ const isCurrentItem = item => {
                   <h3 
                     class="text-h6 font-weight-bold mb-1"
                     :class="{ 
-                      'text-disabled': item.locked || isLocked, 
+                      'text-disabled': item.locked,
                       'text-primary': isCurrentItem(item)
                     }"
                   >
@@ -239,7 +247,7 @@ const isCurrentItem = item => {
                   </h3>
                   <p 
                     class="text-body-2 mb-0"
-                    :class="(item.locked || isLocked) ? 'text-disabled' : 'text-medium-emphasis'"
+                    :class="item.locked ? 'text-disabled' : 'text-medium-emphasis'"
                   >
                     {{ item.description }}
                   </p>
@@ -270,6 +278,16 @@ const isCurrentItem = item => {
                 variant="tonal"
               >
                 Exam
+              </VChip>
+              <VChip
+                v-if="item.locked && item.isPaidLocked"
+                color="warning"
+                size="x-small"
+                class="mt-2 ms-2"
+                variant="flat"
+                prepend-icon="tabler-crown"
+              >
+                Paid
               </VChip>
             </div>
           </div>
