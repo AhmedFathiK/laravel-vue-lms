@@ -199,21 +199,22 @@ const hasPlacementExam = computed(() => {
   return courseData.value?.placementExam !== null
 })
 
-const userHasAnyProgress = computed(() => {
-  return courseData.value?.levels?.some(
-    level => level.currentUserProgress !== null,
-  ) ?? false
+const userHasMeaningfulProgress = computed(() => {
+  const levels = courseData.value?.levels ?? []
+
+  const hasStartedLevel = levels.some(level =>
+    ['in_progress', 'completed', 'skipped'].includes(level.currentUserProgress?.status),
+  )
+
+  const hasCompletedItem = levels.some(level =>
+    level.items?.some(item => item.completed),
+  )
+
+  return hasStartedLevel || hasCompletedItem
 })
 
 const shouldOfferPlacement = computed(() => {
-  if (!hasPlacementExam.value || userHasAnyProgress.value) return false
-
-  // Check feature
-  return authStore.user?.features?.some(c => 
-    c.code === 'placement_test.access' && 
-      c.scope_type === 'App\\Models\\Course' && 
-      c.scope_id === courseData.value?.id,
-  ) ?? false
+  return hasPlacementExam.value && !userHasMeaningfulProgress.value
 })
 
 const placementResult = computed(() => {
@@ -234,6 +235,7 @@ const placementResult = computed(() => {
 
 const startPlacementExam = () => {
   if (!courseData.value.placementExam) return
+
   router.push({ 
     name: 'exam-id', 
     params: { id: courseData.value.placementExam.id }, 

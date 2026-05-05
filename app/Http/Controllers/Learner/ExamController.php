@@ -8,6 +8,7 @@ use App\Models\ExamAttempt;
 use App\Models\ExamResponse;
 use App\Models\ExamSection;
 use App\Models\Question;
+use App\Models\Course;
 use App\Services\FeatureAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,15 @@ class ExamController extends Controller
     public function __construct(FeatureAccessService $featureAccessService)
     {
         $this->featureAccessService = $featureAccessService;
+    }
+
+    private function hasPlacementAccessForActiveCourse(\App\Models\User $user, Course $course): bool
+    {
+        if (!$user->active_course_id || (int) $user->active_course_id !== (int) $course->id) {
+            return false;
+        }
+
+        return $this->featureAccessService->hasFeatureForCourse($user, 'placement_test.access', $course);
     }
 
     /**
@@ -84,9 +94,9 @@ class ExamController extends Controller
         if ($course && $course->placement_exam_id === $exam->id) {
             /** @var \App\Models\User $user */
             $user = Auth::user();
-            if (!$this->featureAccessService->hasFeatureForCourse($user, 'placement_test.access', $course)) {
+            if (!$this->hasPlacementAccessForActiveCourse($user, $course)) {
                 return response()->json([
-                    'message' => 'You do not have access to the placement test.'
+                    'message' => 'You do not have access to the placement test for the active course.'
                 ], 403);
             }
         }
@@ -160,6 +170,17 @@ class ExamController extends Controller
             return response()->json([
                 'message' => 'Exam not available'
             ], 404);
+        }
+
+        $course = $exam->course;
+        if ($course && $course->placement_exam_id === $exam->id) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            if (!$this->hasPlacementAccessForActiveCourse($user, $course)) {
+                return response()->json([
+                    'message' => 'You do not have access to the placement test for the active course.'
+                ], 403);
+            }
         }
 
         // Check if user has reached the maximum attempts
@@ -399,13 +420,34 @@ class ExamController extends Controller
      */
     public function getPlacementTest(Request $request): JsonResponse
     {
-        $courseId = $request->input('course_id');
-        $course = \App\Models\Course::with('placementExam')->find($courseId);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!$user->active_course_id) {
+            return response()->json([
+                'message' => 'No active course selected.'
+            ], 403);
+        }
+
+        $requestedCourseId = $request->input('course_id');
+        if ($requestedCourseId && (int) $requestedCourseId !== (int) $user->active_course_id) {
+            return response()->json([
+                'message' => 'Placement test access is limited to your active course.'
+            ], 403);
+        }
+
+        $course = Course::with('placementExam')->find($user->active_course_id);
 
         if (!$course || !$course->placementExam) {
             return response()->json([
                 'message' => 'No placement test available for this course'
             ], 404);
+        }
+
+        if (!$this->hasPlacementAccessForActiveCourse($user, $course)) {
+            return response()->json([
+                'message' => 'You do not have access to the placement test for the active course.'
+            ], 403);
         }
 
         $placementTest = $course->placementExam;

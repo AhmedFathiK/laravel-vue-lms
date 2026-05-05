@@ -248,7 +248,10 @@ class CoursesContentController extends Controller
         $addedExamIds = [];
 
         // Handle Placement Exam
-        if ($course->placementExam) {
+        $canAccessPlacementTest = $user->active_course_id === $course->id
+            && $this->featureAccessService->hasFeatureForCourse($user, 'placement_test.access', $course);
+
+        if ($course->placementExam && $canAccessPlacementTest) {
             $exam = $course->placementExam->toArray();
             $exam['item_type'] = 'exam';
             $exam['completed'] = ($course->placementExam->is_completed ?? 0) > 0;

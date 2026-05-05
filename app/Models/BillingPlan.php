@@ -12,9 +12,14 @@ class BillingPlan extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'price', 'currency',
-        'billing_type', 'billing_interval',
-        'access_type', 'access_duration_days',
+        'name',
+        'description',
+        'price',
+        'currency',
+        'billing_type',
+        'billing_interval',
+        'access_type',
+        'access_duration_days',
         'is_active'
     ];
 
@@ -28,7 +33,7 @@ class BillingPlan extends Model
     {
         return $this->hasMany(PlanFeature::class);
     }
-    
+
     public function features()
     {
         return $this->hasManyThrough(Feature::class, PlanFeature::class, 'billing_plan_id', 'id', 'id', 'feature_id');
