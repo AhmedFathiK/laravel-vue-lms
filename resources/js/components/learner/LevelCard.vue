@@ -75,7 +75,7 @@ const isCurrentItem = item => {
     class="level-card"
     border
     flat
-    :class="{ 'level-locked': isLocked, 'level-skipped': isSkipped }"
+    :class="{ 'level-locked': shouldDisableWholeLevel, 'level-skipped': isSkipped }"
   >
     <!-- Locked Overlay -->
     <div

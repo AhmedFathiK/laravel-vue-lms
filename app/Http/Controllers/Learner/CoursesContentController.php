@@ -83,33 +83,44 @@ class CoursesContentController extends Controller
             }
         }
 
-        if ($hasPaidAccess) {
-            if (!$isLevelUnlocked) {
-                return response()->json([
-                    "error" => "This level is locked.",
-                    "course_id" => $course->id
-                ], 403);
-            }
+        if ($hasPaidAccess && !$isLevelUnlocked) {
+            return response()->json([
+                "error" => "This level is locked.",
+                "course_id" => $course->id
+            ], 403);
+        }
 
-            // Within an unlocked level, enforce sequential access unless skipped/completed.
-            if (!in_array($levelStatus, [UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED])) {
-                $previousLesson = Lesson::where('level_id', $lesson->level_id)
-                    ->where('sort_order', '<', $lesson->sort_order)
-                    ->where('status', 'published')
-                    ->orderByDesc('sort_order')
-                    ->first();
-
-                if ($previousLesson) {
-                    $isCompleted = UserStudiedLesson::where('user_id', $user->id)
-                        ->where('lesson_id', $previousLesson->id)
-                        ->exists();
-
-                    if (!$isCompleted) {
-                        return response()->json([
-                            "error" => "You must complete the previous lesson first.",
-                            "previous_lesson_id" => $previousLesson->id
-                        ], 403);
+        // Enforce sequence using the last unrestricted lesson only.
+        // Restricted (paid-locked) lessons are ignored for progression.
+        if (!in_array($levelStatus, [UserLevelProgress::STATUS_SKIPPED, UserLevelProgress::STATUS_COMPLETED])) {
+            $previousUnrestrictedLesson = Lesson::where('level_id', $lesson->level_id)
+                ->where('sort_order', '<', $lesson->sort_order)
+                ->where('status', 'published')
+                ->where(function ($query) use ($hasPaidAccess, $hasFreeAccess) {
+                    if ($hasPaidAccess) {
+                        $query->whereRaw('1 = 1');
+                    } elseif ($hasFreeAccess) {
+                        $query->where('is_free', true)
+                            ->orWhereHas('level', function ($levelQuery) {
+                                $levelQuery->where('is_free', true);
+                            });
+                    } else {
+                        $query->whereRaw('1 = 0');
                     }
+                })
+                ->orderByDesc('sort_order')
+                ->first();
+
+            if ($previousUnrestrictedLesson) {
+                $isCompleted = UserStudiedLesson::where('user_id', $user->id)
+                    ->where('lesson_id', $previousUnrestrictedLesson->id)
+                    ->exists();
+
+                if (!$isCompleted) {
+                    return response()->json([
+                        "error" => "You must complete the previous accessible lesson first.",
+                        "previous_lesson_id" => $previousUnrestrictedLesson->id
+                    ], 403);
                 }
             }
         }
@@ -407,44 +418,44 @@ class CoursesContentController extends Controller
             // Reset previousCompleted for the start of a new level (unless level logic requires previous level completion? 
             // No, the placement system overrides previous level dependencies. If a level is unlocked, you can start it.)
 
-            // However, within the level, lessons are sequential.
-            $currentLevelPreviousItemCompleted = true; // Start of level is always accessible IF level is unlocked
+            // Sequence is based on the last unrestricted lesson only.
+            $previousUnrestrictedLessonCompleted = true;
 
             foreach ($items as &$item) {
+                $isLesson = ($item['type'] ?? null) === 'lesson';
+
                 // Determine free access for this item.
                 // Level-level free inheritance applies to lessons only.
                 $isItemFreeByOwnFlag = ($item['is_free'] ?? false) && $hasFreeAccess;
-                $isLessonFreeByLevel = ($item['type'] ?? null) === 'lesson'
-                    && ($level['is_free'] ?? false)
-                    && $hasFreeAccess;
+                $isLessonFreeByLevel = $isLesson && ($level['is_free'] ?? false) && $hasFreeAccess;
                 $isItemFree = $isItemFreeByOwnFlag || $isLessonFreeByLevel;
+
+                $isRestrictedByPlan = !$hasPaidAccess && !$isItemFree;
 
                 $item['is_paid_locked'] = false;
                 $item['lock_reason'] = null;
 
-                if ($isItemFree) {
-                    $item['locked'] = false;
-                } elseif (!$hasPaidAccess) {
+                if ($isRestrictedByPlan) {
                     // Keep paid content visible, but locked as paid.
                     $item['locked'] = true;
                     $item['is_paid_locked'] = true;
                     $item['lock_reason'] = 'paid';
-                } elseif (!$isLevelUnlocked) {
-                    // Level is locked -> Everything is locked
+                } elseif (!$isLevelUnlocked && !$isItemFree) {
+                    // Level is locked -> non-free items remain locked
                     $item['locked'] = true;
                 } elseif ($isFullyOpen) {
-                    // Level is skipped/completed -> Everything is unlocked
                     $item['locked'] = false;
+                } elseif ($isLesson) {
+                    // Lock by last unrestricted lesson completion only.
+                    $item['locked'] = !$previousUnrestrictedLessonCompleted;
                 } else {
-                    // Level is unlocked/in_progress -> Enforce sequence
-                    $item['locked'] = !$currentLevelPreviousItemCompleted;
+                    // Keep non-lesson items unlocked unless blocked by other conditions above.
+                    $item['locked'] = false;
                 }
 
-                // Update sequence tracker for the next item in this level
-                if ($item['completed']) {
-                    $currentLevelPreviousItemCompleted = true;
-                } else {
-                    $currentLevelPreviousItemCompleted = false;
+                // Update sequence tracker only for unrestricted lessons.
+                if ($isLesson && !$isRestrictedByPlan) {
+                    $previousUnrestrictedLessonCompleted = (bool) $item['completed'];
                 }
             }
             unset($item); // Break reference
