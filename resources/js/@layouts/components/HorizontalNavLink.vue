@@ -46,6 +46,23 @@ const props = defineProps({
       >
         {{ item.title }}
       </Component>
+
+      <!-- 👉 Badge -->
+      <Component
+        :is="(layoutConfig.app.i18n.enable && item.badgeContent) ? 'i18n-t' : 'span'"
+        v-if="item.badgeContent || item.badgeIcon"
+        key="badge"
+        class="nav-item-badge d-flex align-center gap-1 ms-2"
+        :class="item.badgeClass"
+        v-bind="item.badgeContent ? getDynamicI18nProps(item.badgeContent, 'span') : {}"
+      >
+        <VIcon
+          v-if="item.badgeIcon"
+          :icon="item.badgeIcon"
+          size="16"
+        />
+        <span v-if="item.badgeContent">{{ item.badgeContent }}</span>
+      </Component>
     </Component>
   </li>
 </template>

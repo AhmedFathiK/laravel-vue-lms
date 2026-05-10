@@ -1,6 +1,7 @@
 <script setup>
 import { useActiveCourse } from '@/stores/activeCourse'
 import $api from '@/utils/api'
+import { formatDate } from '@core/utils/formatters'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
@@ -18,6 +19,7 @@ const activeCourseStore = useActiveCourse()
 
 const activeTab = ref('concepts') // 'concepts' or 'terms'
 const loading = ref(true)
+const noAccessData = ref(null)
 
 const stats = ref({
   concepts: {
@@ -38,6 +40,7 @@ const categoriesLoading = ref(false)
 
 const initializePage = async () => {
   loading.value = true
+  noAccessData.value = null
   
   if (!activeCourseStore.activeCourseId) {
     await activeCourseStore.fetchActiveCourse()
@@ -69,7 +72,7 @@ const fetchStats = async () => {
     stats.value = res
   } catch (e) {
     if (e.response?.status === 403) {
-      router.push('/not-authorized')
+      noAccessData.value = e.response.data
     }
     console.error(e)
   }
@@ -87,7 +90,7 @@ const fetchCategories = async () => {
     categories.value = res
   } catch (e) {
     if (e.response?.status === 403) {
-      router.push('/not-authorized')
+      noAccessData.value = e.response.data
     }
     console.error(e)
   } finally {
@@ -229,6 +232,95 @@ const toggleAll = () => {
         color="primary"
         size="64"
       />
+    </div>
+
+    <div
+      v-else-if="noAccessData"
+      class="d-flex justify-center align-center flex-column"
+      style="min-height: 60vh"
+    >
+      <VCard
+        width="500"
+        class="text-center overflow-hidden"
+      >
+        <VImg
+          v-if="noAccessData.course?.thumbnail"
+          :src="noAccessData.course.thumbnail"
+          height="200"
+          cover
+        />
+        
+        <VCardTitle class="text-h5 pt-6 font-weight-bold text-wrap">
+          {{ noAccessData.course?.title }}
+        </VCardTitle>
+
+        <VCardText class="pb-2">
+          <VDivider class="my-4" />
+
+          <div class="d-flex align-center justify-center gap-2 mb-4">
+            <VIcon 
+              color="error" 
+              size="32" 
+              icon="tabler-lock"
+            />
+            <h3 class="text-h6 text-error">
+              Revision System Restricted
+            </h3>
+          </div>
+
+          <p class="text-body-1 mb-6">
+            <template v-if="noAccessData.reason === 'feature_restricted'">
+              The revision system is not included in your current plan for this course. Please upgrade your plan to access this feature.
+            </template>
+            <template v-else-if="noAccessData.reason === 'expired'">
+              Your subscription for this course expired on <strong>{{ noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : (noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : 'Unknown Date') }}</strong>.
+            </template>
+            <template v-else-if="noAccessData.reason === 'canceled'">
+              Your subscription was canceled on <strong>{{ noAccessData.entitlement?.updatedAt ? formatDate(noAccessData.entitlement.updatedAt) : (noAccessData.entitlement?.endsAt ? formatDate(noAccessData.entitlement.endsAt) : 'Unknown Date') }}</strong>.
+            </template>
+            <template v-else-if="noAccessData.reason === 'past_due'">
+              Your payment is past due. Please update your payment method to regain access.
+            </template>
+            <template v-else-if="noAccessData.reason === 'not_enrolled'">
+              You are currently not enrolled in this course.
+            </template>
+            <template v-else>
+              You do not have access to the revision system for this course. Please contact support if you believe this is an error.
+            </template>
+          </p>
+        </VCardText>
+
+        <VCardActions class="justify-center flex-column pb-6 px-6 gap-2">
+          <VBtn
+            v-if="['expired', 'canceled', 'past_due', 'not_enrolled', 'feature_restricted'].includes(noAccessData.reason)"
+            block
+            color="primary"
+            variant="elevated"
+            size="large"
+            :to="{ name: 'courses-id', params: { id: noAccessData.course?.id } }"
+          >
+            {{ noAccessData.reason === 'not_enrolled' ? 'View Enrollment Options' : (noAccessData.reason === 'feature_restricted' ? 'Upgrade Plan' : 'Renew Access') }}
+          </VBtn>
+          <VBtn
+            v-else
+            block
+            color="primary"
+            variant="tonal"
+            href="mailto:support@example.com"
+          >
+            Contact Support
+          </VBtn>
+           
+          <VBtn
+            block
+            color="secondary"
+            variant="text"
+            to="/courses/select"
+          >
+            Select Another Course
+          </VBtn>
+        </VCardActions>
+      </VCard>
     </div>
 
     <template v-else>

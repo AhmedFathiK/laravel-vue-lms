@@ -40,71 +40,32 @@ class RevisionController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-
-        // Use FeatureAccessService to check for revision feature
-        // We want to ensure they have access AT LEAST for the active course context if possible,
-        // or generally if no course is active?
-        // Actually, the prompt asked to check "for his current active/used course".
-
-        // If the request has a course_id, we should check against that.
-        // If not, we should check against the user's active_course_id.
-        // If neither, what do we do?
-
-        // The index method filters by allowed courses anyway.
-        // But for the "Gate" check:
-
         $courseId = $request->input('course_id') ?? $user->active_course_id;
 
-        if ($courseId) {
-            if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
-                return response()->json([
-                    'message' => 'You do not have access to the revision system for this course.'
-                ], 403);
-            }
-        } else {
-            // Fallback: Check if they have access to ANY course? 
-            // Or just check strictly for active course?
-            // "checks user access to a feature for his current active/used course"
-            // If no active course is set, we might default to 403 or check general access.
-            // Let's go with: Must have access for active course.
-            return response()->json([
-                'message' => 'No active course selected to verify revision access.'
-            ], 403);
+        if (!$courseId) {
+            return response()->json(['message' => 'No active course selected.'], 400);
         }
 
-        // Get allowed course IDs based on 'revision.access' feature
-        $allowedCourseIds = $user->entitlements()
-            ->active()
-            ->whereHas('features', function ($q) {
-                $q->where('feature_code', 'revision.access')
-                    ->where('scope_type', 'App\Models\Course');
-            })
-            ->with(['features' => function ($q) {
-                $q->where('feature_code', 'revision.access')
-                    ->where('scope_type', 'App\Models\Course');
-            }])
-            ->get()
-            ->flatMap(function ($entitlement) {
-                return $entitlement->features->pluck('scope_id');
-            })
-            ->unique()
-            ->values()
-            ->all();
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
+            ], 403);
+        }
 
         $query = RevisionItem::where('user_id', $user->id)
             ->with('revisionable')
             ->orderBy('due_date', 'asc');
 
-        // Apply Feature Filter
+        // Apply Course Filter
         $query->whereHasMorph(
             'revisionable',
             [Term::class, Concept::class],
-            function ($q) use ($allowedCourseIds) {
-                $q->whereIn('course_id', $allowedCourseIds);
+            function ($q) use ($courseId) {
+                $q->where('course_id', $courseId);
             }
         );
-
-        // Filter by state
 
         // Filter by state
         if ($request->has('state')) {
@@ -122,18 +83,6 @@ class RevisionController extends Controller
             $query->where('revisionable_type', $type);
         }
 
-        // Filter by course
-        if ($request->has('course_id')) {
-            $courseId = $request->course_id;
-            $query->whereHasMorph(
-                'revisionable',
-                [Term::class, Concept::class],
-                function ($q) use ($courseId) {
-                    $q->where('course_id', $courseId);
-                }
-            );
-        }
-
         // Apply limit
         $limit = $request->input('limit', 20);
         $items = $query->paginate($limit);
@@ -147,8 +96,21 @@ class RevisionController extends Controller
     public function generatePractice(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $courseId = $request->input('course_id');
-        $course = $courseId ? Course::find($courseId) : null;
+        $courseId = $request->input('course_id') ?? $user->active_course_id;
+
+        if (!$courseId) {
+            return response()->json(['message' => 'No active course selected.'], 400);
+        }
+
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
+            ], 403);
+        }
+
+        $course = Course::find($courseId);
         $type = $request->input('type', 'both');
         $limit = $request->input('limit', 20);
         $earlyReview = $request->boolean('early_review');
@@ -180,48 +142,24 @@ class RevisionController extends Controller
         // Check feature access for this specific course
         if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
             return response()->json([
-                'message' => 'You do not have access to the revision system for this course.'
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
             ], 403);
         }
 
-        // Get allowed course IDs based on 'revision.access' feature
-        $allowedCourseIds = $user->entitlements()
-            ->active()
-            ->whereHas('features', function ($q) {
-                $q->where('feature_code', 'revision.access')
-                    ->where('scope_type', 'App\Models\Course');
-            })
-            ->with(['features' => function ($q) {
-                $q->where('feature_code', 'revision.access')
-                    ->where('scope_type', 'App\Models\Course');
-            }])
-            ->get()
-            ->flatMap(function ($entitlement) {
-                return $entitlement->features->pluck('scope_id');
-            })
-            ->unique()
-            ->values()
-            ->all();
-
         // Fetch categories and their concepts
-        $query = \App\Models\ConceptCategory::with(['concepts' => function ($q) {
-            $q->with('revisionItems'); // Load revision status for concepts
-        }]);
-
-        if ($courseId) {
-            if (!in_array($courseId, $allowedCourseIds)) {
-                return response()->json([]);
-            }
-            $query->where('course_id', $courseId);
-        } else {
-            $query->whereIn('course_id', $allowedCourseIds);
-        }
+        $query = \App\Models\ConceptCategory::with(['concepts' => function ($q) use ($userId) {
+            $q->with(['revisionItems' => function ($rq) use ($userId) {
+                $rq->where('user_id', $userId);
+            }]);
+        }])->where('course_id', $courseId);
 
         $categories = $query->get();
 
         $data = $categories->map(function ($category) use ($userId) {
             $concepts = $category->concepts->map(function ($concept) use ($userId) {
-                $item = $concept->revisionItems->where('user_id', $userId)->first();
+                $item = $concept->revisionItems->first();
 
                 // Determine status
                 $status = 'Not Started';
@@ -253,13 +191,100 @@ class RevisionController extends Controller
             return [
                 'id' => $category->id,
                 'title' => $category->title,
-                'description' => null, // ConceptCategory doesn't have a description field
+                'description' => null,
                 'topics_count' => $concepts->count(),
                 'topics' => $concepts
             ];
         });
 
         return response()->json($data);
+    }
+
+    /**
+     * Get items due for revision
+     */
+    public function getDueItems(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $courseId = $request->input('course_id') ?? $user->active_course_id;
+
+        if (!$courseId) {
+            return response()->json(['message' => 'No active course selected.'], 400);
+        }
+
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
+            ], 403);
+        }
+
+        $query = RevisionItem::where('user_id', $user->id)
+            ->where('due_date', '<=', now())
+            ->with('revisionable')
+            ->orderBy('due_date', 'asc');
+
+        $query->whereHasMorph(
+            'revisionable',
+            [Term::class, Concept::class],
+            function ($q) use ($courseId) {
+                $q->where('course_id', $courseId);
+            }
+        );
+
+        $limit = $request->input('limit', 20);
+        $items = $query->paginate($limit);
+
+        return response()->json($items);
+    }
+
+    /**
+     * Add an item to the revision list manually
+     */
+    public function addItem(Request $request): JsonResponse
+    {
+        $request->validate([
+            'type' => 'required|in:term,concept',
+            'id' => 'required|integer',
+        ]);
+
+        $user = Auth::user();
+        $type = $request->type === 'term' ? Term::class : Concept::class;
+        $model = $type::find($request->id);
+
+        if (!$model) {
+            return response()->json(['message' => 'Item not found.'], 404);
+        }
+
+        $courseId = $model->course_id;
+
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
+            ], 403);
+        }
+
+        $revisionItem = RevisionItem::firstOrCreate([
+            'user_id' => $user->id,
+            'revisionable_type' => $type,
+            'revisionable_id' => $model->id,
+        ], [
+            'state' => 'new',
+            'due_date' => now(),
+        ]);
+
+        if ($revisionItem->wasRecentlyCreated) {
+            $this->fsrsService->initializeRevisionItem($revisionItem, 3); // Default to 'Good' grade
+            $revisionItem->save();
+        }
+
+        return response()->json([
+            'message' => 'Item added to revision list',
+            'item' => $revisionItem->load('revisionable')
+        ]);
     }
 
     /**
@@ -305,23 +330,34 @@ class RevisionController extends Controller
      */
     public function getStatistics(Request $request): JsonResponse
     {
+        $user = Auth::user();
         $userId = Auth::id();
-        $courseId = $request->input('course_id');
+        $courseId = $request->input('course_id') ?? $user->active_course_id;
+
+        if (!$courseId) {
+            return response()->json(['message' => 'No active course selected.'], 400);
+        }
+
+        if (!$this->featureAccessService->hasFeatureForCourse($user, 'revision.access', $courseId)) {
+            return response()->json([
+                'message' => 'You do not have access to the revision system for this course.',
+                'course' => Course::find($courseId),
+                'reason' => 'feature_restricted'
+            ], 403);
+        }
 
         // Helper to get stats for a type
         $getStatsForType = function ($typeClass) use ($userId, $courseId) {
             $query = RevisionItem::where('user_id', $userId)
                 ->where('revisionable_type', $typeClass);
 
-            if ($courseId) {
-                $query->whereHasMorph(
-                    'revisionable',
-                    [$typeClass],
-                    function ($q) use ($courseId) {
-                        $q->where('course_id', $courseId);
-                    }
-                );
-            }
+            $query->whereHasMorph(
+                'revisionable',
+                [$typeClass],
+                function ($q) use ($courseId) {
+                    $q->where('course_id', $courseId);
+                }
+            );
 
             $items = $query->get();
 

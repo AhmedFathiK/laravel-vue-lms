@@ -49,15 +49,20 @@ const hideTitleAndBadge = configStore.isVerticalNavMini()
 
         <!-- 👉 Badge -->
         <Component
-          :is="layoutConfig.app.i18n.enable ? 'i18n-t' : 'span'"
-          v-if="item.badgeContent"
+          :is="(layoutConfig.app.i18n.enable && item.badgeContent) ? 'i18n-t' : 'span'"
+          v-if="item.badgeContent || item.badgeIcon"
           v-show="!hideTitleAndBadge"
           key="badge"
-          class="nav-item-badge"
+          class="nav-item-badge d-flex align-center gap-1"
           :class="item.badgeClass"
-          v-bind="getDynamicI18nProps(item.badgeContent, 'span')"
+          v-bind="item.badgeContent ? getDynamicI18nProps(item.badgeContent, 'span') : {}"
         >
-          {{ item.badgeContent }}
+          <VIcon
+            v-if="item.badgeIcon"
+            :icon="item.badgeIcon"
+            size="16"
+          />
+          <span v-if="item.badgeContent">{{ item.badgeContent }}</span>
         </Component>
       </TransitionGroup>
     </Component>

@@ -1,6 +1,9 @@
 <script setup>
-import navItems from '@/navigation/learner'
+import originalNavItems from '@/navigation/learner'
 import { themeConfig } from '@themeConfig'
+import { useAbility } from '@/plugins/casl/composables/useAbility'
+import { useActiveCourse } from '@/stores/activeCourse'
+import { computed } from 'vue'
 
 // Components
 import Footer from '@/layouts/components/Footer.vue'
@@ -13,6 +16,29 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { useSettingsStore } from '@/stores/settings'
 
 const settingsStore = useSettingsStore()
+const ability = useAbility()
+const activeCourseStore = useActiveCourse()
+
+const navItems = computed(() => {
+  return originalNavItems.map(item => {
+    if (item.to?.name === 'revisions') {
+      const hasAccess = ability.can('revision.access', { 
+        subject: 'Course', 
+        id: activeCourseStore.activeCourseId, 
+      })
+      
+      if (!hasAccess) {
+        return {
+          ...item,
+          badgeIcon: 'tabler-crown',
+          badgeClass: 'text-warning bg-transparent',
+        }
+      }
+    }
+    
+    return item
+  })
+})
 </script>
 
 <template>
