@@ -71,6 +71,7 @@ watch(() => props.isDialogVisible, isVisible => {
         status: props.data.status || 'draft',
         courseId: props.courseId,
         finalExamId: props.data.finalExamId || null,
+        isFree: props.data.isFree || false,
       }
     } else {
       form.value = defaultForm()

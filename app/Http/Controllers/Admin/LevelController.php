@@ -75,6 +75,7 @@ class LevelController extends Controller
             'description' => $data['description'] ?? '',
             'sort_order' => $lastLevel ? $lastLevel->sort_order + 1 : 1,
             'status' => $data['status'],
+            'is_free' => $data['is_free'] ?? false,
             'final_exam_id' => $data['final_exam_id'] ?? null,
         ]);
 
