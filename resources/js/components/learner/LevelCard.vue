@@ -12,7 +12,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['itemClick'])
+const emit = defineEmits(['itemClick', 'playClick'])
 
 // Status logic derived strictly from user_status
 const status = computed(() => {
@@ -46,6 +46,11 @@ const progressPercentage = computed(() => {
 const handleItemClick = item => {
   if (item.locked || shouldDisableWholeLevel.value) return
   emit('itemClick', item)
+}
+
+const handlePlayClick = item => {
+  if (item.locked || shouldDisableWholeLevel.value) return
+  emit('playClick', item)
 }
 
 const isLastItem = index => {
@@ -261,7 +266,7 @@ const isCurrentItem = item => {
                   color="primary"
                   size="small"
                   class="ms-4"
-                  @click.stop="handleItemClick(item)"
+                  @click.stop="handlePlayClick(item)"
                 >
                   <VIcon
                     icon="tabler-player-play-filled"

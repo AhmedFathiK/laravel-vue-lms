@@ -501,6 +501,7 @@ const scrollToLevel = levelId => {
             :level="level" 
             :forced-current-item-id="forcedCurrentItem?.levelId === level.id ? forcedCurrentItem.itemId : null"
             @item-click="handleItemClick"
+            @play-click="handlePlayClick"
           />
         </div>
       </div>
