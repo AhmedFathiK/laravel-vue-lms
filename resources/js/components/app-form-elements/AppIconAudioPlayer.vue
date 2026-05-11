@@ -16,6 +16,9 @@ const isPlaying = ref(false)
 const onReady = () => {
   const player = plyrRef.value.player
   
+  // Ensure volume is at 100%
+  player.volume = 1
+
   player.on('play', () => isPlaying.value = true)
   player.on('pause', () => isPlaying.value = false)
   player.on('ended', () => isPlaying.value = false)
@@ -25,6 +28,10 @@ const togglePlay = () => {
   if (!plyrRef.value?.player) return
 
   const player = plyrRef.value.player
+  
+  // Ensure volume is at 100% when playing
+  player.volume = 1
+
   if (isPlaying.value) {
     player.pause()
   } else {
@@ -37,12 +44,13 @@ const togglePlay = () => {
   <div class="d-inline-flex align-center gap-2">
     <VBtn
       icon
-      variant="text"
+      variant="tonal"
       size="small"
       color="primary"
+      class="audio-player-btn"
       @click="togglePlay"
     >
-      <VIcon :icon="isPlaying ? 'tabler-player-pause' : 'tabler-volume'" />
+      <VIcon :icon="isPlaying ? 'tabler-player-pause' : 'tabler-volume-2'" />
     </VBtn>
     
     <div class="d-none">

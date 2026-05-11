@@ -15,6 +15,7 @@ const isPlaying = ref(false)
 const duration = ref(0)
 const currentTime = ref(0)
 const playbackRate = ref(1)
+const volume = ref(1)
 const isDragging = ref(false)
 
 const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -22,6 +23,10 @@ const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const onReady = () => {
   const player = plyrRef.value.player
   
+  // Ensure volume is at 100%
+  player.volume = 1
+  volume.value = 1
+
   player.on('timeupdate', () => {
     if (!isDragging.value) {
       currentTime.value = player.currentTime
@@ -38,16 +43,39 @@ const onReady = () => {
     isPlaying.value = false
     currentTime.value = 0
   })
+
+  player.on('volumechange', () => {
+    volume.value = player.volume
+  })
 }
 
 const togglePlay = () => {
   const player = plyrRef.value?.player
   if (!player) return
 
+  // Ensure volume is at 100% when playing if it was somehow lowered
+  if (player.volume === 0) {
+    player.volume = 1
+  }
+
   if (player.paused) {
     player.play()
   } else {
     player.pause()
+  }
+}
+
+const setVolume = val => {
+  const player = plyrRef.value?.player
+  if (player) {
+    player.volume = val
+  }
+}
+
+const toggleMute = () => {
+  const player = plyrRef.value?.player
+  if (player) {
+    player.muted = !player.muted
   }
 }
 
@@ -101,12 +129,12 @@ watch(() => props.src, () => {
     <!-- Play/Pause -->
     <VBtn
       icon
-      variant="text"
+      variant="tonal"
       size="small"
       color="primary"
       @click="togglePlay"
     >
-      <VIcon :icon="isPlaying ? 'tabler-player-pause' : 'tabler-player-play'" />
+      <VIcon :icon="isPlaying ? 'tabler-player-pause' : 'tabler-player-play-filled'" />
     </VBtn>
 
     <!-- Progress -->
@@ -131,21 +159,63 @@ watch(() => props.src, () => {
 
     <!-- Time -->
     <div
-      class="text-caption text-medium-emphasis"
+      class="text-caption text-high-emphasis font-weight-medium"
       style="min-width: 35px;"
     >
       {{ formatTime(currentTime) }}
     </div>
+
+    <!-- Volume -->
+    <VMenu
+      location="top"
+      :close-on-content-click="false"
+    >
+      <template #activator="{ props: menuProps }">
+        <VBtn
+          v-bind="menuProps"
+          icon
+          variant="text"
+          size="small"
+          color="primary"
+        >
+          <VIcon :icon="volume === 0 ? 'tabler-volume-off' : (volume < 0.5 ? 'tabler-volume-2' : 'tabler-volume-3')" />
+        </VBtn>
+      </template>
+      <VCard
+        min-width="150"
+        class="pa-3"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon
+            :icon="volume === 0 ? 'tabler-volume-off' : (volume < 0.5 ? 'tabler-volume-2' : 'tabler-volume-3')"
+            size="small"
+            color="primary"
+            @click="toggleMute"
+          />
+          <VSlider
+            :model-value="volume"
+            :max="1"
+            :min="0"
+            :step="0.01"
+            hide-details
+            color="primary"
+            density="compact"
+            @update:model-value="setVolume"
+          />
+        </div>
+      </VCard>
+    </VMenu>
 
     <!-- Speed -->
     <VMenu location="top">
       <template #activator="{ props: menuProps }">
         <VBtn
           v-bind="menuProps"
-          variant="text"
+          variant="tonal"
           size="small"
-          class="px-0 text-caption font-weight-bold"
-          style="min-width: 35px;"
+          class="px-2 text-caption font-weight-bold"
+          color="primary"
+          style="min-width: 40px;"
         >
           {{ playbackRate }}x
         </VBtn>
