@@ -58,20 +58,7 @@ const isLastItem = index => {
 }
 
 const isCurrentItem = item => {
-  // If we have a forced current item from the parent (e.g. after placement test)
-  if (props.forcedCurrentItemId && props.forcedCurrentItemId === item.id) {
-    return true
-  }
-
-  if (item.completed || item.locked) return false
-
-  // It is current if it's the first one that is neither completed nor locked
-  // But if the level is locked, nothing is current.
-  if (isLocked.value) return false
-  
-  const firstActive = props.level.items.find(i => !i.completed && !i.locked)
-  
-  return firstActive && firstActive.id === item.id
+  return props.forcedCurrentItemId && props.forcedCurrentItemId === item.id
 }
 </script>
 

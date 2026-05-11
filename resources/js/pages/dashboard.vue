@@ -186,15 +186,6 @@ const isLastItem = (level, index) => {
   return index === level.items.length - 1
 }
 
-const isCurrentItem = (item, level) => {
-  if (item.completed || item.locked) return false
-
-  // It is current if it's the first one that is neither completed nor locked
-  const firstActive = level.items.find(i => !i.completed && !i.locked)
-  
-  return firstActive && firstActive.id === item.id
-}
-
 const hasPlacementExam = computed(() => {
   return courseData.value?.placementExam !== null
 })
