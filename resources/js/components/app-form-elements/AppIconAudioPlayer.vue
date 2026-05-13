@@ -8,6 +8,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  autoplay: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const plyrRef = ref(null)
@@ -22,6 +26,24 @@ const onReady = () => {
   player.on('play', () => isPlaying.value = true)
   player.on('pause', () => isPlaying.value = false)
   player.on('ended', () => isPlaying.value = false)
+
+  if (props.autoplay) {
+    // Robust autoplay handling
+    setTimeout(() => {
+      player.play().catch(e => {
+        console.log('Autoplay blocked. User interaction required:', e)
+        
+        const resumeAutoplay = () => {
+          player.play()
+          window.removeEventListener('click', resumeAutoplay)
+          window.removeEventListener('keydown', resumeAutoplay)
+        }
+
+        window.addEventListener('click', resumeAutoplay)
+        window.addEventListener('keydown', resumeAutoplay)
+      })
+    }, 150)
+  }
 }
 
 const togglePlay = () => {
@@ -56,15 +78,14 @@ const togglePlay = () => {
     <div class="d-none">
       <VuePlyr 
         ref="plyrRef" 
-        :options="{ controls: [] }"
+        :options="{ controls: [], autoplay: autoplay }"
         @ready="onReady"
       >
-        <audio>
-          <source
-            :src="src"
-            type="audio/mpeg"
-          >
-        </audio>
+        <audio
+          :src="src"
+          :autoplay="autoplay"
+          type="audio/mpeg"
+        />
       </VuePlyr>
     </div>
   </div>

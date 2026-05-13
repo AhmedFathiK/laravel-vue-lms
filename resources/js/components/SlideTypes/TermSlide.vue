@@ -50,6 +50,7 @@ const term = computed(() => props.slide.term || props.slide)
                 <AppOverlayAudioPlayer 
                   v-if="term.audioUrl"
                   :src="term.audioUrl" 
+                  autoplay
                 />
               </div>
             </div>

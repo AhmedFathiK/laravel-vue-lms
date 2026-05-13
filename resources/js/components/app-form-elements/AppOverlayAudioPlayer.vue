@@ -8,6 +8,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  autoplay: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const plyrRef = ref(null)
@@ -15,7 +19,6 @@ const isPlaying = ref(false)
 const duration = ref(0)
 const currentTime = ref(0)
 const playbackRate = ref(1)
-const volume = ref(1)
 const isDragging = ref(false)
 
 const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -25,7 +28,6 @@ const onReady = () => {
   
   // Ensure volume is at 100%
   player.volume = 1
-  volume.value = 1
 
   player.on('timeupdate', () => {
     if (!isDragging.value) {
@@ -44,38 +46,38 @@ const onReady = () => {
     currentTime.value = 0
   })
 
-  player.on('volumechange', () => {
-    volume.value = player.volume
-  })
+  // Robust autoplay handling
+  if (props.autoplay) {
+    // Some browsers need a tiny delay after ready
+    setTimeout(() => {
+      player.play().catch(e => {
+        console.log('Autoplay blocked. User interaction required:', e)
+        
+        // One-time listener for user interaction to resume autoplay if blocked
+        const resumeAutoplay = () => {
+          player.play()
+          window.removeEventListener('click', resumeAutoplay)
+          window.removeEventListener('keydown', resumeAutoplay)
+        }
+
+        window.addEventListener('click', resumeAutoplay)
+        window.addEventListener('keydown', resumeAutoplay)
+      })
+    }, 150)
+  }
 }
 
 const togglePlay = () => {
   const player = plyrRef.value?.player
   if (!player) return
 
-  // Ensure volume is at 100% when playing if it was somehow lowered
-  if (player.volume === 0) {
-    player.volume = 1
-  }
+  // Ensure volume is at 100% when playing
+  player.volume = 1
 
   if (player.paused) {
     player.play()
   } else {
     player.pause()
-  }
-}
-
-const setVolume = val => {
-  const player = plyrRef.value?.player
-  if (player) {
-    player.volume = val
-  }
-}
-
-const toggleMute = () => {
-  const player = plyrRef.value?.player
-  if (player) {
-    player.muted = !player.muted
   }
 }
 
@@ -165,47 +167,6 @@ watch(() => props.src, () => {
       {{ formatTime(currentTime) }}
     </div>
 
-    <!-- Volume -->
-    <VMenu
-      location="top"
-      :close-on-content-click="false"
-    >
-      <template #activator="{ props: menuProps }">
-        <VBtn
-          v-bind="menuProps"
-          icon
-          variant="text"
-          size="small"
-          color="primary"
-        >
-          <VIcon :icon="volume === 0 ? 'tabler-volume-off' : (volume < 0.5 ? 'tabler-volume-2' : 'tabler-volume-3')" />
-        </VBtn>
-      </template>
-      <VCard
-        min-width="150"
-        class="pa-3"
-      >
-        <div class="d-flex align-center gap-2">
-          <VIcon
-            :icon="volume === 0 ? 'tabler-volume-off' : (volume < 0.5 ? 'tabler-volume-2' : 'tabler-volume-3')"
-            size="small"
-            color="primary"
-            @click="toggleMute"
-          />
-          <VSlider
-            :model-value="volume"
-            :max="1"
-            :min="0"
-            :step="0.01"
-            hide-details
-            color="primary"
-            density="compact"
-            @update:model-value="setVolume"
-          />
-        </div>
-      </VCard>
-    </VMenu>
-
     <!-- Speed -->
     <VMenu location="top">
       <template #activator="{ props: menuProps }">
@@ -240,10 +201,13 @@ watch(() => props.src, () => {
     <div class="d-none">
       <VuePlyr
         ref="plyrRef"
-        :options="{ controls: [] }"
+        :options="{ controls: [], autoplay: autoplay }"
         @ready="onReady"
       >
-        <audio :src="src" />
+        <audio
+          :src="src"
+          :autoplay="autoplay"
+        />
       </VuePlyr>
     </div>
   </div>
