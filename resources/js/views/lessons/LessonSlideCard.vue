@@ -38,7 +38,7 @@ const deleteItem = () => {
 
 const questionData = computed(() => {
   const q = props.data.question
-  if (!q) return { title: '', questionText: '', options: [] }
+  if (!q) return { title: '', questionText: '', options: [], mediaUrl: null, mediaType: null }
 
   const content = q.content || {}
   let options = []
@@ -57,6 +57,8 @@ const questionData = computed(() => {
     title: q.title,
     questionText: q.questionText || '',
     options: options,
+    mediaUrl: q.mediaUrl,
+    mediaType: q.mediaType,
   }
 })
 
@@ -143,9 +145,9 @@ console.log(props.data)
                     class="slide-img w-50"
                   >
                     <VImg
-                      v-if="data.termId && ['image', 'image_with_audio'].includes(termData.mediaType) && termData.mediaUrl"
+                      v-if="(data.termId && ['image', 'image_with_audio'].includes(termData.mediaType) && termData.mediaUrl) || (data.questionId && ['image', 'image_with_audio'].includes(questionData.mediaType) && questionData.mediaUrl)"
                       cover
-                      :src="termData.mediaUrl"
+                      :src="data.termId ? termData.mediaUrl : questionData.mediaUrl"
                       height="162.13"
                     /> 
 
