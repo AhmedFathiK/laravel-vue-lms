@@ -58,13 +58,6 @@ onMounted(() => {
     class="explanation-slide mx-auto"
     style="max-width: 800px;"
   >
-    <div 
-      class="text-h3 text-center mb-6 font-weight-bold text-primary"
-      :dir="getTextDirection(slide.title, uiDirection)"
-    >
-      {{ slide.title }}
-    </div>
-    
     <!-- Media Handling -->
     <div
       v-if="slide.mediaUrl"

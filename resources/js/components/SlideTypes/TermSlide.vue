@@ -79,15 +79,15 @@ const term = computed(() => props.slide.term || props.slide)
       <VCardText class="text-center pa-6">
         <h2 
           class="text-h4 font-weight-bold mb-2"
-          :dir="getTextDirection(term.term || term.title, uiDirection)"
+          :dir="getTextDirection(term.term, uiDirection)"
         >
-          {{ term.term || term.title }}
+          {{ term.term }}
         </h2>
         <p 
           class="text-h6 text-medium-emphasis mb-0"
-          :dir="getTextDirection(term.meaning || term.description, uiDirection)"
+          :dir="getTextDirection(term.meaning, uiDirection)"
         >
-          {{ term.meaning || term.description }}
+          {{ term.meaning }}
         </p>
       </VCardText>
     </VCard>

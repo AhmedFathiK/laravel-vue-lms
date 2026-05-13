@@ -227,15 +227,6 @@ const termText = computed(() => props.question.termText)
       </div>
     </div>
 
-    <!-- Term Display -->
-    <div
-      v-if="termText"
-      class="text-h3 text-center mb-6 font-weight-bold text-primary"
-      :dir="getTextDirection(termText, uiDirection)"
-    >
-      {{ termText }}
-    </div>
-
     <div 
       class="text-h5 text-center mb-8 lh-loose"
       :dir="getTextDirection(question.questionText, uiDirection)"

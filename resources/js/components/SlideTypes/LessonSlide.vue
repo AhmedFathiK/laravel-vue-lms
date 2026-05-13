@@ -6,7 +6,9 @@ import MatchingSlide from '@/components/SlideTypes/MatchingSlide.vue'
 import MCQSlide from '@/components/SlideTypes/MCQSlide.vue'
 import ReorderingSlide from '@/components/SlideTypes/ReorderingSlide.vue'
 import TermSlide from '@/components/SlideTypes/TermSlide.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   slide: {
@@ -17,6 +19,16 @@ const props = defineProps({
 
 const emit = defineEmits(['answered', 'completed'])
 const activeSlideRef = ref(null)
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
+
+const slideTitle = computed(() => {
+  // Term slides handle their own title inside the card layout
+  if (props.slide.type === 'term') return props.slide.title
+  
+  return props.slide.title || props.slide.question?.title
+})
 
 const handleAnswered = result => {
   emit('answered', result)
@@ -37,6 +49,15 @@ defineExpose({ submitAnswer })
 
 <template>
   <div class="lesson-slide-wrapper">
+    <!-- Slide Title (shared across types except Term) -->
+    <div 
+      v-if="slideTitle"
+      class="text-h3 text-center mb-6 font-weight-bold text-primary"
+      :dir="getTextDirection(slideTitle, uiDirection)"
+    >
+      {{ slideTitle }}
+    </div>
+
     <!-- Non-Question Types -->
     <ExplanationSlide
       v-if="slide.type === 'explanation'"
