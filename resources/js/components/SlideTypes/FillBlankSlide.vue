@@ -1,6 +1,8 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, computed, watch, onUnmounted } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   question: {
@@ -18,6 +20,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['answered', 'update:modelValue'])
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const getBlanksData = () => {
   if (Array.isArray(props.question.content)) {
@@ -226,11 +231,15 @@ const termText = computed(() => props.question.termText)
     <div
       v-if="termText"
       class="text-h3 text-center mb-6 font-weight-bold text-primary"
+      :dir="getTextDirection(termText, uiDirection)"
     >
       {{ termText }}
     </div>
 
-    <div class="text-h5 text-center mb-8 lh-loose">
+    <div 
+      class="text-h5 text-center mb-8 lh-loose"
+      :dir="getTextDirection(question.questionText, uiDirection)"
+    >
       <template
         v-for="(part, i) in parts"
         :key="i"

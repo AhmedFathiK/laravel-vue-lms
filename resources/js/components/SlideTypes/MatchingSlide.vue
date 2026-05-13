@@ -1,6 +1,8 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, computed, watch } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   question: {
@@ -18,6 +20,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['answered', 'update:modelValue'])
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const getPairs = () => {
   if (Array.isArray(props.question.content)) {
@@ -193,7 +198,10 @@ const getSlotClass = index => {
     class="matching-slide mx-auto"
     style="max-width: 900px;"
   >
-    <div class="text-h4 text-center mb-6 font-weight-bold">
+    <div 
+      class="text-h4 text-center mb-6 font-weight-bold"
+      :dir="getTextDirection(question.questionText, uiDirection)"
+    >
       {{ question.questionText }}
     </div>
 
@@ -234,7 +242,12 @@ const getSlotClass = index => {
         >
           <!-- Left Item (Fixed) -->
           <div class="left-item flex-grow-1 d-flex align-center justify-start pa-4 border-e bg-surface">
-            <span class="text-body-1 font-weight-medium">{{ leftItem.text }}</span>
+            <span 
+              class="text-body-1 font-weight-medium"
+              :dir="getTextDirection(leftItem.text, uiDirection)"
+            >
+              {{ leftItem.text }}
+            </span>
           </div>
 
           <!-- Right Slot (Droppable) -->
@@ -246,7 +259,12 @@ const getSlotClass = index => {
               style="--v-theme-overlay-multiplier: var(--v-theme-info-overlay-multiplier)"
               @click.stop="handleMatchedItemClick(index)"
             >
-              <span class="text-body-1">{{ getMatchedText(matches[index]) }}</span>
+              <span 
+                class="text-body-1"
+                :dir="getTextDirection(getMatchedText(matches[index]), uiDirection)"
+              >
+                {{ getMatchedText(matches[index]) }}
+              </span>
               <VIcon
                 v-if="!isSubmitted || isExam"
                 icon="tabler-x"
@@ -276,6 +294,7 @@ const getSlotClass = index => {
             v-for="item in unmatchedRightItems"
             :key="item.originalIndex"
             class="option-card cursor-pointer pa-4 rounded border bg-surface elevation-1 transition-all"
+            :dir="getTextDirection(item.text, uiDirection)"
             @click="handleOptionClick(item)"
           >
             {{ item.text }}

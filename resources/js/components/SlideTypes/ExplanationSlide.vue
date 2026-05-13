@@ -1,6 +1,8 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   slide: {
@@ -10,6 +12,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['completed'])
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const content = computed(() => {
   let c = props.slide.content
@@ -53,7 +58,10 @@ onMounted(() => {
     class="explanation-slide mx-auto"
     style="max-width: 800px;"
   >
-    <div class="text-h3 text-center mb-6 font-weight-bold text-primary">
+    <div 
+      class="text-h3 text-center mb-6 font-weight-bold text-primary"
+      :dir="getTextDirection(slide.title, uiDirection)"
+    >
       {{ slide.title }}
     </div>
     
@@ -88,6 +96,7 @@ onMounted(() => {
       <!-- eslint-disable vue/no-v-html -->
       <div
         class="text-body-1 text-high-emphasis lh-loose"
+        :dir="getTextDirection(content, uiDirection)"
         v-html="content"
       />
     <!-- eslint-enable vue/no-v-html -->

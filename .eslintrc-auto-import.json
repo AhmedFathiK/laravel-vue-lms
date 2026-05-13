@@ -373,6 +373,7 @@
     "handleApiError": true,
     "videojsSetup": true,
     "useExamForm": true,
-    "appendFormData": true
+    "appendFormData": true,
+    "getTextDirection": true
   }
 }

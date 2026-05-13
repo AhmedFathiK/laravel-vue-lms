@@ -1,7 +1,9 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { SlickItem, SlickList } from 'vue-slicksort'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   question: {
@@ -19,6 +21,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['answered', 'update:modelValue'])
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const getItems = () => {
   if (Array.isArray(props.question.content)) {
@@ -121,7 +126,10 @@ const getItemClass = index => {
     class="reordering-slide mx-auto"
     style="max-width: 800px;"
   >
-    <div class="text-h4 text-center mb-6 font-weight-bold">
+    <div 
+      class="text-h4 text-center mb-6 font-weight-bold"
+      :dir="getTextDirection(question.questionText, uiDirection)"
+    >
       {{ question.questionText }}
     </div>
 
@@ -170,7 +178,12 @@ const getItemClass = index => {
               icon="tabler-drag-drop"
               color="medium-emphasis"
             />
-            <span class="text-body-1">{{ item.text }}</span>
+            <span 
+              class="text-body-1"
+              :dir="getTextDirection(item.text, uiDirection)"
+            >
+              {{ item.text }}
+            </span>
           </div>
         </SlickItem>
       </SlickList>

@@ -3,6 +3,8 @@ import AppIconAudioPlayer from '@/components/app-form-elements/AppIconAudioPlaye
 import AppOverlayAudioPlayer from '@/components/app-form-elements/AppOverlayAudioPlayer.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, onMounted } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   slide: {
@@ -12,6 +14,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['completed'])
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 onMounted(() => {
   emit('completed')
@@ -73,10 +77,16 @@ const term = computed(() => props.slide.term || props.slide)
 
       <!-- Content Section -->
       <VCardText class="text-center pa-6">
-        <h2 class="text-h4 font-weight-bold mb-2">
+        <h2 
+          class="text-h4 font-weight-bold mb-2"
+          :dir="getTextDirection(term.term || term.title, uiDirection)"
+        >
           {{ term.term || term.title }}
         </h2>
-        <p class="text-h6 text-medium-emphasis mb-0">
+        <p 
+          class="text-h6 text-medium-emphasis mb-0"
+          :dir="getTextDirection(term.meaning || term.description, uiDirection)"
+        >
           {{ term.meaning || term.description }}
         </p>
       </VCardText>
@@ -100,12 +110,16 @@ const term = computed(() => props.slide.term || props.slide)
         />
       </div>
       <div>
-        <p class="text-h6 font-weight-medium mb-1">
+        <p 
+          class="text-h6 font-weight-medium mb-1"
+          :dir="getTextDirection(term.example, uiDirection)"
+        >
           {{ term.example }}
         </p>
         <p 
           v-if="term.exampleTranslation" 
           class="text-body-1 text-medium-emphasis"
+          :dir="getTextDirection(term.exampleTranslation, uiDirection)"
         >
           {{ term.exampleTranslation }}
         </p>

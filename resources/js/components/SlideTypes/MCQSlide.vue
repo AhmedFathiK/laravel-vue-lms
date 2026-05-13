@@ -1,6 +1,8 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { computed, ref, watch } from 'vue'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   question: {
@@ -18,6 +20,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['answered', 'update:modelValue'])
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const selectedOptionIndices = ref([])
 const isSubmitted = ref(false)
@@ -159,7 +164,10 @@ const getCardClass = index => {
     class="mcq-slide mx-auto"
     style="max-width: 800px;"
   >
-    <div class="text-h4 text-center mb-6 font-weight-bold">
+    <div 
+      class="text-h4 text-center mb-6 font-weight-bold"
+      :dir="getTextDirection(question.questionText, uiDirection)"
+    >
       {{ question.questionText }}
     </div>
     
@@ -199,15 +207,33 @@ const getCardClass = index => {
         :disabled="isSubmitted && !isExam"
         @click="handleOptionClick(index)"
       >
-        <VCardText class="d-flex align-center py-4 px-6">
-          <div class="flex-grow-1 text-body-1 font-weight-medium">
+        <VCardText class="pa-4 d-flex align-center">
+          <div class="me-4">
+            <VAvatar
+              :color="selectedOptionIndices.includes(index) ? 'primary' : 'secondary'"
+              size="32"
+              variant="tonal"
+              class="font-weight-bold"
+            >
+              {{ String.fromCharCode(65 + index) }}
+            </VAvatar>
+          </div>
+          <div 
+            class="text-h6 mb-0 flex-grow-1"
+            :dir="getTextDirection(option, uiDirection)"
+          >
             {{ option }}
           </div>
-          
+          <VSpacer />
           <VIcon
-            v-if="isSubmitted"
-            :icon="getCardClass(index).includes('success') ? 'tabler-check' : (getCardClass(index).includes('error') ? 'tabler-x' : '')"
-            :color="getCardClass(index).includes('success') ? 'success' : 'error'"
+            v-if="isSubmitted && !isExam && normalizedCorrectAnswers.includes(String(index))"
+            icon="tabler-check"
+            color="success"
+          />
+          <VIcon
+            v-else-if="isSubmitted && !isExam && selectedOptionIndices.includes(index)"
+            icon="tabler-x"
+            color="error"
           />
         </VCardText>
       </VCard>
