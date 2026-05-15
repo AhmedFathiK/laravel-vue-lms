@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { getTextDirection } from '@core/utils/helpers'
+import { useConfigStore } from '@core/stores/config'
 
 const props = defineProps({
   data: {
@@ -35,6 +37,9 @@ const editItem = () => {
 const deleteItem = () => {
   emit("click:delete", props.slideNumber)
 }
+
+const configStore = useConfigStore()
+const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
 const questionData = computed(() => {
   const q = props.data.question
@@ -132,7 +137,10 @@ console.log(props.data)
                   cols="12"
                   class="d-flex flex-column align-center justify-center"
                 >
-                  <p class="slide-title">
+                  <p
+                    class="slide-title"
+                    :dir="getTextDirection(['term', 'explanation'].includes(data.type) ? data.title : (questionData.title ? questionData.title : data.title), uiDirection)"
+                  >
                     <template v-if="['term', 'explanation'].includes(data.type)">
                       {{ data.title }}
                     </template>
@@ -160,6 +168,7 @@ console.log(props.data)
                   <div
                     v-if="!['term', 'blanks_mcq'].includes(data.type)"
                     class="slide-text"
+                    :dir="getTextDirection(data.type == 'explanation' ? data.content : questionData.questionText, uiDirection)"
                   >
                     <PerfectScrollbar
                       v-if="data.type == 'explanation'"
@@ -206,7 +215,10 @@ console.log(props.data)
                             class="my-2"
                           >
                             <VListItemTitle>
-                              <div class="matching-item pa-1 text-truncate">
+                              <div
+                                class="matching-item pa-1 text-truncate"
+                                :dir="getTextDirection(answer.left, uiDirection)"
+                              >
                                 {{ answer.left }}
                               </div>
                             </VListItemTitle>
@@ -223,11 +235,14 @@ console.log(props.data)
                             class="my-2"
                           >
                             <VListItemTitle>
-                              <div class="matching-item pa-1 text-truncate">
+                              <div
+                                class="matching-item pa-1 text-truncate"
+                                :dir="getTextDirection(answer.right, uiDirection)"
+                              >
                                 {{ answer.right }}
                               </div>
                             </VListItemTitle>
-                          </vlistitem>
+                          </VListItem>
                         </VList>
                       </VCol>
                     </VRow>
@@ -246,6 +261,7 @@ console.log(props.data)
                           v-for="(answer, index) in questionData.options"
                           :key="index"
                           class="mcq-answer my-1 overflow-y-auto pa-1"
+                          :dir="getTextDirection(answer, uiDirection)"
                         >
                           {{ answer }}
                         </div>
@@ -262,7 +278,10 @@ console.log(props.data)
                         cols="12"
                         class="d-flex justify-center flex-column"
                       >
-                        <div class="blanks-mcq-question mb-4 pa-2">
+                        <div
+                          class="blanks-mcq-question mb-4 pa-2"
+                          :dir="getTextDirection(questionData.questionText, uiDirection)"
+                        >
                           <template
                             v-for="(questionPart, index) in questionData.questionText.split(/\[blank\d+\]/)"
                             :key="index"
@@ -308,6 +327,7 @@ console.log(props.data)
                           v-for="(answer, index) in questionData.options"
                           :key="index"
                           class="mcq-answer my-1 overflow-y-auto pa-1"
+                          :dir="getTextDirection(answer, uiDirection)"
                         >
                           {{ index + 1 }}. {{ answer }}
                         </div>
@@ -320,19 +340,31 @@ console.log(props.data)
                       class="d-flex justify-center flex-column pt-0"
                     >
                       <div class="course-term d-flex flex-column py-2">
-                        <div class="term-text-placeholder mb-2 pa-1">
+                        <div
+                          class="term-text-placeholder mb-2 pa-1"
+                          :dir="getTextDirection(termData.term, uiDirection)"
+                        >
                           {{ termData.term }}
                         </div>
-                        <div class="term-meaning-text-placeholder pa-1">
+                        <div
+                          class="term-meaning-text-placeholder pa-1"
+                          :dir="getTextDirection(termData.meaning, uiDirection)"
+                        >
                           {{ termData.meaning }}
                         </div>
                       </div>
                       <div class="term-example">
                         Example
-                        <div class="example-placeholder mb-2 text-start pa-1">
+                        <div
+                          class="example-placeholder mb-2 text-start pa-1"
+                          :dir="getTextDirection(termData.example, uiDirection)"
+                        >
                           {{ termData.example }}
                         </div>
-                        <div class="example-teanslation-placeholder pa-1">
+                        <div
+                          class="example-teanslation-placeholder pa-1"
+                          :dir="getTextDirection(termData.exampleTranslation, uiDirection)"
+                        >
                           {{ termData.exampleTranslation }}
                         </div>
                       </div>
