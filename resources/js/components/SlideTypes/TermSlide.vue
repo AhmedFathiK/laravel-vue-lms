@@ -28,7 +28,7 @@ const term = computed(() => props.slide.term || props.slide)
 <template>
   <div
     class="term-slide mx-auto"
-    style="max-width: 600px;"
+    style="max-width: 450px;"
   >
     <!-- Term Card -->
     <VCard class="term-card overflow-hidden rounded-lg elevation-4 mx-auto">
@@ -43,6 +43,7 @@ const term = computed(() => props.slide.term || props.slide)
             :src="term.mediaUrl || term.image"
             cover
             aspect-ratio="1.7"
+            max-height="280"
             class="term-image"
           >
             <!-- Overlay Player for Image with Audio -->
@@ -70,6 +71,7 @@ const term = computed(() => props.slide.term || props.slide)
             :key="term.mediaUrl || term.video"
             :src="term.mediaUrl || term.video"
             :type="(term.mediaUrl || term.video).includes('youtube') ? 'youtube' : ((term.mediaUrl || term.video).includes('vimeo') ? 'vimeo' : 'hosted')"
+            autoplay
             class="rounded-lg overflow-hidden elevation-2"
           />
         </div>

@@ -3,6 +3,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, computed, watch } from 'vue'
 import { getTextDirection } from '@core/utils/helpers'
 import { useConfigStore } from '@core/stores/config'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   question: {
@@ -21,6 +22,7 @@ const props = defineProps({
 
 const emit = defineEmits(['answered', 'update:modelValue'])
 
+const { t } = useI18n()
 const configStore = useConfigStore()
 const uiDirection = computed(() => configStore.isAppRTL ? 'rtl' : 'ltr')
 
@@ -211,7 +213,7 @@ const termText = computed(() => props.question.termText)
           max-height="300"
           max-width="100%"
           class="rounded-lg"
-          contain
+          cover
         >
           <div
             v-if="mediaType === 'image_with_audio' && audioUrl"
@@ -219,7 +221,10 @@ const termText = computed(() => props.question.termText)
             style="background: rgba(0,0,0,0.1)"
           >
             <div class="bg-surface rounded-pill px-3 py-1 elevation-2">
-              <AppOverlayAudioPlayer :src="audioUrl" />
+              <AppOverlayAudioPlayer 
+                :src="audioUrl" 
+                autoplay
+              />
             </div>
           </div>
         </VImg>
@@ -234,6 +239,7 @@ const termText = computed(() => props.question.termText)
           :key="mediaUrl"
           :src="mediaUrl"
           :type="mediaUrl.includes('youtube') ? 'youtube' : (mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
+          autoplay
           class="rounded-lg overflow-hidden elevation-2"
         />
       </div>
@@ -305,7 +311,7 @@ const termText = computed(() => props.question.termText)
         v-else-if="!isSubmitted || isExam"
         class="text-body-1 text-disabled italic animate__animated animate__fadeIn"
       >
-        Click a blank to see choices
+        {{ t('questions.dialog.clickBlankToSeeChoices') }}
       </div>
     </div>
   </div>
@@ -362,10 +368,10 @@ const termText = computed(() => props.question.termText)
   left: 50%;
   transform: translateX(-50%);
   color: rgb(var(--v-theme-success));
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   white-space: nowrap;
-  margin-top: 4px;
+  margin-top: 8px;
   text-decoration: none !important;
 }
 

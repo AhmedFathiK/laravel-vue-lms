@@ -68,7 +68,7 @@ onMounted(() => {
         :src="slide.mediaUrl"
         max-height="400"
         class="rounded-lg elevation-2"
-        contain
+        cover
       />
       
       <div
@@ -80,6 +80,7 @@ onMounted(() => {
           :key="slide.mediaUrl"
           :src="slide.mediaUrl"
           :type="slide.mediaUrl.includes('youtube') ? 'youtube' : (slide.mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
+          autoplay
           class="rounded-lg overflow-hidden elevation-2"
         />
       </div>

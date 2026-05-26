@@ -128,7 +128,8 @@
       "gradingGuidelinesPlaceholder": "أدخل إرشادات لتقييم هذا السؤال الكتابي",
       "minWords": "الحد الأدنى من الكلمات",
       "maxWords": "الحد الأقصى من الكلمات",
-      "fillBlankAnswerLabel": "إجابات لـ {blankPlaceholder}"
+      "fillBlankAnswerLabel": "إجابات لـ {blankPlaceholder}",
+      "clickBlankToSeeChoices": "اضغط على الفراغ لرؤية الخيارات"
     },
     "success": {
       "questionCreated": "تم إنشاء السؤال بنجاح",

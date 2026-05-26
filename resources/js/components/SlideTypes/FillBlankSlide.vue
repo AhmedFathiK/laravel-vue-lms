@@ -1,5 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import AppOverlayAudioPlayer from '@/components/app-form-elements/AppOverlayAudioPlayer.vue'
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { getTextDirection } from '@core/utils/helpers'
 import { useConfigStore } from '@core/stores/config'
@@ -192,14 +193,15 @@ const termText = computed(() => props.question.termText)
     >
       <div
         v-if="['image', 'image_with_audio'].includes(mediaType)"
-        class="position-relative"
+        class="position-relative w-100"
+        style="max-width: 600px;"
       >
         <VImg
           :src="mediaUrl"
           max-height="400"
           max-width="100%"
           class="rounded-lg"
-          contain
+          cover
         >
           <div
             v-if="mediaType === 'image_with_audio' && audioUrl"
@@ -207,7 +209,10 @@ const termText = computed(() => props.question.termText)
             style="background: rgba(0,0,0,0.1)"
           >
             <div class="bg-surface rounded-pill px-3 py-1 elevation-2">
-              <AppOverlayAudioPlayer :src="audioUrl" />
+              <AppOverlayAudioPlayer 
+                :src="audioUrl" 
+                autoplay
+              />
             </div>
           </div>
         </VImg>
@@ -222,6 +227,7 @@ const termText = computed(() => props.question.termText)
           :key="mediaUrl"
           :src="mediaUrl"
           :type="mediaUrl.includes('youtube') ? 'youtube' : (mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
+          autoplay
           class="rounded-lg overflow-hidden elevation-2"
         />
       </div>

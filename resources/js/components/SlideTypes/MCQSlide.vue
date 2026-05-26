@@ -1,5 +1,6 @@
 <script setup>
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import AppOverlayAudioPlayer from '@/components/app-form-elements/AppOverlayAudioPlayer.vue'
 import { computed, ref, watch } from 'vue'
 import { getTextDirection } from '@core/utils/helpers'
 import { useConfigStore } from '@core/stores/config'
@@ -176,13 +177,31 @@ const getCardClass = index => {
       v-if="question.mediaUrl"
       class="mb-6 d-flex justify-center"
     >
-      <VImg
-        v-if="question.mediaType === 'image'"
-        :src="question.mediaUrl"
-        max-height="400"
-        class="rounded-lg"
-        contain
-      />
+      <div
+        v-if="['image', 'image_with_audio'].includes(question.mediaType)"
+        class="position-relative w-100"
+        style="max-width: 600px;"
+      >
+        <VImg
+          :src="question.mediaUrl"
+          max-height="400"
+          class="rounded-lg"
+          cover
+        >
+          <div
+            v-if="question.mediaType === 'image_with_audio' && question.audioUrl"
+            class="d-flex align-end justify-center w-100 h-100 pb-4"
+            style="background: rgba(0,0,0,0.1)"
+          >
+            <div class="bg-surface rounded-pill px-3 py-1 elevation-2">
+              <AppOverlayAudioPlayer 
+                :src="question.audioUrl" 
+                autoplay
+              />
+            </div>
+          </div>
+        </VImg>
+      </div>
       
       <div
         v-else-if="['video', 'audio'].includes(question.mediaType)"
@@ -192,7 +211,8 @@ const getCardClass = index => {
         <VideoPlayer
           :key="question.mediaUrl"
           :src="question.mediaUrl"
-          :type="question.mediaUrl.includes('youtube') ? 'youtube' : (question.mediaUrl.includes('vimeo') ? 'vimeo' : 'hosted')"
+          :type="question.mediaUrl.includes('youtube') ? 'youtube' : (question.mediaUrl.includes('vimeo') ? 'vimeo' : (question.mediaType === 'audio' ? 'hosted' : 'hosted'))"
+          autoplay
           class="rounded-lg overflow-hidden elevation-2"
         />
       </div>
