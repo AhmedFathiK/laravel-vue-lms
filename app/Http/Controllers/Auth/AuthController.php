@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
-
+use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
@@ -34,7 +34,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged in successfully',
-            'user' => $user,
+            'user' => new UserResource($user),
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
@@ -59,7 +59,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'User registered successfully',
-            'user' => $user,
+            'user' => new UserResource($user),
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ], 201);
@@ -95,7 +95,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => $user,
+            'user' => new UserResource($user),
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
@@ -136,7 +136,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'user' => $user,
+            'user' => new UserResource($user),
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);

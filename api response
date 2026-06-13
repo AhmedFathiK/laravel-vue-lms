@@ -1,0 +1,1276 @@
+{
+  "message": "Logged in successfully",
+  "user": {
+    "id": 1,
+    "firstName": "Super",
+    "lastName": "Admin",
+    "avatar": "/storage/avatars/wdS0Kr9gZm6qLVFDLGwZF5BFzOFrRqYQskrhU3WI.png",
+    "email": "admin@demo.com",
+    "phoneNumber": null,
+    "emailVerifiedAt": "2026-03-04T07:53:30.000000Z",
+    "interfaceLanguage": "ar",
+    "createdAt": "2026-01-10T08:06:34.000000Z",
+    "updatedAt": "2026-05-26T21:59:40.000000Z",
+    "activeCourseId": 4,
+    "fullName": "Super Admin",
+    "roles": [
+      {
+        "id": 1,
+        "name": "Super Admin",
+        "guardName": "web",
+        "isProtected": 1,
+        "createdAt": "2026-01-10T08:06:33.000000Z",
+        "updatedAt": "2026-01-10T08:06:33.000000Z",
+        "pivot": {
+          "modelType": "App\\Models\\User",
+          "modelId": 1,
+          "roleId": 1
+        },
+        "permissions": [
+          {
+            "id": 1,
+            "name": "view.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 1
+            }
+          },
+          {
+            "id": 2,
+            "name": "create.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 2
+            }
+          },
+          {
+            "id": 3,
+            "name": "edit.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 3
+            }
+          },
+          {
+            "id": 4,
+            "name": "delete.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 4
+            }
+          },
+          {
+            "id": 5,
+            "name": "ban.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 5
+            }
+          },
+          {
+            "id": 6,
+            "name": "assign_role.users",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 6
+            }
+          },
+          {
+            "id": 7,
+            "name": "view.roles",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 7
+            }
+          },
+          {
+            "id": 8,
+            "name": "create.roles",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 8
+            }
+          },
+          {
+            "id": 9,
+            "name": "edit.roles",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 9
+            }
+          },
+          {
+            "id": 10,
+            "name": "delete.roles",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 10
+            }
+          },
+          {
+            "id": 11,
+            "name": "assign_permission.roles",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 11
+            }
+          },
+          {
+            "id": 12,
+            "name": "view.courses",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 12
+            }
+          },
+          {
+            "id": 13,
+            "name": "create.courses",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 13
+            }
+          },
+          {
+            "id": 14,
+            "name": "edit.courses",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 14
+            }
+          },
+          {
+            "id": 15,
+            "name": "delete.courses",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 15
+            }
+          },
+          {
+            "id": 16,
+            "name": "view.course_category",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 16
+            }
+          },
+          {
+            "id": 17,
+            "name": "create.course_category",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 17
+            }
+          },
+          {
+            "id": 18,
+            "name": "edit.course_category",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 18
+            }
+          },
+          {
+            "id": 19,
+            "name": "delete.course_category",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 19
+            }
+          },
+          {
+            "id": 20,
+            "name": "view.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 20
+            }
+          },
+          {
+            "id": 21,
+            "name": "create.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 21
+            }
+          },
+          {
+            "id": 22,
+            "name": "edit.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 22
+            }
+          },
+          {
+            "id": 23,
+            "name": "delete.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 23
+            }
+          },
+          {
+            "id": 24,
+            "name": "unlock.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 24
+            }
+          },
+          {
+            "id": 25,
+            "name": "reorder.levels",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 25
+            }
+          },
+          {
+            "id": 26,
+            "name": "view.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 26
+            }
+          },
+          {
+            "id": 27,
+            "name": "create.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 27
+            }
+          },
+          {
+            "id": 28,
+            "name": "edit.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 28
+            }
+          },
+          {
+            "id": 29,
+            "name": "delete.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 29
+            }
+          },
+          {
+            "id": 30,
+            "name": "add_video.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 30
+            }
+          },
+          {
+            "id": 31,
+            "name": "reorder.lessons",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 31
+            }
+          },
+          {
+            "id": 32,
+            "name": "view.slides",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 32
+            }
+          },
+          {
+            "id": 33,
+            "name": "create.slides",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 33
+            }
+          },
+          {
+            "id": 34,
+            "name": "edit.slides",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 34
+            }
+          },
+          {
+            "id": 35,
+            "name": "delete.slides",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 35
+            }
+          },
+          {
+            "id": 36,
+            "name": "reorder.slides",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 36
+            }
+          },
+          {
+            "id": 37,
+            "name": "view.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 37
+            }
+          },
+          {
+            "id": 38,
+            "name": "create.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 38
+            }
+          },
+          {
+            "id": 39,
+            "name": "edit.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 39
+            }
+          },
+          {
+            "id": 40,
+            "name": "delete.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 40
+            }
+          },
+          {
+            "id": 41,
+            "name": "translate.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 41
+            }
+          },
+          {
+            "id": 42,
+            "name": "link.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 42
+            }
+          },
+          {
+            "id": 43,
+            "name": "configure_revision.terms",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 43
+            }
+          },
+          {
+            "id": 44,
+            "name": "view.questions",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 44
+            }
+          },
+          {
+            "id": 45,
+            "name": "create.questions",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 45
+            }
+          },
+          {
+            "id": 46,
+            "name": "edit.questions",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 46
+            }
+          },
+          {
+            "id": 47,
+            "name": "delete.questions",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 47
+            }
+          },
+          {
+            "id": 48,
+            "name": "view.exams",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 48
+            }
+          },
+          {
+            "id": 49,
+            "name": "create.exams",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:32.000000Z",
+            "updatedAt": "2026-01-10T08:06:32.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 49
+            }
+          },
+          {
+            "id": 50,
+            "name": "edit.exams",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 50
+            }
+          },
+          {
+            "id": 51,
+            "name": "delete.exams",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 51
+            }
+          },
+          {
+            "id": 52,
+            "name": "view.exam_sections",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 52
+            }
+          },
+          {
+            "id": 53,
+            "name": "create.exam_sections",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 53
+            }
+          },
+          {
+            "id": 54,
+            "name": "edit.exam_sections",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 54
+            }
+          },
+          {
+            "id": 55,
+            "name": "delete.exam_sections",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 55
+            }
+          },
+          {
+            "id": 56,
+            "name": "grade.exams",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 56
+            }
+          },
+          {
+            "id": 57,
+            "name": "view.placement_tests",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 57
+            }
+          },
+          {
+            "id": 58,
+            "name": "create.placement_tests",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 58
+            }
+          },
+          {
+            "id": 59,
+            "name": "edit.placement_tests",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 59
+            }
+          },
+          {
+            "id": 60,
+            "name": "assign.placement_tests",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 60
+            }
+          },
+          {
+            "id": 61,
+            "name": "view.trophies",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 61
+            }
+          },
+          {
+            "id": 62,
+            "name": "create.trophies",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 62
+            }
+          },
+          {
+            "id": 63,
+            "name": "edit.trophies",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 63
+            }
+          },
+          {
+            "id": 64,
+            "name": "delete.trophies",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 64
+            }
+          },
+          {
+            "id": 65,
+            "name": "view.user_stats",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 65
+            }
+          },
+          {
+            "id": 66,
+            "name": "view.course_stats",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 66
+            }
+          },
+          {
+            "id": 67,
+            "name": "analyze_weakness.user_stats",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 67
+            }
+          },
+          {
+            "id": 68,
+            "name": "view.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 68
+            }
+          },
+          {
+            "id": 69,
+            "name": "create.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 69
+            }
+          },
+          {
+            "id": 70,
+            "name": "edit.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 70
+            }
+          },
+          {
+            "id": 71,
+            "name": "delete.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 71
+            }
+          },
+          {
+            "id": 72,
+            "name": "void.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 72
+            }
+          },
+          {
+            "id": 73,
+            "name": "store.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 73
+            }
+          },
+          {
+            "id": 74,
+            "name": "download.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 74
+            }
+          },
+          {
+            "id": 75,
+            "name": "resend.receipts",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 75
+            }
+          },
+          {
+            "id": 76,
+            "name": "view.payments",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 76
+            }
+          },
+          {
+            "id": 77,
+            "name": "create.payments",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 77
+            }
+          },
+          {
+            "id": 78,
+            "name": "edit.payments",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 78
+            }
+          },
+          {
+            "id": 79,
+            "name": "delete.payments",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 79
+            }
+          },
+          {
+            "id": 80,
+            "name": "store.payments",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 80
+            }
+          },
+          {
+            "id": 86,
+            "name": "access.settings",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 86
+            }
+          },
+          {
+            "id": 87,
+            "name": "manage.translations",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 87
+            }
+          },
+          {
+            "id": 88,
+            "name": "manage.localization",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 88
+            }
+          },
+          {
+            "id": 89,
+            "name": "view.trash",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 89
+            }
+          },
+          {
+            "id": 90,
+            "name": "restore.trash",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 90
+            }
+          },
+          {
+            "id": 91,
+            "name": "delete.trash",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 91
+            }
+          },
+          {
+            "id": 92,
+            "name": "access.admin_panel",
+            "guardName": "web",
+            "createdAt": "2026-01-10T08:06:33.000000Z",
+            "updatedAt": "2026-01-10T08:06:33.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 92
+            }
+          },
+          {
+            "id": 93,
+            "name": "view.billing_plans",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 93
+            }
+          },
+          {
+            "id": 94,
+            "name": "create.billing_plans",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 94
+            }
+          },
+          {
+            "id": 95,
+            "name": "edit.billing_plans",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 95
+            }
+          },
+          {
+            "id": 96,
+            "name": "delete.billing_plans",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 96
+            }
+          },
+          {
+            "id": 97,
+            "name": "manage.billing_plans",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 97
+            }
+          },
+          {
+            "id": 98,
+            "name": "view.user_entitlements",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 98
+            }
+          },
+          {
+            "id": 99,
+            "name": "create.user_entitlements",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 99
+            }
+          },
+          {
+            "id": 100,
+            "name": "edit.user_entitlements",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 100
+            }
+          },
+          {
+            "id": 101,
+            "name": "delete.user_entitlements",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 101
+            }
+          },
+          {
+            "id": 102,
+            "name": "manage.user_entitlements",
+            "guardName": "web",
+            "createdAt": "2026-01-15T12:55:05.000000Z",
+            "updatedAt": "2026-01-15T12:55:05.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 102
+            }
+          },
+          {
+            "id": 103,
+            "name": "view.expenses",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 103
+            }
+          },
+          {
+            "id": 104,
+            "name": "create.expenses",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 104
+            }
+          },
+          {
+            "id": 105,
+            "name": "edit.expenses",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 105
+            }
+          },
+          {
+            "id": 106,
+            "name": "delete.expenses",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 106
+            }
+          },
+          {
+            "id": 107,
+            "name": "manage.expense_categories",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 107
+            }
+          },
+          {
+            "id": 108,
+            "name": "view.financial_dashboard",
+            "guardName": "web",
+            "createdAt": "2026-02-15T10:04:17.000000Z",
+            "updatedAt": "2026-02-15T10:04:17.000000Z",
+            "pivot": {
+              "roleId": 1,
+              "permissionId": 108
+            }
+          }
+        ]
+      }
+    ],
+    "permissions": []
+  },
+  "roles": [
+    "Super Admin"
+  ],
+  "permissions": [
+    "view.users",
+    "create.users",
+    "edit.users",
+    "delete.users",
+    "ban.users",
+    "assign_role.users",
+    "view.roles",
+    "create.roles",
+    "edit.roles",
+    "delete.roles",
+    "assign_permission.roles",
+    "view.courses",
+    "create.courses",
+    "edit.courses",
+    "delete.courses",
+    "view.course_category",
+    "create.course_category",
+    "edit.course_category",
+    "delete.course_category",
+    "view.levels",
+    "create.levels",
+    "edit.levels",
+    "delete.levels",
+    "unlock.levels",
+    "reorder.levels",
+    "view.lessons",
+    "create.lessons",
+    "edit.lessons",
+    "delete.lessons",
+    "add_video.lessons",
+    "reorder.lessons",
+    "view.slides",
+    "create.slides",
+    "edit.slides",
+    "delete.slides",
+    "reorder.slides",
+    "view.terms",
+    "create.terms",
+    "edit.terms",
+    "delete.terms",
+    "translate.terms",
+    "link.terms",
+    "configure_revision.terms",
+    "view.questions",
+    "create.questions",
+    "edit.questions",
+    "delete.questions",
+    "view.exams",
+    "create.exams",
+    "edit.exams",
+    "delete.exams",
+    "view.exam_sections",
+    "create.exam_sections",
+    "edit.exam_sections",
+    "delete.exam_sections",
+    "grade.exams",
+    "view.placement_tests",
+    "create.placement_tests",
+    "edit.placement_tests",
+    "assign.placement_tests",
+    "view.trophies",
+    "create.trophies",
+    "edit.trophies",
+    "delete.trophies",
+    "view.user_stats",
+    "view.course_stats",
+    "analyze_weakness.user_stats",
+    "view.receipts",
+    "create.receipts",
+    "edit.receipts",
+    "delete.receipts",
+    "void.receipts",
+    "store.receipts",
+    "download.receipts",
+    "resend.receipts",
+    "view.payments",
+    "create.payments",
+    "edit.payments",
+    "delete.payments",
+    "store.payments",
+    "access.settings",
+    "manage.translations",
+    "manage.localization",
+    "view.trash",
+    "restore.trash",
+    "delete.trash",
+    "access.admin_panel",
+    "view.billing_plans",
+    "create.billing_plans",
+    "edit.billing_plans",
+    "delete.billing_plans",
+    "manage.billing_plans",
+    "view.user_entitlements",
+    "create.user_entitlements",
+    "edit.user_entitlements",
+    "delete.user_entitlements",
+    "manage.user_entitlements",
+    "view.expenses",
+    "create.expenses",
+    "edit.expenses",
+    "delete.expenses",
+    "manage.expense_categories",
+    "view.financial_dashboard"
+  ]
+}

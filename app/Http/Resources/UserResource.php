@@ -19,12 +19,14 @@ class UserResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
             'full_name' => $this->full_name,
             'email' => $this->email,
             'avatar' => $this->avatar,
-            'roles' => $this->roles->pluck('name'),
-            'entitlements' => UserEntitlementResource::collection($this->whenLoaded('entitlements')),
-            // Add features to the user resource
+            'interface_language' => $this->interface_language,
+            'active_course_id' => $this->active_course_id,
+            // Add features to the user resource for CASL/Permissions
             'features' => $this->features->map(function ($feature) {
                 return [
                     'code' => $feature->feature_code,
