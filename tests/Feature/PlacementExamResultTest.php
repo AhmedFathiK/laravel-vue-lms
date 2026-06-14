@@ -105,7 +105,7 @@ class PlacementExamResultTest extends TestCase
 
         // 1. Visit Course - Placement Exam should be incomplete
         // Set active course first
-        $res = $this->postJson('/api/user/active-course', ['course_id' => $course->id]);
+        $res = $this->patchJson('/api/user/active-course', ['course_id' => $course->id]);
         if ($res->status() !== 200) {
             dump($res->json());
         }
@@ -138,7 +138,7 @@ class PlacementExamResultTest extends TestCase
 
         // 3. Visit Course again - Placement Exam should be completed with outcome
         // Ensure active course is still set (session persistence or token)
-        $this->postJson('/api/user/active-course', ['course_id' => $course->id]);
+        $this->patchJson('/api/user/active-course', ['course_id' => $course->id]);
         
         $response = $this->getJson("/api/learner/course-content");
         $response->assertStatus(200);

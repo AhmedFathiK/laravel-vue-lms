@@ -259,9 +259,7 @@ const onConfirmDelete = async confirmed => {
 
   isDeleting.value = true
   try {
-    await api.post(`/admin/users/${userToDelete.value}`, {
-      _method: 'DELETE',
-    })
+    await api.delete(`/admin/users/${userToDelete.value}`)
     
     toast.success('User deleted successfully')
     isConfirmDialogVisible.value = false
@@ -277,7 +275,7 @@ const onConfirmDelete = async confirmed => {
 // Toggle user status
 const toggleUserStatus = async user => {
   try {
-    await api.post(`/admin/users/${user.id}/toggle-status`, {
+    await api.patch(`/admin/users/${user.id}/status`, {
       isActive: !user.emailVerifiedAt,
     })
     toast.success('User status updated successfully')

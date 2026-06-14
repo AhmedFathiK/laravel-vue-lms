@@ -110,8 +110,8 @@ const togglePlanStatus = async plan => {
     const payload = { isActive: !plan.isActive }
 
     // Note: The backend route for toggle might need the course ID if it's nested, but we should use the global route if available.
-    // However, the toggle route in api.php is: Route::post('billing-plans/{billingPlan}/toggle-status', ...);
-    const response = await api.post(`/admin/billing-plans/${plan.id}/toggle-status`, payload)
+    // Updated route: Route::patch('billing-plans/{billingPlan}/status', ...);
+    const response = await api.patch(`/admin/billing-plans/${plan.id}/status`, payload)
     const index = plans.value.findIndex(p => p.id === plan.id)
     if (index !== -1) {
       plans.value[index] = response.data

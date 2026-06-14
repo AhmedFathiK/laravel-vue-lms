@@ -136,7 +136,7 @@ const finishSession = async () => {
   
   try {
     const promises = Object.keys(answers.value).map(itemId => {
-      return $api.post('/revision/response', {
+      return $api.post('/revision/responses', {
         revisionItemId: itemId,
         results: answers.value[itemId],
       })

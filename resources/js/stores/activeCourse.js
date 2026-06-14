@@ -61,7 +61,7 @@ export const useActiveCourse = defineStore('activeCourse', {
     async setActiveCourse(courseId) {
       this.isLoading = true
       try {
-        await api.post('/user/active-course', { courseId: courseId })
+        await api.patch('/user/active-course', { courseId: courseId })
         this.activeCourseId = courseId
         localStorage.setItem('active_course_id', courseId)
 

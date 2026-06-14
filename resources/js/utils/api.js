@@ -21,6 +21,20 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   config => {
+    // Laravel Method Spoofing: Convert non-GET requests to POST with _method field
+    const method = config.method?.toUpperCase()
+    if (method && ['PUT', 'PATCH', 'DELETE'].includes(method)) {
+      if (config.data instanceof FormData) {
+        config.data.append('_method', method)
+      } else {
+        config.data = {
+          ...(config.data || {}),
+          _method: method,
+        }
+      }
+      config.method = 'POST'
+    }
+
     // Get locale from cookie directly instead of using useI18n
     // Use the app title from themeConfig for the cookie name
     const cookieName = `${themeConfig.app.title}-language`

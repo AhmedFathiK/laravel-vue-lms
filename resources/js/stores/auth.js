@@ -327,7 +327,7 @@ export const useAuthStore = defineStore('auth', () => {
     logState('updateProfile started', profileData)
 
     try {
-      const response = await api.put('/auth/profile', profileData)
+      const response = await api.patch('/auth/profile', profileData)
 
       logState('updateProfile response', response)
       
@@ -361,7 +361,7 @@ export const useAuthStore = defineStore('auth', () => {
     logState('changePassword started')
 
     try {
-      const response = await api.put('/auth/password', passwordData)
+      const response = await api.patch('/auth/password', passwordData)
 
       logState('changePassword response', response)
       

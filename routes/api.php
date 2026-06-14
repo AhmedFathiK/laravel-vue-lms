@@ -48,8 +48,8 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
-        Route::put('/profile', [AuthController::class, 'updateProfile']);
-        Route::put('/password', [AuthController::class, 'changePassword']);
+        Route::patch('/profile', [AuthController::class, 'updateProfile']);
+        Route::patch('/password', [AuthController::class, 'changePassword']);
     });
 });
 
@@ -66,7 +66,7 @@ Route::prefix('mobile')->group(function () {
 
         // Token management (Internal/Mobile utility)
         Route::get('/tokens', [TokenController::class, 'getTokens']);
-        Route::delete('/tokens-all', [TokenController::class, 'revokeAllTokens']);
+        Route::delete('/tokens', [TokenController::class, 'revokeAllTokens']);
         Route::delete('/tokens/{tokenId}', [TokenController::class, 'revokeSpecificToken']);
     });
 });
@@ -86,8 +86,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
         ]);
     });
 
-    Route::post('/user/locale', [LearnerUserController::class, 'updateLocale']);
-    Route::post('/user/active-course', [ActiveCourseController::class, 'update']);
+    Route::patch('/user/locale', [LearnerUserController::class, 'updateLocale']);
+    Route::patch('/user/active-course', [ActiveCourseController::class, 'update']);
     Route::get('/user/active-course', [ActiveCourseController::class, 'show']);
 });
 
@@ -107,13 +107,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
     // App Settings
     Route::get('settings/{group}', [SettingController::class, 'show']);
-    Route::post('settings/{group}', [SettingController::class, 'update']);
+    Route::patch('settings/{group}', [SettingController::class, 'update']);
     Route::post('settings/{group}/upload', [SettingController::class, 'upload']);
 
     // User & Role Management
     Route::get('users/select-fields', [UserController::class, 'getUsersForSelectFields']);
     Route::apiResource('users', UserController::class);
-    Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus']);
+    Route::patch('users/{user}/status', [UserController::class, 'toggleStatus']);
     Route::post('users/{user}/assign-role', [UserController::class, 'assignRole']);
     Route::get('roles', [UserController::class, 'getRoles']);
     Route::apiResource('roles', RoleController::class);
@@ -163,17 +163,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
         Route::delete('/question-contexts/{questionContext}/questions/{question}', [\App\Http\Controllers\Admin\QuestionContextController::class, 'detachQuestion']);
         Route::apiResource('/question-contexts', \App\Http\Controllers\Admin\QuestionContextController::class);
 
-        // Billing Plans
         Route::get('billing-plans', [BillingPlanController::class, 'index']);
         Route::post('billing-plans', [BillingPlanController::class, 'store']);
         Route::get('billing-plans/{billingPlan}', [BillingPlanController::class, 'show']);
         Route::put('billing-plans/{billingPlan}', [BillingPlanController::class, 'update']);
         Route::delete('billing-plans/{billingPlan}', [BillingPlanController::class, 'destroy']);
-        Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
+        Route::patch('billing-plans/{billingPlan}/status', [BillingPlanController::class, 'toggleStatus']);
 
         Route::prefix('/levels')->group(function () {
             Route::get('/', [LevelController::class, 'index']);
-            Route::post('/order', [LevelController::class, 'updateOrder']);
+            Route::patch('/order', [LevelController::class, 'updateOrder']);
             Route::post('/', [LevelController::class, 'store']);
             Route::get('{level}', [LevelController::class, 'show']);
             Route::put('{level}', [LevelController::class, 'update']);
@@ -183,7 +182,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
             // Lesson Management (nested under levels)
             Route::prefix('/{level}/lessons')->group(function () {
                 Route::get('/', [LessonController::class, 'index']);
-                Route::post('/order', [LessonController::class, 'updateOrder']);
+                Route::patch('/order', [LessonController::class, 'updateOrder']);
                 Route::post('/', [LessonController::class, 'store']);
                 Route::get('/{lesson}', [LessonController::class, 'show']);
                 Route::put('/{lesson}', [LessonController::class, 'update']);
@@ -193,7 +192,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
                 // Slide Management (nested under lessons)
                 Route::prefix('/{lesson}/slides')->group(function () {
                     Route::get('/', [SlideController::class, 'index']);
-                    Route::put('/order', [SlideController::class, 'updateOrder']);
+                    Route::patch('/order', [SlideController::class, 'updateOrder']);
                     Route::post('/', [SlideController::class, 'store']);
                     Route::get('{slide}', [SlideController::class, 'show']);
                     Route::put('{slide}', [SlideController::class, 'update']);
@@ -253,7 +252,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
     // Payment & Entitlement Management
     Route::apiResource('billing-plans', BillingPlanController::class);
-    Route::post('billing-plans/{billingPlan}/toggle-status', [BillingPlanController::class, 'toggleStatus']);
+    Route::patch('billing-plans/{billingPlan}/status', [BillingPlanController::class, 'toggleStatus']);
 
     Route::get('payments/all-methods', [PaymentController::class, 'getAllMethods']);
     Route::apiResource('payments', PaymentController::class);
@@ -353,10 +352,10 @@ Route::prefix('learner')->group(function () {
 Route::middleware('auth:sanctum')->prefix('revision')->group(function () {
     Route::get('items', [RevisionController::class, 'index']);
     Route::get('due-items', [RevisionController::class, 'getDueItems']);
-    Route::post('add-item', [RevisionController::class, 'addItem']);
+    Route::post('items', [RevisionController::class, 'addItem']);
 
     // Updated Routes
-    Route::post('response', [RevisionController::class, 'recordResponse']);
+    Route::post('responses', [RevisionController::class, 'recordResponse']);
     Route::get('practice', [RevisionController::class, 'generatePractice']);
     Route::get('statistics', [RevisionController::class, 'getStatistics']);
     Route::get('grammar-topics', [RevisionController::class, 'getGrammarTopics']);

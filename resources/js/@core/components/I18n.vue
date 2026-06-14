@@ -28,7 +28,7 @@ const changeLocale = async lang => {
 
   if (authStore.isAuthenticated) {
     try {
-      await api.post('/user/locale', { locale: lang })
+      await api.patch('/user/locale', { locale: lang })
     } catch (e) {
       console.error('Failed to update locale', e)
     }

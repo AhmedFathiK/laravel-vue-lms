@@ -269,7 +269,7 @@ const saveSettings = async () => {
       }
       
       // Perform partial update
-      await api.post('/admin/settings/landing-page', {
+      await api.patch('/admin/settings/landing-page', {
         sectionId: currentSection.id,
         sectionData: currentSection,
       })

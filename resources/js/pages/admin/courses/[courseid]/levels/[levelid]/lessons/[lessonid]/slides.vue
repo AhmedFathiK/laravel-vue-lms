@@ -230,7 +230,7 @@ const saveOrder = async () => {
     const order = slides.value.map(slide => slide.id)
 
     reordering.value = false
-    await api.put(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides/order`, { order })
+    await api.patch(`/admin/courses/${courseId.value}/levels/${levelId.value}/lessons/${lessonId.value}/slides/order`, { order })
     toast.success('Slide order updated successfully')
   } catch (error) {
     console.error('Error updating slide order:', error)

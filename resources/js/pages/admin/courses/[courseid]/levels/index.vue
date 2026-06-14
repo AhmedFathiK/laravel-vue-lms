@@ -240,7 +240,7 @@ const toggleReorderMode = async () => {
 const saveOrder = async () => {
   isSavingOrder.value = true
   try {
-    await api.post(`/admin/courses/${courseId.value}/levels/order`, {
+    await api.patch(`/admin/courses/${courseId.value}/levels/order`, {
       order: levels.value.map(l => l.id),
     })
     

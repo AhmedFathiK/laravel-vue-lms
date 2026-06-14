@@ -70,10 +70,7 @@ const saveChanges = async () => {
       formData.append('avatar', avatarFile.value)
     }
 
-    // Laravel requires POST with _method=PUT for file uploads on PUT routes
-    formData.append('_method', 'PUT')
-
-    const response = await api.post('/auth/profile', formData, {
+    const response = await api.patch('/auth/profile', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

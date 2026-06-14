@@ -130,7 +130,7 @@ const saveSettings = async () => {
       settings: { ...settings.value },
     }
 
-    await api.post('/admin/settings/payment', payload)
+    await api.patch('/admin/settings/payment', payload)
     toast.success('Payment settings updated successfully')
     
     // Refresh methods if we are using MyFatoorah

@@ -33,7 +33,7 @@ const changePassword = async () => {
     isLoading.value = true
     errors.value = {}
     
-    await api.put('/auth/password', {
+    await api.patch('/auth/password', {
       currentPassword: currentPassword.value,
       password: newPassword.value,
       passwordConfirmation: confirmPassword.value,

@@ -52,7 +52,7 @@ const saveSettings = async () => {
       formData.append('settings[app_logo]', appLogo.value)
     }
 
-    await api.post('/admin/settings/general', formData, {
+    await api.patch('/admin/settings/general', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

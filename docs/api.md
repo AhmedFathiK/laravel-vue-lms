@@ -1199,7 +1199,7 @@ GET /api/gamification/rankings
 
 ### Add Item to Revision List
 
-**Endpoint:** `POST /api/revision/add-item`
+**Endpoint:** `POST /api/revision/items`
 
 **Request:**
 ```json
@@ -1232,12 +1232,13 @@ GET /api/gamification/rankings
 
 ### Record Response
 
-**Endpoint:** `POST /api/revision/items/{revisionItem}/response`
+**Endpoint:** `POST /api/revision/responses`
 
 **Request:**
 ```json
 {
-    "grade": 3  // 1=Again, 2=Hard, 3=Good, 4=Easy
+    "revision_item_id": 1,
+    "results": [true, false, true]
 }
 ```
 
