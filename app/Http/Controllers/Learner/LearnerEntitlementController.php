@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Learner;
 
 use App\Http\Controllers\Controller;
 use App\Exceptions\DuplicateEntitlementException;
+use App\Http\Resources\Learner\CourseEnrollmentResource;
 use App\Http\Resources\EntitlementPlanResource;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
@@ -66,7 +67,7 @@ class LearnerEntitlementController extends Controller
         }
 
 
-        return response()->json($enrollments);
+        return response()->json(CourseEnrollmentResource::collection($enrollments));
     }
 
     /**
@@ -320,9 +321,9 @@ class LearnerEntitlementController extends Controller
         // Check if the plan is actually renewable (recurring or expired)
         // Ensure status is up to date
         $entitlement->isActive();
-        
+
         if ($entitlement->status === UserEntitlement::STATUS_ACTIVE) {
-             return response()->json([
+            return response()->json([
                 'message' => 'This plan is currently active and cannot be renewed until it expires.',
             ], 403);
         }
@@ -505,7 +506,7 @@ class LearnerEntitlementController extends Controller
         */
 
         $plans = $plansQuery->get();
-        
+
         // Get all possible features for comparison
         $allFeatures = \App\Models\Feature::select('id', 'code', 'description')
             ->orderBy('description')

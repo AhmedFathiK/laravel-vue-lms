@@ -292,17 +292,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 
 // Protected Learner Routes (Must be defined before public courses/{course} to avoid conflict)
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
-    Route::get('courses/enrolled', [LearnerEntitlementController::class, 'getEnrolledCourses']);
-});
-
-// Public Learner Routes
-Route::prefix('learner')->group(function () {
-    // Courses Browsing
-    Route::get('courses', [LearnerCourseController::class, 'index']);
-    Route::get('courses/{course}', [LearnerCourseController::class, 'show']);
-});
-
-Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
     Route::get('course-content', [ActiveCourseController::class, 'show']);
@@ -345,6 +334,13 @@ Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
 
 
     Route::get('placement-test', [\App\Http\Controllers\Learner\ExamController::class, 'getPlacementTest']);
+});
+
+// Public Learner Routes
+Route::prefix('learner')->group(function () {
+    // Courses Browsing
+    Route::get('courses', [LearnerCourseController::class, 'index']);
+    Route::get('courses/{course}', [LearnerCourseController::class, 'show']);
 });
 
 /*
