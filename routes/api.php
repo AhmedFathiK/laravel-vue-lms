@@ -47,25 +47,27 @@ Route::prefix('auth')->group(function () {
     // Protected routes
     Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/user', [AuthController::class, 'user']);
+        Route::get('/me', [AuthController::class, 'me']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
         Route::put('/password', [AuthController::class, 'changePassword']);
     });
 });
 
-// API Token Authentication
-Route::prefix('token')->group(function () {
+// Mobile App Authentication (Token-based)
+Route::prefix('mobile')->group(function () {
     // Public routes
-    Route::post('/create', [TokenController::class, 'createToken']);
+    Route::post('/login', [TokenController::class, 'createToken']);
     Route::post('/register', [TokenController::class, 'register']);
 
     // Protected routes
     Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->group(function () {
-        Route::get('/user', [TokenController::class, 'user']);
-        Route::delete('/revoke', [TokenController::class, 'revokeToken']);
-        Route::delete('/revoke-all', [TokenController::class, 'revokeAllTokens']);
-        Route::delete('/revoke/{tokenId}', [TokenController::class, 'revokeSpecificToken']);
-        Route::get('/list', [TokenController::class, 'getTokens']);
+        Route::get('/me', [TokenController::class, 'me']);
+        Route::post('/logout', [TokenController::class, 'logout']);
+
+        // Token management (Internal/Mobile utility)
+        Route::get('/tokens', [TokenController::class, 'getTokens']);
+        Route::delete('/tokens-all', [TokenController::class, 'revokeAllTokens']);
+        Route::delete('/tokens/{tokenId}', [TokenController::class, 'revokeSpecificToken']);
     });
 });
 

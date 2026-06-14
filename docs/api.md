@@ -91,10 +91,26 @@ POST /api/auth/register
 POST /api/auth/logout
 ```
 
-### Get Authenticated User
-
-```
-GET /api/auth/user
+### Get User Profile
+- **URL**: `/api/auth/me`
+- **Method**: `GET`
+- **Headers**: `Accept: application/json` (requires session cookie)
+- **Response**:
+```json
+{
+  "user": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "fullName": "John Doe",
+    "email": "john@example.com",
+    "avatar": "/storage/avatars/default.png",
+    "interfaceLanguage": "en",
+    "activeCourseId": 1
+  },
+  "roles": ["student"],
+  "permissions": ["view.lessons", "take.exams"]
+}
 ```
 
 ### Update User Profile
@@ -126,50 +142,65 @@ PUT /api/auth/password
 }
 ```
 
-## API Token Authentication
+## Mobile Authentication (Token-based)
 
-### Create Token
-
-```
-POST /api/token/create
-```
-
-**Request Body:**
+### Login (Create Token)
+- **URL**: `/api/mobile/login`
+- **Method**: `POST`
+- **Body**:
 ```json
 {
-  "email": "user@example.com",
+  "email": "john@example.com",
   "password": "password",
   "device_name": "iPhone 13"
 }
 ```
-
-### Register and Create Token
-
-```
-POST /api/token/register
-```
-
-**Request Body:**
+- **Response**:
 ```json
 {
-  "name": "John Doe",
-  "email": "user@example.com",
-  "password": "password",
-  "password_confirmation": "password",
-  "device_name": "iPhone 13"
+  "message": "Token created successfully",
+  "token": "1|abcdef123456...",
+  "token_type": "Bearer",
+  "user": {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "full_name": "John Doe",
+    "avatar": "/storage/avatars/default.png",
+    "active_course_id": 1,
+    "interface_language": "en"
+  }
 }
 ```
 
-### Get Token User
-
+### Get Current User
+- **URL**: `/api/mobile/me`
+- **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "user": {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "full_name": "John Doe",
+    "avatar": "/storage/avatars/default.png",
+    "active_course_id": 1,
+    "interface_language": "en"
+  }
+}
 ```
-GET /api/token/user
-```
 
-### Revoke Current Token
-
-```
-DELETE /api/token/revoke
+### Logout (Revoke Current Token)
+- **URL**: `/api/mobile/logout`
+- **Method**: `POST`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "message": "Logged out from mobile device successfully"
+}
 ```
 
 ### Revoke All Tokens

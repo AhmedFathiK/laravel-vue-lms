@@ -267,7 +267,7 @@ export const useAuthStore = defineStore('auth', () => {
     logState('fetchUser started')
     
     try {
-      const response = await api.get('/auth/user')
+      const response = await api.get('/auth/me')
 
       logState('fetchUser response', response)
       

@@ -9,15 +9,18 @@ use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Http\Requests\Auth\TokenRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\Mobile\MobileUserResource;
 
 class TokenController extends Controller
 {
     /**
-     * Generate API token for authentication
+     * Generate API token for authentication (Mobile App)
      */
     public function createToken(TokenRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::with(['roles', 'permissions', 'entitlements.features'])
+            ->where('email', $request->email)
+            ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -25,24 +28,22 @@ class TokenController extends Controller
             ]);
         }
 
-        $abilities = $request->getAbilities();
+        $deviceName = $request->input('device_name', 'Mobile App');
+        $abilities = $request->getAbilities() ?? ['*'];
         $expiresAt = $request->getExpiresAt();
 
-        $token = $user->createToken($request->device_name, $abilities, $expiresAt);
+        $token = $user->createToken($deviceName, $abilities, $expiresAt);
 
         return response()->json([
             'message' => 'Token created successfully',
             'token' => $token->plainTextToken,
-            'abilities' => $abilities,
-            'expires_at' => $expiresAt?->format('Y-m-d H:i:s'),
-            'user' => $user,
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'token_type' => 'Bearer',
+            'user' => new MobileUserResource($user),
         ]);
     }
 
     /**
-     * Register user and create token
+     * Register user and create token (Mobile App)
      */
     public function register(RegisterRequest $request)
     {
@@ -54,29 +55,29 @@ class TokenController extends Controller
         ]);
 
         // Assign default user role
-        $user->assignRole('user');
+        $user->assignRole('student');
 
-        $deviceName = $request->input('device_name', 'API Registration');
+        $deviceName = $request->input('device_name', 'Mobile App Registration');
         $token = $user->createToken($deviceName);
 
         return response()->json([
             'message' => 'User registered successfully',
             'token' => $token->plainTextToken,
-            'user' => $user,
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'token_type' => 'Bearer',
+            'user' => new MobileUserResource($user),
         ], 201);
     }
 
     /**
-     * Revoke current token
+     * Logout: Revoke current token only
      */
-    public function revokeToken(Request $request)
+    public function logout(Request $request)
     {
+        // Revoke only the token that was used to authenticate the current request
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Token revoked successfully'
+            'message' => 'Logged out from mobile device successfully'
         ]);
     }
 
@@ -125,21 +126,12 @@ class TokenController extends Controller
     }
 
     /**
-     * Get authenticated user (for API)
+     * Get authenticated user (Mobile App)
      */
-    public function user(Request $request)
+    public function me(Request $request)
     {
-        $user = $request->user();
-
         return response()->json([
-            'user' => $user,
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
-            'current_token' => [
-                'id' => $request->user()->currentAccessToken()->id,
-                'name' => $request->user()->currentAccessToken()->name,
-                'last_used_at' => $request->user()->currentAccessToken()->last_used_at,
-            ]
+            'user' => new MobileUserResource($request->user()),
         ]);
     }
 }

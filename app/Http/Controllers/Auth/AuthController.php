@@ -20,7 +20,9 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::with(['roles', 'permissions', 'entitlements.features'])
+            ->where('email', $request->email)
+            ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -88,9 +90,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Get authenticated user
+     * Get authenticated user (SPA)
      */
-    public function user(Request $request)
+    public function me(Request $request)
     {
         $user = $request->user();
 
@@ -164,8 +166,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Security Best Practice: Revoke all mobile tokens when password changes
+        // This ensures all mobile sessions are logged out for security
+        $user->tokens()->delete();
+
         return response()->json([
-            'message' => 'Password changed successfully',
+            'message' => 'Password changed successfully. All mobile devices have been logged out for security.',
         ]);
     }
 }
