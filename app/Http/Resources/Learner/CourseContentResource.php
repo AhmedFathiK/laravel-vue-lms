@@ -21,6 +21,7 @@ class CourseContentResource extends JsonResource
         return [
             'id' => $data['id'],
             'title' => $data['title'],
+            'thumbnail' => $data['thumbnail'] ?? null,
             'levels' => LevelContentResource::collection($data['levels'] ?? []),
             'placement_exam' => isset($data['placementExam']) ? new ItemContentResource($data['placementExam']) : null,
             'final_exam' => isset($data['finalExam']) ? new ItemContentResource($data['finalExam']) : null,
