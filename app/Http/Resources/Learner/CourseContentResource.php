@@ -25,6 +25,7 @@ class CourseContentResource extends JsonResource
             'levels' => LevelContentResource::collection($data['levels'] ?? []),
             'placement_exam' => isset($data['placementExam']) ? new ItemContentResource($data['placementExam']) : null,
             'final_exam' => isset($data['finalExam']) ? new ItemContentResource($data['finalExam']) : null,
+            'current_item' => $data['currentItem'] ?? null,
             'entitlement' => isset($data['entitlement']) ? $data['entitlement'] : null,
         ];
     }

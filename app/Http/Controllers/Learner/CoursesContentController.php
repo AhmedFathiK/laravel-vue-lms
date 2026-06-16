@@ -261,6 +261,7 @@ class CoursesContentController extends Controller
         // Course-wide exams
         $placementExam = null;
         $finalExam = null;
+        $currentItem = null; // Track the first incomplete unlocked item
 
         // Track exam IDs we've already added to course-wide sections to avoid duplicates
         $addedExamIds = [];
@@ -458,6 +459,15 @@ class CoursesContentController extends Controller
                 if ($isLesson && !$isRestrictedByPlan) {
                     $previousUnrestrictedLessonCompleted = (bool) $item['completed'];
                 }
+
+                // Identify the current (first incomplete unlocked) item
+                if (!$currentItem && !$item['locked'] && !$item['completed'] && $isLevelUnlocked) {
+                    $currentItem = [
+                        'level_id' => $level['id'],
+                        'item_id' => $item['id'],
+                        'type' => $item['type']
+                    ];
+                }
             }
             unset($item); // Break reference
 
@@ -482,6 +492,7 @@ class CoursesContentController extends Controller
         $responseData = array_merge($courseData, [
             'placementExam' => $placementExam,
             'finalExam' => $finalExam,
+            'currentItem' => $currentItem,
             'entitlement' => $entitlements->first() ? new \App\Http\Resources\UserEntitlementResource($entitlements->first()) : null,
         ]);
 

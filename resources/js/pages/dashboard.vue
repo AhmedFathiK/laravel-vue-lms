@@ -58,8 +58,18 @@ const fetchCourseContent = async () => {
 
     courseData.value = response
 
-    // Auto-scroll to next lesson logic
-    findNextLesson()
+    // Handle auto-scroll to next lesson using backend-provided currentItem
+    if (response.currentItem) {
+      forcedCurrentItem.value = response.currentItem
+      
+      // Optional: Scroll to it after a delay
+      setTimeout(() => {
+        const levelElement = document.getElementById(`level-${response.currentItem.levelId}`)
+        if (levelElement) {
+          levelElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 500)
+    }
   } catch (err) {
     if (err.response?.status === 404) {
       // If course not found, clear and redirect
@@ -80,35 +90,6 @@ const fetchCourseContent = async () => {
     error.value = err.response?.data?.error || "Failed to load course content. Please try again later."
   } finally {
     loading.value = false
-  }
-}
-
-const findNextLesson = () => {
-  if (!courseData.value?.levels) return
-    
-  // Find first unlocked level with incomplete items
-  for (const level of courseData.value.levels) {
-    const status = level.currentUserProgress?.status
-
-    // Skip levels that are completed or skipped
-    if (status === 'completed' || status === 'skipped') continue
-
-    if (level.items) {
-      const firstActive = level.items.find(i => !i.completed && !i.locked)
-      if (firstActive) {
-        forcedCurrentItem.value = { levelId: level.id, itemId: firstActive.id }
-        
-        // Optional: Scroll to it after a delay
-        setTimeout(() => {
-          const levelElement = document.getElementById(`level-${level.id}`)
-          if (levelElement) {
-            levelElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
-        }, 500)
-        
-        return
-      }
-    }
   }
 }
 
