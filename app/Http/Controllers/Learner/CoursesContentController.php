@@ -18,6 +18,7 @@ use App\Models\UserStudiedLesson;
 use App\Models\ExamAttempt;
 use App\Services\EntitlementService;
 use App\Services\FeatureAccessService;
+use App\Http\Resources\Learner\CourseContentResource;
 use Illuminate\Support\Facades\Log; // Added Log
 
 class CoursesContentController extends Controller
@@ -478,10 +479,12 @@ class CoursesContentController extends Controller
             $finalExam['locked'] = !in_array($lastLevelStatus, [UserLevelProgress::STATUS_COMPLETED, UserLevelProgress::STATUS_SKIPPED]);
         }
 
-        return response()->json(array_merge($courseData, [
+        $responseData = array_merge($courseData, [
             'placementExam' => $placementExam,
             'finalExam' => $finalExam,
             'entitlement' => $entitlements->first() ? new \App\Http\Resources\UserEntitlementResource($entitlements->first()) : null,
-        ]));
+        ]);
+
+        return response()->json(new CourseContentResource($responseData));
     }
 }
