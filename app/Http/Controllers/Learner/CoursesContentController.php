@@ -318,6 +318,10 @@ class CoursesContentController extends Controller
         $hasFreeAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.free.access', $course);
         $hasPaidAccess = $this->featureAccessService->hasFeatureForCourse($user, 'content.paid.access', $course);
 
+        // Tracker for sequential unlocking across the entire course.
+        // It persists across levels.
+        $previousUnrestrictedLessonCompleted = true; 
+
         foreach ($courseData['levels'] as &$level) {
             $items = [];
             $levelExamCompleted = false;
@@ -398,8 +402,10 @@ class CoursesContentController extends Controller
             if (isset($level['lessons'])) {
                 foreach ($level['lessons'] as $lesson) {
                     $lesson['type'] = 'lesson';
-                    // is_completed is count, convert to boolean
-                    $lesson['completed'] = $lesson['is_completed'] > 0;
+                    // Determine if lesson is completed or skipped
+                    // UserStudiedLesson record or Level SKIPPED status
+                    $isCompletedInDb = $lesson['is_completed'] > 0;
+                    $lesson['completed'] = $isCompletedInDb || $levelStatus === UserLevelProgress::STATUS_SKIPPED;
                     $items[] = $lesson;
                 }
             }
@@ -417,11 +423,7 @@ class CoursesContentController extends Controller
             }
 
             // Apply locked status
-            // Reset previousCompleted for the start of a new level (unless level logic requires previous level completion? 
-            // No, the placement system overrides previous level dependencies. If a level is unlocked, you can start it.)
-
-            // Sequence is based on the last unrestricted lesson only.
-            $previousUnrestrictedLessonCompleted = true;
+            // $previousUnrestrictedLessonCompleted is NOT reset here to maintain cross-level sequence.
 
             foreach ($items as &$item) {
                 $isLesson = ($item['type'] ?? null) === 'lesson';
