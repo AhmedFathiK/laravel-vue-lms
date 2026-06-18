@@ -320,7 +320,7 @@ class CoursesContentController extends Controller
 
         // Tracker for sequential unlocking across the entire course.
         // It persists across levels.
-        $previousUnrestrictedLessonCompleted = true; 
+        $previousUnrestrictedLessonCompleted = true;
 
         foreach ($courseData['levels'] as &$level) {
             $items = [];
@@ -364,7 +364,7 @@ class CoursesContentController extends Controller
                         $isLevelUnlocked = true;
                     }
                 } else {
-                    if ($level['id'] === $firstLevelId) {
+                    if ($level['id'] === $firstLevelId || $previousUnrestrictedLessonCompleted) {
                         $isLevelUnlocked = true;
 
                         // PERSISTENCE FIX: Create the record in DB so it remains unlocked even if sort order changes
@@ -390,7 +390,6 @@ class CoursesContentController extends Controller
                         ];
                         // Update local variable to match downstream logic if needed
                         $levelStatus = UserLevelProgress::STATUS_UNLOCKED;
-                        // Log::info("Injected UNLOCKED status for Level ID: {$level['id']}");
                     }
                 }
             }
@@ -414,7 +413,10 @@ class CoursesContentController extends Controller
             if (isset($level['exams'])) {
                 foreach ($level['exams'] as $exam) {
                     $exam['type'] = 'exam';
-                    $exam['completed'] = $exam['is_completed'] > 0;
+                    // Determine if exam is completed or skipped
+                    $isCompletedInDb = $exam['is_completed'] > 0;
+                    $exam['completed'] = $isCompletedInDb || $levelStatus === UserLevelProgress::STATUS_SKIPPED;
+
                     if ($exam['completed']) {
                         $levelExamCompleted = true;
                     }
@@ -444,31 +446,29 @@ class CoursesContentController extends Controller
                     $item['locked'] = true;
                     $item['is_paid_locked'] = true;
                     $item['lock_reason'] = 'paid';
-                } elseif (!$isLevelUnlocked && !$isItemFree) {
-                    // Level is locked -> non-free items remain locked
+                } elseif (!$isLevelUnlocked) {
+                    // Level is locked -> all items remain locked (even free ones)
                     $item['locked'] = true;
                 } elseif ($isFullyOpen) {
                     $item['locked'] = false;
-                } elseif ($isLesson) {
-                    // Lock by last unrestricted lesson completion only.
-                    $item['locked'] = !$previousUnrestrictedLessonCompleted;
                 } else {
-                    // Keep non-lesson items unlocked unless blocked by other conditions above.
-                    $item['locked'] = false;
-                }
-
-                // Update sequence tracker only for unrestricted lessons.
-                if ($isLesson && !$isRestrictedByPlan) {
-                    $previousUnrestrictedLessonCompleted = (bool) $item['completed'];
+                    // Both lessons and exams now follow the sequence
+                    $item['locked'] = !$previousUnrestrictedLessonCompleted;
                 }
 
                 // Identify the current (first incomplete unlocked) item
+                // An item is only eligible for currentItem if it is NOT locked.
                 if (!$currentItem && !$item['locked'] && !$item['completed'] && $isLevelUnlocked) {
                     $currentItem = [
                         'level_id' => $level['id'],
                         'item_id' => $item['id'],
                         'type' => $item['type']
                     ];
+                }
+
+                // Update sequence tracker for any accessible item (lesson or exam)
+                if (!$isRestrictedByPlan) {
+                    $previousUnrestrictedLessonCompleted = (bool) $item['completed'];
                 }
             }
             unset($item); // Break reference
