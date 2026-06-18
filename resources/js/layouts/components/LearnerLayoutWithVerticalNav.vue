@@ -2,7 +2,7 @@
 import originalNavItems from '@/navigation/learner'
 import { themeConfig } from '@themeConfig'
 import { useAbility } from '@/plugins/casl/composables/useAbility'
-import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 import { computed } from 'vue'
 
 // Components
@@ -16,14 +16,14 @@ import NavBarI18n from '@core/components/I18n.vue'
 import { VerticalNavLayout } from '@layouts'
 
 const ability = useAbility()
-const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 
 const navItems = computed(() => {
   return originalNavItems.map(item => {
     if (item.to?.name === 'revisions') {
       const hasAccess = ability.can('revision.access', { 
         subject: 'Course', 
-        id: activeCourseStore.activeCourseId 
+        id: authStore.user?.activeCourseId 
       })
       
       if (!hasAccess) {

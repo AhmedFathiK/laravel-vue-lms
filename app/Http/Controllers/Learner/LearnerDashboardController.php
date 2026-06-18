@@ -11,14 +11,13 @@ use App\Models\Term;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class LearnerDashboardController extends Controller
 {
     /**
      * Get global and per-course statistics for the learner dashboard.
      */
-    public function getStatistics(Request $request): JsonResponse
+    public function getStatistics(): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -94,7 +93,7 @@ class LearnerDashboardController extends Controller
     /**
      * Get statistics specifically for the active course dashboard.
      */
-    public function getActiveStats(Request $request): JsonResponse
+    public function getActiveStats(): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -151,6 +150,10 @@ class LearnerDashboardController extends Controller
 
     /**
      * Determine the Next Best Action for the learner.
+     * 
+     * @param \App\Models\User $user
+     * @param \Illuminate\Support\Collection $courses
+     * @param int $totalDueReviews
      */
     private function determineNextBestAction($user, $courses, $totalDueReviews)
     {

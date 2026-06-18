@@ -5,7 +5,6 @@ import api from '@/utils/api'
 import { formatDate } from '@core/utils/formatters'
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useActiveCourse } from '@/stores/activeCourse'
 import { useAuthStore } from '@/stores/auth'
 
 definePage({
@@ -15,7 +14,6 @@ definePage({
 })
 
 const router = useRouter()
-const activeCourseStore = useActiveCourse()
 const authStore = useAuthStore()
 
 const courseData = ref(null)
@@ -33,9 +31,9 @@ const fetchCourseContent = async () => {
   error.value = null
   noAccessData.value = null
 
-  if (!activeCourseStore.activeCourseId) {
-    await activeCourseStore.fetchActiveCourse()
-    if (!activeCourseStore.activeCourseId) {
+  if (!authStore.user?.activeCourseId) {
+    await authStore.fetchUser()
+    if (!authStore.user?.activeCourseId) {
       router.push('/courses/select')
       loading.value = false
       
@@ -48,8 +46,6 @@ const fetchCourseContent = async () => {
 
     if (!response) {
       // If content is null but we have an active course ID, it might be invalid
-      // Let's clear it and redirect
-      activeCourseStore.clearActiveCourse()
       router.push('/courses/select')
       loading.value = false
       
@@ -72,8 +68,7 @@ const fetchCourseContent = async () => {
     }
   } catch (err) {
     if (err.response?.status === 404) {
-      // If course not found, clear and redirect
-      activeCourseStore.clearActiveCourse()
+      // If course not found, redirect
       router.push('/courses/select')
       loading.value = false
       
@@ -95,7 +90,7 @@ const fetchCourseContent = async () => {
 
 onMounted(fetchCourseContent)
 
-watch(() => activeCourseStore.activeCourseId, newId => {
+watch(() => authStore.user?.activeCourseId, newId => {
   if (newId) fetchCourseContent()
   else router.push('/courses/select')
 })

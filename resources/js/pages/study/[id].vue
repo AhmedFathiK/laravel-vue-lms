@@ -4,7 +4,7 @@ import $api from '@/utils/api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
-import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -14,7 +14,6 @@ definePage({
 
 const route = useRoute()
 const router = useRouter()
-const theme = useTheme()
 
 const lessonId = route.params.id
 const isLoading = ref(true)
@@ -23,7 +22,6 @@ const lesson = ref(null)
 const slides = ref([])
 const initialSlideCount = ref(0)
 const currentSlideIndex = ref(0)
-const progress = ref(0)
 const attempts = ref({})
 const resolvedSlideIds = ref(new Set())
 
@@ -105,7 +103,7 @@ const currentProgress = computed(() => {
 
 const lessonSlideRef = ref(null)
 
-const handleQuestionAnswered = async ({ correct, userAnswer }) => {
+const handleQuestionAnswered = async ({ correct }) => {
   if (hasAnsweredCurrent.value) return
     
   hasAnsweredCurrent.value = true
@@ -188,9 +186,10 @@ const handleExit = () => {
 const confirmExit = async () => {
   showExitDialog.value = false
   if (lesson.value && lesson.value.courseId) {
-    const activeCourseStore = useActiveCourse()
+    const authStore = useAuthStore()
 
-    await activeCourseStore.setActiveCourse(lesson.value.courseId)
+    await $api.patch('/user/active-course', { courseId: lesson.value.courseId })
+    await authStore.fetchUser()
     router.push('/dashboard')
   } else {
     router.back()
@@ -217,7 +216,7 @@ const handleNavigationClick = () => {
 }
 
 // Watch for slides that need manual submission to open drawer immediately
-watch(currentSlide, newSlide => {
+watch(currentSlide, () => {
   if (isManualSubmissionSlide.value && !hasAnsweredCurrent.value) {
     drawerOpen.value = true
   }
@@ -257,6 +256,8 @@ const finishLesson = async () => {
   isFinishing.value = true
 
   try {
+    const authStore = useAuthStore()
+
     // Prepare results for batch submission
     const results = Object.entries(attempts.value).map(([slideId, count]) => ({
       slideId: parseInt(slideId),
@@ -267,30 +268,19 @@ const finishLesson = async () => {
     await $api.post(`/learner/lessons/${lessonId}/complete`, {
       results,
     })
-        
-    // Redirect to course page
-    if (lesson.value?.courseId) {
-      const cId = lesson.value?.courseId
-      const activeCourseStore = useActiveCourse()
-      
-      await activeCourseStore.setActiveCourse(cId)
-      router.push('/dashboard')
-    } else {
-      router.push('/dashboard')
+
+    // Ensure we are in the correct context
+    if (authStore.user?.activeCourseId !== lesson.value?.courseId) {
+      await $api.patch('/user/active-course', { courseId: lesson.value?.courseId })
+      await authStore.fetchUser()
     }
-  } catch (error) {
-    console.error("Error finishing:", error)
+
+    router.push('/dashboard')
+  } catch (err) {
+    console.error("Error finishing:", err)
 
     // Even if error, try to redirect
-    if (lesson.value?.data?.courseId || lesson.value?.courseId) {
-      const cId = lesson.value?.data?.courseId || lesson.value?.courseId
-      const activeCourseStore = useActiveCourse()
-      
-      await activeCourseStore.setActiveCourse(cId)
-      router.push('/dashboard')
-    } else {
-      router.push('/dashboard')
-    }
+    router.push('/dashboard')
   } finally {
     isFinishing.value = false
   }

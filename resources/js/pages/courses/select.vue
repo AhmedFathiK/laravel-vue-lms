@@ -52,8 +52,8 @@
             <VCard
               class="d-flex flex-column h-100 cursor-pointer hover-card"
               rounded="lg"
-              :class="{'border-primary': activeCourseStore.activeCourseId === enrollment.course.id}"
-              :variant="activeCourseStore.activeCourseId === enrollment.course.id ? 'outlined' : 'elevated'"
+              :class="{'border-primary': authStore.user?.activeCourseId === enrollment.course.id}"
+              :variant="authStore.user?.activeCourseId === enrollment.course.id ? 'outlined' : 'elevated'"
               :loading="loadingId === enrollment.course.id"
               @click="isEntitlementActive(enrollment) ? selectCourse(enrollment.course.id) : null"
             >
@@ -64,7 +64,7 @@
                 class="rounded-t-lg align-end"
               >
                 <VChip
-                  v-if="activeCourseStore.activeCourseId === enrollment.course.id"
+                  v-if="authStore.user?.activeCourseId === enrollment.course.id"
                   color="primary"
                   class="ma-2"
                   label
@@ -146,7 +146,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
 definePage({
@@ -157,7 +157,7 @@ definePage({
 })
 
 const router = useRouter()
-const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 const enrollments = ref([])
 const loading = ref(false)
 const loadingId = ref(null)
@@ -191,25 +191,23 @@ onMounted(async () => {
 })
 
 const selectCourse = async courseId => {
-  // Always force API call to validate entitlement, even if ID matches store
-  // if (activeCourseStore.activeCourseId === courseId) {
-  //   router.push('/dashboard')
-  //   
-  //   return
-  // }
+  if (authStore.user?.activeCourseId === courseId) {
+    router.push('/dashboard')
+    
+    return
+  }
 
   loadingId.value = courseId
   try {
-    const success = await activeCourseStore.setActiveCourse(courseId)
-    if (success) {
-      router.push('/dashboard')
-    } else {
-      const err = activeCourseStore.error
-
-      error.value = err?.response?.data?.message || err?.response?.data?.error || 'Failed to activate course.'
-    }
+    await api.patch('/user/active-course', { course_id: courseId })
+    
+    // Refresh user to update global state
+    await authStore.fetchUser()
+    
+    router.push('/dashboard')
   } catch (err) {
-    error.value = 'An error occurred.'
+    error.value = err?.response?.data?.message || err?.response?.data?.error || 'An error occurred.'
+    console.error(err)
   } finally {
     loadingId.value = null
   }

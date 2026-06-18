@@ -115,14 +115,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useActiveCourse } from '@/stores/activeCourse'
 import api from '@/utils/api'
 import { useRouter } from 'vue-router'
-
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 
-const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 const router = useRouter()
 const toast = useToast()
 const courses = ref([])
@@ -138,17 +136,16 @@ const fetchCourses = async () => {
 }
 
 const switchCourse = async courseId => {
-  if (activeCourseStore.activeCourseId === courseId) return
+  if (authStore.user?.activeCourseId === courseId) return
     
-  const success = await activeCourseStore.setActiveCourse(courseId)
-  
-  if (success) {
-    // Reload current page or go to dashboard?
-    // Dashboard is safest as other pages might not support the new course context immediately without reload
+  try {
+    await api.patch('/user/active-course', { course_id: courseId })
+    
+    // Refresh user to update global state
+    await authStore.fetchUser()
+    
     router.push('/dashboard')
-  } else {
-    // Show error
-    const err = activeCourseStore.error
+  } catch (err) {
     const message = err?.response?.data?.message || err?.response?.data?.error || 'Failed to activate course.'
 
     toast.error(message)
@@ -157,9 +154,6 @@ const switchCourse = async courseId => {
 
 onMounted(() => {
   fetchCourses()
-  if (!activeCourseStore.activeCourseId) {
-    activeCourseStore.fetchActiveCourse()
-  }
 })
 </script>
 

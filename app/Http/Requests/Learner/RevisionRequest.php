@@ -29,7 +29,6 @@ class RevisionRequest extends FormRequest
                 'state' => ['nullable', Rule::in(['new', 'learning', 'review', 'relearning'])],
                 'due' => 'nullable|boolean',
                 'type' => ['nullable', Rule::in(['term', 'concept'])],
-                'course_id' => 'nullable|exists:courses,id',
                 'limit' => 'nullable|integer|min:1|max:100',
             ],
             'addItem' => [
@@ -40,15 +39,11 @@ class RevisionRequest extends FormRequest
                 'grade' => ['required', 'integer', Rule::in([1, 2, 3, 4])],
             ],
             'generatePractice' => [
-                'course_id' => 'nullable|exists:courses,id',
                 'count' => 'nullable|integer|min:1|max:20',
                 'type' => ['nullable', Rule::in(['term', 'concept', 'both'])],
             ],
-            'getStatistics' => [
-                'course_id' => 'nullable|exists:courses,id',
-            ],
+            'getStatistics' => [],
             default => [],
         };
     }
-
 }

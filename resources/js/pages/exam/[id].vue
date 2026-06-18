@@ -10,6 +10,7 @@ import ReorderingSlide from '@/components/SlideTypes/ReorderingSlide.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -161,9 +162,10 @@ const handleFinishPlacement = async () => {
   const courseId = exam.value?.courseId
   
   if (levelId && courseId) {
-    const activeCourseStore = useActiveCourse()
+    const authStore = useAuthStore()
 
-    await activeCourseStore.setActiveCourse(courseId)
+    await $api.patch('/user/active-course', { course_id: courseId })
+    await authStore.fetchUser()
     router.push({
       path: '/dashboard',
       state: { targetLevel: levelId },

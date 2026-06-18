@@ -145,11 +145,20 @@ class CoursesContentController extends Controller
     /**
      * Display a user's courses content.
      */
-    public function show(Request $request, Course $course): JsonResponse
+    public function show(Request $request): JsonResponse
     {
-        // Check Entitlement
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        $course = $user->activeCourse;
+
+        if (!$course) {
+            return response()->json([
+                "error" => "No active course selected.",
+                "reason" => "no_active_course",
+                "course" => null,
+                "entitlement" => null
+            ], 403);
+        }
 
         // Check Entitlement (Strict)
         $entitlements = $user->entitlements()

@@ -26,7 +26,7 @@ class GamificationController extends Controller
     public function getUserTrophies(Request $request): JsonResponse
     {
         $userId = Auth::id();
-        $courseId = $request->input('course_id');
+        $courseId = Auth::user()->active_course_id;
 
         $trophies = $this->gamificationService->getUserTrophies($userId, $courseId);
 
@@ -41,7 +41,7 @@ class GamificationController extends Controller
     public function getUserPoints(Request $request): JsonResponse
     {
         $userId = Auth::id();
-        $courseId = $request->input('course_id');
+        $courseId = Auth::user()->active_course_id;
         $period = $request->input('period'); // daily, weekly, monthly, yearly
 
         $points = $this->gamificationService->getUserPoints($userId, $courseId, $period);
@@ -92,7 +92,7 @@ class GamificationController extends Controller
     public function getUserLeaderboardRankings(Request $request): JsonResponse
     {
         $userId = Auth::id();
-        $courseId = $request->input('course_id');
+        $courseId = Auth::user()->active_course_id;
 
         // Get leaderboards for this course (or global)
         $query = Leaderboard::where('is_active', true);

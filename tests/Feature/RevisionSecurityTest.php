@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\UserFeature;
 use App\Models\Feature;
-use App\Models\PlanFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
@@ -17,8 +16,11 @@ class RevisionSecurityTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** @var User */
     protected $user;
+    /** @var Course */
     protected $course;
+    /** @var BillingPlan */
     protected $plan;
 
     protected function setUp(): void
@@ -45,26 +47,25 @@ class RevisionSecurityTest extends TestCase
         ]);
         $plan->courses()->attach($this->course->id);
 
-        $entitlement = UserEntitlement::create([
+        UserEntitlement::create([
             'user_id' => $this->user->id,
             'billing_plan_id' => $plan->id,
             'status' => 'active',
             'starts_at' => now(),
         ]);
 
+        // Set active course
+        $this->user->active_course_id = $this->course->id;
+        $this->user->save();
+
         // Attempt to access revision API
         $response = $this->actingAs($this->user)
-            ->getJson("/api/revision/statistics?courseId={$this->course->id}");
-
-        // Note: Statistics endpoint wasn't modified in our previous step, let's check index/practice
-        // The index endpoint is mapped to /api/revisions (likely, based on controller resource) or /api/revision/items?
-        // Let's check routes file or assume common patterns.
-        // Actually, let's test the endpoint we DID secure: index() and getGrammarTopics()
+            ->getJson("/api/revision/statistics");
 
         // Assuming route for index is GET /api/revision/items or similar.
         // Let's use getGrammarTopics which we definitely secured.
         $response = $this->actingAs($this->user)
-            ->getJson("/api/revision/grammar-topics?courseId={$this->course->id}");
+            ->getJson("/api/revision/grammar-topics");
 
         $response->assertStatus(403);
     }
@@ -97,9 +98,13 @@ class RevisionSecurityTest extends TestCase
             'value' => '1',
         ]);
 
+        // Set active course
+        $this->user->active_course_id = $this->course->id;
+        $this->user->save();
+
         // Attempt to access revision API
         $response = $this->actingAs($this->user)
-            ->getJson("/api/revision/grammar-topics?courseId={$this->course->id}");
+            ->getJson("/api/revision/grammar-topics");
 
         $response->assertStatus(200);
     }

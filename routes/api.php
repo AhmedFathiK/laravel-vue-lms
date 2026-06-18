@@ -87,8 +87,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->grou
     });
 
     Route::patch('/user/locale', [LearnerUserController::class, 'updateLocale']);
-    Route::patch('/user/active-course', [ActiveCourseController::class, 'update']);
-    Route::get('/user/active-course', [ActiveCourseController::class, 'show']);
+    Route::patch('/user/active-course', [LearnerUserController::class, 'setActiveCourse']);
 });
 
 /*
@@ -293,7 +292,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\SetLocale::class])->pref
 Route::middleware('auth:sanctum')->prefix('learner')->group(function () {
     // Course Content
     Route::get('statistics', [LearnerDashboardController::class, 'getStatistics']);
-    Route::get('course-content', [ActiveCourseController::class, 'show']);
+    Route::get('course-content', [CoursesContentController::class, 'show']);
     Route::get('dashboard/active-stats', [LearnerDashboardController::class, 'getActiveStats']);
     Route::get('courses/enrolled', [LearnerEntitlementController::class, 'getEnrolledCourses']);
     Route::get('lessons/{lesson}/content', [CoursesContentController::class, 'showLesson']);

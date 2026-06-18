@@ -1,10 +1,10 @@
 <script setup>
-import { useActiveCourse } from '@/stores/activeCourse'
 import $api from '@/utils/api'
 import { formatDate } from '@core/utils/formatters'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -15,7 +15,7 @@ definePage({
 const route = useRoute()
 const router = useRouter()
 const vuetifyTheme = useTheme()
-const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 
 const activeTab = ref('concepts') // 'concepts' or 'terms'
 const loading = ref(true)
@@ -42,68 +42,61 @@ const initializePage = async () => {
   loading.value = true
   noAccessData.value = null
   
-  if (!activeCourseStore.activeCourseId) {
-    await activeCourseStore.fetchActiveCourse()
+  if (!authStore.user?.activeCourseId) {
+    await authStore.fetchUser()
     
-    if (!activeCourseStore.activeCourseId) {
+    if (!authStore.user?.activeCourseId) {
       router.push('/courses/select')
       
       return
     }
   }
 
-  // Fetch data
-  await Promise.all([
-    fetchStats(),
-    fetchCategories(),
-  ])
-  
-  loading.value = false
+  try {
+    await Promise.all([
+      fetchStats(),
+      fetchCategories(),
+    ])
+  } catch (err) {
+    if (err.response?.status === 403 && err.response?.data?.reason) {
+      noAccessData.value = err.response.data
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 const fetchStats = async () => {
-  if (!activeCourseStore.activeCourseId) return
+  if (!authStore.user?.activeCourseId) return
   
   try {
-    const res = await $api.get('/revision/statistics', {
-      params: { courseId: activeCourseStore.activeCourseId },
-    })
+    const res = await $api.get('/revision/statistics')
 
     stats.value = res
   } catch (e) {
-    if (e.response?.status === 403) {
-      noAccessData.value = e.response.data
-    }
-    console.error(e)
+    console.error('Failed to fetch stats:', e)
   }
 }
 
 const fetchCategories = async () => {
-  if (activeTab.value !== 'concepts' || !activeCourseStore.activeCourseId) return
+  if (activeTab.value !== 'concepts' || !authStore.user?.activeCourseId) return
   
   categoriesLoading.value = true
   try {
-    const res = await $api.get('/revision/grammar-topics', {
-      params: { courseId: activeCourseStore.activeCourseId },
-    })
+    const res = await $api.get('/revision/grammar-topics')
 
     categories.value = res
   } catch (e) {
-    if (e.response?.status === 403) {
-      noAccessData.value = e.response.data
-    }
-    console.error(e)
+    console.error('Failed to fetch categories:', e)
   } finally {
     categoriesLoading.value = false
   }
 }
 
-watch(() => activeCourseStore.activeCourseId, newVal => {
-  if (newVal) {
-    initializePage()
-  } else {
-    router.push('/courses/select')
-  }
+onMounted(initializePage)
+
+watch(() => authStore.user?.activeCourseId, () => {
+  initializePage()
 })
 
 watch(activeTab, () => {
@@ -112,19 +105,14 @@ watch(activeTab, () => {
   }
 })
 
-onMounted(() => {
-  initializePage()
-})
-
-const selectedCourse = computed(() => activeCourseStore.activeCourse)
+const selectedCourse = computed(() => authStore.user?.activeCourse)
 
 const startReview = (early = false) => {
   router.push({ 
     name: 'revisions-session', 
-    query: { 
+    query: {
       type: activeTab.value === 'concepts' ? 'concept' : 'term',
       earlyReview: early ? '1' : undefined,
-      courseId: activeCourseStore.activeCourseId,
     }, 
   })
 }

@@ -1,8 +1,8 @@
 <script setup>
-import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -39,7 +39,6 @@ const selectedCourseForEntitlement = ref(null)
 const billingPlans = ref([])
 const selectedPlan = ref(null)
 
-const isLoading = ref(false)
 const processingPlanId = ref(null)
 const error = ref(null)
 const isPaymentErrorDialogVisible = ref(false)
@@ -107,9 +106,8 @@ const handleAcquireClick = async course => {
     }
 
     // Otherwise, just go to dashboard
-    const activeCourseStore = useActiveCourse()
-    
-    await activeCourseStore.setActiveCourse(course.id)
+    await api.patch('/user/active-course', { courseId: course.id })
+    await authStore.fetchUser()
     router.push('/dashboard')
 
     return
@@ -157,9 +155,8 @@ const handlePayment = async plan => {
       // Refresh courses to update UI state
       await fetchCourses()
 
-      const activeCourseStore = useActiveCourse()
-
-      await activeCourseStore.setActiveCourse(selectedCourseForEntitlement.value.id)
+      await api.patch('/user/active-course', { courseId: selectedCourseForEntitlement.value.id })
+      await authStore.fetchUser()
       router.push('/dashboard')
     } else {
       // For paid plans, fetch payment methods first

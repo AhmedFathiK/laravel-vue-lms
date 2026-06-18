@@ -1,7 +1,6 @@
 // stores/auth.js
 import { useAbility } from '@/plugins/casl/composables/useAbility'
 import api from '@/utils/api' // Adjust the import path as necessary
-import { useActiveCourse } from '@/stores/activeCourse'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -244,11 +243,6 @@ export const useAuthStore = defineStore('auth', () => {
       errors.value = {}
       abilities.value = []
       
-      // Clear active course data
-      const activeCourseStore = useActiveCourse()
-
-      activeCourseStore.clearActiveCourse()
-
       logState('logout completed')
       
       return { success: true }

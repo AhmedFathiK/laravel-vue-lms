@@ -1,7 +1,7 @@
 <script setup>
-import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 
-const activeCourseStore = useActiveCourse()
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -11,13 +11,13 @@ const activeCourseStore = useActiveCourse()
   >
     <VAvatar
       size="26"
-      :color="activeCourseStore.activeCourse?.thumbnail ? undefined : 'primary'"
-      :variant="activeCourseStore.activeCourse?.thumbnail ? undefined : 'tonal'"
+      :color="authStore.user?.activeCourse?.thumbnail ? undefined : 'primary'"
+      :variant="authStore.user?.activeCourse?.thumbnail ? undefined : 'tonal'"
     >
       <VImg
-        v-if="activeCourseStore.activeCourse?.thumbnail"
-        :src="activeCourseStore.activeCourse.thumbnail"
-        :alt="activeCourseStore.activeCourse.title"
+        v-if="authStore.user?.activeCourse?.thumbnail"
+        :src="authStore.user.activeCourse.thumbnail"
+        :alt="authStore.user.activeCourse.title"
         cover
       />
       <VIcon
@@ -30,7 +30,7 @@ const activeCourseStore = useActiveCourse()
       activator="parent"
       location="bottom"
     >
-      {{ activeCourseStore.activeCourse ? 'Switch Course' : 'Select Course' }}
+      {{ authStore.user?.activeCourse ? 'Switch Course' : 'Select Course' }}
     </VTooltip>
   </IconBtn>
 </template>

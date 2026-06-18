@@ -40,7 +40,7 @@ class RevisionController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $courseId = $request->input('course_id') ?? $user->active_course_id;
+        $courseId = $user->active_course_id;
 
         if (!$courseId) {
             return response()->json(['message' => 'No active course selected.'], 400);
@@ -95,8 +95,9 @@ class RevisionController extends Controller
      */
     public function generatePractice(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $courseId = $request->input('course_id') ?? $user->active_course_id;
+        $courseId = $user->active_course_id;
 
         if (!$courseId) {
             return response()->json(['message' => 'No active course selected.'], 400);
@@ -131,7 +132,7 @@ class RevisionController extends Controller
         $userId = Auth::id();
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $courseId = $request->input('course_id') ?? $user->active_course_id;
+        $courseId = $user->active_course_id;
 
         if (!$courseId) {
             return response()->json([
@@ -203,10 +204,11 @@ class RevisionController extends Controller
     /**
      * Get items due for revision
      */
-    public function getDueItems(Request $request): JsonResponse
+    public function getStats(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $courseId = $request->input('course_id') ?? $user->active_course_id;
+        $courseId = $user->active_course_id;
 
         if (!$courseId) {
             return response()->json(['message' => 'No active course selected.'], 400);
@@ -330,9 +332,10 @@ class RevisionController extends Controller
      */
     public function getStatistics(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $userId = Auth::id();
-        $courseId = $request->input('course_id') ?? $user->active_course_id;
+        $courseId = $user->active_course_id;
 
         if (!$courseId) {
             return response()->json(['message' => 'No active course selected.'], 400);

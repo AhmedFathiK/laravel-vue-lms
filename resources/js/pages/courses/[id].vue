@@ -4,7 +4,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import PaymentMethodSelector from '@/components/PaymentMethodSelector.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useActiveCourse } from '@/stores/activeCourse'
+import { useAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -55,9 +55,10 @@ const fetchCourseDetails = async () => {
 
 const handleContinueLearning = async () => {
   if (courseDetails.value?.id) {
-    const activeCourseStore = useActiveCourse()
+    const authStore = useAuthStore()
 
-    await activeCourseStore.setActiveCourse(courseDetails.value.id)
+    await api.patch('/user/active-course', { course_id: courseDetails.value.id })
+    await authStore.fetchUser()
     router.push('/dashboard')
   }
 }
@@ -76,9 +77,10 @@ onMounted(async () => {
   // Check for payment success and redirect if enrolled
   if (route.query.payment === 'success' && courseDetails.value?.hasActiveAccess) {
     // Optional: Show a toast here
-    const activeCourseStore = useActiveCourse()
+    const authStore = useAuthStore()
 
-    await activeCourseStore.setActiveCourse(courseDetails.value.id)
+    await api.patch('/user/active-course', { course_id: courseDetails.value.id })
+    await authStore.fetchUser()
     router.push('/dashboard')
   } else if (route.query.payment === 'failed') {
     if (route.query.payment_id) {
