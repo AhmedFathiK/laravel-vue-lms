@@ -43,8 +43,6 @@ class StoreRequest extends FormRequest
             'term_id' => ['nullable', 'integer', 'exists:terms,id'],
             'content' => ['required_if:type,' . Slide::TYPE_EXPLANATION, 'string', 'nullable'],
             'sort_order' => ['nullable', 'integer'],
-            'feedback_sentence' => ['nullable', 'string', 'max:255'],
-            'feedback_translation' => ['nullable', 'string', 'max:255'],
         ];
 
         return $rules;

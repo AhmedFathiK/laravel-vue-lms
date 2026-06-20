@@ -179,9 +179,81 @@ const handleTermCreated = (response) => {
                   :error-messages="validationErrors.question_id"
                   class="mb-2"
                 />
-                <div v-if="selectedQuestion" class="text-caption pa-2 bg-light-secondary rounded">
-                  <strong>ID:</strong> #{{ selectedQuestion.id }}<br>
-                  <strong>Text:</strong> {{ selectedQuestion.questionText }}
+                <div v-if="selectedQuestion" class="text-caption pa-3 bg-light-secondary rounded">
+                  <div class="font-weight-bold mb-1">
+                    {{ selectedQuestion.questionText }}
+                  </div>
+
+                  <!-- MCQ -->
+                  <ol
+                    v-if="selectedQuestion.type === 'mcq'"
+                    type="a"
+                    class="ms-5"
+                  >
+                    <li
+                      v-for="(option, index) in (selectedQuestion.content?.options || selectedQuestion.options)"
+                      :key="index"
+                    >
+                      {{ option }}
+                    </li>
+                  </ol>
+
+                  <!-- Matching -->
+                  <ul
+                    v-else-if="selectedQuestion.type === 'matching'"
+                    class="ms-5"
+                  >
+                    <li
+                      v-for="(pair, index) in (selectedQuestion.content?.pairs || selectedQuestion.options)"
+                      :key="index"
+                    >
+                      {{ pair.left }} → {{ pair.right }}
+                    </li>
+                  </ul>
+
+                  <!-- Fill blank with choices -->
+                  <ul
+                    v-else-if="selectedQuestion.type === 'fill_blank_choices'"
+                    class="ms-5"
+                  >
+                    <li
+                      v-for="(option, index) in (selectedQuestion.content?.blanks || selectedQuestion.options)"
+                      :key="index"
+                    >
+                      Blank {{ index + 1 }}: {{ option.options.join(', ') }}
+                    </li>
+                  </ul>
+
+                  <!-- Fill blank -->
+                  <ul
+                    v-else-if="selectedQuestion.type === 'fill_blank'"
+                    class="ms-5"
+                  >
+                    <li
+                      v-for="(answers, index) in (selectedQuestion.content?.correct_answer || selectedQuestion.content?.correctAnswer)"
+                      :key="index"
+                    >
+                      Blank {{ index + 1 }}: {{ Array.isArray(answers) ? answers.join(', ') : answers }}
+                    </li>
+                  </ul>
+
+                  <!-- Reordering -->
+                  <ol
+                    v-else-if="selectedQuestion.type === 'reordering'"
+                    type="1"
+                    class="ms-5"
+                  >
+                    <li
+                      v-for="(option, index) in (selectedQuestion.content?.items || selectedQuestion.options)"
+                      :key="index"
+                    >
+                      {{ option }}
+                    </li>
+                  </ol>
+
+                  <div class="mt-2 text-disabled">
+                    ID: #{{ selectedQuestion.id }}
+                  </div>
                 </div>
                 <VBtn
                   block
@@ -232,17 +304,43 @@ const handleTermCreated = (response) => {
 
           <VCard v-if="isQuestionType" variant="outlined">
             <VCardText>
-              <div class="text-subtitle-2 mb-2">Feedback Content</div>
+              <div class="text-subtitle-2 mb-2">Feedback Information</div>
               <AppTextField
-                v-model="formData.feedback_sentence"
-                label="Target Language"
-                :error-messages="validationErrors.feedback_sentence"
-                class="mb-2"
+                :model-value="selectedQuestion?.correctSentence"
+                label="Correct Sentence"
+                readonly
+                disabled
+                hint="Correct sentence is managed in the question bank"
+                persistent-hint
+                class="mb-4"
               />
               <AppTextField
-                v-model="formData.feedback_translation"
-                label="Source Language"
-                :error-messages="validationErrors.feedback_translation"
+                :model-value="selectedQuestion?.correctSentenceTranslation"
+                label="Correct Sentence Translation"
+                readonly
+                disabled
+                hint="Correct sentence translation is managed in the question bank"
+                persistent-hint
+                class="mb-4"
+              />
+              <AppTextarea
+                :model-value="selectedQuestion?.correctAnswerFeedback"
+                label="Correct Feedback"
+                readonly
+                disabled
+                hint="Correct feedback is managed in the question bank"
+                persistent-hint
+                rows="2"
+                class="mb-4"
+              />
+              <AppTextarea
+                :model-value="selectedQuestion?.incorrectAnswerFeedback"
+                label="Incorrect Feedback"
+                readonly
+                disabled
+                hint="Incorrect feedback is managed in the question bank"
+                persistent-hint
+                rows="2"
               />
             </VCardText>
           </VCard>

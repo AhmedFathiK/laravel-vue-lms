@@ -31,8 +31,10 @@ class Question extends Model
         'difficulty',
         'tags',
 
-        'correct_feedback',
-        'incorrect_feedback',
+        'correct_answer_feedback',
+        'incorrect_answer_feedback',
+        'correct_sentence',
+        'correct_sentence_translation',
         'media_url',
         'media_type',
         'audio_url',
@@ -42,8 +44,9 @@ class Question extends Model
     public array $translatable = [
         'title',
         'question_text',
-        'correct_feedback',
-        'incorrect_feedback',
+        'correct_answer_feedback',
+        'incorrect_answer_feedback',
+        'correct_sentence_translation',
         'content',
     ];
 

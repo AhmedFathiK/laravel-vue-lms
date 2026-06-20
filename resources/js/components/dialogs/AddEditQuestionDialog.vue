@@ -61,8 +61,10 @@ const getDefaultQuestion = () => ({
   points: 1,
   difficulty: 'medium',
   tags: [],
-  correctFeedback: '',
-  incorrectFeedback: '',
+  correctAnswerFeedback: '',
+  incorrectAnswerFeedback: '',
+  correctSentence: '',
+  correctSentenceTranslation: '',
   mediaUrl: null,
   mediaType: 'none',
   mediaInputType: 'file',
@@ -1520,11 +1522,33 @@ const removeTag = tag => {
             <VRow>
               <VCol cols="12">
                 <AppTextarea
-                  v-model="localQuestion.correctFeedback"
-                  :label="t('questions.dialog.correctFeedback', 'Correct Feedback (Optional)')"
-                  :placeholder="t('questions.dialog.correctFeedbackPlaceholder', 'Message to show when the user answers correctly')"
+                  v-model="localQuestion.correctAnswerFeedback"
+                  :label="t('questions.dialog.correctAnswerFeedback', 'Correct Feedback (Optional)')"
+                  :placeholder="t('questions.dialog.correctAnswerFeedbackPlaceholder', 'Message to show when the user answers correctly')"
                   rows="2"
-                  :error-messages="formErrors.correctFeedback"
+                  :error-messages="formErrors.correctAnswerFeedback"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+
+              <VCol cols="12">
+                <AppTextField
+                  v-model="localQuestion.correctSentence"
+                  :label="t('questions.dialog.correctSentence', 'Correct Sentence')"
+                  :placeholder="t('questions.dialog.correctSentencePlaceholder', 'The full correct sentence')"
+                  :error-messages="formErrors.correctSentence"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </VCol>
+
+              <VCol cols="12">
+                <AppTextField
+                  v-model="localQuestion.correctSentenceTranslation"
+                  :label="t('questions.dialog.correctSentenceTranslation', 'Correct Sentence Translation')"
+                  :placeholder="t('questions.dialog.correctSentenceTranslationPlaceholder', 'Translation of the correct sentence')"
+                  :error-messages="formErrors.correctSentenceTranslation"
                   variant="outlined"
                   density="comfortable"
                 />
@@ -1532,11 +1556,11 @@ const removeTag = tag => {
               
               <VCol cols="12">
                 <AppTextarea
-                  v-model="localQuestion.incorrectFeedback"
-                  :label="t('questions.dialog.incorrectFeedback', 'Incorrect Feedback (Optional)')"
-                  :placeholder="t('questions.dialog.incorrectFeedbackPlaceholder', 'Message to show when the user answers incorrectly')"
+                  v-model="localQuestion.incorrectAnswerFeedback"
+                  :label="t('questions.dialog.incorrectAnswerFeedback', 'Incorrect Feedback (Optional)')"
+                  :placeholder="t('questions.dialog.incorrectAnswerFeedbackPlaceholder', 'Message to show when the user answers incorrectly')"
                   rows="2"
-                  :error-messages="formErrors.incorrectFeedback"
+                  :error-messages="formErrors.incorrectAnswerFeedback"
                   variant="outlined"
                   density="comfortable"
                 />

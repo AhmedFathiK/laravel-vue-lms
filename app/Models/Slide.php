@@ -35,15 +35,11 @@ class Slide extends Model
         'term_id',
         'content',
         'sort_order',
-        'feedback_sentence',
-        'feedback_translation',
     ];
 
     public array $translatable = [
         'title',
         'content',
-        'feedback_sentence',
-        'feedback_translation',
     ];
 
     protected $casts = [

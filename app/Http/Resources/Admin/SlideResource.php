@@ -23,8 +23,6 @@ class SlideResource extends JsonResource
             'sortOrder' => $this->sort_order,
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
-            'feedbackSentence' => $this->feedback_sentence,
-            'feedbackTranslation' => $this->feedback_translation,
             'mediaUrl' => $this->media_url, // Assuming these might exist on model or are dynamically appended
             'mediaType' => $this->media_type,
 

@@ -32,8 +32,8 @@ class QuestionFactory extends Factory
             ]),
             'points' => $this->faker->numberBetween(1, 10),
             'difficulty' => $this->faker->randomElement(['easy', 'medium', 'hard']),
-            'correct_feedback' => $this->faker->optional()->sentence,
-            'incorrect_feedback' => $this->faker->optional()->sentence,
+            'correct_answer_feedback' => $this->faker->optional()->sentence,
+            'incorrect_answer_feedback' => $this->faker->optional()->sentence,
             'tags' => $this->faker->words(3),
             'content' => [],
         ];

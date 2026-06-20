@@ -113,10 +113,10 @@ const handleQuestionAnswered = async ({ correct }) => {
   attempts.value[currentSlide.value.id] = (attempts.value[currentSlide.value.id] || 0) + 1
   
   if (correct) {
-    drawerFeedback.value = currentSlide.value.question.correctFeedback || 'Correct!'
+    drawerFeedback.value = currentSlide.value.question.correctAnswerFeedback || 'Correct!'
     resolvedSlideIds.value.add(currentSlide.value.id)
   } else {
-    drawerFeedback.value = currentSlide.value.question.incorrectFeedback || 'Incorrect.'
+    drawerFeedback.value = currentSlide.value.question.incorrectAnswerFeedback || 'Incorrect.'
   }
 
   // Open drawer immediately for better responsiveness
@@ -411,10 +411,10 @@ onMounted(() => {
       :mode="drawerMode"
       :is-correct="isCorrect"
       :is-last-slide="isTrulyFinished"
-      :correct-feedback="drawerFeedback"
-      :incorrect-feedback="drawerFeedback"
-      :feedback-sentence="currentSlide?.feedbackSentence"
-      :feedback-translation="currentSlide?.feedbackTranslation"
+      :correct-answer-feedback="drawerFeedback"
+      :incorrect-answer-feedback="drawerFeedback"
+      :correct-sentence="currentSlide?.question?.correctSentence"
+      :correct-sentence-translation="currentSlide?.question?.correctSentenceTranslation"
       :language="lesson?.courseMainLocale"
       :loading="isFinishing"
       @next="handleNavigationClick"

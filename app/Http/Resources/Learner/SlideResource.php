@@ -19,8 +19,6 @@ class SlideResource extends JsonResource
             'type' => $this->type,
             'title' => $this->title,
             'content' => $this->content,
-            'feedback_sentence' => $this->feedback_sentence,
-            'feedback_translation' => $this->feedback_translation,
             'question' => new QuestionResource($this->whenLoaded('question')),
             'term' => new TermResource($this->whenLoaded('term')),
         ];

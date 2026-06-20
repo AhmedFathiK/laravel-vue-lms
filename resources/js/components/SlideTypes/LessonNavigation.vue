@@ -18,19 +18,19 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  correctFeedback: {
+  correctAnswerFeedback: {
     type: String,
     default: '',
   },
-  incorrectFeedback: {
+  incorrectAnswerFeedback: {
     type: String,
     default: '',
   },
-  feedbackSentence: {
+  correctSentence: {
     type: String,
     default: '',
   },
-  feedbackTranslation: {
+  correctSentenceTranslation: {
     type: String,
     default: '',
   },
@@ -51,9 +51,9 @@ const wrongSound = ref()
 const isPlayingSentence = ref(false)
 
 const speakSentence = () => {
-  if (!props.feedbackSentence) return
+  if (!props.correctSentence) return
 
-  const utterance = new SpeechSynthesisUtterance(props.feedbackSentence)
+  const utterance = new SpeechSynthesisUtterance(props.correctSentence)
   
   // Handle cases where language might be just 'en' instead of 'en-US'
   let lang = props.language
@@ -158,7 +158,7 @@ const handleFinish = () => {
             class="mb-4 mb-md-0"
           >
             <div
-              v-if="feedbackSentence"
+              v-if="correctSentence"
               class="feedback-sentence-wrapper rounded pa-3 mb-2"
             >
               <div class="d-flex align-center gap-3">
@@ -172,13 +172,13 @@ const handleFinish = () => {
                 />
                 <div>
                   <div class="text-subtitle-1 font-weight-medium mb-1">
-                    {{ feedbackSentence }}
+                    {{ correctSentence }}
                   </div>
                   <div
-                    v-if="feedbackTranslation"
+                    v-if="correctSentenceTranslation"
                     class="text-body-2 text-medium-emphasis"
                   >
-                    {{ feedbackTranslation }}
+                    {{ correctSentenceTranslation }}
                   </div>
                 </div>
               </div>
@@ -186,7 +186,7 @@ const handleFinish = () => {
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div 
               class="text-body-1"
-              v-html="isCorrect ? correctFeedback : incorrectFeedback" 
+              v-html="isCorrect ? correctAnswerFeedback : incorrectAnswerFeedback"
             />
           </VCol>
 

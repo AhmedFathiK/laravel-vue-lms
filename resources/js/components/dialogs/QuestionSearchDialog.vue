@@ -110,11 +110,77 @@ const handleSelect = () => {
           class="mt-4"
         >
           <template #item.questionText="{ item }">
-            <div
-              class="text-truncate"
-              style="max-width: 400px;"
-            >
-              {{ item.questionText.replace(/<[^>]*>?/gm, '') }}
+            <div class="py-2">
+              <div class="font-weight-medium mb-1">
+                {{ item.questionText }}
+              </div>
+
+              <!-- MCQ -->
+              <ol
+                v-if="item.type === 'mcq'"
+                type="a"
+                class="ms-5 text-caption"
+              >
+                <li
+                  v-for="(option, index) in (item.content?.options || item.options)"
+                  :key="index"
+                >
+                  {{ option }}
+                </li>
+              </ol>
+
+              <!-- Matching -->
+              <ul
+                v-else-if="item.type === 'matching'"
+                class="ms-5 text-caption"
+              >
+                <li
+                  v-for="(pair, index) in (item.content?.pairs || item.options)"
+                  :key="index"
+                >
+                  {{ pair.left }} → {{ pair.right }}
+                </li>
+              </ul>
+
+              <!-- Fill blank with choices -->
+              <ul
+                v-else-if="item.type === 'fill_blank_choices'"
+                class="ms-5 text-caption"
+              >
+                <li
+                  v-for="(option, index) in (item.content?.blanks || item.options)"
+                  :key="index"
+                >
+                  Blank {{ index + 1 }}: {{ option.options.join(', ') }}
+                </li>
+              </ul>
+
+              <!-- Fill blank -->
+              <ul
+                v-else-if="item.type === 'fill_blank'"
+                class="ms-5 text-caption"
+              >
+                <li
+                  v-for="(answers, index) in (item.content?.correct_answer || item.content?.correctAnswer)"
+                  :key="index"
+                >
+                  Blank {{ index + 1 }}: {{ Array.isArray(answers) ? answers.join(', ') : answers }}
+                </li>
+              </ul>
+
+              <!-- Reordering -->
+              <ol
+                v-else-if="item.type === 'reordering'"
+                type="1"
+                class="ms-5 text-caption"
+              >
+                <li
+                  v-for="(option, index) in (item.content?.items || item.options)"
+                  :key="index"
+                >
+                  {{ option }}
+                </li>
+              </ol>
             </div>
           </template>
         </VDataTableServer>

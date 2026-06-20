@@ -237,8 +237,10 @@ watch(currentSlide, newSlide => {
       :mode="hasAnsweredCurrent ? 'continue' : 'feedback'" 
       :is-correct="isCorrect"
       :is-last-slide="isLastSlide"
-      :correct-feedback="drawerFeedback"
-      :incorrect-feedback="drawerFeedback"
+      :correct-answer-feedback="drawerFeedback"
+      :incorrect-answer-feedback="drawerFeedback"
+      :correct-sentence="currentSlide?.question?.correctSentence"
+      :correct-sentence-translation="currentSlide?.question?.correctSentenceTranslation"
       @next="handleNavigationClick"
       @finish="handleFinish"
     />

@@ -37,8 +37,8 @@ const getDefaultQuestion = () => ({
   options: ['', ''],
   correctAnswer: [],
   points: 1,
-  correctFeedback: '',
-  incorrectFeedback: '',
+  correctAnswerFeedback: '',
+  incorrectAnswerFeedback: '',
   mediaUrl: null,
   mediaFile: null,
   mediaType: 'none',
@@ -886,7 +886,7 @@ const updateReorderingCorrectAnswers = () => {
                 md="6"
               >
                 <AppTextarea
-                  v-model="localQuestion.correctFeedback"
+                  v-model="localQuestion.correctAnswerFeedback"
                   label="Correct Feedback"
                   placeholder="Shown when the answer is correct"
                   rows="2"
@@ -899,7 +899,7 @@ const updateReorderingCorrectAnswers = () => {
                 md="6"
               >
                 <AppTextarea
-                  v-model="localQuestion.incorrectFeedback"
+                  v-model="localQuestion.incorrectAnswerFeedback"
                   label="Incorrect Feedback"
                   placeholder="Shown when the answer is incorrect"
                   rows="2"

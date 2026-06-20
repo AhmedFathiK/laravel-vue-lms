@@ -47,8 +47,6 @@ const createDefaultForm = () => ({
   termId: null,
   content: '',
   sortOrder: 0,
-  feedbackSentence: '',
-  feedbackTranslation: '',
 })
 
 const formData = ref(createDefaultForm())
@@ -63,10 +61,6 @@ watch(() => props.isDialogVisible, isVisible => {
       if (!formData.value.content) formData.value.content = ''
       if (!formData.value.title) formData.value.title = ''
       if (!formData.value.lessonId) formData.value.lessonId = parseInt(props.lessonId)
-      
-      // Map data to form
-      formData.value.feedbackSentence = props.data.feedbackSentence || ''
-      formData.value.feedbackTranslation = props.data.feedbackTranslation || ''
     } else {
       formData.value = createDefaultForm()
       selectedQuestion.value = null
@@ -202,34 +196,7 @@ const getCorrectAnswer = question => {
                 item-value="value"
                 label="Slide Type"
                 :error-messages="formErrors.type"
-                required
-              >
-                <template #item="{ item, props: itemProps }">
-                  <VListItem
-                    v-bind="itemProps"
-                    :subtitle="item.raw.description"
-                  />
-                </template>
-              </VSelect>
-            </VCol>
-
-            <VCol
-              v-if="isQuestionType"
-              cols="12"
-            >
-              <div class="text-subtitle-2 mb-2">
-                Feedback Content
-              </div>
-              <AppTextField
-                v-model="formData.feedbackSentence"
-                label="Feedback Sentence (Target Language)"
-                :error-messages="formErrors.feedbackSentence"
-                class="mb-3"
-              />
-              <AppTextField
-                v-model="formData.feedbackTranslation"
-                label="Feedback Translation (Source Language)"
-                :error-messages="formErrors.feedbackTranslation"
+                class="mb-4"
               />
             </VCol>
 
@@ -316,11 +283,11 @@ const getCorrectAnswer = question => {
               </AppServerSideAutocomplete>
               <div
                 v-if="selectedQuestion"
-                class="mt-2 pa-2 border rounded"
+                class="mt-2 pa-3 bg-light-secondary rounded border"
               >
-                <div class="d-flex align-center justify-space-between">
-                  <div>
-                    <strong>Selected Question:</strong> {{ selectedQuestion.questionText }}
+                <div class="d-flex align-center justify-space-between mb-2">
+                  <div class="font-weight-bold">
+                    {{ selectedQuestion.questionText }}
                   </div>
                   <VBtn
                     icon
@@ -331,8 +298,76 @@ const getCorrectAnswer = question => {
                     <VIcon icon="tabler-x" />
                   </VBtn>
                 </div>
-                <div class="mt-1">
-                  <small>Type: {{ selectedQuestion.type }} | Difficulty: {{ selectedQuestion.difficulty }}</small>
+
+                <!-- MCQ -->
+                <ol
+                  v-if="selectedQuestion.type === 'mcq'"
+                  type="a"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(option, index) in (selectedQuestion.content?.options || selectedQuestion.options)"
+                    :key="index"
+                  >
+                    {{ option }}
+                  </li>
+                </ol>
+
+                <!-- Matching -->
+                <ul
+                  v-else-if="selectedQuestion.type === 'matching'"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(pair, index) in (selectedQuestion.content?.pairs || selectedQuestion.options)"
+                    :key="index"
+                  >
+                    {{ pair.left }} → {{ pair.right }}
+                  </li>
+                </ul>
+
+                <!-- Fill blank with choices -->
+                <ul
+                  v-else-if="selectedQuestion.type === 'fill_blank_choices'"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(option, index) in (selectedQuestion.content?.blanks || selectedQuestion.options)"
+                    :key="index"
+                  >
+                    Blank {{ index + 1 }}: {{ option.options.join(', ') }}
+                  </li>
+                </ul>
+
+                <!-- Fill blank -->
+                <ul
+                  v-else-if="selectedQuestion.type === 'fill_blank'"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(answers, index) in (selectedQuestion.content?.correct_answer || selectedQuestion.content?.correctAnswer)"
+                    :key="index"
+                  >
+                    Blank {{ index + 1 }}: {{ Array.isArray(answers) ? answers.join(', ') : answers }}
+                  </li>
+                </ul>
+
+                <!-- Reordering -->
+                <ol
+                  v-else-if="selectedQuestion.type === 'reordering'"
+                  type="1"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(option, index) in (selectedQuestion.content?.items || selectedQuestion.options)"
+                    :key="index"
+                  >
+                    {{ option }}
+                  </li>
+                </ol>
+
+                <div class="mt-2 text-disabled text-caption">
+                  ID: #{{ selectedQuestion.id }} | Type: {{ selectedQuestion.type }}
                 </div>
               </div>
             </VCol>

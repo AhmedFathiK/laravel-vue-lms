@@ -607,6 +607,19 @@ watch([contextsPage, contextsItemsPerPage, currentTab], () => {
                     Blank {{ index + 1 }}: {{ option.options.join(', ') }}
                   </li>
                 </ul>
+
+                <!-- Fill blank -->
+                <ul
+                  v-else-if="item.type === 'fill_blank'"
+                  class="ms-5 text-caption"
+                >
+                  <li
+                    v-for="(answers, index) in (item.content?.correct_answer || item.content?.correctAnswer)"
+                    :key="index"
+                  >
+                    Blank {{ index + 1 }}: {{ Array.isArray(answers) ? answers.join(', ') : answers }}
+                  </li>
+                </ul>
             
                 <!-- Reordering -->
                 <ol
