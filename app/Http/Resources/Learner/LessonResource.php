@@ -12,7 +12,6 @@ class LessonResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'sort_order' => $this->sort_order,
             'slides' => SlideResource::collection($this->whenLoaded('slides')),
             'reshow_incorrect_slides' => (bool) $this->reshow_incorrect_slides,
             'reshow_count' => (int) $this->reshow_count,
