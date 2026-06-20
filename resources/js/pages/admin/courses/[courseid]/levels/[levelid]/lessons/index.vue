@@ -603,6 +603,16 @@ onMounted(() => {
                   Manage Slides
                 </VTooltip>
               </IconBtn>
+
+              <IconBtn
+                color="secondary"
+                @click="router.push(`/admin/courses/${courseId}/levels/${levelId}/lessons/${item.id}/builder`)"
+              >
+                <VIcon icon="tabler-layout-dashboard" />
+                <VTooltip activator="parent">
+                  Lesson Builder
+                </VTooltip>
+              </IconBtn>
             </div>
           </template>
           

@@ -316,6 +316,15 @@ onMounted(refreshData)
           >
             Reorder
           </VBtn>
+          <VBtn
+            v-if="!reordering"
+            color="secondary"
+            class="me-2"
+            prepend-icon="tabler-layout-dashboard"
+            @click="router.push(`/admin/courses/${courseId}/levels/${levelId}/lessons/${lessonId}/builder`)"
+          >
+            Lesson Builder
+          </VBtn>
           <VBtn 
             v-if="!reordering"
             color="primary" 
