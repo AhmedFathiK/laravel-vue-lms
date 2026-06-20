@@ -76,7 +76,8 @@ class LearnerCourseController extends Controller
                 ->orderBy('sort_order');
         }, 'levels.lessons' => function ($query) {
             $query->where('status', 'published')
-                ->orderBy('sort_order');
+                ->orderBy('sort_order')
+                ->with('level.course');
         }, 'billingPlans' => function ($query) {
             $query->where('is_active', true);
         }]);

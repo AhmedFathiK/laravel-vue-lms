@@ -128,6 +128,7 @@ class CoursesContentController extends Controller
 
         // Load slides with content
         $lesson->load([
+            'level.course',
             'slides' => function ($query) {
                 $query->orderBy('sort_order')
                     ->with(['question', 'term']);
